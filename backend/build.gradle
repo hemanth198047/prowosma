@@ -1,0 +1,192 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.6'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
+}
+
+group = 'com.prowosma.backend'
+version = '0.0.1-SNAPSHOT'
+description = 'backend'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven { url "https://build.shibboleth.net/nexus/content/repositories/releases/" }
+}
+
+dependencies {
+	implementation 'com.stripe:stripe-java:33.1.1'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.security:spring-security-saml2-service-provider'
+	implementation 'org.mongodb:mongodb-driver-bom:5.7.0'
+	implementation 'org.mongodb:mongodb-driver-sync'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+	implementation 'com.resend:resend-java:3.1.0'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+	// Object storage — lets FileStorageService store attachments in Amazon
+	// S3 (or any S3-compatible service: MinIO, Cloudflare R2, Backblaze B2,
+	// DigitalOcean Spaces) instead of only local disk. Only pulled in and
+	// only actually used when FILE_STORAGE_PROVIDER=s3 — the local-disk path
+	// (the default) has no dependency on this at all. Pinned to a BOM so the
+	// two artifacts below always resolve to compatible versions; bump
+	// s3-bom's version here if a newer AWS SDK v2 release is wanted later.
+	implementation platform('software.amazon.awssdk:bom:2.28.11')
+	implementation 'software.amazon.awssdk:s3'
+	// s3-presigner is NOT a separate Maven artifact — S3Presigner ships
+	// inside the 's3' module itself (package
+	// software.amazon.awssdk.services.s3.presigner). A standalone
+	// 'software.amazon.awssdk:s3-presigner' dependency does not exist on
+	// Maven Central at any version and was removed from here.
+
+	// Managed secrets store integration — lets MONGODB_URI, JWT_SECRET,
+	// SMTP credentials, Stripe keys, etc. be resolved from AWS Secrets
+	// Manager at startup instead of only plain environment variables.
+	// Entirely opt-in: only activates if spring.config.import references
+	// an aws-secretsmanager: source (see docs/SECURITY_HARDENING.md) —
+	// every environment that doesn't do that is completely unaffected.
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-secrets-manager:3.2.1'
+
+	// Web Push (VAPID) — sends real browser push notifications to the
+	// service worker already in public/sw.js (which has had a working
+	// 'push' event handler since before this change — only the SENDING
+	// side was missing; see PWAInstallBanner.jsx, which was already
+	// advertising "🔔 Push Notifications" as a feature with no way to
+	// actually enable it). nl.martijndwars:web-push is the standard Java
+	// VAPID/Web-Push-protocol implementation. NOTE: the Maven artifact id
+	// is "web-push" (hyphenated) — "webpush" does not exist and was the
+	// original (broken) coordinate here.
+	implementation 'nl.martijndwars:web-push:5.1.2'
+	implementation 'org.apache.httpcomponents:httpclient:4.5.14' // web-push's PushService.send() returns org.apache.http.HttpResponse — not pulled in transitively
+	implementation 'org.bitbucket.b_c:jose4j:0.9.6' // web-push uses jose4j for VAPID JWT signing — also not pulled in transitively
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1' // required by webpush for VAPID JWT signing
+
+	// ── Observability — nothing below existed before this: no Actuator, no
+	// metrics export, no structured logging, no tracing. Diagnosing a
+	// production incident meant reading unstructured application logs by
+	// hand, with no way to correlate log lines for a single request across
+	// a 67-controller app, and no metrics endpoint for any monitoring
+	// platform to scrape at all.
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	// Structured JSON logging — lets any log aggregation platform (ELK,
+	// Loki, CloudWatch Logs, Datadog Logs) actually parse/query fields
+	// instead of grepping unstructured text. See logback-spring.xml.
+	implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
+	// Distributed tracing — Micrometer's OTel bridge + an OTLP exporter.
+	// Configured (see application.properties) but genuinely inert until a
+	// real OTLP collector endpoint exists somewhere (Jaeger / Grafana
+	// Tempo / a vendor) — same honesty as the deploy.yml scaffolds: the
+	// dependency and wiring are real, the destination isn't decided yet.
+	implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+	implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+
+	// Horizontal scaling — DocCollabController's real-time presence/edit
+	// sync previously used an in-memory ConcurrentHashMap (presence) and
+	// Spring's default SimpleBroker (message delivery), both of which only
+	// work correctly within a single instance. Redis gives presence a
+	// shared, TTL-based store instead of a per-instance map (see
+	// DocCollabController); the STOMP broker relay (see WebSocketConfig +
+	// docker-compose's rabbitmq service) gives message delivery an actual
+	// cross-instance path instead of only reaching clients connected to
+	// whichever instance published the message.
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	// Required by enableStompBrokerRelay (see WebSocketConfig) — Spring's
+	// ReactorNettyTcpClient, which the broker relay uses to connect to the
+	// external STOMP broker, needs reactor.netty.resources.LoopResources
+	// at runtime. Nothing else in this project pulls reactor-netty in
+	// transitively, so without this the app fails to start entirely
+	// (NoClassDefFoundError) on every non-test profile, since
+	// WebSocketConfig's relay setup isn't optional/conditional. No version
+	// pinned - the Spring Boot BOM (io.spring.dependency-management, see
+	// plugins above) already aligns this to a version compatible with the
+	// rest of the Spring stack here.
+	implementation 'io.projectreactor.netty:reactor-netty-core'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	implementation 'org.apache.poi:poi-ooxml:5.3.0'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test' // Spring Boot 4's modularization split MockMvc auto-config (incl. @AutoConfigureMockMvc) out of spring-boot-starter-test into its own test starter
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring4x:4.24.0' // spring3x targets pre-4.0 Spring Boot's MongoProperties location (org.springframework.boot.autoconfigure.mongo.MongoProperties, removed in 4.0's modularization) — spring4x targets the current one (org.springframework.boot.mongodb.autoconfigure.MongoProperties)
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+// ── Coverage gate ────────────────────────────────────────────────
+// Previously there was no enforced coverage threshold anywhere — 16 test
+// classes existed, but nothing measured how much of the codebase they
+// actually exercised, and nothing failed the build if coverage dropped.
+//
+// The 25% starting bar below is deliberately modest and HONEST about
+// where this codebase's coverage actually stands today (a handful of
+// well-targeted security/audit tests plus this change's new ones, against
+// 226 source files) — not an aspirational number picked to look good.
+// Ratchet BACKEND_MIN_COVERAGE up over time as real coverage grows;
+// setting it above current actual coverage would just make every build
+// fail. See docs/TESTING.md for the plan to raise this incrementally.
+jacoco {
+	toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true   // consumed by CI coverage-comment tooling / Codecov-style services
+		html.required = true  // human-readable report under build/reports/jacoco/test/html/index.html
+	}
+}
+
+jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+	violationRules {
+		rule {
+			limit {
+				minimum = (System.getenv("BACKEND_MIN_COVERAGE") ?: "0.25") as BigDecimal
+			}
+		}
+	}
+}
+
+// `./gradlew check` (what CI runs) now fails if coverage drops below the
+// threshold above, in addition to running the tests themselves.
+tasks.named('check') {
+	dependsOn jacocoTestCoverageVerification
+}
+
+// Disable the plain (non-executable) jar the Spring Boot Gradle plugin
+// generates by default alongside bootJar's real executable jar. Without
+// this, `./gradlew build` leaves TWO *.jar files in build/libs/ (one
+// runnable, one not, named with a "-plain" suffix) — which silently
+// breaks anything that assumes build/libs/*.jar resolves to exactly one
+// file, including this repo's own Dockerfile (COPY --from=build
+// .../*.jar app.jar) and the CI workflow's artifact-upload step. This is
+// the officially recommended way to avoid that ambiguity, not a
+// workaround — Spring Boot's own docs suggest disabling the plain jar
+// task specifically for this reason.
+tasks.named('jar') {
+	enabled = false
+}
+
+// Apache POI for Excel import/export (added for ImportExport feature)

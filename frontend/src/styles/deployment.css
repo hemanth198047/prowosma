@@ -1,0 +1,29 @@
+/* === DEPLOYMENT ANALYTICS =================================== */
+.dep-dora-card   { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; margin-bottom:14px; }
+.dep-dora-title  { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-400); margin-bottom:10px; }
+.dep-dora-gauge  { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
+.dep-dora-segment{ padding:8px; border-radius:var(--radius-sm); text-align:center; font-size:12px; font-weight:800; transition:all .2s; }
+.dep-dora-segment.active { transform:scale(1.05); }
+.dep-dora-desc   { font-size:12px; font-weight:600; }
+.dep-metrics-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; margin-bottom:14px; }
+.dep-metric-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; text-align:center; }
+.dep-metric-icon { font-size:22px; margin-bottom:4px; }
+.dep-metric-num  { font-size:clamp(14px,2vw,20px); font-weight:800; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dep-metric-label{ font-size:10px; color:var(--gray-400); text-transform:uppercase; letter-spacing:.04em; }
+.dep-chart-card  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:14px; }
+.dep-chart-title { font-size:12px; font-weight:800; color:var(--gray-700); margin-bottom:10px; }
+.dep-breakdown-row{ display:flex; align-items:center; gap:8px; padding:4px 0; font-size:12px; }
+.dep-breakdown-key{ min-width:80px; color:var(--gray-600); font-weight:600; }
+.dep-breakdown-bar-wrap{ flex:1; background:var(--gray-100); border-radius:99px; height:8px; overflow:hidden; }
+.dep-breakdown-bar{ height:100%; background:#6366f1; border-radius:99px; transition:width .4s; }
+.dep-breakdown-val{ min-width:24px; text-align:right; font-weight:700; color:var(--gray-700); }
+.dep-log-row     { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:11px; flex-wrap:wrap; }
+.dep-log-status  { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+.dep-log-env     { font-weight:700; color:var(--gray-700); }
+.dep-log-svc     { color:#6366f1; font-weight:600; }
+.dep-log-ver     { color:var(--gray-500); }
+.dep-log-time    { color:var(--gray-400); margin-left:auto; }
+.dep-log-dur     { color:var(--gray-400); }
+.dep-log-by      { color:var(--gray-500); }
+.dep-log-sha     { font-family:monospace; font-size:10px; background:var(--gray-100); padding:1px 5px; border-radius:3px; color:var(--gray-600); }
+.dep-add-form    { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:14px; }

@@ -1,0 +1,49 @@
+/* === PORTFOLIO+ (Releases, Initiatives, Changes, Programmes) === */
+.pplus-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
+.pplus-table   { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+.pplus-table-head { display:grid; grid-template-columns:100px 1fr 120px 100px 110px 120px 90px; gap:10px; padding:10px 14px; background:var(--gray-50); border-bottom:1px solid var(--border); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--gray-400); }
+.pplus-table-row  { display:grid; grid-template-columns:100px 1fr 120px 100px 110px 120px 90px; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); align-items:start; font-size:12px; }
+.pplus-table-row:last-child { border-bottom:none; }
+.pplus-table-row:hover { background:var(--gray-50); }
+.pplus-version-chip { font-family:monospace; font-size:12px; font-weight:700; color:#6366f1; background:rgba(99,102,241,0.1); padding:2px 8px; border-radius:4px; white-space:nowrap; }
+.pplus-row-title { font-weight:700; color:var(--gray-700); margin-bottom:2px; }
+.pplus-row-meta  { font-size:11px; color:var(--gray-400); }
+.pplus-status-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+.pplus-priority-chip { font-size:10px; font-weight:700; padding:2px 6px; border-radius:99px; background:var(--gray-100); }
+.pplus-empty { padding:24px; text-align:center; font-size:12px; color:var(--gray-400); }
+
+/* Initiatives */
+.pplus-initiative-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.pplus-initiative-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; display:flex; flex-direction:column; gap:10px; }
+.pplus-initiative-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.pplus-initiative-name   { font-size:14px; font-weight:800; color:var(--gray-800); margin-bottom:3px; }
+.pplus-initiative-meta   { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:11px; color:var(--gray-400); }
+.pplus-initiative-desc   { font-size:12px; color:var(--gray-600); line-height:1.5; }
+.pplus-initiative-rationale { font-size:11px; color:#8b5cf6; background:rgba(139,92,246,0.08); padding:6px 10px; border-radius:var(--radius-sm); font-style:italic; }
+.pplus-initiative-links { display:flex; gap:6px; flex-wrap:wrap; }
+.pplus-link-chip { font-size:10px; font-weight:600; padding:2px 8px; background:var(--gray-100); border-radius:99px; color:var(--gray-500); }
+.pplus-progress-bar  { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
+.pplus-progress-fill { height:100%; background:#6366f1; border-radius:99px; transition:width .4s; }
+.pplus-initiative-progress { display:flex; flex-direction:column; gap:4px; }
+.pplus-multi-select { display:flex; flex-wrap:wrap; gap:6px; }
+.pplus-multi-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border:1px solid var(--border); border-radius:99px; font-size:11px; font-weight:600; color:var(--gray-600); cursor:pointer; }
+.pplus-multi-chip input { display:none; }
+.pplus-multi-chip.active { border-color:#6366f1; background:rgba(99,102,241,0.08); color:#6366f1; }
+
+/* Programmes */
+.pplus-programme-list { display:flex; flex-direction:column; gap:12px; }
+.pplus-programme-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
+.pplus-programme-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
+.pplus-programme-left { flex:1; }
+.pplus-milestone-count { font-size:11px; font-weight:700; color:var(--gray-500); }
+.pplus-prog-bar-wrap { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.pplus-milestone-panel { border-top:1px solid var(--border); margin-top:10px; padding-top:10px; }
+.pplus-milestone-list  { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.pplus-milestone-row   { display:flex; align-items:center; gap:8px; font-size:12px; }
+.pplus-milestone-row input { accent-color:#6366f1; cursor:pointer; }
+.pplus-milestone-title { flex:1; color:var(--gray-700); }
+.pplus-milestone-title.done { text-decoration:line-through; color:var(--gray-400); }
+.pplus-milestone-date  { font-size:11px; color:var(--gray-400); }
+.pplus-milestone-owner { font-size:11px; color:var(--gray-400); }
+.pplus-milestone-add   { display:flex; gap:6px; flex-wrap:wrap; }
+.pplus-milestone-add input { flex:1; min-width:120px; }

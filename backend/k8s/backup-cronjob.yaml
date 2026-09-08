@@ -1,0 +1,66 @@
+# Kubernetes CronJob alternative to .github/workflows/scheduled-backup.yml
+# — use this instead when the production database is only reachable from
+# inside your own cluster network (private VPC, no public endpoint).
+#
+# Apply with: kubectl apply -f k8s/backup-cronjob.yaml -n <your-namespace>
+#
+# Everything provider/schedule-specific is either a Secret/ConfigMap value
+# or the schedule field below — never a change to this file's logic.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prowosma-backup-config
+data:
+  BACKUP_UPLOAD_PROVIDER: "s3"          # s3 | gcs | azure | "" (local-disk-only, not useful in a CronJob pod)
+  BACKUP_S3_BUCKET: "your-backups-bucket"
+  BACKUP_S3_PREFIX: "prowosma/"
+  BACKUP_RETENTION_DAYS: "14"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: prowosma-db-backup
+spec:
+  schedule: "0 2 * * *"   # daily 02:00 UTC — the only field most deployments need to touch
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              # Build this image from the backend/ directory's Dockerfile plus the
+              # MongoDB Database Tools + your chosen cloud CLI (aws-cli/gsutil/az) —
+              # not the app's own runtime image, which doesn't need those tools day
+              # to day. A minimal example Dockerfile.backup is not included here
+              # since the right base image depends on which cloud CLI you're
+              # installing; ubuntu:24.04 + `apt-get install -y mongodb-database-tools
+              # awscli` (or gsutil/az equivalents) covers most cases in ~10 lines.
+              image: your-registry/prowosma-backup-tools:latest
+              command: ["/bin/bash", "scripts/backup-db.sh"]
+              envFrom:
+                - configMapRef:
+                    name: prowosma-backup-config
+              env:
+                - name: MONGODB_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: prowosma-db-credentials
+                      key: mongodb-uri
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: prowosma-backup-cloud-credentials
+                      key: aws-access-key-id
+                      optional: true
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: prowosma-backup-cloud-credentials
+                      key: aws-secret-access-key
+                      optional: true

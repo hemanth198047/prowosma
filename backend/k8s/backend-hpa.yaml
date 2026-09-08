@@ -1,0 +1,56 @@
+# Autoscaling for k8s/backend-deployment.yaml — previously no autoscaling
+# configuration existed anywhere (Kubernetes HPA, ECS scaling policies,
+# or otherwise). Requires the metrics-server addon (present by default on
+# most managed Kubernetes offerings — EKS, GKE, AKS all support it;
+# `kubectl top nodes` working is a quick way to confirm it's installed).
+#
+# Scales on CPU AND memory independently — whichever metric is under more
+# pressure drives the scaling decision. Min replicas is 2 (matching
+# backend-deployment.yaml's own default) specifically because
+# RateLimitFilter's MongoDB-backed design only actually matters once more
+# than one instance exists — scaling to 1 replica under low load would
+# silently make that design pointless some of the time.
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: prowosma-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: prowosma-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      # Wait 5 minutes of sustained low load before scaling down — avoids
+      # flapping (scale up, scale down, scale up again) on bursty traffic,
+      # at the cost of running slightly more capacity than strictly needed
+      # for a few minutes after a load spike passes.
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      # Scale up fast — a slow scale-up under real load means real users
+      # see degraded latency/errors while waiting for new pods.
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60

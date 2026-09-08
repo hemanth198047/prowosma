@@ -1,0 +1,45 @@
+/*
+ * PROWOSMA — Main CSS Entry Point  (src/App.css)
+ */
+
+@import './styles/base.css';
+@import './styles/layout.css';
+@import './styles/components.css';
+@import './styles/modals.css';
+@import './styles/tasks.css';
+@import './styles/goals.css';
+@import './styles/sprints.css';
+@import './styles/automations.css';
+
+/* pages.css split — shared rules loaded globally; per-page chunks
+   are imported directly by each page JSX file from styles/pages/  */
+@import './styles/pages/shared.css';
+
+@import './styles/activity.css';
+@import './styles/workspace.css';
+@import './styles/themes.css';
+
+@import './styles/kpis.css';
+@import './styles/admin.css';
+@import './styles/executive.css';
+@import './styles/intelligence.css';
+@import './styles/roadmap.css';
+@import './styles/velocity.css';
+@import './styles/portfolioplus.css';
+@import './styles/sprint-extra.css';
+@import './styles/goaldep.css';
+
+@import './styles/integrations.css';
+@import './styles/channels.css';
+@import './styles/p2p3.css';
+
+@import './styles/bpm.css';
+@import './styles/roi.css';
+@import './styles/decisions.css';
+@import './styles/whitelabel.css';
+
+@import './styles/expertise.css';
+@import './styles/scenario.css';
+@import './styles/deployment.css';
+@import './styles/knowledge-graph.css';
+@import './styles/nx-layout.css';

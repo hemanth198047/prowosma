@@ -1,0 +1,154 @@
+/* ============================================================
+   DECISIONS — split from pages.css
+   Auto-generated. Import only from the relevant page JSX.
+   ============================================================ */
+
+/* ========================================
+   DECISIONS PAGE
+   /* = */
+.dec-stats {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.dec-stat-count { font-size: 16px; font-weight: 800; }
+
+.dec-stat-label { font-size: 12px; }
+
+.dec-stat-total { margin-left: auto; font-size: 13px; color: var(--gray-400); }
+
+.dec-filter-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dec-search {
+  flex: 1; max-width: 340px; padding: 8px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font-size: 13px; background: var(--bg-input); color: var(--gray-700); outline: none;
+}
+
+.dec-search:focus { border-color: var(--brand-400); }
+
+.dec-loading { padding: 40px; text-align: center; color: var(--gray-400); }
+
+.dec-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 20px; text-align: center;
+}
+
+.dec-empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+.dec-empty h3   { font-size: 20px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+
+.dec-empty p    { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; }
+
+.dec-list { display: flex; flex-direction: column; gap: 8px; }
+/* Decision card */
+.dec-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 4px solid #6366f1;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  overflow: hidden; transition: box-shadow .15s;
+}
+
+.dec-card:hover { box-shadow: var(--shadow-sm); }
+
+.dec-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; cursor: pointer; gap: 12px;
+}
+
+.dec-card-title-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+
+.dec-card-chevron   { color: var(--gray-400); font-size: 13px; flex-shrink: 0; }
+
+.dec-card-title     { font-size: 14px; font-weight: 700; color: var(--gray-800); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dec-card-meta      { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+.dec-status-badge   { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: .04em; }
+
+.dec-impact-badge   { font-size: 12px; font-weight: 600; }
+
+.dec-owner, .dec-date { font-size: 12px; color: var(--gray-400); }
+
+.dec-card-actions   { display: flex; gap: 4px; }
+
+.dec-card-actions button {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); font-size: 14px; padding: 3px 6px;
+  border-radius: 5px; transition: background .1s;
+}
+
+.dec-card-actions button:hover { background: var(--gray-100); color: var(--gray-700); }
+
+.dec-delete-btn:hover { color: var(--danger) !important; }
+
+.dec-card-body { padding: 0 18px 16px 34px; border-top: 1px solid var(--border); }
+
+.dec-field      { margin-top: 12px; }
+
+.dec-field-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--gray-400); display: block; margin-bottom: 3px; }
+
+.dec-field p    { font-size: 13px; color: var(--gray-600); line-height: 1.6; margin: 0; }
+
+.dec-field--outcome p { color: var(--gray-700); font-style: italic; }
+
+.dec-card-footer {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-top: 14px;
+  padding-top: 12px; border-top: 1px solid var(--border);
+}
+
+.dec-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.dec-tag  {
+  padding: 2px 8px; background: var(--brand-50);
+  border: 1px solid var(--brand-200); border-radius: 20px;
+  font-size: 11px; color: var(--brand-700);
+}
+
+.dec-status-changer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.dec-status-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; padding: 3px 8px;
+  border-radius: 6px; border: 1px solid currentColor; opacity: .8;
+  transition: opacity .15s;
+}
+
+.dec-status-btn:hover { opacity: 1; }
+/* Dark mode */
+[data-theme="dark"] .dec-card          { background: #071525; border-color: #1e3a5a; }
+
+[data-theme="dark"] .dec-card:hover    { box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+
+[data-theme="dark"] .dec-card-title    { color: #cce0f0; }
+
+[data-theme="dark"] .dec-card-header   { border-color: #1e3a5a; }
+
+[data-theme="dark"] .dec-owner,[data-theme="dark"] .dec-date { color: #4a7090; }
+
+[data-theme="dark"] .dec-card-actions button:hover { background: #0a1e35; color: #cce0f0; }
+
+[data-theme="dark"] .dec-card-body     { border-color: #1e3a5a; }
+
+[data-theme="dark"] .dec-field-label   { color: #4a7090; }
+
+[data-theme="dark"] .dec-field p       { color: #8cb4d0; }
+
+[data-theme="dark"] .dec-field--outcome p { color: #aecde3; }
+
+[data-theme="dark"] .dec-card-footer   { border-color: #1e3a5a; }
+
+[data-theme="dark"] .dec-tag           { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.25); color: #38bdf8; }
+
+[data-theme="dark"] .dec-search        { background: #0a1e35; border-color: #1e3a5a; color: #cce0f0; }
+
+[data-theme="dark"] .dec-empty h3      { color: #e2eff8; }
+
+[data-theme="dark"] .dec-empty p       { color: #6b90b0; }
+
+[data-theme="dark"] .dec-modal         { background: #071525; }

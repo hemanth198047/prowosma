@@ -1,0 +1,72 @@
+{
+  "common": {
+    "appName": "Prowosma"
+  },
+  "login": {
+    "tagline1": "Project management",
+    "taglineAccent": "built for velocity.",
+    "description": "One platform for projects, goals, knowledge, and team collaboration — everything your team needs, nowhere else to look.",
+    "chips": {
+      "ai": "AI-powered task management",
+      "goals": "Goals & OKR tracking",
+      "boards": "Kanban, Gantt & Calendar",
+      "docs": "Knowledge base & Docs",
+      "collab": "Team collaboration",
+      "reports": "Reports & Analytics",
+      "integrations": "GitHub & Slack integrations",
+      "rbac": "Role-based access control"
+    },
+    "stats": {
+      "aiFeatures": "AI features",
+      "modules": "Modules",
+      "integrations": "Integrations",
+      "selfHosted": "Self-hosted"
+    },
+    "welcomeBack": "Welcome back",
+    "createAccountHeading": "Create account",
+    "signInSubtitle": "Sign in to your Prowosma workspace.",
+    "registerSubtitle": "Get started with Prowosma for free.",
+    "signInTab": "Sign In",
+    "createAccountTab": "Create account",
+    "fullNameLabel": "Full name",
+    "fullNamePlaceholder": "Jane Smith",
+    "accountTypeNote": "Creating an account here starts a brand-new workspace, and you'll be its Owner. Been invited to an existing team instead? Use the invite link you received rather than this form.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "Password",
+    "pleaseWait": "Please wait…",
+    "signInSubmit": "Sign in →",
+    "createAccountSubmit": "Create account →",
+    "orSignInWith": "or sign in with",
+    "magicLinkButton": "✉️ Send Magic Link (passwordless)",
+    "magicLinkSentSuccess": "✅ Magic link sent — check your email!",
+    "magicLinkFailed": "Failed to send magic link",
+    "enterEmailFirst": "Enter your email above first",
+    "continueWithAuth0": "Continue with Auth0 SSO",
+    "enterpriseSso": "enterprise single sign-on",
+    "continueWithProvider": "Continue with {{provider}}",
+    "signedInAs": "Signed in as {{role}} of {{workspace}}",
+    "roleOwner": "Owner",
+    "roleAdmin": "Admin",
+    "roleMember": "Member",
+    "roleViewer": "Viewer",
+    "newToProwosma": "New to Prowosma?",
+    "alreadyHaveAccount": "Already have an account?",
+    "createFreeAccount": "Create a free account",
+    "signInInstead": "Sign in instead",
+    "footer": "© {{year}} {{appName}} · All rights reserved",
+    "passwordExpired": {
+      "heading": "Your password has expired",
+      "subtitle": "Choose a new password to continue. This workspace requires passwords to be refreshed periodically.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm new password",
+      "submit": "Set new password →",
+      "backToSignIn": "← Back to sign in"
+    },
+    "errors": {
+      "genericFailed": "Something went wrong. Please try again.",
+      "passwordMismatch": "New passwords don't match.",
+      "resetFailed": "Couldn't reset your password. Please try again."
+    }
+  }
+}

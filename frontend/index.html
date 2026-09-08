@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Favicon — all sizes for all platforms -->
+    <link rel="icon" type="image/png" sizes="32x32"  href="/icons/icon-96.png" />
+    <link rel="icon" type="image/png" sizes="16x16"  href="/icons/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="180x180"     href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="152x152"     href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="144x144"     href="/icons/icon-144.png" />
+    <link rel="apple-touch-icon" sizes="120x120"     href="/icons/icon-128.png" />
+
+    <!-- PWA -->
+    <link rel="manifest"    href="/manifest.json" />
+    <meta name="theme-color" content="#0b1030" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Prowosma" />
+
+    <!-- Viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO -->
+    <meta name="description" content="Prowosma — Enterprise Project Management Platform. Tasks, Goals, Analytics, Gantt, Kanban, and real-time team collaboration." />
+    <meta name="application-name" content="Prowosma" />
+
+    <!-- Open Graph -->
+    <meta property="og:title"       content="Prowosma" />
+    <meta property="og:description" content="Enterprise Project Management Platform" />
+    <meta property="og:image"       content="/icons/icon-512.png" />
+    <meta property="og:type"        content="website" />
+
+    <!-- Page title (overridden by React per-route) -->
+    <title>Prowosma</title>
+
+    <!-- SockJS polyfill for STOMP WebSocket -->
+    <script>window.global = window;</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

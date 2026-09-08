@@ -1,0 +1,391 @@
+/* ============================================================
+   AUTH — split from pages.css
+   Auto-generated. Import only from the relevant page JSX.
+   ============================================================ */
+
+/* ========================================
+   AUTH PAGE    Minimal enterprise redesign
+   Two columns: left = brand story, right = form
+   /* = */
+.auth-page {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: #0a0a0f;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+/* ========================================
+   LEFT PANEL   brand, tagline, feature pills
+/* = */
+.auth-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 52px;
+  background: #0a0a0f;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle grid texture */
+.auth-left::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(91,95,238,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,95,238,0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+/* Glow orb — one deliberate, quiet moment of visual interest on an
+   otherwise plain dark panel; kept subtle rather than removed entirely */
+.auth-left::after {
+  content: "";
+  position: absolute;
+  top: -180px;
+  left: -120px;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(91,95,238,0.10) 0%, transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.auth-left-top {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 64px;
+}
+
+.auth-brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.auth-brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.auth-tagline {
+  font-size: 40px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin: 0 0 20px;
+  max-width: 480px;
+}
+
+/* Previously a rainbow-gradient single word — singling out one word in a
+   headline with different-colored text is exactly the kind of default
+   treatment worth avoiding; the whole tagline now reads as one
+   deliberate, calm statement instead. */
+.auth-tagline-accent {
+  color: #fff;
+}
+
+.auth-desc {
+  font-size: 14px;
+  color: rgba(255,255,255,0.42);
+  line-height: 1.7;
+  max-width: 400px;
+  margin: 0 0 48px;
+}
+/* Six feature chips in two rows */
+.auth-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 460px;
+}
+
+.auth-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.auth-chip:hover {
+  background: rgba(91,95,238,0.12);
+  border-color: rgba(91,95,238,0.32);
+  color: rgba(255,255,255,0.8);
+}
+
+.auth-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+/* Bottom: social proof / stats row */
+.auth-left-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.auth-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.auth-stat-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.32);
+  font-weight: 400;
+}
+
+.auth-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+/* ========================================
+   RIGHT PANEL   login / register form
+/* = */
+.auth-right {
+  width: 420px;
+  min-width: 380px;
+  background: #0f0f14;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 40px;
+  position: relative;
+}
+/* Subtle bottom-right glow */
+.auth-right::after {
+  content: "";
+  position: absolute;
+  bottom: -100px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(91,95,238,0.08) 0%, transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.auth-right-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.auth-form-heading {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+}
+
+.auth-form-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.36);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+/* Mode toggle  text links, not pill buttons */
+.auth-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+/* Form fields */
+.auth-field {
+  margin-bottom: 10px;
+}
+
+.auth-field-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 5px;
+  letter-spacing: 0.2px;
+}
+
+.auth-account-type-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #e8e8f0;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+  letter-spacing: 0.1px;
+}
+
+.auth-input::placeholder { color: rgba(255,255,255,0.18); }
+
+.auth-input:focus {
+  border-color: rgba(91,95,238,0.55);
+  background: rgba(91,95,238,0.05);
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 11px;
+  margin-top: 6px;
+  background: var(--brand-500);
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.1px;
+  transition: background 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-submit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.auth-submit:hover { background: var(--brand-600); }
+
+.auth-submit:active { transform: scale(0.99); }
+
+.auth-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.auth-switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.28);
+}
+
+.auth-switch-btn {
+  background: none;
+  border: none;
+  color: var(--brand-400);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-switch-btn:hover { color: var(--brand-200); }
+/* Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+}
+
+.auth-divider-text {
+  font-size: 11px;
+  color: rgba(255,255,255,0.2);
+  white-space: nowrap;
+}
+/* Footer note */
+.auth-right-footer {
+  position: absolute;
+  bottom: 24px;
+  left: 40px;
+  right: 40px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,0.14);
+  z-index: 1;
+}
+
+.meet-extract-btn.loading  { opacity: .7; cursor: not-allowed; }
+/* ========================================
+   SSO LOGIN BUTTONS
+   /* = */
+.auth-sso-section { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.auth-sso-divider {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--gray-400); margin: 4px 0;
+}
+
+.auth-sso-divider::before, .auth-sso-divider::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+
+.auth-sso-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+  color: var(--gray-700); background: var(--bg-card);
+  text-decoration: none; transition: all .15s;
+}
+
+.auth-sso-btn:hover { border-color: var(--brand-400); background: rgba(91,95,238,0.05); }
+
+.auth-sso-icon { font-size: 16px; }

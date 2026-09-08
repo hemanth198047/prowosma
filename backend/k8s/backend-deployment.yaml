@@ -1,0 +1,79 @@
+# Example Kubernetes Deployment for the backend — a concrete, working
+# STARTING POINT for whichever deployment target ends up chosen (see
+# docs/RELEASE_PROCESS.md; the target itself was still an open decision
+# as of this backlog, per this repo's own earlier comments). Not a
+# claim that this is the only valid target, or that this file alone is a
+# complete production setup (no Ingress/TLS termination, no
+# HorizontalPodAutoscaler, no NetworkPolicy — add those per your actual
+# cluster/security requirements).
+#
+# What this DOES give you for real: rolling updates with automatic
+# health-check-gated rollout, and a one-command rollback —
+#   kubectl rollout undo deployment/prowosma-backend
+# — using the readiness/liveness probes against the actuator endpoints
+# that already exist in this app (see application.properties'
+# management.endpoint.health.probes.enabled=true).
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prowosma-backend
+spec:
+  replicas: 2  # >1 is what makes RateLimitFilter's MongoDB-backed (not in-memory) design actually matter
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # never drop below `replicas` healthy pods during a rollout
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: prowosma-backend
+  template:
+    metadata:
+      labels:
+        app: prowosma-backend
+    spec:
+      containers:
+        - name: backend
+          # Set by your deploy pipeline to the exact tag docker-publish.yml
+          # produced for the release being deployed — e.g.
+          # ghcr.io/your-org/prowosma-backend:v1.4.2 — never `:latest` in
+          # a real deployment, so a rollback can name an exact prior image.
+          image: ghcr.io/your-org/prowosma-backend:REPLACE_WITH_RELEASE_TAG
+          ports:
+            - containerPort: 9090
+          envFrom:
+            - secretRef:
+                name: prowosma-backend-secrets   # MONGODB_URI, JWT secret, SMTP creds, etc.
+            - configMapRef:
+                name: prowosma-backend-config    # non-secret config (DEPLOYMENT_REGION, feature flags, etc.)
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prowosma-backend
+spec:
+  selector:
+    app: prowosma-backend
+  ports:
+    - port: 9090
+      targetPort: 9090

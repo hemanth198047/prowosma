@@ -1,0 +1,142 @@
+package com.prowosma.backend.config;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+/**
+ * Security configuration.
+ *
+ * Auth strategy:
+ *   - ApiKeyAuthFilter and JwtFilter each get a chance to authenticate the
+ *     request (mutually exclusive by which header is present) BEFORE
+ *     Spring Security's own AuthorizationFilter makes its decision below -
+ *     that ordering (via addFilterBefore) is what lets an X-API-Key-only
+ *     request satisfy .authenticated() the same way a Bearer JWT does.
+ *   - RoleGuardFilter enforces OWNER/ADMIN/MEMBER/VIEWER on top of that,
+ *     once Spring Security has already confirmed *someone* is signed in.
+ *   - ScimAuthFilter is the sole gate for /scim/v2/** (a different token
+ *     type/scope than a normal session or API key), so that prefix is
+ *     permitAll here and enforced entirely by that filter instead.
+ *
+ * NOTE: PasswordEncoder is deliberately NOT a @Bean in this class (see
+ * PasswordEncoderConfig instead) — ApiKeyAuthFilter's constructor needs a
+ * PasswordEncoder, and this class constructor-injects ApiKeyAuthFilter, so
+ * defining PasswordEncoder here would be a circular dependency (producing
+ * it requires an already-built SecurityConfig instance, which requires
+ * ApiKeyAuthFilter to already exist).
+ *
+ * Previously this was anyRequest().permitAll(), with auth meant to be
+ * handled entirely by the custom filter chain below it - but
+ * RoleGuardFilter intentionally skips its own checks for GET requests and
+ * for any request with no authenticated principal at all (see its
+ * javadoc), and WorkspaceFilter only rejects an *authenticated* non-member,
+ * never an unauthenticated caller. Nothing was actually rejecting a
+ * completely unauthenticated request to a protected endpoint - it just
+ * sailed through to the controller.
+ */
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtFilter jwtFilter;
+    private final ApiKeyAuthFilter apiKeyAuthFilter;
+
+    /** Paths reachable with no Spring-Security-level authentication at all - each is either genuinely public, or has its own dedicated auth gate that isn't a Bearer JWT / X-API-Key (webhook signatures, SCIM tokens, etc.). */
+    private static final String[] PUBLIC_PATHS = {
+        "/api/auth/**",
+        "/api/health/**",
+        "/api/invitations/accept",
+        "/api/tasks/attachments/**",
+        "/api/webhooks/**",
+        "/scim/v2/**",
+        "/actuator/**",
+        "/swagger-ui/**", "/swagger-ui.html",
+        "/v3/api-docs/**",
+        "/favicon.ico",
+        "/error"
+    };
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> {})
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(PUBLIC_PATHS).permitAll()
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
+                response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write(
+                    "{\"error\":\"UNAUTHENTICATED\",\"message\":\"Authentication required\"}");
+            }))
+            // Previously no security response headers were set at all.
+            // Spring Security's own header writers, not hand-rolled ones —
+            // each is a well-established, standard mitigation:
+            .headers(headers -> headers
+                // X-XSS-Protection is deliberately NOT set here — it's a
+                // deprecated, browser-removed mechanism in modern Chrome/
+                // Edge/Safari; the Content-Security-Policy below is its
+                // real, current replacement and covers the same threat
+                // class more effectively.
+                // Prevents this app from ever being embedded in an <iframe>
+                // on another site — the standard clickjacking mitigation.
+                .frameOptions(frame -> frame.deny())
+                // Stops browsers from MIME-sniffing a response into
+                // executing as a different content type than declared
+                // (e.g. treating an uploaded "image" as executable JS).
+                .contentTypeOptions(contentType -> {})
+                // HSTS: once a browser has seen this once over HTTPS, it
+                // refuses to ever downgrade to plain HTTP for this host
+                // again, even if a user types http:// or clicks an old
+                // link — closes the classic SSL-stripping downgrade
+                // attack. 1 year, includes subdomains, eligible for
+                // browser preload lists.
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))
+                // Content-Security-Policy — the single highest-value
+                // header here: even if an XSS bug exists, a correct CSP
+                // stops the injected script from doing anything
+                // (exfiltrating data, loading a remote payload). Kept
+                // deliberately permissive enough not to break the
+                // existing app (inline styles are common in this
+                // codebase's components) while still closing off the
+                // worst case (arbitrary remote script execution) —
+                // tighten further (e.g. drop 'unsafe-inline' for style-src
+                // once inline styles are audited/removed) as a follow-up,
+                // not a blocker to shipping a real CSP at all.
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; " +
+                    "script-src 'self'; " +
+                    "style-src 'self' 'unsafe-inline'; " +
+                    "img-src 'self' data: https:; " +
+                    "connect-src 'self' https: wss: ws:; " +
+                    "frame-ancestors 'none'; " +
+                    "base-uri 'self'; " +
+                    "object-src 'none'"))
+            )
+            .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
+        return new com.fasterxml.jackson.databind.ObjectMapper()
+            .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
+}

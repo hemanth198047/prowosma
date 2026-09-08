@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Structured logging config — did not exist at all before this. Every log
+  line previously went out as unstructured plain text with Spring Boot's
+  default console pattern, which is fine to read one-at-a-time in a
+  terminal but effectively unqueryable once shipped to any real log
+  aggregation platform (ELK, Loki, CloudWatch Logs, Datadog Logs, etc.) —
+  you'd be grepping raw text across a 67-controller app's entire log
+  volume instead of filtering on real fields.
+
+  Two profiles:
+    - "docker"/"prod" (or any non-local profile): JSON output, one log
+      event per line, structured fields including requestId (see
+      RequestIdFilter) so every line from a single request can be found
+      with one query instead of manually reading a whole day's logs.
+    - default (local dev): the same human-readable console output Spring
+      Boot always produced — nobody wants to read raw JSON logs while
+      developing locally, but they DO include requestId so request
+      correlation works in local dev too, not just once deployed.
+-->
+<configuration>
+    <!-- Registers Spring Boot's own conversion words (%clr for ANSI color,
+         %wex for whitespace-throwable, etc.) and default Logback
+         properties. A custom logback-spring.xml that skips this include
+         but still uses %clr — as this file's local-dev pattern below does
+         — leaves %clr as an unrecognized conversion word, which can fail
+         Logback's config parsing outright depending on version (this is
+         what was happening here). -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+    <springProfile name="!docker &amp; !prod">
+        <!-- Local dev: keep the familiar human-readable format, just add
+             the request ID so correlation is usable locally too. -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} %clr(%-5level) [%X{requestId:-\-}] %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <springProfile name="docker | prod">
+        <!-- Any real deployment: structured JSON, one event per line.
+             Every field logstash-logback-encoder includes by default
+             (timestamp, level, logger, thread, message, stack trace) plus
+             the MDC context (requestId, and anything else added to MDC
+             elsewhere) is emitted as real JSON fields, not string-baked
+             into the message. -->
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <customFields>{"app":"prowosma-backend"}</customFields>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!-- Keep this project's own code at INFO; third-party libraries stay
+         at their defaults (mostly WARN) so the log volume from Spring's
+         own framework noise doesn't drown out application-level events. -->
+    <logger name="com.prowosma.backend" level="INFO" />
+</configuration>

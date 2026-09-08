@@ -1,0 +1,647 @@
+/* ========================================
+   GOAL CARDS
+   /* = */
+
+.goal-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.goal-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.goal-card-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.goal-date {
+  font-size: 12px;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.goal-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.goal-stats-row {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.goal-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* ========================================
+   SUB-GOALS & STEPS
+   /* = */
+
+.subgoals-container {
+  margin-top: 14px;
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.subgoals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.subgoals-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.subgoal-card {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+.subgoal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.subgoal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.subgoal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.subgoal-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.subgoal-status-dot.achieved {
+  background: var(--success);
+}
+.subgoal-status-dot.active {
+  background: var(--brand-500);
+}
+.steps-container {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.steps-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.step-checkbox-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+}
+.step-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.step-checkbox.checked {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.step-title {
+  font-size: 12px;
+  color: var(--gray-700);
+}
+.step-done {
+  text-decoration: line-through;
+  color: var(--gray-400);
+}
+.step-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+
+/*  Step inline tools  */
+.step-item-wrap { display: flex; flex-direction: column; }
+.step-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+.step-item:hover { background: var(--gray-50); }
+.step-tools {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.step-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-500);
+  transition: background 0.1s, color 0.1s;
+}
+.step-tool-btn:hover, .step-tool-btn.active {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+.step-tool-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  border-radius: 8px;
+  padding: 0 4px;
+  line-height: 1.4;
+}
+
+/* Step panels */
+.step-panel {
+  margin: 4px 0 8px 28px;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.step-panel-empty { font-size: 12px; color: var(--gray-400); margin: 0; }
+.step-panel-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+
+/* Comment rows */
+.step-comment {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; background: var(--bg-card);
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.step-comment-author { font-weight: 700; color: var(--brand-600); flex-shrink: 0; }
+.step-comment-text   { flex: 1; color: var(--gray-700); }
+.step-comment-input  { display: flex; gap: 6px; }
+.step-comment-input input { flex: 1; font-size: 12px; padding: 5px 8px; }
+
+/* File rows */
+.step-file-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 4px 6px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.step-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gray-700); }
+.step-file-size { font-size: 10px; color: var(--gray-400); flex-shrink: 0; }
+
+/* Dependency rows */
+.step-dep-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 4px 6px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 4px;
+}
+.step-dep-title { flex: 1; color: var(--gray-700); }
+.step-dep-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; background: var(--gray-300); flex-shrink: 0;
+}
+.step-dep-dot.done { background: #10b981; }
+.step-dep-add-list { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* ========================================
+   GOALS  DARK MODE
+   /* = */
+
+[data-theme="dark"] .goal-card                { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .goal-card:hover          { background: #081628; }
+[data-theme="dark"] .goal-header              { border-color: var(--border); }
+[data-theme="dark"] .goal-title               { color: var(--gray-800); }
+[data-theme="dark"] .goal-desc                { color: var(--gray-500); }
+[data-theme="dark"] .goal-progress-track      { background: var(--gray-200); }
+[data-theme="dark"] .subgoal-card             { background: #081628; border-color: var(--border); }
+[data-theme="dark"] .subgoal-header           { color: var(--gray-700); }
+[data-theme="dark"] .step-item:hover          { background: #1a3550; }
+[data-theme="dark"] .step-panel               { background: #081628; border-color: var(--border); }
+[data-theme="dark"] .step-comment            { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .step-file-row           { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .step-dep-row            { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .goal-form               { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .category-card           { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .category-card:hover     { background: #081628; }
+
+/* ========================================
+   B-1: CASCADING GOALS  Level badges, filter bar, children
+   /* = */
+
+.goal-card-badges {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+}
+.goal-level-badge, .goal-quarter-badge, .goal-owner-badge, .goal-child-indicator {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.goal-quarter-badge {
+  background: rgba(99,102,241,0.08); color: #818cf8;
+  border-color: rgba(99,102,241,0.2);
+}
+.goal-owner-badge {
+  background: var(--gray-100); color: var(--gray-500);
+  border-color: var(--border);
+}
+.goal-child-indicator {
+  background: rgba(245,158,11,0.08); color: #fbbf24;
+  border-color: rgba(245,158,11,0.2); font-size: 10px;
+}
+
+.goal-filter-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 20px; padding: 10px 14px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.goal-filter-group {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.goal-filter-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--gray-400); margin-right: 4px;
+}
+.goal-filter-btn {
+  padding: 4px 11px; border: 1px solid var(--border);
+  border-radius: 99px; font-size: 11px; font-weight: 500;
+  background: var(--bg-card); color: var(--gray-500);
+  cursor: pointer; transition: all .15s;
+}
+.goal-filter-btn:hover { border-color: var(--brand-400); color: var(--brand-600); }
+.goal-filter-btn.active { background: var(--brand-500); color: #fff; border-color: var(--brand-500); }
+.goal-filter-count {
+  margin-left: auto; font-size: 12px; color: var(--gray-400);
+}
+
+/* Children panel */
+.goal-children-panel {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.goal-child-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.goal-child-row:last-child { border-bottom: none; }
+.goal-child-level-icon { font-size: 14px; width: 20px; flex-shrink: 0; }
+.goal-child-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--gray-700); }
+.goal-child-progress-bar {
+  width: 80px; height: 5px; background: var(--gray-200);
+  border-radius: 99px; overflow: hidden; flex-shrink: 0;
+}
+.goal-child-progress-fill {
+  height: 100%; background: #6366f1; border-radius: 99px; transition: width .3s;
+}
+.goal-child-pct { font-size: 11px; font-weight: 700; color: var(--gray-500); min-width: 30px; text-align: right; }
+.goal-child-status { font-size: 10px; color: var(--gray-400); min-width: 60px; text-align: right; }
+
+/* ========================================
+   B-2: CONFIDENCE METER + SPARKLINE
+   /* = */
+
+.goal-confidence {
+  margin: 10px 0 0; padding: 10px 12px;
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.goal-confidence-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.goal-confidence-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--gray-400);
+}
+.goal-confidence-right {
+  display: flex; align-items: center; gap: 8px;
+}
+.goal-confidence-spark { display: block; }
+.goal-confidence-value {
+  font-size: 14px; font-weight: 800; min-width: 36px; text-align: right;
+}
+.goal-confidence-edit-btn {
+  background: none; border: none; color: var(--gray-400);
+  cursor: pointer; font-size: 12px; padding: 1px 5px;
+  border-radius: 4px; transition: background .15s;
+}
+.goal-confidence-edit-btn:hover { background: var(--gray-100); }
+.goal-confidence-bar {
+  height: 6px; background: var(--gray-200); border-radius: 99px; overflow: hidden;
+}
+.goal-confidence-fill {
+  height: 100%; border-radius: 99px; transition: width .4s;
+}
+.goal-confidence-form {
+  margin-top: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+.goal-ci-input {
+  width: 100%; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px;
+  background: var(--bg-card); color: var(--gray-700); outline: none;
+  box-sizing: border-box;
+}
+.goal-ci-input:focus { border-color: var(--brand-400); }
+
+/* ========================================
+   B-3: WEEKLY CHECK-INS
+   /* = */
+
+.goal-checkin-panel {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.goal-section-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--gray-600);
+  margin-bottom: 10px;
+}
+.goal-checkin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.goal-checkin-form {
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px; margin-bottom: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.goal-checkin-item {
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-left: 3px solid #6366f1; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--bg-card); margin-bottom: 6px;
+}
+.goal-checkin-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.goal-checkin-author { font-size: 11px; font-weight: 700; color: var(--gray-600); }
+.goal-checkin-date   { font-size: 11px; color: var(--gray-400); }
+.goal-checkin-snap   { font-size: 11px; color: var(--gray-400); margin-left: auto; }
+.goal-ci-delete-btn  {
+  background: none; border: none; color: var(--gray-400);
+  cursor: pointer; font-size: 12px; padding: 1px 4px; border-radius: 4px;
+  transition: color .15s;
+}
+.goal-ci-delete-btn:hover { color: var(--danger); }
+.goal-checkin-update   { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
+.goal-checkin-blockers { font-size: 12px; color: #f59e0b; margin-top: 4px; }
+.goal-checkin-more {
+  font-size: 11px; color: var(--gray-400); text-align: center; padding: 4px;
+}
+
+/* ========================================
+   B-4: KEY RESULTS
+   /* = */
+
+.goal-kr-panel {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.goal-kr-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.goal-kr-form {
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px;
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+}
+.goal-kr-item {
+  padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); background: var(--bg-card); margin-bottom: 6px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.goal-kr-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+.goal-kr-title { font-size: 13px; font-weight: 700; color: var(--gray-700); flex: 1; }
+.goal-kr-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.goal-kr-status-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+}
+.goal-kr-status-select {
+  font-size: 11px; padding: 2px 6px; border: 1px solid var(--border);
+  border-radius: 5px; background: var(--bg-card); color: var(--gray-600);
+  cursor: pointer; outline: none;
+}
+.goal-kr-progress-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.goal-kr-progress-bar {
+  flex: 1; height: 6px; background: var(--gray-200);
+  border-radius: 99px; overflow: hidden;
+}
+.goal-kr-progress-fill {
+  height: 100%; border-radius: 99px; transition: width .4s;
+}
+.goal-kr-pct { font-size: 12px; font-weight: 700; color: var(--gray-600); min-width: 36px; text-align: right; }
+.goal-kr-values {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 12px; color: var(--gray-600);
+}
+.goal-kr-current {
+  font-weight: 700; color: var(--brand-500); cursor: pointer;
+  display: flex; align-items: center; gap: 3px;
+}
+.goal-kr-edit-hint { font-size: 10px; opacity: 0.6; }
+.goal-kr-current:hover .goal-kr-edit-hint { opacity: 1; }
+.goal-kr-metric { font-size: 11px; color: var(--gray-400); }
+.goal-kr-value-input {
+  width: 80px; padding: 3px 7px; border: 1px solid var(--brand-400);
+  border-radius: 5px; font-size: 12px; font-weight: 700;
+  background: var(--bg-card); color: var(--gray-800); outline: none;
+}
+.goal-kr-empty {
+  font-size: 12px; color: var(--gray-400); padding: 10px 0; text-align: center;
+}
+
+
+/* ========================================
+   B-5: GOAL SCORECARD
+   /* = */
+
+.scorecard-wrap { display:flex; flex-direction:column; gap:16px; }
+
+.scorecard-summary {
+  display:flex; gap:0; border:1px solid var(--border);
+  border-radius:var(--radius-md); overflow:hidden; background:var(--bg-card);
+}
+.scorecard-kpi {
+  flex:1; padding:14px 12px; text-align:center;
+  border-right:1px solid var(--border);
+}
+.scorecard-kpi:last-child { border-right:none; }
+.scorecard-kpi-num   { font-size:24px; font-weight:800; line-height:1; margin-bottom:4px; }
+.scorecard-kpi-label { font-size:11px; color:var(--gray-400); font-weight:500; }
+
+.scorecard-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-md); }
+.scorecard-table { width:100%; border-collapse:collapse; font-size:12px; }
+.scorecard-table thead th {
+  padding:10px 12px; text-align:left; font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.07em; color:var(--gray-400);
+  background:var(--gray-50); border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.scorecard-row { border-bottom:1px solid var(--border); transition:background .15s; }
+.scorecard-row:last-child { border-bottom:none; }
+.scorecard-row:hover { background:var(--gray-50); }
+.scorecard-row td { padding:10px 12px; vertical-align:middle; }
+.scorecard-title-cell { max-width:200px; }
+.scorecard-goal-title { font-weight:600; color:var(--gray-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px; }
+.scorecard-child-tag { font-size:10px; color:var(--gray-400); }
+.scorecard-meta { color:var(--gray-500); font-size:11px; white-space:nowrap; }
+.scorecard-level-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+.scorecard-progress-wrap { display:flex; align-items:center; gap:8px; min-width:120px; }
+.scorecard-progress-bar { flex:1; height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
+.scorecard-progress-fill { height:100%; border-radius:99px; transition:width .3s; }
+.scorecard-progress-pct { font-size:11px; font-weight:700; color:var(--gray-500); min-width:30px; }
+.scorecard-conf-bar { width:60px; height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
+.scorecard-status-badge { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; }
+.scorecard-status-active    { background:rgba(99,102,241,0.12);  color:#818cf8; }
+.scorecard-status-achieved  { background:rgba(5,150,105,0.12);   color:#34d399; }
+.scorecard-status-paused    { background:rgba(245,158,11,0.12);  color:#fbbf24; }
+.scorecard-empty { padding:24px; text-align:center; color:var(--gray-400); }
+
+/* ========================================
+   B-6: QUARTERLY PLANNING
+   /* = */
+
+.quarterly-wrap { display:flex; flex-direction:column; gap:20px; }
+
+.quarterly-group {
+  border:1px solid var(--border); border-radius:var(--radius-lg);
+  background:var(--bg-card); overflow:hidden;
+}
+.quarterly-header {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  background:var(--gray-50);
+}
+.quarterly-title {
+  display:flex; align-items:center; gap:10px;
+  font-size:16px; font-weight:800; color:var(--gray-800); margin-bottom:8px;
+}
+.quarterly-icon { font-size:18px; }
+.quarterly-count {
+  font-size:12px; font-weight:500; color:var(--gray-400);
+  padding:2px 8px; background:var(--gray-200); border-radius:99px;
+}
+.quarterly-meta-row { display:flex; gap:16px; margin-bottom:8px; }
+.quarterly-stat { font-size:12px; color:var(--gray-500); }
+.quarterly-progress-bar {
+  height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden;
+}
+.quarterly-progress-fill {
+  height:100%; background:linear-gradient(90deg,#6366f1,#8b5cf6);
+  border-radius:99px; transition:width .5s;
+}
+
+.quarterly-goals-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:12px; padding:16px 20px;
+}
+.quarterly-goal-card {
+  border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:12px 14px; background:var(--bg-card);
+  display:flex; flex-direction:column; gap:6px;
+  transition:box-shadow .15s;
+}
+.quarterly-goal-card:hover { box-shadow:var(--shadow-sm); }
+.quarterly-goal-top { display:flex; align-items:flex-start; gap:8px; }
+.quarterly-level-chip { font-size:14px; flex-shrink:0; }
+.quarterly-goal-title { flex:1; font-size:13px; font-weight:700; color:var(--gray-700); line-height:1.35; }
+.quarterly-status { font-size:10px; font-weight:600; padding:2px 6px; border-radius:99px; flex-shrink:0; }
+.quarterly-owner { font-size:11px; color:var(--gray-400); }
+.quarterly-goal-progress-row { display:flex; align-items:center; gap:8px; }
+.quarterly-goal-progress-bar { flex:1; height:5px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
+.quarterly-pct { font-size:11px; font-weight:700; color:var(--gray-500); min-width:28px; text-align:right; }
+.quarterly-goal-footer { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.quarterly-kr-count {
+  font-size:10px; color:var(--gray-400); padding:1px 6px;
+  background:var(--gray-100); border-radius:99px;
+}
+
+/* View switcher */
+.goal-view-switcher {
+  display:flex; gap:4px; background:var(--gray-100);
+  border-radius:var(--radius-sm); padding:3px;
+}
+.goal-view-btn {
+  padding:5px 12px; border:none; border-radius:5px; font-size:12px;
+  font-weight:600; background:transparent; color:var(--gray-500);
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.goal-view-btn.active { background:var(--bg-card); color:var(--brand-600); box-shadow:var(--shadow-xs); }

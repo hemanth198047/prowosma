@@ -1,0 +1,277 @@
+# Local development orchestration: MongoDB + backend + frontend together.
+#
+# ASSUMED DIRECTORY LAYOUT — read this first:
+# Prowosma is two separate repositories (this one, and the frontend one),
+# not a monorepo. This file assumes both are checked out as sibling
+# directories under a common parent, e.g.:
+#
+#   prowosma/
+#     backend/    <- this repo (contains this file)
+#     frontend/   <- the frontend repo
+#
+# If your layout differs, adjust the `build.context` paths below (`.` and
+# `../frontend`) to match. An identical copy of this file lives in the
+# frontend repo too, for discoverability either way — they're meant to be
+# the same file, not two different compose setups.
+#
+# This is genuinely new: there was no Dockerfile, no docker-compose, and
+# no reproducible local-dev setup anywhere in either repo before this.
+# `docker compose up` is now enough to get MongoDB + backend + frontend
+# running together with no other setup required.
+
+services:
+  # Single-node replica set (rs0), not a standalone instance. This is a
+  # genuine, meaningful change, not cosmetic: MongoDB's multi-document
+  # transactions (used anywhere in this codebase that needs an
+  # all-or-nothing write across more than one collection) and change
+  # streams both REQUIRE a replica set — a standalone instance silently
+  # can't do either. Running a single-node replica set locally means the
+  # exact same code paths that will run against a real multi-node
+  # production replica set (see docs/SCALABILITY_HA.md for that topology)
+  # are already being exercised in local dev, rather than local dev being
+  # a standalone instance that happens to look similar.
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot job: initiates the replica set exactly once (idempotent — an
+  # already-initiated replica set just logs "already initialized" and
+  # exits 0 rather than erroring, so this is safe to leave running on
+  # every `docker compose up`). Nothing else depends on this beyond
+  # "runs after mongodb is healthy" since the backend's own MONGODB_URI
+  # already includes ?replicaSet=rs0 and the Mongo driver retries
+  # connecting until the replica set has a primary.
+  mongodb-init-replicaset:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        mongosh --host mongodb:27017 --eval '
+          try {
+            rs.status();
+            print("Replica set already initiated.");
+          } catch (e) {
+            print("Initiating replica set rs0...");
+            rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "mongodb:27017" }]
+            });
+          }
+        '
+
+  # Shared store for DocCollabController's real-time presence tracking
+  # (see that file's own comments) — added so presence is correct across
+  # multiple backend instances, not just within one.
+  redis:
+    image: redis:8.10-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # STOMP-capable message broker for the WebSocket broker relay (see
+  # WebSocketConfig) — without this, real-time doc collaboration messages
+  # only ever reach clients connected to the SAME backend instance that
+  # published them, silently failing across multiple instances. Uses a
+  # small custom image (rabbitmq.Dockerfile) that enables RabbitMQ's STOMP
+  # plugin, which isn't on by default.
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: rabbitmq.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI (http://localhost:15672, guest/guest)
+      - "61613:61613"  # STOMP — what WebSocketConfig actually connects to
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Local trace pipeline — makes distributed tracing genuinely verifiable
+  # end-to-end in dev, not just wiring that trusts a collector exists
+  # somewhere. Receives OTLP from the backend and forwards to Jaeger below.
+  # A real deployment points OTLP_TRACING_ENDPOINT at whatever collector or
+  # hosted vendor it actually uses instead (see docs/OBSERVABILITY_SETUP.md)
+  # — nothing about the backend's own code or config needs to change to do
+  # that, only this one env var.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4318:4318"  # OTLP/HTTP — what the backend actually sends to
+      - "4317:4317"  # OTLP/gRPC
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  # Trace storage + UI for local dev. http://localhost:16686
+  jaeger:
+    image: jaegertracing/all-in-one:1.62
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4319:4317"    # Jaeger's own OTLP/gRPC (exposed on a different host port to
+                        # avoid clashing with otel-collector's 4317 above)
+
+  # Real local metrics + alerting stack — previously /actuator/prometheus
+  # existed but nothing scraped it and no alert rules were evaluated
+  # anywhere. http://localhost:9090 for Prometheus's own UI.
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    ports:
+      - "9091:9090"  # host 9091, not 9090 — the backend already owns 9090 above
+    depends_on:
+      backend:
+        condition: service_started
+
+  # Evaluates the alert rules above and would page PagerDuty/Opsgenie in a
+  # real deployment (see observability/alertmanager.yml's own header
+  # comment for why the routing key isn't auto-substituted here).
+  # http://localhost:9095 for Alertmanager's own UI — alerts are visible
+  # here even without a real paging destination configured.
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9095:9093"
+
+  # Dashboards on top of Prometheus + Jaeger — http://localhost:3001
+  # (default login admin/admin, change on first login). No pre-built
+  # dashboards are provisioned in this change (would need real traffic
+  # data to design meaningfully) — this is the platform, not finished
+  # dashboards; see docs/OBSERVABILITY_SETUP.md for a starting-point
+  # dashboard query list built from the same metrics alert-rules.yml uses.
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    depends_on:
+      mongodb-init-replicaset:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      # Local-dev-only values — never real secrets. See the security note
+      # in application.properties: real deployments must set these via a
+      # secrets manager or CI/CD-injected env vars, never hardcoded here
+      # or committed anywhere.
+      # Activates logback-spring.xml's JSON structured-logging profile
+      # (see that file) — without this, containers would silently fall
+      # back to the human-readable local-dev log format, defeating the
+      # point of structured logs for anything actually deployed.
+      SPRING_PROFILES_ACTIVE: docker
+      MONGODB_URI: mongodb://mongodb:27017/prowosma?replicaSet=rs0
+      JWT_SECRET: local-dev-only-jwt-secret-min-64-chars-do-not-use-in-real-deployment-xxxxx
+      FRONTEND_URL: http://localhost:5173
+      # Must match wherever the frontend container is actually reachable
+      # from the browser (not from inside Docker) — see CorsConfig.java.
+      # Includes both the Dockerized frontend's mapped port and Vite's own
+      # dev-server default, so `docker compose up` and a locally-run
+      # `npm run dev` both work against this same backend without editing
+      # anything.
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      # Must match the frontend build's VITE_AUTH0_DOMAIN/VITE_AUTH0_CLIENT_ID
+      # above exactly — this is the same tenant, verified server-side by
+      # Auth0TokenVerifier. Falls back to the shared dev tenant if unset.
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-k7wl42wvci7bojg2.us.auth0.com}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-3xp1SBwmgZHaibd0HLGNrRR1T0ZBpaHs}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      WEBSOCKET_BROKER_RELAY_ENABLED: "true"
+      RABBITMQ_STOMP_HOST: rabbitmq
+      RABBITMQ_STOMP_PORT: 61613
+      # Points at the local otel-collector service (Docker network name,
+      # NOT localhost — this runs inside the container, unlike VITE_API_URL
+      # above which runs in the browser). Traces land in Jaeger at
+      # http://localhost:16686. Override to point at a real deployment's
+      # collector/vendor instead — see docs/OBSERVABILITY_SETUP.md.
+      OTLP_TRACING_ENDPOINT: http://otel-collector:4318/v1/traces
+      DEPLOYMENT_ENV: development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/api/health/ready"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # IMPORTANT — this is baked into the JS bundle at build time and
+        # then runs in the user's BROWSER, not inside the Docker network.
+        # "http://backend:9090" (the Docker Compose service name) would be
+        # wrong here — the browser has no idea what that resolves to; only
+        # containers on the same Docker network can resolve each other by
+        # service name. The browser needs the backend's *host-mapped* port
+        # instead, i.e. exactly what a person on this machine would type
+        # into their own browser: http://localhost:9090 (matching the
+        # "9090:9090" port mapping on the backend service above).
+        VITE_API_URL: http://localhost:9090
+        # Pulled from the shell environment `docker compose up` is run in
+        # (falls back to blank -> shared dev tenant, see
+        # frontend/src/config/auth0.js). Must be the SAME tenant as the
+        # backend's AUTH0_DOMAIN/AUTH0_CLIENT_ID below — set both pairs
+        # together, e.g.:
+        #   AUTH0_DOMAIN=your-tenant.us.auth0.com AUTH0_CLIENT_ID=xxxx docker compose up --build
+        VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+        VITE_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongodb-data:

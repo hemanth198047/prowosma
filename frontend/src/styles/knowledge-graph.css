@@ -1,0 +1,21 @@
+/* === KNOWLEDGE GRAPH ======================================== */
+
+/* Database block */
+.doc-db-block         { border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; margin:6px 0; }
+.doc-db-header        { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--gray-50); border-bottom:1px solid var(--border); font-size:12px; }
+.doc-db-title         { font-weight:800; flex:1; }
+.doc-db-add-col       { font-size:10px; font-weight:700; padding:2px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg-card); cursor:pointer; color:#6366f1; }
+.doc-db-table-wrap    { overflow-x:auto; }
+.doc-db-table         { width:100%; border-collapse:collapse; font-size:12px; }
+.doc-db-th            { padding:6px 10px; background:var(--gray-50); border-bottom:1px solid var(--border); border-right:1px solid var(--border); font-weight:700; color:var(--gray-600); text-align:left; white-space:nowrap; }
+.doc-db-td            { border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:0; }
+.doc-db-cell          { width:100%; border:none; padding:6px 10px; background:transparent; font-size:12px; color:var(--gray-700); outline:none; }
+.doc-db-cell:focus    { background:rgba(99,102,241,.04); }
+
+/* Gallery block */
+.doc-gallery-block    { border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin:6px 0; }
+.doc-gallery-grid     { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:8px; }
+.doc-gallery-card     { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+.doc-gallery-img      { width:100%; height:90px; object-fit:cover; }
+.doc-gallery-card-title{ font-size:12px; font-weight:700; padding:6px 8px; color:var(--gray-800); }
+.doc-gallery-card-desc { font-size:11px; padding:0 8px 6px; color:var(--gray-500); }

@@ -1,0 +1,15 @@
+/* === GOAL DEPENDENCY MAPPING ================================== */
+.goal-dep-panel        { border-top:1px solid var(--border); padding-top:12px; margin-top:10px; }
+.goal-dep-section-title { font-size:11px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.08em; display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.goal-dep-count        { font-weight:600; color:#6366f1; background:rgba(99,102,241,0.1); padding:1px 7px; border-radius:99px; font-size:10px; text-transform:none; letter-spacing:0; }
+.goal-dep-group        { margin-bottom:10px; }
+.goal-dep-group-label  { font-size:11px; font-weight:700; color:var(--gray-500); margin-bottom:6px; }
+.goal-dep-row          { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); }
+.goal-dep-row:last-child { border-bottom:none; }
+.goal-dep-row-blocks   { opacity:.7; }
+.goal-dep-conf         { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.goal-dep-title        { flex:1; font-size:12px; font-weight:600; color:var(--gray-700); }
+.goal-dep-status       { font-size:10px; font-weight:700; }
+.goal-dep-empty        { font-size:12px; color:var(--gray-400); padding:8px 0; }
+.goal-dep-add-row      { display:flex; gap:6px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+.goal-dep-select       { flex:1; min-width:160px; }

@@ -1,0 +1,45 @@
+# Upptime (https://upptime.js.org) status-page configuration —
+# previously no public status page existed at all. Upptime is a real,
+# free, open-source, GitHub-Actions-based status page generator — this
+# file is its actual config format, ready to drop into a fork of the
+# upptime/upptime template repo (see docs/STATUS_PAGE.md for the exact
+# setup steps; a bare config file alone isn't a working status page
+# without that template's supporting site-generation code, which isn't
+# duplicated here).
+
+owner: your-github-org
+repo: status
+
+sites:
+  - name: API
+    url: https://api.your-domain.example/actuator/health
+    method: GET
+    expectedStatusCodes:
+      - 200
+
+  - name: Web App
+    url: https://app.your-domain.example
+    method: GET
+    expectedStatusCodes:
+      - 200
+
+  - name: Swagger / API Docs
+    url: https://api.your-domain.example/swagger-ui.html
+    method: GET
+    expectedStatusCodes:
+      - 200
+
+# Checks every 5 minutes — Upptime's own scheduling default, reasonable
+# for a status page (not meant to replace the sub-minute alerting already
+# configured in observability/alert-rules.yml, which exists for the
+# team's own incident response, not public status communication).
+status-website:
+  theme: auto
+  name: "Prowosma Status"
+  introTitle: "Prowosma System Status"
+  introMessage: "Live status and uptime history for Prowosma's API and web application."
+
+notifications:
+  - type: slack
+    # Configure a repo secret named NOTIFICATION_SLACK_WEBHOOK_URL in the
+    # forked status repo's own settings — see docs/STATUS_PAGE.md.

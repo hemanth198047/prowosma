@@ -1,0 +1,72 @@
+{
+  "common": {
+    "appName": "Prowosma"
+  },
+  "login": {
+    "tagline1": "Gestión de proyectos",
+    "taglineAccent": "hecha para la velocidad.",
+    "description": "Una sola plataforma para proyectos, objetivos, conocimiento y colaboración en equipo — todo lo que tu equipo necesita, sin buscar en ningún otro lugar.",
+    "chips": {
+      "ai": "Gestión de tareas con IA",
+      "goals": "Seguimiento de objetivos y OKR",
+      "boards": "Kanban, Gantt y Calendario",
+      "docs": "Base de conocimiento y documentos",
+      "collab": "Colaboración en equipo",
+      "reports": "Informes y análisis",
+      "integrations": "Integraciones con GitHub y Slack",
+      "rbac": "Control de acceso basado en roles"
+    },
+    "stats": {
+      "aiFeatures": "Funciones de IA",
+      "modules": "Módulos",
+      "integrations": "Integraciones",
+      "selfHosted": "Autoalojado"
+    },
+    "welcomeBack": "Bienvenido de nuevo",
+    "createAccountHeading": "Crear cuenta",
+    "signInSubtitle": "Inicia sesión en tu espacio de trabajo de Prowosma.",
+    "registerSubtitle": "Empieza a usar Prowosma gratis.",
+    "signInTab": "Iniciar sesión",
+    "createAccountTab": "Crear cuenta",
+    "fullNameLabel": "Nombre completo",
+    "fullNamePlaceholder": "Juana Pérez",
+    "accountTypeNote": "Crear una cuenta aquí inicia un espacio de trabajo completamente nuevo, y serás su Propietario. ¿Te invitaron a un equipo existente? Usa el enlace de invitación que recibiste en lugar de este formulario.",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "tu@empresa.com",
+    "passwordLabel": "Contraseña",
+    "pleaseWait": "Espera un momento…",
+    "signInSubmit": "Iniciar sesión →",
+    "createAccountSubmit": "Crear cuenta →",
+    "orSignInWith": "o inicia sesión con",
+    "magicLinkButton": "✉️ Enviar enlace mágico (sin contraseña)",
+    "magicLinkSentSuccess": "✅ Enlace mágico enviado — revisa tu correo",
+    "magicLinkFailed": "No se pudo enviar el enlace mágico",
+    "enterEmailFirst": "Introduce tu correo electrónico arriba primero",
+    "continueWithAuth0": "Continuar con Auth0 SSO",
+    "enterpriseSso": "inicio de sesión único empresarial",
+    "continueWithProvider": "Continuar con {{provider}}",
+    "signedInAs": "Sesión iniciada como {{role}} de {{workspace}}",
+    "roleOwner": "Propietario",
+    "roleAdmin": "Administrador",
+    "roleMember": "Miembro",
+    "roleViewer": "Observador",
+    "newToProwosma": "¿Nuevo en Prowosma?",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "createFreeAccount": "Crear una cuenta gratis",
+    "signInInstead": "Iniciar sesión en su lugar",
+    "footer": "© {{year}} {{appName}} · Todos los derechos reservados",
+    "passwordExpired": {
+      "heading": "Tu contraseña ha caducado",
+      "subtitle": "Elige una nueva contraseña para continuar. Este espacio de trabajo requiere renovar las contraseñas periódicamente.",
+      "newPasswordLabel": "Nueva contraseña",
+      "confirmPasswordLabel": "Confirmar nueva contraseña",
+      "submit": "Establecer nueva contraseña →",
+      "backToSignIn": "← Volver a iniciar sesión"
+    },
+    "errors": {
+      "genericFailed": "Algo salió mal. Inténtalo de nuevo.",
+      "passwordMismatch": "Las nuevas contraseñas no coinciden.",
+      "resetFailed": "No se pudo restablecer tu contraseña. Inténtalo de nuevo."
+    }
+  }
+}

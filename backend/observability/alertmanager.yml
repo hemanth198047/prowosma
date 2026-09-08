@@ -1,0 +1,47 @@
+# Routes firing alerts to a real paging destination — PagerDuty or
+# Opsgenie. Alertmanager's own config file format does NOT support
+# runtime environment-variable substitution (this isn't a templated file
+# despite how it might look) — the PAGERDUTY_ROUTING_KEY placeholder
+# below must be replaced with a real value before this file is used
+# anywhere alerts should actually page someone. For local dev, leaving
+# the placeholder as-is is fine: alerts still evaluate and are visible in
+# Alertmanager's own UI (http://localhost:9095), they just won't
+# successfully deliver to PagerDuty (that delivery attempt will fail and
+# log an error, which is safe — better than pretending to page and
+# silently not).
+#
+# For a real deployment, generate this file from a template using
+# whatever secrets-injection mechanism your deployment target already
+# uses (Kubernetes: a Secret + an init container running `envsubst`;
+# Vault: vault-agent template; Docker Compose: a one-time manual edit or
+# your own build step) — deliberately not baked into this file itself,
+# since that mechanism is as deployment-target-specific as everything
+# else this backlog has been honest about not guessing at.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - match:
+        severity: critical
+      receiver: critical-page
+      continue: true
+
+receivers:
+  - name: default
+    # No-op by default — alerts are visible in the Alertmanager UI even
+    # with nothing configured here.
+
+  - name: critical-page
+    pagerduty_configs:
+      # REPLACE before this should page anyone for real — see the file
+      # header comment above for why this isn't auto-substituted.
+      - routing_key: "REPLACE_WITH_REAL_PAGERDUTY_ROUTING_KEY"
+        send_resolved: true
+        description: "{{ .CommonAnnotations.summary }}"

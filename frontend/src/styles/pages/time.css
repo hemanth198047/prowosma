@@ -1,0 +1,164 @@
+/* ============================================================
+   TIME — split from pages.css
+   Auto-generated. Import only from the relevant page JSX.
+   ============================================================ */
+
+/* ========================================
+   TIME TRACKING & BILLING
+   /* = */
+.tt-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tt-kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-xs);
+}
+
+.tt-kpi-icon {
+  width: 42px; height: 42px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+
+.tt-kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+
+.tt-kpi-label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+/* Entries table */
+.tt-entries-table { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+
+.tt-entries-header {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.5fr 0.8fr 1fr 1fr 1fr;
+  padding: 10px 16px;
+  background: var(--gray-50);
+  font-size: 11px; font-weight: 700;
+  color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.tt-entries-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.5fr 0.8fr 1fr 1fr 1fr;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--gray-50);
+  font-size: 12px;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.tt-entries-row:last-child { border-bottom: none; }
+
+.tt-entries-row:hover { background: var(--gray-50); }
+
+.tt-task-name {
+  font-weight: 600; color: var(--gray-800);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.tt-project-name { color: var(--gray-500); font-size: 11px; }
+/* Invoice list */
+.tt-invoice-list { display: flex; flex-direction: column; gap: 8px; }
+
+.tt-invoice-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: box-shadow 0.15s;
+  box-shadow: var(--shadow-xs);
+}
+
+.tt-invoice-card:hover { box-shadow: var(--shadow-sm); }
+
+.tt-invoice-card-left  { flex: 1; min-width: 0; }
+
+.tt-invoice-card-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+.tt-invoice-number { font-size: 14px; font-weight: 800; color: var(--gray-800); }
+
+.tt-invoice-meta   { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
+
+.tt-invoice-total  { font-size: 16px; font-weight: 800; color: var(--gray-800); }
+
+.tt-status-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+/* Invoice detail table */
+.tt-invoice-table { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 0; }
+
+.tt-invoice-thead {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 10px 16px;
+  background: var(--gray-50);
+  font-size: 11px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.tt-invoice-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 11px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--gray-50);
+  align-items: center;
+}
+
+.tt-invoice-row:last-child { border-bottom: none; }
+
+.tt-invoice-totals {
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  overflow: hidden; margin-bottom: 16px;
+}
+
+.tt-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; font-size: 13px;
+  border-top: 1px solid var(--gray-50);
+}
+
+.tt-grand-total {
+  font-size: 15px; font-weight: 800;
+  background: var(--gray-50);
+  border-top: 2px solid var(--border) !important;
+}
+
+[data-theme="dark"] .tt-kpi-card      { background: var(--bg-card); }
+
+[data-theme="dark"] .tt-invoice-card  { background: var(--bg-card); }
+
+[data-theme="dark"] .tt-entries-row:hover { background: var(--gray-800); }
+
+[data-theme="dark"] .tt-kpi-card             { background: var(--bg-card); border-color: var(--border); }
+
+[data-theme="dark"] .tt-invoice-card         { background: var(--bg-card); border-color: var(--border); }
+
+[data-theme="dark"] .tt-invoice-card:hover   { background: #081628; }
+
+[data-theme="dark"] .tt-entries-row:hover    { background: #081628; }
+
+[data-theme="dark"] .tt-entries-header       { background: #050f1e; border-color: var(--border); }
+
+[data-theme="dark"] .tt-invoice-table        { border-color: var(--border); }
+
+[data-theme="dark"] .tt-invoice-thead        { background: #050f1e; border-color: var(--border); }
+
+[data-theme="dark"] .tt-invoice-row          { border-color: #1a3550; }
+
+[data-theme="dark"] .tt-invoice-totals       { border-color: var(--border); }
+
+[data-theme="dark"] .tt-grand-total          { background: #050f1e; }

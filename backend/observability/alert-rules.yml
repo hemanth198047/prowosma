@@ -1,0 +1,83 @@
+# Real alerting rules against real metrics this app already emits via
+# /actuator/prometheus (Micrometer) — previously none of this existed;
+# metrics/tracing plumbing was in place but nothing was configured to
+# actually alert on it. Each rule maps to a specific SLO in
+# docs/SLO.md — see that doc for the reasoning behind each threshold,
+# not just the number itself.
+
+groups:
+  - name: prowosma-backend-slo
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{outcome="SERVER_ERROR"}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend 5xx error rate above 2% for 5 minutes"
+          description: "See docs/RUNBOOKS.md — start with recent deploys and the OTel trace for a sample failing request in Jaeger."
+          runbook: "docs/RUNBOOKS.md#high-error-rate"
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 request latency above 1s for 10 minutes"
+          description: "Check MongoDB replica lag and connection pool saturation first — see docs/RUNBOOKS.md."
+          runbook: "docs/RUNBOOKS.md#high-latency"
+
+      - alert: BackendDown
+        expr: up{job="prowosma-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend instance is not responding to Prometheus scrapes"
+          description: "Check /actuator/health directly and recent container/pod logs."
+          runbook: "docs/RUNBOOKS.md#backend-down"
+
+      - alert: RateLimitStorm
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status="429"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sustained high rate of 429 responses — either an abuse pattern or a misconfigured client retry loop"
+          runbook: "docs/RUNBOOKS.md#rate-limit-storm"
+
+      - alert: EmailSuppressionSpike
+        expr: |
+          sum(rate(email_suppression_added_total[1h])) > 0.1
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusually high rate of new email suppressions (bounces/complaints) — possible sending-domain reputation risk"
+          runbook: "docs/RUNBOOKS.md#email-deliverability-degradation"
+
+      - alert: FileUploadScanErrors
+        expr: |
+          sum(rate(file_upload_scan_error_total[15m])) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Virus scanner (ClamAV) is failing/unreachable — uploads are proceeding unscanned (fail-open default)"
+          runbook: "docs/RUNBOOKS.md#malware-scanner-down"
+
+      - alert: JvmMemoryPressure
+        expr: |
+          jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap usage above 90% for 10 minutes — risk of OOM/GC thrashing"
+          runbook: "docs/RUNBOOKS.md#memory-pressure"

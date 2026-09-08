@@ -1,0 +1,259 @@
+/* ============================================================
+   SOPS — split from pages.css
+   Auto-generated. Import only from the relevant page JSX.
+   ============================================================ */
+
+/* ========================================
+   SOPs PAGE
+   /* = */
+.sop-pending-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: #fef3c7; border: 1px solid #fbbf24;
+  border-radius: var(--radius-md); font-size: 13px; color: #92400e;
+  margin-bottom: 16px;
+}
+
+.sop-pending-banner button {
+  background: none; border: none; cursor: pointer;
+  color: #b45309; font-weight: 700; font-size: 13px;
+  text-decoration: underline;
+}
+
+.sop-stats {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+
+.sop-stat-icon            { font-size: 14px; }
+
+.sop-stat-count           { font-size: 16px; font-weight: 800; }
+
+.sop-stat-label           { font-size: 12px; }
+
+.sop-filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+
+.sop-search {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); font-size: 13px;
+  background: var(--bg-input); color: var(--gray-700); outline: none; width: 220px;
+}
+
+.sop-search:focus { border-color: var(--brand-400); }
+
+.sop-cat-filter {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); font-size: 13px;
+  background: var(--bg-input); color: var(--gray-700); outline: none;
+}
+
+.sop-loading { padding: 40px; text-align: center; color: var(--gray-400); }
+
+.sop-empty   {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 20px; text-align: center;
+}
+
+.sop-empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+.sop-empty h3   { font-size: 20px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+
+.sop-empty p    { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; max-width: 420px; }
+
+.sop-list { display: flex; flex-direction: column; gap: 8px; }
+/* SOP card */
+.sop-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 4px solid #6366f1;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0; overflow: hidden;
+}
+
+.sop-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; cursor: pointer; gap: 12px;
+}
+
+.sop-card-left    { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+
+.sop-chevron      { color: var(--gray-400); font-size: 12px; flex-shrink: 0; }
+
+.sop-status-icon  { font-size: 16px; flex-shrink: 0; }
+
+.sop-card-info    { flex: 1; min-width: 0; }
+
+.sop-card-title   { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 3px; }
+
+.sop-card-meta    { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--gray-400); flex-wrap: wrap; }
+
+.sop-cat-badge    {
+  background: var(--brand-50); color: var(--brand-700);
+  border: 1px solid var(--brand-200); border-radius: 20px;
+  padding: 1px 8px; font-size: 11px; font-weight: 600;
+}
+
+.sop-card-right   { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+
+.sop-status-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+.sop-action-btn   {
+  padding: 4px 12px; border: 1px solid; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+
+.sop-publish-btn  { background: rgba(6,95,70,0.12); color: #34d399; border-color: #10b981; }
+
+.sop-publish-btn:hover { background: #10b981; color: #fff; }
+
+.sop-archive-btn  { background: var(--gray-100); color: var(--gray-600); border-color: var(--border); }
+
+.sop-archive-btn:hover{ background: var(--gray-200); }
+
+.sop-icon-btn     {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); font-size: 14px; padding: 4px 7px;
+  border-radius: 6px; transition: background .1s;
+}
+
+.sop-icon-btn:hover    { background: var(--gray-100); color: var(--gray-700); }
+
+.sop-delete-btn:hover  { color: var(--danger) !important; }
+/* Card body */
+.sop-card-body    { padding: 0 18px 18px 42px; border-top: 1px solid var(--border); }
+
+.sop-section      { margin-top: 14px; }
+
+.sop-section-label{
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--gray-400); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.sop-ack-progress-label { font-weight: 400; color: var(--gray-400); }
+
+.sop-desc          { font-size: 13px; color: var(--gray-600); line-height: 1.6; margin: 0; }
+
+.sop-content-preview{
+  font-size: 13px; color: var(--gray-600); line-height: 1.7;
+  background: var(--gray-50); border-radius: var(--radius-md);
+  padding: 12px 14px; white-space: pre-wrap; font-family: inherit;
+}
+/* Ack section */
+.sop-ack-section  {}
+
+.sop-ack-bar      {
+  height: 6px; background: var(--gray-200); border-radius: 3px;
+  overflow: hidden; margin-bottom: 12px;
+}
+
+.sop-ack-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+
+.sop-my-ack       { margin-bottom: 10px; }
+
+.sop-acked        {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: #065f46;
+  background: #d1fae5; padding: 8px 12px; border-radius: var(--radius-md);
+}
+
+.sop-revoke-btn   {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: #6b7280; text-decoration: underline; margin-left: auto;
+}
+
+.sop-ack-btn      {
+  width: 100%; padding: 10px 16px; border: 2px solid #6366f1;
+  border-radius: var(--radius-md); background: #eef2ff; color: #4338ca;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.sop-ack-btn:hover{ background: #6366f1; color: #fff; }
+
+.sop-ack-list     { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+
+.sop-ack-dot      { font-size: 12px; }
+
+.sop-ack-email    { flex: 1; }
+
+.sop-ack-date     { color: var(--gray-400); font-size: 11px; }
+/* Version history */
+.sop-history-toggle{
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--brand-600); font-weight: 600;
+  padding: 4px 0;
+}
+
+.sop-history-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+.sop-history-item {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; padding: 5px 8px; background: var(--gray-50);
+  border-radius: var(--radius-sm);
+}
+
+.sop-history-v    { font-weight: 700; color: var(--brand-600); min-width: 28px; }
+
+.sop-history-note { flex: 1; color: var(--gray-600); }
+
+.sop-history-by   { color: var(--gray-400); }
+
+.sop-history-date { color: var(--gray-400); min-width: 80px; text-align: right; }
+/* Modal */
+.sop-modal        { max-width: 600px !important; }
+
+.sop-modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+
+.sop-modal-header h2  { font-size: 17px; font-weight: 700; color: var(--gray-900); margin:0; }
+
+.sop-modal-header button{
+  background:none; border:none; cursor:pointer; font-size:20px;
+  color:var(--gray-400); padding:2px 6px; border-radius:6px;
+}
+/* Dark mode */
+[data-theme="dark"] .sop-pending-banner { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.3); color: #fbbf24; }
+
+[data-theme="dark"] .sop-search, [data-theme="dark"] .sop-cat-filter { background: #0a1e35; border-color: #1e3a5a; color: #cce0f0; }
+
+[data-theme="dark"] .sop-card           { background: #071525; border-color: #1e3a5a; border-left-color: #6366f1; }
+
+[data-theme="dark"] .sop-card-title     { color: #cce0f0; }
+
+[data-theme="dark"] .sop-card-meta      { color: #4a7090; }
+
+[data-theme="dark"] .sop-cat-badge      { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.25); color: #38bdf8; }
+
+[data-theme="dark"] .sop-icon-btn:hover { background: #0a1e35; color: #cce0f0; }
+
+[data-theme="dark"] .sop-card-body      { border-color: #1e3a5a; }
+
+[data-theme="dark"] .sop-section-label  { color: #4a7090; }
+
+[data-theme="dark"] .sop-desc           { color: #8cb4d0; }
+
+[data-theme="dark"] .sop-content-preview{ background: #050f1e; color: #8cb4d0; }
+
+[data-theme="dark"] .sop-ack-bar        { background: #1e3a5a; }
+
+[data-theme="dark"] .sop-acked          { background: rgba(16,185,129,.1); color: #34d399; }
+
+[data-theme="dark"] .sop-ack-btn        { border-color: #6366f1; background: rgba(99,102,241,.1); color: #818cf8; }
+
+[data-theme="dark"] .sop-ack-btn:hover  { background: #6366f1; color: #fff; }
+
+[data-theme="dark"] .sop-history-item   { background: #050f1e; }
+
+[data-theme="dark"] .sop-history-note   { color: #8cb4d0; }
+
+[data-theme="dark"] .sop-history-by, [data-theme="dark"] .sop-history-date { color: #4a7090; }
+
+[data-theme="dark"] .sop-empty h3       { color: #e2eff8; }
+
+[data-theme="dark"] .sop-empty p        { color: #6b90b0; }
+
+[data-theme="dark"] .sop-modal-header   { border-color: #1e3a5a; }
+
+[data-theme="dark"] .sop-modal-header h2{ color: #e2eff8; }

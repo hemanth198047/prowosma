@@ -1,0 +1,421 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import PageHeader from "../components/PageHeader";
+import client, { unwrapList } from "../api/client";
+
+const api = {
+  docs:     (wsId) => wsId ? client.get(`/docs?workspaceId=${wsId}`) : Promise.resolve({ data: { data: [] } }),
+  tasks:    () => client.get("/tasks"),
+  goals:    () => client.get("/goals"),
+  projects: () => client.get("/projects"),
+};
+
+const META = {
+  project: { color:"#3b82f6", bg:"rgba(59,130,246,0.08)", icon:"📁", label:"Project", radius:18 },
+  goal:    { color:"#10b981", bg:"rgba(16,185,129,0.08)", icon:"🎯", label:"Goal",    radius:15 },
+  task:    { color:"#f59e0b", bg:"rgba(245,158,11,0.08)",  icon:"✅", label:"Task",    radius:12 },
+  doc:     { color:"#6366f1", bg:"rgba(99,102,241,0.08)",  icon:"📝", label:"Doc",     radius:13 },
+};
+
+const EDGE_COLORS = {
+  IN_PROJECT:"#3b82f6", LINKED_TO:"#10b981", CHILD_OF:"#6366f1",
+  BACKLINK:"#f59e0b", RELATED:"#94a3b8", DEPENDS_ON:"#8b5cf6", CONTRIBUTES_TO:"#0ea5e9",
+};
+
+function buildGraph(docs, tasks, goals, projects) {
+  const nodes = [], edges = [];
+  projects.slice(0,30).forEach(p => nodes.push({ id:"proj_"+p.id, type:"project", label:p.name||"Project", entityId:p.id, status:p.status, progress:p.progress||0 }));
+  goals.slice(0,30).forEach(g => nodes.push({ id:"goal_"+g.id, type:"goal", label:g.title||"Goal", entityId:g.id, linkedProjectId:g.linkedProjectId||null, progress:g.progress||0 }));
+  docs.slice(0,30).forEach(d => nodes.push({ id:"doc_"+d.id, type:"doc", label:d.title||"Doc", entityId:d.id }));
+  tasks.slice(0,30).forEach(t => nodes.push({ id:"task_"+t.id, type:"task", label:t.title||"Task", entityId:t.id, projectId:t.projectId||null, status:t.status, priority:t.priority }));
+
+  // Task → Project
+  tasks.forEach(t => { if (t.projectId && nodes.find(n=>n.id==="proj_"+t.projectId)) edges.push({ from:"task_"+t.id, to:"proj_"+t.projectId, type:"IN_PROJECT" }); });
+  // Goal → Project (via goal.linkedProjectId if present)
+  goals.forEach(g => { if (g.linkedProjectId && nodes.find(n=>n.id==="proj_"+g.linkedProjectId)) edges.push({ from:"goal_"+g.id, to:"proj_"+g.linkedProjectId, type:"LINKED_TO" }); });
+  // Project → Goal (via project.linkedGoalId — the primary source of these connections)
+  projects.forEach(p => { if (p.linkedGoalId && nodes.find(n=>n.id==="goal_"+p.linkedGoalId)) edges.push({ from:"proj_"+p.id, to:"goal_"+p.linkedGoalId, type:"LINKED_TO" }); });
+  // Goal → parent Goal
+  goals.forEach(g => { if (g.parentGoalId && nodes.find(n=>n.id==="goal_"+g.parentGoalId)) edges.push({ from:"goal_"+g.id, to:"goal_"+g.parentGoalId, type:"CHILD_OF" }); });
+  // Goal prerequisite chains
+  goals.forEach(g => { (g.prerequisiteGoalIds||[]).forEach(pid => { if (nodes.find(n=>n.id==="goal_"+pid)) edges.push({ from:"goal_"+g.id, to:"goal_"+pid, type:"DEPENDS_ON" }); }); });
+  // Task → Goal (via task.goalId if present)
+  tasks.forEach(t => { if (t.goalId && nodes.find(n=>n.id==="goal_"+t.goalId)) edges.push({ from:"task_"+t.id, to:"goal_"+t.goalId, type:"CONTRIBUTES_TO" }); });
+  // Doc links
+  docs.forEach(d => { (d.autoLinkedDocIds||[]).forEach(lid => { if (nodes.find(n=>n.id==="doc_"+lid)) edges.push({ from:"doc_"+d.id, to:"doc_"+lid, type:"RELATED" }); }); });
+  // Deduplicate edges
+  const edgeKeys = new Set();
+  return { nodes, edges: edges.filter(e => { const k=e.from+">"+e.to+">"+e.type; if (edgeKeys.has(k)) return false; edgeKeys.add(k); return true; }) };
+
+}
+
+function forceLayout(nodes, edges, W, H) {
+  if (!nodes.length) return {};
+  const pos = {}, n = nodes.length;
+  if (n <= 10) {
+    nodes.forEach((node, i) => {
+      const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+      const r = n === 1 ? 0 : Math.min(W, H) * 0.32;
+      pos[node.id] = { x: W/2 + r*Math.cos(angle), y: H/2 + r*Math.sin(angle) };
+    });
+    return pos;
+  }
+  nodes.forEach((node, i) => {
+    const angle = (i / n) * 2 * Math.PI;
+    pos[node.id] = { x: W/2 + Math.min(W,H)*0.35*Math.cos(angle), y: H/2 + Math.min(W,H)*0.35*Math.sin(angle) };
+  });
+  const k = Math.min(90, Math.sqrt((W*H)/Math.max(1,n))*0.65);
+  for (let iter = 0; iter < 100; iter++) {
+    const disp = {};
+    nodes.forEach(nd => { disp[nd.id] = {x:0,y:0}; });
+    for (let i = 0; i < n; i++) for (let j = i+1; j < n; j++) {
+      const a = nodes[i], b = nodes[j];
+      const dx = pos[a.id].x-pos[b.id].x, dy = pos[a.id].y-pos[b.id].y;
+      const dist = Math.max(1, Math.sqrt(dx*dx+dy*dy)), f = (k*k)/dist;
+      disp[a.id].x += (dx/dist)*f; disp[a.id].y += (dy/dist)*f;
+      disp[b.id].x -= (dx/dist)*f; disp[b.id].y -= (dy/dist)*f;
+    }
+    edges.forEach(e => {
+      if (!pos[e.from]||!pos[e.to]) return;
+      const dx = pos[e.to].x-pos[e.from].x, dy = pos[e.to].y-pos[e.from].y;
+      const dist = Math.max(1, Math.sqrt(dx*dx+dy*dy)), f = (dist*dist)/k;
+      disp[e.from].x += (dx/dist)*f; disp[e.from].y += (dy/dist)*f;
+      disp[e.to].x -= (dx/dist)*f; disp[e.to].y -= (dy/dist)*f;
+    });
+    nodes.forEach(nd => {
+      disp[nd.id].x += (W/2-pos[nd.id].x)*0.05;
+      disp[nd.id].y += (H/2-pos[nd.id].y)*0.05;
+    });
+    const temp = k*Math.max(0.1, 1-iter/100);
+    nodes.forEach(nd => {
+      const d = disp[nd.id], len = Math.max(1, Math.sqrt(d.x*d.x+d.y*d.y)), move = Math.min(len,temp);
+      pos[nd.id].x = Math.max(40, Math.min(W-40, pos[nd.id].x+(d.x/len)*move));
+      pos[nd.id].y = Math.max(40, Math.min(H-40, pos[nd.id].y+(d.y/len)*move));
+    });
+  }
+  return pos;
+}
+
+function StatCard({ icon, label, value, color, onClick }) {
+  return (
+    <div onClick={onClick} style={{ background:"#fff", border:`1.5px solid ${color}33`, borderRadius:"12px", padding:"14px 16px", cursor:"pointer", transition:"all .15s", display:"flex", alignItems:"center", gap:"12px" }}
+      onMouseEnter={e=>e.currentTarget.style.boxShadow=`0 4px 16px ${color}22`}
+      onMouseLeave={e=>e.currentTarget.style.boxShadow="none"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClick)?.(e); } }}>
+      <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:`${color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", flexShrink:0 }}>{icon}</div>
+      <div>
+        <div style={{ fontSize:"22px", fontWeight:800, color, lineHeight:1 }}>{value}</div>
+        <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600, marginTop:"2px" }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function EntityCard({ node, graph, onClick, isSelected }) {
+  const m = META[node.type];
+  const conns = graph.edges.filter(e=>e.from===node.id||e.to===node.id);
+  const connectedTo = conns.map(e => {
+    const otherId = e.from===node.id ? e.to : e.from;
+    return graph.nodes.find(n=>n.id===otherId);
+  }).filter(Boolean);
+
+  return (
+    <div onClick={onClick} style={{
+      background: isSelected ? m.color+"12" : "#fff",
+      border: `1.5px solid ${isSelected ? m.color : "#e8ecf2"}`,
+      borderRadius:"12px", padding:"14px", cursor:"pointer",
+      transition:"all .15s", position:"relative",
+      boxShadow: isSelected ? `0 4px 16px ${m.color}22` : "0 1px 3px rgba(0,0,0,.04)",
+    }}
+      onMouseEnter={e=>{ if(!isSelected){ e.currentTarget.style.borderColor=m.color+"66"; e.currentTarget.style.boxShadow=`0 4px 12px ${m.color}18`; }}}
+      onMouseLeave={e=>{ if(!isSelected){ e.currentTarget.style.borderColor="#e8ecf2"; e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,.04)"; }}} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClick)?.(e); } }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"10px" }}>
+        <div style={{ width:"34px", height:"34px", borderRadius:"9px", background:m.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>{m.icon}</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"2px" }}>
+            <span style={{ fontSize:"9px", fontWeight:800, padding:"1px 6px", borderRadius:"999px", background:m.color+"18", color:m.color, letterSpacing:".05em", textTransform:"uppercase", flexShrink:0 }}>{node.type}</span>
+          </div>
+          <div style={{ fontWeight:700, fontSize:"13px", color:"#0f172a", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{node.label}</div>
+          {node.status && <div style={{ fontSize:"10px", color:"#64748b", marginTop:"1px" }}>{node.status.replace(/_/g," ")}</div>}
+        </div>
+      </div>
+
+      {/* Progress bar for projects/goals */}
+      {(node.type==="project"||node.type==="goal") && (
+        <div style={{ marginBottom:"8px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:"10px", color:"#94a3b8", marginBottom:"3px" }}>
+            <span>Progress</span><span style={{ fontWeight:700, color:m.color }}>{node.progress||0}%</span>
+          </div>
+          <div style={{ height:"4px", background:"#f1f5f9", borderRadius:"99px", overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${node.progress||0}%`, background:m.color, borderRadius:"99px", transition:"width .3s" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Priority badge for tasks */}
+      {node.type==="task" && node.priority && (
+        <div style={{ marginBottom:"8px" }}>
+          <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px", borderRadius:"999px", background: node.priority==="HIGH"?"#fee2e2":node.priority==="MEDIUM"?"#fef3c7":"#f0fdf4", color: node.priority==="HIGH"?"#ef4444":node.priority==="MEDIUM"?"#d97706":"#10b981" }}>
+            {node.priority} PRIORITY
+          </span>
+        </div>
+      )}
+
+      {/* Connections */}
+      {connectedTo.length > 0 ? (
+        <div style={{ borderTop:"1px solid #f1f5f9", paddingTop:"8px" }}>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"#94a3b8", marginBottom:"5px", textTransform:"uppercase", letterSpacing:".05em" }}>Connected to</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px" }}>
+            {connectedTo.slice(0,4).map((c,i) => (
+              <span key={i} style={{ fontSize:"10px", padding:"2px 7px", borderRadius:"999px", background:META[c.type]?.color+"18", color:META[c.type]?.color, fontWeight:600 }}>
+                {META[c.type]?.icon} {c.label.slice(0,14)}
+              </span>
+            ))}
+            {connectedTo.length > 4 && <span style={{ fontSize:"10px", color:"#94a3b8" }}>+{connectedTo.length-4} more</span>}
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize:"10px", color:"#94a3b8", borderTop:"1px solid #f1f5f9", paddingTop:"6px" }}>No connections yet</div>
+      )}
+    </div>
+  );
+}
+
+export default function KnowledgeGraph() {
+  const { activeWorkspace } = useAuth();
+  const [graph,    setGraph]    = useState(null);
+  const [pos,      setPos]      = useState({});
+  const [filter,   setFilter]   = useState("all");
+  const [selected, setSelected] = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [view,     setView]     = useState("graph"); // "graph" | "cards"
+  const W = 900, H = 500;
+
+  useEffect(()=>{
+    const wsId = activeWorkspace?.id;
+    Promise.all([
+      api.docs(wsId).catch(()=>({ data:{ data:[] } })),
+      api.tasks().catch(()=>({ data:{ data:[] } })),
+      api.goals().catch(()=>({ data:{ data:[] } })),
+      api.projects().catch(()=>({ data:{ data:[] } })),
+    ]).then(([dr,tr,gr,pr])=>{
+      const g = buildGraph(unwrapList(dr), unwrapList(tr), unwrapList(gr), unwrapList(pr));
+      setGraph(g);
+      setPos(forceLayout(g.nodes, g.edges, W, H));
+    }).catch(()=>{}).finally(()=>setLoading(false));
+  },[activeWorkspace?.id]);
+
+  if (loading) return (
+    <div>
+      <PageHeader icon="🕸" title="Knowledge Graph" />
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px", color:"#94a3b8", gap:"12px" }}>
+        <div style={{ width:"24px", height:"24px", border:"3px solid #e2e8f0", borderTopColor:"#6366f1", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
+        Building knowledge graph…
+      </div>
+    </div>
+  );
+
+  const counts = { project:0, goal:0, task:0, doc:0 };
+  graph?.nodes?.forEach(n => { if (counts[n.type]!==undefined) counts[n.type]++; });
+  const totalConns = graph?.edges?.length || 0;
+
+  if (!graph || graph.nodes.length === 0) return (
+    <div>
+      <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
+        {Object.entries(META).map(([type,m])=>(
+          <StatCard key={type} icon={m.icon} label={m.label+"s"} value={0} color={m.color} />
+        ))}
+      </div>
+      <div style={{ textAlign:"center", padding:"48px", background:"#fff", borderRadius:"16px", border:"1px solid #e8ecf2" }}>
+        <div style={{ fontSize:"48px", marginBottom:"12px" }}>🕸</div>
+        <div style={{ fontWeight:800, fontSize:"18px", color:"#1e293b", marginBottom:"8px" }}>No data yet</div>
+        <div style={{ fontSize:"13px", color:"#64748b" }}>Create projects, goals, docs, and tasks to build your knowledge graph.</div>
+      </div>
+    </div>
+  );
+
+  const visNodes = filter==="all" ? graph.nodes : graph.nodes.filter(n=>n.type===filter);
+  const visEdges = graph.edges.filter(e=>visNodes.find(n=>n.id===e.from)&&visNodes.find(n=>n.id===e.to));
+
+  return (
+    <div>
+      <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+
+      {/* Stats row */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
+        <StatCard icon="📁" label="Projects" value={counts.project} color="#3b82f6" onClick={()=>setFilter(filter==="project"?"all":"project")} />
+        <StatCard icon="🎯" label="Goals" value={counts.goal} color="#10b981" onClick={()=>setFilter(filter==="goal"?"all":"goal")} />
+        <StatCard icon="✅" label="Tasks" value={counts.task} color="#f59e0b" onClick={()=>setFilter(filter==="task"?"all":"task")} />
+        <StatCard icon="📝" label="Docs" value={counts.doc} color="#6366f1" onClick={()=>setFilter(filter==="doc"?"all":"doc")} />
+        <StatCard icon="🔗" label="Connections" value={totalConns} color="#8b5cf6" onClick={()=>{}} />
+      </div>
+
+      {/* Controls */}
+      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"12px", flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:"4px", background:"#f1f5f9", borderRadius:"10px", padding:"3px" }}>
+          {["graph","cards"].map(v=>(
+            <button key={v} onClick={()=>setView(v)} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:view===v?"#fff":"transparent", color:view===v?"#1e293b":"#64748b", boxShadow:view===v?"0 1px 4px rgba(0,0,0,.08)":"none", transition:"all .15s" }}>
+              {v==="graph"?"🕸 Graph":"🗂 Cards"}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:"4px", flexWrap:"wrap" }}>
+          {["all","project","goal","task","doc"].map(f=>(
+            <button key={f} onClick={()=>{setFilter(f);setSelected(null);}} style={{ padding:"5px 12px", borderRadius:"8px", border:`1.5px solid ${f==="all"?"#e2e8f0":META[f]?.color+"44"}`, background:filter===f?(f==="all"?"#1e293b":META[f]?.color):"#fff", color:filter===f?"#fff":(f==="all"?"#374151":META[f]?.color), fontSize:"11px", fontWeight:700, cursor:"pointer", transition:"all .15s" }}>
+              {f==="all" ? "All" : `${META[f]?.icon} ${f}s`}
+              {f!=="all" && <span style={{ marginLeft:"5px", background:filter===f?"rgba(255,255,255,.25)":META[f]?.color+"22", borderRadius:"999px", padding:"0 5px", fontSize:"10px" }}>{counts[f]}</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginLeft:"auto", fontSize:"11px", color:"#94a3b8", background:"#f8fafc", padding:"5px 12px", borderRadius:"8px", border:"1px solid #e8ecf2" }}>
+          <b style={{ color:"#374151" }}>{visNodes.length}</b> nodes · <b style={{ color:"#374151" }}>{visEdges.length}</b> connections
+        </div>
+      </div>
+
+      {/* Graph view */}
+      {view==="graph" && (
+        <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 320px":"1fr", gap:"12px", alignItems:"start" }}>
+          {/* SVG graph */}
+          <div style={{ background:"#fff", border:"1px solid #e8ecf2", borderRadius:"16px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,.05)" }}>
+            <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:"block" }}>
+              <defs>
+                {Object.entries(EDGE_COLORS).map(([type,color])=>(
+                  <marker key={type} id={`arrow-${type}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L6,3 z" fill={color+"88"} />
+                  </marker>
+                ))}
+              </defs>
+              {/* Edges */}
+              {visEdges.map((e,i)=>{
+                const fp=pos[e.from],tp=pos[e.to];
+                if(!fp||!tp) return null;
+                const color=EDGE_COLORS[e.type]||"#94a3b8";
+                return (
+                  <g key={i}>
+                    <line x1={fp.x} y1={fp.y} x2={tp.x} y2={tp.y}
+                      stroke={color+"55"} strokeWidth={2}
+                      markerEnd={`url(#arrow-${e.type})`} />
+                  </g>
+                );
+              })}
+              {/* Nodes */}
+              {visNodes.map(n=>{
+                const p=pos[n.id];
+                if(!p) return null;
+                const m=META[n.type]||META.doc;
+                const isSel=selected?.id===n.id;
+                const r=m.radius+(isSel?5:0);
+                return (
+                  <g key={n.id} style={{cursor:"pointer"}} onClick={()=>setSelected(isSel?null:n)}>
+                    {isSel && <circle cx={p.x} cy={p.y} r={r+6} fill={m.color+"22"} />}
+                    <circle cx={p.x} cy={p.y} r={r} fill={m.color} opacity={isSel?1:0.88} stroke={isSel?"#fff":"rgba(255,255,255,0.4)"} strokeWidth={isSel?3:1.5} />
+                    <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize={r>14?11:9} fill="#fff" fontWeight={800}>
+                      {m.icon}
+                    </text>
+                    <text x={p.x} y={p.y+r+13} textAnchor="middle" fontSize={10} fill={isSel?m.color:"#374151"} fontWeight={isSel?800:600}>
+                      {n.label.slice(0,18)}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+            {/* Legend */}
+            <div style={{ display:"flex", gap:"16px", padding:"10px 16px", borderTop:"1px solid #f1f5f9", background:"#fafbfc", flexWrap:"wrap", alignItems:"center" }}>
+              {Object.entries(META).map(([type,m])=>(
+                <span key={type} style={{ display:"flex", alignItems:"center", gap:"5px", fontSize:"11px", color:"#475569" }}>
+                  <span style={{ width:"10px", height:"10px", borderRadius:"50%", background:m.color, display:"inline-block" }} />
+                  {m.label}s ({counts[type]})
+                </span>
+              ))}
+              <span style={{ marginLeft:"auto", fontSize:"11px", color:"#94a3b8" }}>Click a node to see details</span>
+            </div>
+          </div>
+
+          {/* Detail panel */}
+          {selected && (
+            <div style={{ background:"#fff", border:"1px solid #e8ecf2", borderRadius:"16px", overflow:"hidden", boxShadow:"0 4px 20px rgba(0,0,0,.08)" }}>
+              {/* Header */}
+              <div style={{ background:`linear-gradient(135deg, ${META[selected.type]?.color}18, ${META[selected.type]?.color}08)`, padding:"16px", borderBottom:"1px solid #f1f5f9" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                    <div style={{ width:"42px", height:"42px", borderRadius:"10px", background:META[selected.type]?.color+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px" }}>{META[selected.type]?.icon}</div>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:"14px", color:"#0f172a" }}>{selected.label}</div>
+                      <div style={{ fontSize:"10px", fontWeight:700, color:META[selected.type]?.color, textTransform:"uppercase", letterSpacing:".06em", marginTop:"2px" }}>{selected.type}</div>
+                    </div>
+                  </div>
+                  <button onClick={()=>setSelected(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"18px", color:"#94a3b8", padding:"2px 6px", borderRadius:"6px" }}>✕</button>
+                </div>
+                {selected.status && <div style={{ marginTop:"8px", display:"inline-flex", fontSize:"11px", fontWeight:700, padding:"3px 10px", borderRadius:"999px", background:META[selected.type]?.color+"22", color:META[selected.type]?.color }}>{selected.status.replace(/_/g," ")}</div>}
+                {(selected.progress!==undefined && (selected.type==="project"||selected.type==="goal")) && (
+                  <div style={{ marginTop:"10px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:"11px", color:"#64748b", marginBottom:"4px" }}>
+                      <span>Progress</span><b style={{ color:META[selected.type]?.color }}>{selected.progress}%</b>
+                    </div>
+                    <div style={{ height:"6px", background:"#f1f5f9", borderRadius:"99px", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${selected.progress}%`, background:META[selected.type]?.color, borderRadius:"99px" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Connections */}
+              <div style={{ padding:"14px" }}>
+                <div style={{ fontSize:"11px", fontWeight:800, color:"#94a3b8", textTransform:"uppercase", letterSpacing:".06em", marginBottom:"10px" }}>
+                  Connections ({graph.edges.filter(e=>e.from===selected.id||e.to===selected.id).length})
+                </div>
+                {graph.edges.filter(e=>e.from===selected.id||e.to===selected.id).length===0
+                  ? <div style={{ fontSize:"12px", color:"#94a3b8", textAlign:"center", padding:"16px 0" }}>No connections found</div>
+                  : graph.edges.filter(e=>e.from===selected.id||e.to===selected.id).map((e,i)=>{
+                      const otherId=e.from===selected.id?e.to:e.from;
+                      const other=graph.nodes.find(n=>n.id===otherId);
+                      if(!other) return null;
+                      const om=META[other.type]||META.doc;
+                      return (
+                        <div key={i} onClick={()=>setSelected(other)} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 10px", borderRadius:"8px", cursor:"pointer", transition:"background .12s", marginBottom:"4px" }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setSelected(other))?.(e); } }}>
+                          <div style={{ width:"28px", height:"28px", borderRadius:"7px", background:om.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>{om.icon}</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:"12px", fontWeight:700, color:"#1e293b", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{other.label}</div>
+                            <div style={{ fontSize:"10px", color:"#94a3b8" }}>{e.type.replace(/_/g," ")}</div>
+                          </div>
+                          <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 7px", borderRadius:"999px", background:EDGE_COLORS[e.type]+"22", color:EDGE_COLORS[e.type], flexShrink:0, whiteSpace:"nowrap" }}>{e.type.replace(/_/g," ")}</span>
+                        </div>
+                      );
+                    })
+                }
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cards view */}
+      {view==="cards" && (
+        <div>
+          {["project","goal","task","doc"].map(type=>{
+            const typeNodes=visNodes.filter(n=>n.type===type);
+            if(!typeNodes.length) return null;
+            const m=META[type];
+            return (
+              <div key={type} style={{ marginBottom:"24px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px" }}>
+                  <span style={{ fontSize:"18px" }}>{m.icon}</span>
+                  <span style={{ fontWeight:800, fontSize:"14px", color:"#1e293b" }}>{m.label}s</span>
+                  <span style={{ fontSize:"11px", color:m.color, background:m.color+"18", padding:"2px 8px", borderRadius:"999px", fontWeight:700 }}>{typeNodes.length}</span>
+                  <div style={{ flex:1, height:"1px", background:"#f1f5f9", marginLeft:"4px" }} />
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:"10px" }}>
+                  {typeNodes.map(n=>(
+                    <EntityCard key={n.id} node={n} graph={graph} isSelected={selected?.id===n.id} onClick={()=>setSelected(selected?.id===n.id?null:n)} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

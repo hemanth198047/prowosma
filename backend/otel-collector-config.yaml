@@ -1,0 +1,38 @@
+# Local-dev-only OTel Collector config. Receives OTLP/HTTP traces from the
+# backend (see docker-compose.yml's OTLP_TRACING_ENDPOINT) and forwards
+# them to the local Jaeger instance also started by docker-compose.yml.
+#
+# This is deliberately the simplest possible pipeline — one receiver, one
+# exporter, no sampling/filtering/batching tuning — because its only job
+# here is to make tracing genuinely verifiable in local dev. A real
+# production collector config (with tail-based sampling, PII scrubbing,
+# multiple backend exporters, etc.) is a separate, deployment-specific
+# decision — see docs/OBSERVABILITY_SETUP.md.
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  # Uncomment to also see raw spans in the collector's own logs while
+  # debugging a pipeline that doesn't seem to be receiving anything:
+  # debug:
+  #   verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
