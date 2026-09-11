@@ -48,7 +48,21 @@ if (IS_DEV) {
     if (url.pathname.startsWith('/api/')) {
       e.respondWith(
         fetch(request.clone()).then(res => {
-          if (res.ok) caches.open(API).then(c => c.put(request, res.clone()));
+          // Clone SYNCHRONOUSLY, immediately, before any async gap. The
+          // previous version called res.clone() inside caches.open()'s
+          // .then() callback — but caches.open() is itself async and
+          // wasn't awaited, so `return res` below already handed the
+          // original response to the page (which starts reading its body
+          // right away) well before that later .then() ever ran. By the
+          // time it did, the body stream was already locked/consumed,
+          // and .clone() failed with "Response body is already used".
+          // Cloning here, in the same tick the response arrives, avoids
+          // that race entirely — the clone is made before anyone (the
+          // page, or this same caching code) has touched the body.
+          if (res.ok) {
+            const resClone = res.clone();
+            caches.open(API).then(c => c.put(request, resClone));
+          }
           return res;
         }).catch(async () => {
           const cached = await caches.match(request);
@@ -77,7 +91,12 @@ if (IS_DEV) {
     e.respondWith(
       caches.match(request).then(cached => cached ||
         fetch(request).then(res => {
-          if (res.ok) caches.open(STATIC).then(c => c.put(request, res.clone()));
+          // Same fix as the API handler above — clone before the async
+          // caches.open() gap, not inside its .then() callback.
+          if (res.ok) {
+            const resClone = res.clone();
+            caches.open(STATIC).then(c => c.put(request, resClone));
+          }
           return res;
         })
       )
