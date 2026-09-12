@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +40,24 @@ import java.util.Map;
  * X-Workspace-Id — a full tenant-isolation bypass. Fixing it here, in front
  * of both of those, closes it in one place instead of needing a matching
  * fix in every one of the ~20 services that trust WorkspaceContext today.
+ *
+ * SKIP_PATHS below mirrors RoleGuardFilter's own skip list (which already
+ * excludes /api/auth/ and /api/invitations/accept for the same reason) —
+ * but this filter runs one step earlier (Order 2 vs 3), so without the
+ * same exclusion here, this filter's stricter membership check rejects the
+ * request before RoleGuardFilter's more lenient one ever runs. Concretely:
+ * localStorage's "activeWorkspace" is shared across every tab in a browser
+ * and only cleared on explicit logout, so a browser that still has an
+ * unrelated earlier session's workspace ID sitting in localStorage will
+ * have it auto-attached (see frontend/src/api/client.js) to EVERY request
+ * from a fresh tab — including a brand-new user's POST
+ * /api/invitations/accept. That request would get rejected here with "You
+ * are not a member of this workspace", even though granting that exact
+ * membership is the entire point of the endpoint being called — and even
+ * though the endpoint never actually trusts X-Workspace-Id for anything;
+ * InvitationService.accept() resolves the workspace from the invitation
+ * token itself, so skipping the header check here for these paths is safe,
+ * not a scoping bypass.
  */
 @Component
 @Order(2)
@@ -50,11 +69,26 @@ public class WorkspaceFilter extends OncePerRequestFilter {
     private final TeamMemberRepository teamMemberRepository;
     private final ObjectMapper objectMapper;
 
+    private static final List<String> SKIP_PATHS = List.of(
+            "/api/auth/",
+            "/api/invitations/accept",
+            "/api/invitations/validate/",
+            "/api/invitations/info"
+    );
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+
+        String path = request.getRequestURI();
+        for (String skip : SKIP_PATHS) {
+            if (path.contains(skip)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+        }
 
         String workspaceId = request.getHeader("X-Workspace-Id");
         if (workspaceId != null && !workspaceId.isBlank()) {

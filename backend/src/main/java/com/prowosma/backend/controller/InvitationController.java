@@ -269,6 +269,12 @@ public class InvitationController {
             result.put("invitedBy",     inv.getInvitedByEmail() != null ? inv.getInvitedByEmail() : "");
             result.put("expiresAt",     inv.getExpiresAt() != null ? inv.getExpiresAt().toString() : null);
             result.put("valid",         true);
+            // AcceptInvite.jsx uses this to default to "Already Have Account"
+            // instead of "New Account" — matters when a prior attempt already
+            // created the user (e.g. register() succeeded but a later step in
+            // the same flow failed), since retrying "New Account" would just
+            // hit a confusing "Email already registered" error instead.
+            result.put("accountExists", userRepository.existsByEmail(inv.getEmail()));
             return ResponseEntity.ok(result);
         }).orElse(ResponseEntity.notFound().build());
     }
