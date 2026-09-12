@@ -31,9 +31,52 @@
 
 @media (max-width: 768px) {
 
-  /* ── Dashboard ─────────────────────────────────────────── */
+  /* ── Dashboard ─────────────────────────────────────────────
+     The Work Hub / Insights Hub / Knowledge / Automate tiles
+     (.cc3-hub-tile) were designed as a dense 5-column desktop
+     icon grid. On a phone, forcing even 2 columns still leaves
+     each tile a tall, mostly-empty centered box — the padding
+     and centered icon-over-label layout simply doesn't compress
+     well. Real fix: turn each tile into a compact left-aligned
+     list row (icon · label · status), matching the pattern
+     already used successfully by the TEAM / CONFIGURE / QUICK
+     ACTIONS sections (.db-compact-item) elsewhere on this same
+     page, instead of shrinking a grid that was never meant to
+     go narrower than ~5 columns.
+
+     .db-two-col-row overrides an INLINE style (gridTemplateColumns
+     set directly in Dashboard.jsx for the Projects/Goals and
+     Knowledge/Automate side-by-side pairs) — inline styles beat
+     ordinary stylesheet rules, so this specifically needs
+     !important to win; that's the one previously unfixable
+     overflow visible in the screenshots. */
+  .db-two-col-row { grid-template-columns: 1fr !important; }
+
   .db-hub-grid,
-  .db-hub-grid-5 { grid-template-columns: repeat(2, 1fr) !important; }
+  .db-hub-grid-5,
+  .db-hub-grid-2 { grid-template-columns: 1fr !important; gap: 0 !important; }
+
+  .cc3-hub-tile {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 12px;
+    padding: 11px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border, #eef0f4);
+    border-radius: 0;
+    background: transparent;
+  }
+  [data-theme="dark"] .cc3-hub-tile { border-bottom-color: rgba(255,255,255,.08); background: transparent; }
+  .cc3-hub-tile:hover,
+  .cc3-hub-tile:active { transform: none; box-shadow: none; background: var(--gray-50, #f8fafc); }
+  [data-theme="dark"] .cc3-hub-tile:hover,
+  [data-theme="dark"] .cc3-hub-tile:active { background: rgba(255,255,255,.05); }
+  .cc3-hub-icon-badge { flex-shrink: 0; }
+  .cc3-hub-label { font-size: var(--text-sm, 13px); flex: 1; }
+  .cc3-hub-sub { flex-shrink: 0; }
+
   .db-pg-row,
   .db-insights-row,
   .db-bottom-row,
@@ -130,8 +173,6 @@
    above are still tight below ~420px, so drop those specific
    ones to a single column at that point. */
 @media (max-width: 420px) {
-  .db-hub-grid,
-  .db-hub-grid-5,
   .roi-metrics,
   .dep-dora-gauge,
   .workload-stats { grid-template-columns: 1fr !important; }

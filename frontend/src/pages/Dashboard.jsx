@@ -689,7 +689,7 @@ export default function Dashboard() {
         <div style={{ display:"flex", flexDirection:"column", gap:"8px", minWidth:0, height:"100%" }}>
 
           {/* Projects + Goals side by side */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", flex:1 }}>
+          <div className="db-two-col-row" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", flex:1 }}>
             <div className="db-card">
               <div className="db-card-header">
                 <span className="db-card-title"><Folder size={13} /> ACTIVE PROJECTS</span>
@@ -771,7 +771,7 @@ export default function Dashboard() {
               {insightsTiles.map(t => <HubTile key={t.to} {...t} navigate={navigate} />)}
             </div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", flex:1 }}>
+          <div className="db-two-col-row" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", flex:1 }}>
             <div className="db-card" style={{ display:"flex", flexDirection:"column" }}>
               <div className="db-card-header"><span className="db-card-title"><BookOpen size={13} /> KNOWLEDGE</span><button className="db-link" onClick={() => navigate("/docs")}>Docs →</button></div>
               <div className="db-hub-grid db-hub-grid-2">{knowledgeTiles.map(t=><HubTile key={t.to} {...t} navigate={navigate} />)}</div>
