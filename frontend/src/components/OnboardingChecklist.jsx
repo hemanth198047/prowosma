@@ -79,10 +79,10 @@ export default function OnboardingChecklist() {
   const { activeWorkspace } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [open, setOpen]           = useState(false);
+  const [open, setOpen] = useState(false);
   const [completed, setCompleted] = useState({});
   const [dismissed, setDismissed] = useState(false);
-  const [, setLoading]     = useState(true);
+  const [, setLoading] = useState(true);
 
   const storageKey = `onboarding_dismissed_${activeWorkspace?.id}`;
   const completedKey = `onboarding_completed_${activeWorkspace?.id}`;
@@ -126,9 +126,12 @@ export default function OnboardingChecklist() {
     const results = {};
     await Promise.allSettled(
       STEPS.map(async (step) => {
-        try { results[step.id] = await step.check(); }
-        catch { results[step.id] = false; }
-      })
+        try {
+          results[step.id] = await step.check();
+        } catch {
+          results[step.id] = false;
+        }
+      }),
     );
     setCompleted(results);
     localStorage.setItem(completedKey, JSON.stringify(results));
@@ -167,7 +170,9 @@ export default function OnboardingChecklist() {
       if (localStorage.getItem("onboarding_analytics_visited") !== "true") {
         localStorage.setItem("onboarding_analytics_visited", "true");
       }
-      setCompleted(prev => prev.explore_analytics ? prev : { ...prev, explore_analytics: true });
+      setCompleted((prev) =>
+        prev.explore_analytics ? prev : { ...prev, explore_analytics: true },
+      );
     }
   }, [location.pathname, dismissed]);
 
@@ -179,14 +184,14 @@ export default function OnboardingChecklist() {
   const handleStepClick = (step) => {
     if (step.id === "explore_analytics") {
       localStorage.setItem("onboarding_analytics_visited", "true");
-      setCompleted(prev => ({ ...prev, explore_analytics: true }));
+      setCompleted((prev) => ({ ...prev, explore_analytics: true }));
     }
     navigate(step.action);
   };
 
-  const doneCount  = STEPS.filter(s => completed[s.id]).length;
-  const allDone    = doneCount === STEPS.length;
-  const pct        = Math.round(doneCount / STEPS.length * 100);
+  const doneCount = STEPS.filter((s) => completed[s.id]).length;
+  const allDone = doneCount === STEPS.length;
+  const pct = Math.round((doneCount / STEPS.length) * 100);
 
   // Hide if dismissed or all steps done after 3 seconds
   useEffect(() => {
@@ -201,20 +206,32 @@ export default function OnboardingChecklist() {
   return (
     <div className="onboarding-widget">
       {/* Toggle button */}
-      <button className="onboarding-toggle" onClick={() => setOpen(o => !o)}>
+      <button className="onboarding-toggle" onClick={() => setOpen((o) => !o)}>
         <div className="onboarding-toggle-left">
           <span className="onboarding-toggle-icon">🚀</span>
           <div>
             <div className="onboarding-toggle-title">Getting Started</div>
-            <div className="onboarding-toggle-sub">{doneCount}/{STEPS.length} complete</div>
+            <div className="onboarding-toggle-sub">
+              {doneCount}/{STEPS.length} complete
+            </div>
           </div>
         </div>
         <div className="onboarding-toggle-right">
           <div className="onboarding-ring">
             <svg viewBox="0 0 36 36" width="36" height="36">
-              <circle cx="18" cy="18" r="15.9" fill="none"
-                stroke="var(--gray-200)" strokeWidth="3" />
-              <circle cx="18" cy="18" r="15.9" fill="none"
+              <circle
+                cx="18"
+                cy="18"
+                r="15.9"
+                fill="none"
+                stroke="var(--gray-200)"
+                strokeWidth="3"
+              />
+              <circle
+                cx="18"
+                cy="18"
+                r="15.9"
+                fill="none"
                 stroke={allDone ? "#10b981" : "var(--brand-500)"}
                 strokeWidth="3"
                 strokeDasharray={`${pct} ${100 - pct}`}
@@ -243,14 +260,24 @@ export default function OnboardingChecklist() {
                   : "Complete these steps to get the most out of Prowosma"}
               </div>
             </div>
-            <button className="onboarding-dismiss" onClick={handleDismiss}
-              title="Dismiss checklist">✕</button>
+            <button
+              className="onboarding-dismiss"
+              onClick={handleDismiss}
+              title="Dismiss checklist"
+            >
+              ✕
+            </button>
           </div>
 
           {/* Progress bar */}
           <div className="onboarding-progress-bar">
-            <div className="onboarding-progress-fill"
-              style={{ width: `${pct}%`, background: allDone ? "#10b981" : "var(--brand-500)" }} />
+            <div
+              className="onboarding-progress-fill"
+              style={{
+                width: `${pct}%`,
+                background: allDone ? "#10b981" : "var(--brand-500)",
+              }}
+            />
           </div>
 
           {/* Steps */}
@@ -258,24 +285,42 @@ export default function OnboardingChecklist() {
             {STEPS.map((step) => {
               const done = !!completed[step.id];
               return (
-                <div key={step.id}
+                <div
+                  key={step.id}
                   className={`onboarding-step ${done ? "done" : ""}`}
-                  onClick={() => !done && handleStepClick(step)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => !done && handleStepClick(step))?.(e); } }}
+                  onClick={() => !done && handleStepClick(step)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (
+                      e.target === e.currentTarget &&
+                      (e.key === "Enter" || e.key === " ")
+                    ) {
+                      e.preventDefault();
+                      (() => !done && handleStepClick(step))?.(e);
+                    }
+                  }}
                 >
-                  <div className={`onboarding-step-check ${done ? "checked" : ""}`}>
+                  <div
+                    className={`onboarding-step-check ${done ? "checked" : ""}`}
+                  >
                     {done && <span>✓</span>}
                   </div>
                   <div className="onboarding-step-body">
                     <div className="onboarding-step-icon">{step.icon}</div>
                     <div className="onboarding-step-text">
-                      <div className={`onboarding-step-title ${done ? "done-text" : ""}`}>
+                      <div
+                        className={`onboarding-step-title ${done ? "done-text" : ""}`}
+                      >
                         {step.title}
                       </div>
                       <div className="onboarding-step-desc">{step.desc}</div>
                     </div>
                   </div>
                   {!done && (
-                    <span className="onboarding-step-action">{step.actionLabel} →</span>
+                    <span className="onboarding-step-action">
+                      {step.actionLabel} →
+                    </span>
                   )}
                 </div>
               );
