@@ -62,7 +62,19 @@ public class SecurityConfig {
         "/swagger-ui/**", "/swagger-ui.html",
         "/v3/api-docs/**",
         "/favicon.ico",
-        "/error"
+        "/error",
+        // SockJS/STOMP handshake (info/xhr/websocket-upgrade requests under
+        // /ws/**) was previously caught by anyRequest().authenticated() and
+        // rejected with a blanket 401 on every single request — SockJS's
+        // own polling/XHR transport doesn't carry this app's custom
+        // Authorization header the way the axios `client` instance does,
+        // so the handshake could never complete in production regardless
+        // of whether the user was logged in. Real identity verification for
+        // WebSocket traffic doesn't belong at this HTTP layer anyway — the
+        // frontend already sends its JWT as a STOMP CONNECT header (see
+        // useWebSocket.js's connectHeaders), which StompAuthChannelInterceptor
+        // now validates once the connection is actually established.
+        "/ws/**"
     };
 
     @Bean

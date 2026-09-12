@@ -87,6 +87,18 @@ export default function OnboardingChecklist() {
   const storageKey = `onboarding_dismissed_${activeWorkspace?.id}`;
   const completedKey = `onboarding_completed_${activeWorkspace?.id}`;
 
+  // Collapse back to the small pill on every route change. This widget is
+  // mounted once at the app-shell level (not per-page), so its `open`
+  // state otherwise survives client-side navigation — expand it once on
+  // Dashboard, then browse anywhere else, and it stays expanded, pushing
+  // that page's real content down. Costs little screen space as a small
+  // floating pill on desktop; on a phone screen it can eat most of the
+  // visible viewport on whatever page you land on next. Re-expanding is
+  // one tap away, so this doesn't lose any functionality.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
   // Check if dismissed for this workspace
   useEffect(() => {
     if (!activeWorkspace?.id) return;
