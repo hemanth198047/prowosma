@@ -31,6 +31,112 @@
 
 @media (max-width: 768px) {
 
+  /* ── Flex-shrink safety net ────────────────────────────────
+     .content-wrapper (flex:1 inside .app's flex row) has no
+     min-width set, so its default min-width:auto lets it refuse
+     to shrink below its content's intrinsic min-content width —
+     confirmed by measuring: body/html correctly computed to
+     320px, but .content-wrapper/.main-content/.db-root still
+     rendered ~26px wider than the viewport even after the two
+     fixes below, purely from this default. min-width:0 is the
+     standard fix for a flex item that must be allowed to shrink
+     narrower than its content. */
+  .content-wrapper,
+  .main-content,
+  .db-root { min-width: 0; }
+
+  /* ── Docs — topbar with no wrap, same pattern as page-header ── */
+  .docs-topbar { flex-wrap: wrap; row-gap: 6px; }
+  .docs-topbar-right { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; }
+
+  /* ── Tasks — title row explicitly set flex-wrap:nowrap ────
+     .task-title packs the title text plus up to 7 icon buttons
+     (quick-view, edit, status, comments, time, attachments,
+     dependencies, activity) onto one deliberately-unwrapped row —
+     fine at desktop width, but the single biggest overflow found
+     on this page (739px on a 320px screen). */
+  .task-title { flex-wrap: wrap; }
+
+  /* ── Recurring "stat bar" pattern (flex:1 items, no min-width) ─
+     The same copy-pasted pattern — a row of flex:1 stat cells
+     with no min-width:0 — appears independently in at least 6
+     different page stylesheets. Each one individually overflows
+     the page once there isn't room for every cell's text at its
+     natural size, for the same structural reason as
+     .db-hero-actions and .content-wrapper above. */
+  .auto-stat,
+  .kpi-summary-stat,
+  .scorecard-kpi,
+  .roi-portfolio-stat,
+  .sprint-summary-stat,
+  .portfolio-kpi { min-width: 0; }
+
+  /* ── Shared .cards-grid component (components.css) ────────
+     Used across Projects, Goals, Categories, AI Intelligence,
+     and more. grid-template-columns: repeat(auto-fill,
+     minmax(340px, 1fr)) hard-floors every card at 340px wide —
+     wider than many phones' entire screen. Confirmed by scanning
+     every route: this exact rule caused an identical overflow
+     signature on 7+ unrelated pages that otherwise share no
+     component, including forcing a lone "no items" empty-state
+     message into an oversized 340px cell on Projects. */
+  .cards-grid { grid-template-columns: 1fr; }
+
+  /* ── Shared PageHeader component (components/PageHeader.jsx) ─
+     Used across most pages (Goals, Automations, Projects, Tasks,
+     Sprints, etc.). Same bug class as .db-hero-actions: the
+     action-button slot has flex-shrink:0 with no wrap on the
+     header row, so any page passing more than one button/control
+     into the `action` prop overflowed the ENTIRE page — up to
+     483px wide on a 320px screen, confirmed by scanning every
+     route in the app. Fixing this one shared component fixes
+     every page that uses it. */
+  .page-header-block { flex-wrap: wrap; row-gap: 10px; }
+  .page-header-action {
+    flex-shrink: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 100%;
+  }
+  .page-header-action > div {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 6px;
+    max-width: 100%;
+  }
+
+  /* ── Card headers — title + right-side action cluster ─────
+     .db-card-header uses justify-content:space-between with no
+     wrap, and its right-side "actions" div (status filter pills,
+     "View all" links, etc.) is itself a nowrap flex row — found
+     by measuring actual overflow at 320px width: the TASKS
+     card's Active/Overdue/Today pills + View all together don't
+     fit next to the title, and the whole page was overflowing to
+     accommodate them. Letting both levels wrap fixes every card
+     header with this pattern, not just this one instance. */
+  .db-card-header { flex-wrap: wrap; row-gap: 6px; }
+  .db-card-header > div { flex-wrap: wrap; row-gap: 4px; }
+
+  /* ── Dashboard hero — button row overflow ─────────────────
+     .db-hero-actions has flex-shrink:0, which locks it to its
+     full max-content width (sum of every button's width) even
+     though it also has its own flex-wrap:wrap — a multi-line
+     flex container's intrinsic width is calculated as if it
+     were single-line, so flex-shrink:0 defeats its own wrap and
+     drags the ENTIRE page ~145px wider than the viewport. This
+     was the single biggest cause of horizontal overflow, found
+     by measuring actual rendered element widths at 320/360/375px
+     — every other card on the page inherits extra width from
+     this one element's overflow. Forcing it onto its own full
+     width row lets its wrap take effect properly. */
+  .db-hero-actions {
+    flex-shrink: 1;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   /* ── Dashboard ─────────────────────────────────────────────
      The Work Hub / Insights Hub / Knowledge / Automate tiles
      (.cc3-hub-tile) were designed as a dense 5-column desktop
