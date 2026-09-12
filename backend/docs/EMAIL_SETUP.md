@@ -1,9 +1,50 @@
-# Email Setup — SMTP Providers & Bounce/Complaint Handling
+# Email Setup — SMTP Providers, Resend, & Bounce/Complaint Handling
 
 Email is sent via standard SMTP (`spring.mail.*`, driven entirely by env vars — see
-`backend/.env.example`). Switching providers is **always a config change, never a code change**.
+`backend/.env.example`) by default. Switching SMTP providers is **always a config change,
+never a code change**. As of this change, there's also a second, non-SMTP transport
+available — see "Resend (HTTPS API)" below — for hosts that block outbound SMTP ports.
 
-## Provider settings
+## Hosting platforms that block outbound SMTP
+
+**If you're deploying the backend on Render's free web-service tier**, be aware: since
+September 2025, Render blocks all outbound traffic to SMTP ports 25, 465, and 587 on free
+instances. This means the SMTP config below will fail with a connection timeout — not an
+auth error — no matter how correct `SMTP_USERNAME`/`SMTP_PASSWORD` are. Symptoms in the logs
+look like `SocketTimeoutException: Connect timed out` rather than an authentication failure.
+Two ways around this:
+
+1. **Upgrade to a paid Render instance** ($7/mo Starter or above) — this removes the SMTP
+   port block entirely; the SMTP setup below then works unchanged.
+2. **Use Resend instead** (see below) — it sends over HTTPS, which isn't blocked on the free
+   tier. This is the zero-cost option.
+
+Other platforms (Railway's Free/Trial/Hobby plans, for example) have similar restrictions —
+if SMTP connections time out in production but work fine locally, this is the first thing to
+check regardless of which host you're on.
+
+## Resend (HTTPS API)
+
+Set `RESEND_API_KEY` (from the [Resend dashboard](https://resend.com)) and `EmailService`
+automatically routes all **server-default** sends (invitations, magic links, digests — i.e.
+anything not using a workspace's own SMTP override) through Resend's HTTPS API instead of
+SMTP. No other code or config changes needed — leave `RESEND_API_KEY` unset to keep using
+SMTP exactly as before.
+
+Notes:
+- `SMTP_FROM_EMAIL`/`SMTP_FROM_NAME` (or their `GMAIL_USERNAME`/`SMTP_FROM_NAME` fallbacks)
+  are still used as the "From" address/name when sending via Resend — there's no separate
+  Resend-specific sender config.
+- Resend requires the sending domain (or `onboarding@resend.dev` for quick testing) to be
+  verified in the Resend dashboard before it will relay mail for you — same domain-
+  verification requirement as SES/SendGrid/Postmark below.
+- Per-workspace SMTP overrides (Admin → Email Settings) are **not** affected by
+  `RESEND_API_KEY` — those always send over the SMTP credentials the workspace admin
+  configured, since that's an explicit choice of provider/host.
+- Delivery success/failure is recorded the same way as SMTP sends — see "Deliverability
+  metrics" below — with `source="resend"`.
+
+## SMTP provider settings
 
 | Provider | `SMTP_HOST` | `SMTP_PORT` | Notes |
 |---|---|---|---|
@@ -65,8 +106,9 @@ pattern if you want events to also show up in this app's own suppression list.
 `EmailService` records Micrometer counters, visible at `/actuator/prometheus`:
 
 - `email.send.success{source=...}` / `email.send.failure{source=...}` — `source` is `"workspace
-  settings"` or `"server default"`, so per-workspace SMTP problems are distinguishable from
-  server-wide ones.
+  settings"` (per-workspace SMTP), `"server default"` (server-wide SMTP), or `"resend"`
+  (server-wide sends via Resend's API, when `RESEND_API_KEY` is set) — so problems on any one
+  of the three are distinguishable from the others.
 - `email.send.suppressed` — sends skipped because the address is suppressed.
 - `email.suppression.added{reason=...,source=...}` — new suppressions being added, broken down by
   hard-bounce vs. complaint and by which provider reported it.

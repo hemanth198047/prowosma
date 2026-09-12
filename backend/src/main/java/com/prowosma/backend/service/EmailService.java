@@ -5,7 +5,12 @@ import com.prowosma.backend.model.EmailSuppression;
 import com.prowosma.backend.model.WorkspaceConfig;
 import com.prowosma.backend.repository.EmailSuppressionRepository;
 import com.prowosma.backend.repository.WorkspaceConfigRepository;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +29,24 @@ import java.util.Properties;
  * Admin -> Email Settings (see AdminController's /email-settings endpoints
  * and WorkspaceConfig's smtp* fields) instead of the app operator having to
  * set server-wide environment variables. If a workspace hasn't configured
- * anything, this falls back to the server-wide sender Spring Boot
- * auto-configures from spring.mail.* (SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD
- * etc — works with Amazon SES, SendGrid, Postmark, Mailgun, or Gmail; see
- * docs/EMAIL_SETUP.md), so nothing breaks for workspaces that don't need
- * per-workspace sending.
+ * anything, this falls back to the server-wide sender.
+ *
+ * The server-wide sender itself has two possible transports:
+ *
+ *  1. Resend's HTTPS API (used when RESEND_API_KEY is set) — sends over
+ *     plain HTTPS, so it works on hosts that block outbound SMTP ports.
+ *     Render's free web-service tier, for example, blocks 25/465/587
+ *     entirely since Sept 2025, which makes spring.mail.* SMTP sending
+ *     fail with a connection timeout there no matter how correct
+ *     SMTP_USERNAME/SMTP_PASSWORD are — Resend sidesteps that.
+ *  2. Plain SMTP via spring.mail.* (SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD
+ *     etc — works with Amazon SES, SendGrid, Postmark, Mailgun, or Gmail;
+ *     see docs/EMAIL_SETUP.md) — used when RESEND_API_KEY is unset, so
+ *     nothing changes for deployments that already have working SMTP.
+ *
+ * Per-workspace overrides (WorkspaceConfig.smtp*) are always sent over SMTP
+ * — that's an explicit admin choice of host/provider and isn't redirected
+ * through Resend.
  *
  * Before every send, checks EmailSuppressionRepository — an address a
  * provider has reported as a hard bounce or spam complaint (see
@@ -53,6 +71,25 @@ public class EmailService {
 
     @Value("${app.from.name:Prowosma}")
     private String defaultFromName;
+
+    /**
+     * When set, server-default sends (no per-workspace SMTP override) go
+     * out through Resend's HTTPS API instead of spring.mail.* SMTP. Blank
+     * by default so existing SMTP-only deployments are unaffected.
+     */
+    @Value("${resend.api.key:}")
+    private String resendApiKey;
+
+    /** Built once at startup if resendApiKey is present; null otherwise. */
+    private Resend resendClient;
+
+    @PostConstruct
+    private void initResendClient() {
+        if (resendApiKey != null && !resendApiKey.isBlank()) {
+            resendClient = new Resend(resendApiKey);
+            log.info("Resend API configured — server-default emails will send via Resend's HTTPS API.");
+        }
+    }
 
     // Used by InvitationService, AuthEnhancementsController (HTML)
     public boolean sendHtmlEmail(String toEmail, String toName,
@@ -83,6 +120,14 @@ public class EmailService {
         }
 
         ResolvedSender resolved = resolveSender();
+
+        // Only the server-default path (no per-workspace SMTP override) is
+        // eligible for Resend — a workspace that has explicitly configured
+        // its own SMTP host/credentials keeps using exactly that.
+        if ("server default".equals(resolved.source()) && resendClient != null) {
+            return sendViaResend(to, subject, content, isHtml, resolved.fromEmail(), resolved.fromName());
+        }
+
         try {
             MimeMessage msg = resolved.sender().createMimeMessage();
             MimeMessageHelper helper =
@@ -98,6 +143,49 @@ public class EmailService {
         } catch (Exception e) {
             log.warn("Failed to send email to {} (via {}): {}", to, resolved.source(), e.getMessage());
             meterRegistry.counter("email.send.failure", "source", resolved.source()).increment();
+            return false;
+        }
+    }
+
+    /**
+     * Sends over Resend's HTTPS API rather than SMTP. Used only for the
+     * server-default sender — see the class-level comment for why this
+     * exists (Render's free-tier outbound SMTP port block, most notably).
+     * Never throws: mirrors the "return false, let the caller decide
+     * whether that's fatal" contract the SMTP path already has.
+     */
+    private boolean sendViaResend(String to, String subject, String content,
+                                   boolean isHtml, String fromEmail, String fromName) {
+        String from = (fromName != null && !fromName.isBlank())
+                ? fromName + " <" + fromEmail + ">"
+                : fromEmail;
+        CreateEmailOptions.Builder params = CreateEmailOptions.builder()
+                .from(from)
+                .to(to)
+                .subject(subject);
+        if (isHtml) {
+            params.html(content);
+        } else {
+            params.text(content);
+        }
+        try {
+            CreateEmailResponse response = resendClient.emails().send(params.build());
+            log.info("Email sent to {} (via resend, id={})", to, response.getId());
+            meterRegistry.counter("email.send.success", "source", "resend").increment();
+            return true;
+        } catch (ResendException e) {
+            // e.getMessage() carries Resend's actual API error (invalid
+            // API key, unverified sending domain, rate limit, etc.) — this
+            // is the string that ends up in the "could not be delivered"
+            // error InvitationService surfaces to the caller.
+            log.warn("Failed to send email to {} via Resend: {}", to, e.getMessage());
+            meterRegistry.counter("email.send.failure", "source", "resend").increment();
+            return false;
+        } catch (Exception e) {
+            // Defensive: an unexpected SDK-level failure shouldn't crash
+            // the invite/accept flow any more than an SMTP one would.
+            log.warn("Unexpected error sending email to {} via Resend: {}", to, e.getMessage());
+            meterRegistry.counter("email.send.failure", "source", "resend").increment();
             return false;
         }
     }

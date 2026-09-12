@@ -31,6 +31,13 @@ dependencies {
 	implementation 'org.mongodb:mongodb-driver-bom:5.7.0'
 	implementation 'org.mongodb:mongodb-driver-sync'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+	// Resend HTTPS-API email transport — used by EmailService for
+	// server-default sends when RESEND_API_KEY is set, as an alternative
+	// to spring.mail.* SMTP. Exists because several hosts (Render's free
+	// web-service tier, notably) block outbound SMTP ports 25/465/587
+	// entirely, which makes SMTP sending fail with a connection timeout
+	// there regardless of credentials — Resend sends over plain HTTPS
+	// instead. See docs/EMAIL_SETUP.md.
 	implementation 'com.resend:resend-java:3.1.0'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
