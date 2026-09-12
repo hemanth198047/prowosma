@@ -1,0 +1,139 @@
+/* ============================================================
+   MOBILE RESPONSIVE FIXES
+   ============================================================
+   The app shell (sidebar/topbar, see layout.css + themes.css)
+   already collapses correctly on mobile. The actual problem was
+   that almost every individual PAGE's content uses a fixed
+   multi-column CSS Grid (repeat(3, 1fr), repeat(4, 1fr), a
+   sidebar-style "220px 1fr" split, etc.) with no mobile
+   breakpoint of its own — of ~30 page/global stylesheets in this
+   project, only a handful had any @media rule at all. The result:
+   every page's desktop grid stayed exactly as wide as designed,
+   so on a phone it either overflowed horizontally or squeezed
+   every column into an unreadable sliver — "the desktop version
+   opening in mobile."
+
+   This file is imported LAST (see App.css) specifically so these
+   overrides win the cascade against every page stylesheet above
+   it without needing !important, except on the couple of rules
+   that were themselves declared with !important originally.
+
+   Two categories of fix below:
+   1. Card/stat grids and sidebar-split layouts → collapse to
+      fewer (or one) column so content stacks vertically instead
+      of squeezing.
+   2. Genuine data tables (time tracking, RAID log, releases,
+      pricing comparison) → keep their column structure (breaking
+      column alignment would make them unreadable) but make the
+      table wrapper horizontally scrollable instead of letting the
+      row grid get crushed.
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Dashboard ─────────────────────────────────────────── */
+  .db-hub-grid,
+  .db-hub-grid-5 { grid-template-columns: repeat(2, 1fr) !important; }
+  .db-pg-row,
+  .db-insights-row,
+  .db-bottom-row,
+  .cc3-stat-grid,
+  .db-ai-stats { grid-template-columns: 1fr; }
+
+  /* ── Activity log ──────────────────────────────────────── */
+  .al-layout { grid-template-columns: 1fr; }
+
+  /* ── Channels (chat sidebar + message pane) ───────────────
+     Stacks the channel list above the chat window. Not a full
+     mobile chat UX (that would need JS to show one pane at a
+     time), but no longer squeezed/overflowing. */
+  .channel-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 70vh;
+  }
+
+  /* ── Workspace settings ────────────────────────────────── */
+  .settings-two-col,
+  .ws-settings-layout { grid-template-columns: 1fr; }
+
+  /* ── Kanban board — stack lanes vertically instead of
+     squeezing 3 columns into one phone-width screen ────────── */
+  .kanban-board { grid-template-columns: 1fr; }
+
+  /* ── Gantt — stack the task-list panel above the timeline.
+     The timeline itself should already scroll horizontally
+     internally regardless of this outer split. ─────────────── */
+  .gantt-container { grid-template-columns: 1fr; }
+
+  /* ── BPM Studio (palette + canvas + properties panel) ─────
+     Inherently a desktop power-user tool; stacking is the most
+     honest option on a phone rather than squeezing all three. */
+  .bpm-canvas-layout { grid-template-columns: 1fr; }
+  .bpm-variables-body { grid-template-columns: 1fr; }
+
+  /* ── Scenario planning ─────────────────────────────────── */
+  .sc-builder-layout,
+  .sc-cmp-narratives { grid-template-columns: 1fr; }
+
+  /* ── ROI / KPI / Executive / Deployment stat grids ────────── */
+  .roi-metrics { grid-template-columns: repeat(2, 1fr); }
+  .kpi-forecast-stats { grid-template-columns: 1fr; }
+  .exec-grid { grid-template-columns: 1fr; }
+  .dep-dora-gauge { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── DLP policy grid (White Label / admin) ────────────────── */
+  .dlp-policy-grid { grid-template-columns: 1fr; }
+
+  /* ── Workspace avatar picker — 8 columns of small swatches
+     is fine at 4 per row, just not 8 on a phone width ────────── */
+  .workspace-avatar-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* ── Licensing page ─────────────────────────────────────── */
+  .lic-plans-grid { grid-template-columns: 1fr; }
+
+  /* ── Jira-style board modal / form ─────────────────────────── */
+  .jb-modal-body { grid-template-columns: 1fr; }
+  .jb-form-grid { grid-template-columns: 1fr; }
+
+  /* ── Analytics — workload & portfolio detail stats ────────── */
+  .workload-stats { grid-template-columns: repeat(2, 1fr); }
+  .portfolio-detail-stats { grid-template-columns: 1fr; }
+
+  /* ────────────────────────────────────────────────────────────
+     GENUINE DATA TABLES — keep column structure, make the
+     wrapper scroll horizontally instead of crushing columns.
+     Each row/header keeps a min-width roughly matching its
+     original fixed-column layout so nothing gets illegible.
+     ──────────────────────────────────────────────────────────── */
+  .tt-entries-table,
+  .tt-invoice-list,
+  .pplus-table,
+  .raid-table,
+  .lic-ct-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tt-entries-header,
+  .tt-entries-row { min-width: 720px; }
+  .tt-invoice-thead,
+  .tt-invoice-row { min-width: 560px; }
+  .pplus-table-head,
+  .pplus-table-row { min-width: 640px; }
+  .raid-table-header,
+  .raid-table-row { min-width: 640px; }
+  .lic-ct-header-row,
+  .lic-ct-row { min-width: 480px; }
+}
+
+/* Extra-narrow phones — a couple of the repeat(2,...) fallbacks
+   above are still tight below ~420px, so drop those specific
+   ones to a single column at that point. */
+@media (max-width: 420px) {
+  .db-hub-grid,
+  .db-hub-grid-5,
+  .roi-metrics,
+  .dep-dora-gauge,
+  .workload-stats { grid-template-columns: 1fr !important; }
+  .workspace-avatar-grid { grid-template-columns: repeat(3, 1fr); }
+}

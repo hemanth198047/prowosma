@@ -43,3 +43,9 @@
 @import './styles/deployment.css';
 @import './styles/knowledge-graph.css';
 @import './styles/nx-layout.css';
+
+/* Imported LAST on purpose — see the file's own header comment.
+   Overrides every page's fixed desktop-width grid layout with a
+   mobile-safe one, without needing !important anywhere it doesn't
+   already exist. */
+@import './styles/mobile-fixes.css';
