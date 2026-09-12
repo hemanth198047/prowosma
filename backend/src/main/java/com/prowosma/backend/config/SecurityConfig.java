@@ -57,6 +57,17 @@ public class SecurityConfig {
         "/api/invitations/accept",
         "/api/tasks/attachments/**",
         "/api/webhooks/**",
+        // Same shape as /api/auth/**: /providers and /metadata/{id} are
+        // pre-login informational endpoints (which SSO buttons to show,
+        // what URL to give an IdP admin) with nothing sensitive in them,
+        // and /callback runs immediately after a SAML redirect — before
+        // any JWT exists — authenticated by Spring Security's own SAML2
+        // filter chain via @AuthenticationPrincipal, not a Bearer token.
+        // Blocking this whole prefix at the JWT layer meant the login
+        // page's own "GET /api/sso/providers to decide whether to show an
+        // SSO button" call 401'd for every single visitor, logged-in or
+        // not.
+        "/api/sso/**",
         "/scim/v2/**",
         "/actuator/**",
         "/swagger-ui/**", "/swagger-ui.html",
