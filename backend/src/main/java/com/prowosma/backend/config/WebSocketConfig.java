@@ -59,7 +59,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(stompAuthChannelInterceptor);
     }
 
-    @Value("${app.websocket.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
+    // Deliberately the SAME property CorsConfig reads (app.cors.allowed-origins /
+    // CORS_ORIGINS) rather than a separate app.websocket.allowed-origins —
+    // this used to be its own property, defaulting to localhost-only when
+    // unset. Spring's STOMP endpoint does its OWN origin check here,
+    // completely independent of the main CorsConfigurationSource bean/CORS
+    // filter, so a real deployment could have working CORS for every
+    // ordinary API call while this separate, easy-to-miss property was
+    // never set — exactly what happened: CORS_ORIGINS was correctly set on
+    // Render, WS_ORIGINS never was, so this fell back to its localhost
+    // default and rejected every production origin with a 403, even though
+    // Spring Security's own auth layer (SecurityConfig's /ws/** PUBLIC_PATHS)
+    // was already fixed and correctly letting the request through to this
+    // point. One property for allowed origins, not two that can silently
+    // drift apart, closes this permanently.
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
     private String allowedOriginsRaw;
 
     @Value("${app.websocket.relay-host:localhost}")
