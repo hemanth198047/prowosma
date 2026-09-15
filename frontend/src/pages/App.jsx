@@ -137,7 +137,7 @@ function UserMenu() {
         <div className="user-avatar">{initials}</div>
         <span className="user-name">{user.name}</span>
         <RoleBadge role={role} />
-        <span style={{ fontSize: "10px", color: "#aaa" }}>▼</span>
+        <span style={{ fontSize: "10px", color: "#aaa", flexShrink: 0 }}>▼</span>
       </div>
       {open && (
         <div className="user-menu-dropdown">

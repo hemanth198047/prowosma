@@ -1304,6 +1304,17 @@
   align-items: center;
   gap: 3px;
   white-space: nowrap;
+  /* Sits inside .user-avatar-btn's flex row next to .user-name, which is
+     designed to shrink (it has its own overflow:hidden + ellipsis). This
+     badge has no such truncation handling, so if it's allowed to shrink
+     too, flexbox compresses its box below the nowrap text's natural width
+     and the text spills out past the pill's rounded background instead of
+     wrapping or truncating. Happened in practice when "Owner" (5 chars)
+     was relabeled to "Manager" (7 chars) — the extra width was enough to
+     tip it into that failure mode on typical topbar widths. flex-shrink:0
+     keeps the badge at its natural size and lets .user-name (or the
+     topbar's own search-bar flex item) give up space instead. */
+  flex-shrink: 0;
 }
 .role-owner {
   background: #fef3c7;

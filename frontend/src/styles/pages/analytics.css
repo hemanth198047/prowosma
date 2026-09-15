@@ -23,6 +23,10 @@
   gap: 14px;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.15s;
+  /* Grid items default to min-width:auto too (same trap as flex items) —
+     without this, a long content value inside could still force this
+     card wider than its auto-fill grid track instead of respecting it. */
+  min-width: 0;
 }
 
 .analytics-kpi-card:hover { box-shadow: var(--shadow-md); }
@@ -37,11 +41,31 @@
   flex-shrink: 0;
 }
 
+.analytics-kpi-body {
+  /* Flex items default to min-width:auto, which means they refuse to
+     shrink below their content's intrinsic width — for a long, unbroken
+     string value this silently defeats the ellipsis truncation on
+     .analytics-kpi-value above. min-width:0 is what actually lets it
+     shrink to fit the card. */
+  flex: 1;
+  min-width: 0;
+}
+
 .analytics-kpi-value {
   font-size: 24px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.5px;
+  /* KPI values are usually short ("0%", "1 days") but can also be a
+     free-text label like a username or skill string (e.g. "Most
+     Productive" → "java.swing.developer"). Those have no spaces to wrap
+     on, and .analytics-kpi-body below had no min-width:0, so the flex
+     item refused to shrink below the text's natural width and the value
+     spilled out past the card's edge instead of truncating. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .analytics-kpi-label {

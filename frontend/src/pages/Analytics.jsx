@@ -18,7 +18,7 @@ function KpiCard({ icon, label, value, sub, color, suffix = "" }) {
         {icon}
       </div>
       <div className="analytics-kpi-body">
-        <div className="analytics-kpi-value" style={{ color }}>
+        <div className="analytics-kpi-value" style={{ color }} title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}>
           {value}{suffix}
         </div>
         <div className="analytics-kpi-label">{label}</div>

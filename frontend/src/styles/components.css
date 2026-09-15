@@ -109,6 +109,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  /* Same fix as .role-badge in workspace.css: without this, a badge
+     sitting in a flex row next to a flex:1 sibling can get compressed
+     below its own text's natural width and visually spill past its pill
+     background instead of the row simply running out of horizontal
+     space gracefully. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .badge-active {
   background: #e0f2fe;
