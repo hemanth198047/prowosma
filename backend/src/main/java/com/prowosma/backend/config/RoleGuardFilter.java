@@ -139,7 +139,7 @@ public class RoleGuardFilter extends OncePerRequestFilter {
         // (self-delete /api/users/me is allowed for anyone authenticated)
         if (path.contains("/api/users/admin/")) {
             sendForbidden(response,
-                    "Only workspace Owners can delete user accounts.");
+                    "Only the workspace Manager can delete user accounts.");
             return;
         }
 
@@ -147,7 +147,7 @@ public class RoleGuardFilter extends OncePerRequestFilter {
         // including reads (see ADMIN_ONLY_PATHS javadoc above) ────────────
         if (isAdminOnlyPath(path) && !isAdminOrOwner(role)) {
             sendForbidden(response,
-                    "Only Admins and Owners can access workspace administration settings.");
+                    "Only Admins and the workspace Manager can access workspace administration settings.");
             return;
         }
 
@@ -172,14 +172,14 @@ public class RoleGuardFilter extends OncePerRequestFilter {
                         "DELETE".equals(method)) &&
                 !isAdminOrOwner(role)) {
             sendForbidden(response,
-                    "Only Admins and Owners can manage team members.");
+                    "Only Admins and the workspace Manager can manage team members.");
             return;
         }
 
         // ── Settings/invitations endpoints require ADMIN or OWNER ─────────
         if (isSettingsPath(path, method) && !isAdminOrOwner(role)) {
             sendForbidden(response,
-                    "Only Admins and Owners can modify workspace settings.");
+                    "Only Admins and the workspace Manager can modify workspace settings.");
             return;
         }
 
@@ -187,7 +187,7 @@ public class RoleGuardFilter extends OncePerRequestFilter {
         if ("DELETE".equals(method) &&
                 path.matches("/api/workspaces/[^/]+$")) {
             sendForbidden(response,
-                    "Only the workspace Owner can delete a workspace.");
+                    "Only the workspace Manager can delete a workspace.");
             return;
         }
 

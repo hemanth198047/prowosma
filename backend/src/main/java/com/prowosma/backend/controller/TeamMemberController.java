@@ -54,7 +54,7 @@ public class TeamMemberController {
             String msg = e.getMessage() != null ? e.getMessage() : "";
             org.springframework.http.HttpStatus status = msg.toLowerCase().contains("seat limit")
                     ? org.springframework.http.HttpStatus.PAYMENT_REQUIRED
-                    : msg.contains("Only the workspace Owner")
+                    : msg.contains("Only the workspace Manager")
                     ? org.springframework.http.HttpStatus.FORBIDDEN
                     : org.springframework.http.HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
@@ -68,7 +68,7 @@ public class TeamMemberController {
             return ResponseEntity.ok(teamMemberService.update(id, member, requester));
         } catch (RuntimeException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "";
-            org.springframework.http.HttpStatus status = msg.contains("Only the workspace Owner")
+            org.springframework.http.HttpStatus status = msg.contains("Only the workspace Manager")
                     ? org.springframework.http.HttpStatus.FORBIDDEN
                     : org.springframework.http.HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));

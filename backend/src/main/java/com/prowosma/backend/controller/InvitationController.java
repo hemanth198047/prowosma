@@ -161,12 +161,12 @@ public class InvitationController {
                 "expiresAt", saved.getExpiresAt().toString()
             ));
         } catch (RuntimeException e) {
-            // "Only the workspace Owner can invite someone as Admin" (see
+            // "Only the workspace Manager can invite someone as Admin" (see
             // InvitationService.invite) reads correctly as 403; everything
             // else here (duplicate pending invite, bad workspace, etc.)
             // stays a 400 same as before.
             String msg = e.getMessage() != null ? e.getMessage() : "";
-            HttpStatus status = msg.contains("Only the workspace Owner")
+            HttpStatus status = msg.contains("Only the workspace Manager")
                     ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
         }

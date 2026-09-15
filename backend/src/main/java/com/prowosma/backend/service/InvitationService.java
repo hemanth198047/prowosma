@@ -58,8 +58,8 @@ public class InvitationService {
                     invitedByEmail.equalsIgnoreCase(workspace.getOwnerEmail());
             if (!inviterIsOwner) {
                 throw new RuntimeException(
-                        "Only the workspace Owner can invite someone as Admin. " +
-                        "Invite them as Member or Viewer, or ask the Owner to send this invite.");
+                        "Only the workspace Manager can invite someone as Admin. " +
+                        "Invite them as Member or Viewer, or ask the Manager to send this invite.");
             }
         }
 
@@ -268,7 +268,7 @@ public class InvitationService {
         }
 
         String roleLabel = teamMemberRepository.findByEmailAndOrganizationId(invitedByEmail, workspaceId)
-                .map(tm -> "OWNER".equalsIgnoreCase(tm.getRole()) ? "workspace owner" : "workspace admin")
+                .map(tm -> "OWNER".equalsIgnoreCase(tm.getRole()) ? "workspace manager" : "workspace admin")
                 .orElse("workspace admin");
 
         return userRepository.findByEmail(invitedByEmail)
