@@ -5,6 +5,7 @@ import com.prowosma.backend.repository.TeamMemberRepository;
 import com.prowosma.backend.service.TeamMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,25 +41,38 @@ public class TeamMemberController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody TeamMember member) {
+    public ResponseEntity<?> create(@RequestBody TeamMember member, Authentication auth) {
         try {
-            return ResponseEntity.ok(teamMemberService.create(member));
+            String requester = auth != null ? auth.getName() : null;
+            return ResponseEntity.ok(teamMemberService.create(member, requester));
         } catch (RuntimeException e) {
             // Seat-limit rejections (and the existing "email already exists"
             // check) both land here — 402 for the former reads correctly in
             // the UI, and message text still distinguishes the two cases.
-            String status = e.getMessage() != null && e.getMessage().toLowerCase().contains("seat limit")
-                    ? "PAYMENT_REQUIRED" : "BAD_REQUEST";
-            return ResponseEntity.status(status.equals("PAYMENT_REQUIRED")
+            // Role-escalation rejections (see TeamMemberService.assertCanAssignRole)
+            // land here too and read correctly as 403.
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            org.springframework.http.HttpStatus status = msg.toLowerCase().contains("seat limit")
                     ? org.springframework.http.HttpStatus.PAYMENT_REQUIRED
-                    : org.springframework.http.HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
+                    : msg.contains("Only the workspace Owner")
+                    ? org.springframework.http.HttpStatus.FORBIDDEN
+                    : org.springframework.http.HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
         }
     }
 
     @PutMapping("/{id}")
-    public TeamMember update(@PathVariable String id, @RequestBody TeamMember member) {
-        return teamMemberService.update(id, member);
+    public ResponseEntity<?> update(@PathVariable String id, @RequestBody TeamMember member, Authentication auth) {
+        try {
+            String requester = auth != null ? auth.getName() : null;
+            return ResponseEntity.ok(teamMemberService.update(id, member, requester));
+        } catch (RuntimeException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            org.springframework.http.HttpStatus status = msg.contains("Only the workspace Owner")
+                    ? org.springframework.http.HttpStatus.FORBIDDEN
+                    : org.springframework.http.HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")

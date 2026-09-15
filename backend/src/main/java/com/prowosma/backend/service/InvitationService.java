@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -46,6 +47,21 @@ public class InvitationService {
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new RuntimeException("Workspace not found"));
+
+        // Only the workspace Owner can invite someone straight in as an
+        // Admin. Without this, any Admin could invite more Admins and the
+        // set of Admins only ever grows — which is exactly the "everyone
+        // who accepts an invite ends up Admin" problem reported by early
+        // testers. A plain Admin can still invite Members/Viewers.
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            boolean inviterIsOwner = invitedByEmail != null &&
+                    invitedByEmail.equalsIgnoreCase(workspace.getOwnerEmail());
+            if (!inviterIsOwner) {
+                throw new RuntimeException(
+                        "Only the workspace Owner can invite someone as Admin. " +
+                        "Invite them as Member or Viewer, or ask the Owner to send this invite.");
+            }
+        }
 
         Invitation inv = new Invitation();
         inv.setWorkspaceId(workspaceId);
@@ -111,20 +127,38 @@ public class InvitationService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
         }
 
-        // 6. Add as team member (idempotent)
+        // 6. Add as team member (idempotent) — or sync role if a
+        // TeamMember record for this email+workspace already exists.
+        //
+        // The "already a member" case matters more than it looks: e.g. a
+        // stale/duplicate membership from an earlier failed attempt, or a
+        // person who was re-invited with a different role than they had
+        // before. Previously this branch did nothing at all, silently
+        // leaving the OLD role in place even though the invitation being
+        // accepted right now says something different — so a person could
+        // end up staying (or ending up) an Admin even after being
+        // re-invited as a Member.
         try {
-            boolean alreadyMember = teamMemberRepository
-                    .findByEmailAndOrganizationId(inv.getEmail(), inv.getWorkspaceId())
-                    .isPresent();
-            if (!alreadyMember) {
+            Optional<TeamMember> existing = teamMemberRepository
+                    .findByEmailAndOrganizationId(inv.getEmail(), inv.getWorkspaceId());
+            String invitedRole = inv.getRole() != null ? inv.getRole() : "MEMBER";
+            if (existing.isEmpty()) {
                 TeamMember member = new TeamMember();
                 member.setName(user.getName());
                 member.setEmail(inv.getEmail());
-                member.setRole(inv.getRole() != null ? inv.getRole() : "MEMBER");
+                member.setRole(invitedRole);
                 member.setOrganizationId(inv.getWorkspaceId());
                 member.setColor("#" + String.format("%06x",
                         (inv.getEmail().hashCode() & 0xffffff) | 0x400000));
                 teamMemberRepository.save(member);
+            } else {
+                TeamMember member = existing.get();
+                // The workspace Owner's row (if one even exists as a
+                // TeamMember) is never touched by an invitation accept.
+                if (!"OWNER".equals(member.getRole()) && !invitedRole.equals(member.getRole())) {
+                    member.setRole(invitedRole);
+                    teamMemberRepository.save(member);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to add you as a team member: " + e.getMessage());
