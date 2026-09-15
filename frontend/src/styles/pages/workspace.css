@@ -16,8 +16,8 @@
 .ws-header { display:flex; align-items:center; justify-content:space-between;
   padding:16px 32px; background:#fff; border-bottom:1px solid var(--border); }
 
-.ws-logo { font-size:18px; font-weight:900; background:linear-gradient(135deg,#4f46e5,#7c3aed);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.ws-logo { display:flex; align-items:center; }
+.ws-logo img { height:30px; width:auto; }
 
 .ws-center { flex:1; display:flex; align-items:flex-start; justify-content:center;
   padding:32px 32px; width:100%; margin:0 auto; box-sizing:border-box; overflow:hidden; }

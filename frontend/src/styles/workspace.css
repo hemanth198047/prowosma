@@ -1248,13 +1248,13 @@
   animation: slideUp 0.3s ease;
 }
 .accept-invite-logo {
-  font-size: 22px;
-  font-weight: 900;
-  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
+}
+.accept-invite-logo img {
+  height: 40px;
+  width: auto;
 }
 .accept-invite-icon {
   font-size: 48px;

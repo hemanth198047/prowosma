@@ -198,7 +198,9 @@ export default function WorkspaceSetup() {
     <div className="ws-shell">
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="ws-header">
-        <div className="ws-logo">⚡ Prowosma</div>
+        <div className="ws-logo">
+          <img src="/logo-wordmark.png" alt="Prowosma" />
+        </div>
         {workspaces.length > 0 && (
           <div style={{display:"flex",gap:8}}>
             <button className="ws-btn-secondary"

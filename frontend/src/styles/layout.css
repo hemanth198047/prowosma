@@ -37,9 +37,8 @@
   gap: 10px;
 }
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  height: 26px;
+  width: auto;
   flex-shrink: 0;
 }
 
@@ -140,9 +139,15 @@
 /* Logo in topbar */
 .topbar-logo-row {
   display: flex; align-items: center;
+  gap: 8px;
   flex-shrink: 0;
   border-right: 1px solid var(--border, #e2e8f0);
   padding-right: 16px; margin-right: 4px;
+}
+.topbar-logo-img {
+  height: 26px;
+  width: auto;
+  flex-shrink: 0;
 }
 [data-theme="dark"] .topbar-logo-row { border-right-color: rgba(255,255,255,0.08); }
 .topbar-logo-txt {

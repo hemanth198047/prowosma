@@ -205,7 +205,7 @@ export default function Login() {
 
           {/* Brand */}
           <div className="auth-brand">
-            <div className="auth-brand-mark">P</div>
+            <img src="/logo-icon.png" alt="" className="auth-brand-mark" />
             <span className="auth-brand-name">{t("common.appName")}</span>
           </div>
 

@@ -123,7 +123,9 @@ export default function AcceptInvite() {
   return (
     <div className="accept-invite-page">
       <div className="accept-invite-card">
-        <div className="accept-invite-logo">Prowosma</div>
+        <div className="accept-invite-logo">
+          <img src="/logo-wordmark.png" alt="Prowosma" />
+        </div>
 
         {/* Loading */}
         {step === "loading" && (

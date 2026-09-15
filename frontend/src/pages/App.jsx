@@ -497,7 +497,7 @@ function AppShell() {
                   ☰
                 </button>
                 <div className="mobile-logo">
-                  <img src="/icons/icon-72.png" alt="Prowosma" className="logo-icon" />
+                  <img src="/logo-icon.png" alt="" className="logo-icon" />
                   <span>Prowosma</span>
                 </div>
               </div>}
@@ -510,6 +510,7 @@ function AppShell() {
                   </svg>
                 </button>
                 <div className="topbar-logo-row">
+                  <img src="/logo-icon.png" alt="" className="topbar-logo-img" />
                   <span className="topbar-logo-txt">Prowosma</span>
                 </div>
                 {/* Centre: search */}
