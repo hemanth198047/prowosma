@@ -46,7 +46,7 @@
     "enterpriseSso": "enterprise single sign-on",
     "continueWithProvider": "Continue with {{provider}}",
     "signedInAs": "Signed in as {{role}} of {{workspace}}",
-    "roleOwner": "Owner",
+    "roleOwner": "Manager",
     "roleAdmin": "Admin",
     "roleMember": "Member",
     "roleViewer": "Viewer",

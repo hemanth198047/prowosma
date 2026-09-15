@@ -116,7 +116,7 @@ export default function AcceptInvite() {
   };
 
   const roleLabel = {
-    OWNER: "👑 Owner", ADMIN: "🛡️ Admin",
+    OWNER: "👑 Manager", ADMIN: "🛡️ Admin",
     MEMBER: "👤 Member", VIEWER: "👁️ Viewer",
   }[invitedRole] || invitedRole;
 

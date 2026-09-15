@@ -46,7 +46,7 @@
     "enterpriseSso": "inicio de sesión único empresarial",
     "continueWithProvider": "Continuar con {{provider}}",
     "signedInAs": "Sesión iniciada como {{role}} de {{workspace}}",
-    "roleOwner": "Propietario",
+    "roleOwner": "Gerente",
     "roleAdmin": "Administrador",
     "roleMember": "Miembro",
     "roleViewer": "Observador",

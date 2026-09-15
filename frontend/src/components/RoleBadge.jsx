@@ -12,7 +12,7 @@ export default function RoleBadge({ role }) {
   }[role] || "role-badge role-member";
 
   const label = {
-    OWNER:  "👑 Owner",
+    OWNER:  "👑 Manager",
     ADMIN:  "🛡️ Admin",
     MEMBER: "👤 Member",
     VIEWER: "👁️ Viewer",

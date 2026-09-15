@@ -126,6 +126,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginUser = (userData, token) => {
+    // Defense in depth: if a DIFFERENT account was previously logged in on
+    // this browser, their workspace choice may still be sitting in
+    // localStorage.activeWorkspace (setActiveWorkspace writes it there
+    // alongside the tab-scoped sessionStorage copy). Nothing reads that
+    // value for network requests any more (see api/client.js), but it's
+    // still cleared here so it can't confuse anything that inspects it
+    // directly, and so this tab starts clean rather than carrying a
+    // previous person's workspace forward.
+    try {
+      const prevUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (prevUser?.email && prevUser.email !== userData?.email) {
+        localStorage.removeItem("activeWorkspace");
+      }
+    } catch { /* malformed previous localStorage entry — ignore */ }
+
     sessionStorage.setItem(tabKey("token"), token);
     sessionStorage.setItem(tabKey("user"), JSON.stringify(userData));
     localStorage.setItem("token", token);

@@ -34,8 +34,9 @@ const expertiseApi = {
 };
 import CanDo from "../components/CanDo";
 import { useAuth } from "../hooks/useAuth";
+import { useRole } from "../hooks/useRole";
 
-const ROLES = ["ADMIN", "MEMBER", "VIEWER"];
+const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
   "#6366f1",
   "#f59e0b",
@@ -48,6 +49,11 @@ const COLORS = [
   "#f97316",
 ];
 const roleColor = { OWNER: "#f59e0b", ADMIN: "#ef4444", MEMBER: "#6366f1", VIEWER: "#10b981" };
+// Display-only relabel: the underlying role value is still "OWNER"
+// everywhere it matters (DB, RoleGuardFilter, isOwner checks) — this just
+// changes what the word looks like on screen, per feedback that "Owner"
+// read as too informal/consumer-y for a workspace-management role.
+const roleLabel = (role) => (role === "OWNER" ? "MANAGER" : role);
 const statusColor = {
   TODO: "#6366f1",
   IN_PROGRESS: "#f59e0b",
@@ -83,11 +89,22 @@ function MemberAvatar({ member, size = 36 }) {
   );
 }
 
-function MemberForm({ initial, onSave, onCancel, saving }) {
+function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
   const [form, setForm] = useState(
     initial || { name: "", email: "", role: "MEMBER", color: "#6366f1" },
   );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  // Only the workspace Manager can grant/keep the Admin role — see
+  // TeamMemberService.assertCanAssignRole on the backend, which enforces
+  // this regardless of what the UI allows. If a non-Manager is editing
+  // someone who is *already* Admin, that option stays visible (so the
+  // dropdown shows their real current role) but disabled, since a non-
+  // Manager submitting this form can't change it anyway.
+  //
+  // Note: "Manager" is purely a display label — the underlying role value
+  // stored everywhere (DB, JWT/session role, RoleGuardFilter) is still
+  // "OWNER". Only user-facing copy changed here, not the data model.
+  const canPickAdmin = isOwner || form.role === "ADMIN";
 
   return (
     <div className="modal-overlay" onClick={saving ? undefined : onCancel} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (saving ? undefined : onCancel)?.(e); } }}>
@@ -120,9 +137,16 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
             disabled={saving} id={"team-role"}
           >
             {ROLES.map((r) => (
-              <option key={r}>{r}</option>
+              <option key={r} value={r} disabled={r === "ADMIN" && !canPickAdmin}>
+                {r === "ADMIN" && !canPickAdmin ? "ADMIN (Manager only)" : r}
+              </option>
             ))}
           </select>
+          {!isOwner && (
+            <span style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", display: "block" }}>
+              Only the workspace Manager can grant the Admin role.
+            </span>
+          )}
         </div>
         <div className="form-group">
           <span id="team-avatar-color-label">Avatar Color</span>
@@ -220,6 +244,7 @@ function AssignModal({ task, members, onSave, onCancel }) {
 
 export default function Team() {
   const { activeWorkspace } = useAuth();
+  const { isOwner } = useRole();
   const confirm = useConfirm();
   const { show: toast } = useToast();
   const [members, setMembers] = useState([]);
@@ -467,7 +492,7 @@ export default function Team() {
                         fontSize: "10px",
                       }}
                     >
-                      {m.role}
+                      {roleLabel(m.role)}
                     </span>
                   </div>
                   <div className="card-actions">
@@ -746,6 +771,7 @@ export default function Team() {
           initial={editing}
           onSave={handleSave}
           saving={savingMember}
+          isOwner={isOwner}
           onCancel={() => {
             if (savingMember) return;
             setShowForm(false);
@@ -798,14 +824,21 @@ export default function Team() {
                   setInviteForm((f) => ({ ...f, role: e.target.value }))
                 } id={"team-role-2"}
               >
-                <option value="ADMIN">
-                  Admin — Can manage members and settings
-                </option>
                 <option value="MEMBER">
                   Member — Full access to projects and tasks
                 </option>
                 <option value="VIEWER">Viewer — Read-only access</option>
+                <option value="ADMIN" disabled={!isOwner}>
+                  {isOwner
+                    ? "Admin — Can manage members and settings"
+                    : "Admin — Manager only"}
+                </option>
               </select>
+              {!isOwner && (
+                <span style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", display: "block" }}>
+                  Only the workspace Manager can invite someone as Admin.
+                </span>
+              )}
             </div>
             <div className="form-actions">
               <button

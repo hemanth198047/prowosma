@@ -584,7 +584,7 @@ export default function WorkspaceSettings() {
                           <div className="ws-member-info">
                             <div className="ws-member-name">
                               {member.name || member.email}
-                              {isCurrentOwner && <span className="ws-owner-badge">Owner</span>}
+                              {isCurrentOwner && <span className="ws-owner-badge">Manager</span>}
                             </div>
                             <div className="ws-member-email">{member.email}</div>
                           </div>
@@ -594,7 +594,9 @@ export default function WorkspaceSettings() {
                               value={member.role || "MEMBER"}
                               onChange={e => handleRoleChange(member, e.target.value)}
                             >
-                              <option value="ADMIN">Admin</option>
+                              <option value="ADMIN" disabled={!isOwner && member.role !== "ADMIN"}>
+                                Admin{!isOwner ? " (Manager only)" : ""}
+                              </option>
                               <option value="MEMBER">Member</option>
                               <option value="VIEWER">Viewer</option>
                             </select>
@@ -1052,7 +1054,7 @@ export default function WorkspaceSettings() {
                     <div key={role} style={{display:"flex",gap:"12px",alignItems:"flex-start",
                       padding:"10px 12px",background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",marginBottom:"6px"}}>
-                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"#6366f1"}}>{role}</div>
+                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"#6366f1"}}>{role === "OWNER" ? "MANAGER" : role}</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
                         {(Array.isArray(perms)?perms:["ALL"]).map(p=>(
                           <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"2px 7px",
@@ -1069,7 +1071,7 @@ export default function WorkspaceSettings() {
                     ["GUEST","→","View assigned content only"]].map(([r,a,d])=>(
                     <div key={r} style={{display:"flex",gap:"10px",padding:"7px 10px",
                       borderBottom:"1px solid var(--border)",fontSize:"12px"}}>
-                      <span style={{fontWeight:700,minWidth:70,color:"#6366f1"}}>{r}</span>
+                      <span style={{fontWeight:700,minWidth:70,color:"#6366f1"}}>{r === "OWNER" ? "MANAGER" : r}</span>
                       <span style={{color:"var(--gray-400)"}}>{a}</span>
                       <span style={{color:"var(--gray-600)"}}>{d}</span>
                     </div>

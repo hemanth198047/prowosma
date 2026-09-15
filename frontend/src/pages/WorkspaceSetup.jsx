@@ -384,7 +384,7 @@ export default function WorkspaceSetup() {
               background: "var(--gray-50, #f9fafb)", border: "1px solid var(--border)",
               borderRadius: 8, padding: "8px 10px", marginTop: 10,
             }}>
-              👑 Creating this workspace makes you its <strong>Owner</strong> — full admin
+              👑 Creating this workspace makes you its <strong>Manager</strong> — full admin
               rights, and only you can delete it or transfer it. You can invite
               teammates as Admins, Members, or Viewers afterward.
             </div>

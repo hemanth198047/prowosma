@@ -73,7 +73,24 @@ export function getToken() {
 }
 
 function getWorkspaceId() {
-  // sessionStorage — tab-keyed workspace
+  // sessionStorage — tab-keyed workspace, and ONLY this. See
+  // AuthContext.jsx's tab-isolation comment: activeWorkspace is
+  // deliberately per-tab, not shared across the browser.
+  //
+  // This used to also fall back to localStorage.activeWorkspace. That's
+  // exactly what AuthContext.getInitialWorkspace() was written to avoid —
+  // but this fallback bypassed that protection at the network layer.
+  // Concretely: log in as User A (their workspace gets written to
+  // localStorage as a byproduct of setActiveWorkspace), then in a NEW tab
+  // log in as invited User B, who has never selected a workspace in THIS
+  // tab. Every request from B's tab — including the very first
+  // "GET /api/workspaces" call used to auto-select B's own workspace —
+  // would silently carry User A's stale workspace id in X-Workspace-Id.
+  // The backend's WorkspaceFilter correctly rejects that (B isn't a
+  // member of A's workspace) with a 403, ProtectedRoute swallows the
+  // error, and B lands on "create/select a workspace" even though they
+  // already belong to one. Removing the fallback here makes the header
+  // consistently reflect only what THIS tab actually chose.
   for (const key of Object.keys(sessionStorage)) {
     if (key.endsWith("__activeWorkspace")) {
       try {
@@ -82,11 +99,6 @@ function getWorkspaceId() {
       } catch { /* malformed sessionStorage entry — skip and fall through */ }
     }
   }
-  // localStorage fallback
-  try {
-    const ws = JSON.parse(localStorage.getItem("activeWorkspace") || "null");
-    if (ws?.id) return ws.id;
-  } catch { /* malformed localStorage entry — no active workspace */ }
   return null;
 }
 

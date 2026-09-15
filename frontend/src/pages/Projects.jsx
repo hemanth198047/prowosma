@@ -21,6 +21,7 @@ import { getGoals, createGoal } from "../api/goals";
 import CustomFieldValues from "../components/CustomFieldValues";
 import EntityActivityTab from "../components/EntityActivityTab";
 import { useAuth } from "../hooks/useAuth";
+import { getMeetingsForProject } from "../api/meetings";
 
 const COLORS = [
   "#6366f1",
@@ -614,6 +615,73 @@ function SubProjectCard({
   );
 }
 
+// ── Project-scoped meeting history ───────────────────────────
+// Surfaces the notes/summary carried in each meeting that discussed this
+// project — the backend (GET /meetings/project/{id}) already supported
+// this, it just had no UI consumer anywhere until now. Answers "what was
+// said about this project across meetings" directly from the project card,
+// instead of hunting through the Meetings page.
+function ProjectMeetingsPanel({ projectId, navigate }) {
+  const [meetings, setMeetings] = useState(null); // null = loading
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMeetingsForProject(projectId)
+      .then(r => { if (!cancelled) setMeetings(r.data?.items || r.data?.content || r.data || []); })
+      .catch(() => { if (!cancelled) setError(true); });
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  return (
+    <div className="entity-activity-panel">
+      <div className="entity-activity-panel-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>📅 Project Meetings</span>
+        <button
+          className="btn-secondary"
+          style={{ fontSize: "11px", padding: "4px 10px" }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/meetings?projectId=${projectId}`); }}
+        >
+          + New meeting for this project
+        </button>
+      </div>
+      {meetings === null && !error && <p className="empty-state" style={{ fontSize: "12px" }}>Loading…</p>}
+      {error && <p className="empty-state" style={{ fontSize: "12px" }}>Couldn't load meetings for this project.</p>}
+      {meetings && meetings.length === 0 && (
+        <p className="empty-state" style={{ fontSize: "12px" }}>
+          No meetings have discussed this project yet.
+        </p>
+      )}
+      {meetings && meetings.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {meetings.slice(0, 5).map(m => {
+            const pd = m.projectDiscussions?.find(d => d.projectId === projectId);
+            return (
+              <div key={m.id} className="pending-invite-row" style={{ cursor: "pointer" }}
+                onClick={(e) => { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); }}>
+                <div className="pending-invite-info">
+                  <div className="pending-invite-email">{m.title}</div>
+                  <div className="pending-invite-meta">
+                    {m.meetingDate ? new Date(m.meetingDate).toLocaleDateString() : "—"}
+                    {pd?.statusSnapshot && <> · {pd.statusSnapshot.replace("_", " ")}</>}
+                    {pd?.discussionNotes && <> · {pd.discussionNotes.slice(0, 80)}{pd.discussionNotes.length > 80 ? "…" : ""}</>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {meetings.length > 5 && (
+            <button className="btn-secondary" style={{ fontSize: "11px", alignSelf: "flex-start" }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/meetings?projectId=${projectId}`); }}>
+              View all {meetings.length} meetings →
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProjectCard({
   p,
   cat,
@@ -632,6 +700,7 @@ function ProjectCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
+  const [showMeetings, setShowMeetings] = useState(false);
 
   return (
     <div
@@ -755,6 +824,13 @@ function ProjectCard({
               >
                 📋 Activity
               </button>
+              <button
+                className={`btn-secondary ${showMeetings ? "btn-active" : ""}`}
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+                onClick={(e) => { e.stopPropagation(); setShowMeetings(m => !m); }}
+              >
+                📅 Meetings
+              </button>
             </div>
           </div>
 
@@ -780,6 +856,9 @@ function ProjectCard({
               <div className="entity-activity-panel-title">📋 Project Activity</div>
               <EntityActivityTab entityType="project" entityId={p.id} />
             </div>
+          )}
+          {showMeetings && (
+            <ProjectMeetingsPanel projectId={p.id} navigate={navigate} />
           )}
         </div>
       </div>

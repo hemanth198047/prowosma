@@ -39,7 +39,7 @@ const HELP_CONTENT = {
   },
   team: {
     keywords: ["team","member","members","invite","role","permission","workload","colleague"],
-    answer: "**Team** — Go to **Team** in the sidebar.\n\n- Click **Invite Member** to add someone by email.\n- Assign roles: Owner, Admin, Member, or Guest.\n- View each member's current task workload.\n- Reassign tasks in bulk from the workload view.\n- Deactivate members without deleting their data.\n\n📍 Navigate: [Team →](/team)"
+    answer: "**Team** — Go to **Team** in the sidebar.\n\n- Click **Invite Member** to add someone by email.\n- Assign roles: Manager, Admin, Member, or Guest.\n- View each member's current task workload.\n- Reassign tasks in bulk from the workload view.\n- Deactivate members without deleting their data.\n\n📍 Navigate: [Team →](/team)"
   },
   channels: {
     keywords: ["channel","channels","chat","message","mention","thread","communication"],

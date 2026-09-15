@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   getMeetings, createMeeting, updateMeeting, deleteMeeting,
   extractMeeting, markActionConverted,
@@ -62,14 +63,14 @@ const EMPTY = {
   meetingType: "OTHER", projectDiscussions: [],
 };
 
-function MeetingFormModal({ initial, projects, wsId, onSave, onCancel }) {
+function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }) {
   const [form, setForm]     = useState(() => initial
     ? { ...initial, attendees: initial.attendees?.join(", ") || "",
         meetingDate: initial.meetingDate?.slice(0,16) || "",
         meetingType: initial.meetingType || "OTHER" }
-    : { ...EMPTY });
+    : { ...EMPTY, ...(prefill?.form || {}) });
   const [projectBlocks, setProjectBlocks] = useState(() =>
-    (initial?.projectDiscussions || []).map(pd => ({
+    (initial?.projectDiscussions || prefill?.projectDiscussions || []).map(pd => ({
       projectId: pd.projectId, statusSnapshot: pd.statusSnapshot || "",
       quickUpdate: pd.quickUpdate || "", discussionNotes: pd.discussionNotes || "",
     })));
@@ -615,6 +616,7 @@ export default function Meetings() {
   const { show: toast } = useToast();
   const confirm = useConfirm();
   const wsId    = activeWorkspace?.id;
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [meetings,  setMeetings]  = useState([]);
   const [projects,  setProjects]  = useState([]);
@@ -623,8 +625,10 @@ export default function Meetings() {
   const [loading,   setLoading]   = useState(true);
   const [showForm,  setShowForm]  = useState(false);
   const [editing,   setEditing]   = useState(null);
+  const [prefill,   setPrefill]   = useState(null);
   const [searchQ,   setSearchQ]   = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState(searchParams.get("projectId") || "");
 
   const load = useCallback(async () => {
     if (!wsId) { setLoading(false); return; }
@@ -657,12 +661,42 @@ export default function Meetings() {
     loadPrepareData();
   }, [load, loadPrepareData]);
 
+  // Deep-link support: arriving here from a Project card's "New meeting
+  // for this project" / "View meetings" actions (see Projects.jsx). Opens
+  // the create form pre-scoped to that project, or opens an existing
+  // meeting directly, then clears the query param so a refresh doesn't
+  // re-trigger it.
+  useEffect(() => {
+    const projectIdParam = searchParams.get("projectId");
+    const openParam       = searchParams.get("open");
+
+    if (openParam && meetings.length > 0) {
+      const target = meetings.find(m => m.id === openParam);
+      if (target) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- deep-link open, mirrors this file's own load-on-mount pattern above
+        setEditing(target);
+        setShowForm(true);
+      }
+      setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete("open"); return p; }, { replace: true });
+      return;
+    }
+
+    if (projectIdParam && !showForm && projects.length > 0) {
+      setEditing(null);
+      setPrefill({ projectDiscussions: [{ projectId: projectIdParam, statusSnapshot: "IN_PROGRESS" }] });
+      setShowForm(true);
+      setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete("projectId"); return p; }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meetings, projects, searchParams]);
+
   const handleSave = async (payload) => {
     if (editing) await updateMeeting(editing.id, payload);
     else await createMeeting(payload);
     toast?.(editing ? "Meeting updated" : "Meeting saved", "success");
     setShowForm(false);
     setEditing(null);
+    setPrefill(null);
     load();
   };
 
@@ -680,6 +714,7 @@ export default function Meetings() {
 
   const filtered = meetings.filter(m => {
     if (filterStatus && m.status !== filterStatus) return false;
+    if (filterProjectId && !m.projectDiscussions?.some(d => d.projectId === filterProjectId)) return false;
     if (searchQ && !m.title.toLowerCase().includes(searchQ.toLowerCase())) return false;
     return true;
   });
@@ -736,6 +771,12 @@ export default function Meetings() {
             </button>
           ))}
         </div>
+        <select value={filterProjectId} onChange={e => setFilterProjectId(e.target.value)}
+          style={{ fontSize: "12px", padding: "4px 8px" }}
+          title="Show only meetings that discussed this project">
+          <option value="">All projects</option>
+          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
         <div style={{flex:1}} />
         <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
           + New Meeting
@@ -770,11 +811,12 @@ export default function Meetings() {
       {showForm && (
         <MeetingFormModal
           initial={editing}
+          prefill={prefill}
           projects={projects}
           members={members}
           wsId={wsId}
           onSave={handleSave}
-          onCancel={() => { setShowForm(false); setEditing(null); }}
+          onCancel={() => { setShowForm(false); setEditing(null); setPrefill(null); }}
         />
       )}
     </div>

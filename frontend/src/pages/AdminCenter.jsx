@@ -5,6 +5,10 @@ import client from "../api/client";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { getBillingSummary, getPlans, startCheckout, openBillingPortal } from "../api/billing";
+import { getTeamMembers, updateTeamMember, deleteTeamMember } from "../api/team";
+import { getPendingInvites, sendInvitation, cancelInvitation, resendInvitation } from "../api/invitations";
+import { getProjects } from "../api/projects";
+import { useRole } from "../hooks/useRole";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -1603,8 +1607,316 @@ function DlpPanel() {
   );
 }
 
+// ── People & Projects — single-place workspace management ─────
+// Added in response to a very direct piece of feedback: there was no one
+// place a manager/Owner could see every user + every project + role/status
+// at a glance. AdminCenter already existed as "the admin place" for
+// security/billing/compliance — these two tabs extend it to cover people
+// and delivery, reusing the same Team/Invitations/Projects APIs the rest
+// of the app already uses (no new backend surface needed for read access).
+const ADMIN_ROLE_COLOR = { OWNER: "#f59e0b", ADMIN: "#ef4444", MEMBER: "#6366f1", VIEWER: "#10b981" };
+
+function WorkspacePeople() {
+  const { isOwner } = useRole();
+  const { show: toast } = useToast();
+  const confirm = useConfirm();
+  const [members,  setMembers]  = useState([]);
+  const [invites,  setInvites]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [busyId,   setBusyId]   = useState(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", role: "MEMBER" });
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+
+  const load = useCallback(() => {
+    setLoading(true);
+    Promise.all([getTeamMembers(), getPendingInvites()])
+      .then(([m, i]) => { setMembers(unwrapList(m)); setInvites(unwrapList(i)); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- standard load-on-mount pattern, same as Meetings.jsx's load()
+  useEffect(() => { load(); }, [load]);
+
+  const handleRoleChange = async (member, role) => {
+    if (role === "ADMIN" && !isOwner) {
+      toast("Only the workspace Manager can grant the Admin role.", "error");
+      return;
+    }
+    setBusyId(member.id);
+    try {
+      await updateTeamMember(member.id, { ...member, role });
+      setMembers(ms => ms.map(m => m.id === member.id ? { ...m, role } : m));
+      toast(`${member.name}'s role is now ${role}`, "success");
+    } catch (e) {
+      toast(e.response?.data?.error || "Couldn't update this member's role.", "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRemove = async (member) => {
+    const ok = await confirm({ title: "Remove this member?", message: `${member.name} will lose access to the workspace.`, danger: true, confirmText: "Remove" });
+    if (!ok) return;
+    setBusyId(member.id);
+    try {
+      await deleteTeamMember(member.id);
+      setMembers(ms => ms.filter(m => m.id !== member.id));
+      toast("Member removed", "success");
+    } catch (e) {
+      toast(e.response?.data?.error || "Couldn't remove this member.", "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!inviteForm.email.trim()) { setInviteError("Email is required"); return; }
+    setInviteBusy(true); setInviteError("");
+    try {
+      await sendInvitation(inviteForm);
+      toast(`Invitation sent to ${inviteForm.email}`, "success");
+      setInviteForm({ email: "", role: "MEMBER" });
+      setInviteOpen(false);
+      load();
+    } catch (e) {
+      setInviteError(e.response?.data?.error || "Failed to send invitation");
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const handleCancelInvite = async (inv) => {
+    setBusyId(inv.id);
+    try {
+      await cancelInvitation(inv.id);
+      setInvites(is => is.filter(i => i.id !== inv.id));
+      toast(`Invitation to ${inv.email} cancelled`, "success");
+    } catch {
+      toast(`Couldn't cancel the invitation to ${inv.email}`, "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleResendInvite = async (inv) => {
+    setBusyId(inv.id);
+    try {
+      await resendInvitation(inv.id);
+      toast(`Invitation resent to ${inv.email}`, "success");
+    } catch (e) {
+      toast(e.response?.data?.error || `Couldn't resend the invitation to ${inv.email}`, "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) return <div className="analytics-loading"><div className="analytics-spinner" /></div>;
+
+  const owners  = members.filter(m => m.role === "OWNER").length;
+  const admins  = members.filter(m => m.role === "ADMIN").length;
+  const viewers = members.filter(m => m.role === "VIEWER").length;
+
+  return (
+    <div className="admin-section">
+      <div className="admin-stat-grid">
+        {[
+          { label: "Total People", value: members.length, color: "#6366f1", icon: "👥" },
+          { label: "Managers",     value: owners,          color: "#f59e0b", icon: "👑" },
+          { label: "Admins",       value: admins,          color: "#ef4444", icon: "🛡️" },
+          { label: "Viewers",      value: viewers,         color: "#10b981", icon: "👁️" },
+          { label: "Pending Invites", value: invites.length, color: "#f59e0b", icon: "✉️" },
+        ].map(s => (
+          <div key={s.label} className="admin-stat-card">
+            <div className="admin-stat-icon">{s.icon}</div>
+            <div className="admin-stat-num" style={{ color: s.color }}>{s.value}</div>
+            <div className="admin-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {!isOwner && (
+        <div className="admin-audit-note">
+          You're viewing this as an Admin. Only the workspace Manager can grant or remove the Admin role —
+          everything else here (Members, Viewers, invites) is yours to manage.
+        </div>
+      )}
+
+      <div className="admin-card">
+        <div className="admin-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>👥 Team Members ({members.length})</span>
+          <button className="btn-primary" style={{ fontSize: "12px", padding: "6px 12px" }}
+            onClick={() => setInviteOpen(true)}>✉️ Invite</button>
+        </div>
+        {members.length === 0
+          ? <div className="admin-empty">No team members yet.</div>
+          : members.map(m => (
+            <div key={m.id} className="admin-session-row">
+              <div className="admin-session-info">
+                <div className="admin-session-user">{m.name} <span style={{ color: "#9ca3af", fontWeight: 400 }}>· {m.email}</span></div>
+                <div className="admin-session-meta">
+                  {(m.skills?.length ? `${m.skills.length} skills declared` : "No skills declared")}
+                </div>
+              </div>
+              {m.role === "OWNER" ? (
+                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>👑 MANAGER</span>
+              ) : (
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <select value={m.role} disabled={busyId === m.id}
+                    onChange={e => handleRoleChange(m, e.target.value)}
+                    style={{ fontSize: "12px", padding: "4px 8px" }}>
+                    <option value="MEMBER">MEMBER</option>
+                    <option value="VIEWER">VIEWER</option>
+                    <option value="ADMIN" disabled={!isOwner && m.role !== "ADMIN"}>ADMIN{!isOwner ? " (Manager only)" : ""}</option>
+                  </select>
+                  <button className="btn-icon" title="Remove" disabled={busyId === m.id}
+                    onClick={() => handleRemove(m)}>🗑️</button>
+                </div>
+              )}
+            </div>
+          ))
+        }
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-card-title">✉️ Pending Invitations ({invites.length})</div>
+        {invites.length === 0
+          ? <div className="admin-empty">No pending invitations.</div>
+          : invites.map(inv => (
+            <div key={inv.id} className="admin-session-row">
+              <div className="admin-session-info">
+                <div className="admin-session-user">{inv.email}</div>
+                <div className="admin-session-meta">
+                  Role: {inv.role} · Expires {inv.expiresAt ? new Date(inv.expiresAt).toLocaleDateString() : "—"}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px" }}
+                  disabled={busyId === inv.id} onClick={() => handleResendInvite(inv)}>Resend</button>
+                <button className="btn-icon" style={{ color: "var(--danger)" }}
+                  disabled={busyId === inv.id} onClick={() => handleCancelInvite(inv)}>✕</button>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      {inviteOpen && (
+        <div className="modal-overlay" onClick={() => setInviteOpen(false)} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) setInviteOpen(false); }}>
+          <div className="modal" onClick={e => e.stopPropagation()} role="presentation">
+            <h2>✉️ Invite Team Member</h2>
+            {inviteError && <div className="auth-error">⚠️ {inviteError}</div>}
+            <div className="form-group">
+              <label htmlFor="admin-invite-email">Email Address *</label>
+              <input id="admin-invite-email" type="email" value={inviteForm.email}
+                onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="colleague@company.com" />
+            </div>
+            <div className="form-group">
+              <label htmlFor="admin-invite-role">Role</label>
+              <select id="admin-invite-role" value={inviteForm.role}
+                onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}>
+                <option value="MEMBER">Member — Full access to projects and tasks</option>
+                <option value="VIEWER">Viewer — Read-only access</option>
+                <option value="ADMIN" disabled={!isOwner}>
+                  {isOwner ? "Admin — Can manage members and settings" : "Admin — Manager only"}
+                </option>
+              </select>
+            </div>
+            <div className="form-actions">
+              <button className="btn-secondary" onClick={() => { setInviteOpen(false); setInviteError(""); }}>Cancel</button>
+              <button className="btn-primary" disabled={inviteBusy} onClick={handleInvite}>
+                {inviteBusy ? "Sending…" : "Send Invitation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PROJECT_STATUS_COLOR = {
+  NOT_STARTED: "#9ca3af", IN_PROGRESS: "#6366f1", ON_TRACK: "#10b981",
+  AT_RISK: "#f59e0b", BLOCKED: "#ef4444", COMPLETED: "#10b981", PAUSED: "#9ca3af",
+};
+
+function WorkspaceProjects() {
+  const [projects, setProjects] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [filter,   setFilter]   = useState("ALL");
+
+  useEffect(() => {
+    getProjects().then(r => setProjects(unwrapList(r))).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="analytics-loading"><div className="analytics-spinner" /></div>;
+
+  const statuses = Array.from(new Set(projects.map(p => p.status).filter(Boolean)));
+  const visible = filter === "ALL" ? projects : projects.filter(p => p.status === filter);
+  const active = projects.filter(p => !p.archived).length;
+  const atRisk = projects.filter(p => p.status === "AT_RISK" || p.status === "BLOCKED").length;
+
+  return (
+    <div className="admin-section">
+      <div className="admin-stat-grid">
+        {[
+          { label: "Total Projects", value: projects.length, color: "#6366f1", icon: "📁" },
+          { label: "Active",         value: active,           color: "#10b981", icon: "🟢" },
+          { label: "At Risk / Blocked", value: atRisk,        color: "#ef4444", icon: "⚠️" },
+        ].map(s => (
+          <div key={s.label} className="admin-stat-card">
+            <div className="admin-stat-icon">{s.icon}</div>
+            <div className="admin-stat-num" style={{ color: s.color }}>{s.value}</div>
+            <div className="admin-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+          <span>📁 All Projects ({visible.length})</span>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            <button className={`sprint-filter-btn${filter === "ALL" ? " active" : ""}`} onClick={() => setFilter("ALL")}>All</button>
+            {statuses.map(s => (
+              <button key={s} className={`sprint-filter-btn${filter === s ? " active" : ""}`} onClick={() => setFilter(s)}>
+                {s.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+        </div>
+        {visible.length === 0
+          ? <div className="admin-empty">No projects match this filter.</div>
+          : visible.map(p => (
+            <div key={p.id} className="admin-session-row">
+              <div className="admin-session-info">
+                <div className="admin-session-user">
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: p.color || "#6366f1", marginRight: 6 }} />
+                  {p.name}
+                </div>
+                <div className="admin-session-meta">{p.description || "No description"}</div>
+              </div>
+              <span className="badge" style={{
+                background: (PROJECT_STATUS_COLOR[p.status] || "#9ca3af") + "22",
+                color: PROJECT_STATUS_COLOR[p.status] || "#9ca3af",
+              }}>
+                {p.status?.replace("_", " ") || "—"}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
 // ── Main AdminCenter ──────────────────────────────────────────
 const TABS = [
+  { id:"people",     label:"👥 People"      },
+  { id:"projects",   label:"📁 Projects"    },
   { id:"security",   label:"🔐 Security"    },
   { id:"retention",  label:"🗄️ Retention"  },
   { id:"email",      label:"📧 Email"       },
@@ -1622,12 +1934,12 @@ const TABS = [
 ];
 
 export default function AdminCenter() {
-  const [tab, setTab] = useState("security");
+  const [tab, setTab] = useState("people");
 
   return (
     <div>
       <PageHeader icon="⚙️" title="Admin Centre"
-        description="Security, compliance, feature flags, and billing management" />
+        description="Users, projects, security, compliance, feature flags, and billing — all in one place" />
 
       <div className="admin-tab-bar">
         {TABS.map(t => (
@@ -1639,6 +1951,8 @@ export default function AdminCenter() {
         ))}
       </div>
 
+      {tab === "people"    && <WorkspacePeople />}
+      {tab === "projects"  && <WorkspaceProjects />}
       {tab === "security"  && <SecurityCentre />}
       {tab === "retention" && <DataRetention />}
       {tab === "email"     && <EmailSettingsPanel />}
