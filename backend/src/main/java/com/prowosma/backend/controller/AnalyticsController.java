@@ -5,6 +5,7 @@ import com.prowosma.backend.model.ActivityLog;
 import com.prowosma.backend.model.Goal;
 import com.prowosma.backend.model.Project;
 import com.prowosma.backend.model.Task;
+import com.prowosma.backend.model.TeamMember;
 import com.prowosma.backend.repository.*;
 import com.prowosma.backend.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AnalyticsController {
     private final ActivityLogRepository activityLogRepository;
     private final ProjectService        projectService;
     private final WorkspaceContext      workspaceContext;
+    private final UserRepository        userRepository;
 
     // ── Main analytics endpoint ────────────────────────────────
     @GetMapping
@@ -72,15 +74,34 @@ public class AnalyticsController {
         List<ActivityLog> recentLogs = activityLogRepository
                 .findByOrganizationIdAndCreatedAtBetweenOrderByCreatedAtDesc(
                         workspaceContext.getWorkspaceId(), monthStart, now);
-        String topUser = recentLogs.stream()
+        String topUserEmail = recentLogs.stream()
                 .filter(l -> "TASK_COMPLETED".equals(l.getAction()) || "DONE".equals(l.getNewValue()))
                 .collect(Collectors.groupingBy(
                         l -> l.getPerformedBy() != null ? l.getPerformedBy() : "Unknown",
                         Collectors.counting()))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
-                .map(e -> e.getKey().contains("@") ? e.getKey().split("@")[0] : e.getKey())
-                .orElse("—");
+                .map(Map.Entry::getKey)
+                .orElse(null);
+        // ActivityLog only ever stores the performer's email, not their
+        // display name — this previously just chopped off the domain
+        // (e.g. "java.swing.developer@company.com" → "java.swing.developer"),
+        // which happened to look like a plausible name but is really just
+        // the local part of an email address. Look up their actual name
+        // instead: TeamMember first (the common case), then User (covers
+        // the workspace Manager, who completes tasks like anyone else but
+        // doesn't always have a TeamMember row of their own), and only
+        // fall back to the email-derived guess if neither has a record —
+        // e.g. someone who's since left the workspace.
+        String topUser = "Unknown".equals(topUserEmail) || topUserEmail == null
+                ? "—"
+                : teamMemberRepository.findByEmailAndOrganizationId(topUserEmail, workspaceContext.getWorkspaceId())
+                        .map(TeamMember::getName)
+                        .filter(n -> n != null && !n.isBlank())
+                        .or(() -> userRepository.findByEmail(topUserEmail)
+                                .map(com.prowosma.backend.model.User::getName)
+                                .filter(n -> n != null && !n.isBlank()))
+                        .orElse(topUserEmail.contains("@") ? topUserEmail.split("@")[0] : topUserEmail);
 
         long achievedGoals = goals.stream().filter(g -> "ACHIEVED".equals(g.getStatus())).count();
 
