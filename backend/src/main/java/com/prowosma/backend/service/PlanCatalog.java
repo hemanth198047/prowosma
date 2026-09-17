@@ -71,7 +71,11 @@ public class PlanCatalog {
     }
 
     public List<Plan> allPlans() {
-        Plan free = new Plan("FREE", "Free", 5, 0, false,
+        // FREE seat limit raised from 5 → 5000 (single source of truth —
+        // every enforcement point (BillingService.assertSeatAvailable) and
+        // display (Licensing/AdminCenter "X of Y seats used") reads this
+        // dynamically, so nothing else needs to change for the real limit.
+        Plan free = new Plan("FREE", "Free", 5000, 0, false,
                 false, false, false, false, false);
 
         Plan pro = new Plan("PRO", "Pro", 25, 1200, true,

@@ -38,6 +38,11 @@ public class IntegrationController {
         return integrationService.syncGitHub(id);
     }
 
+    @PostMapping("/{id}/sync/bitbucket")
+    public Map<String, Object> syncBitbucket(@PathVariable String id) {
+        return integrationService.syncBitbucket(id);
+    }
+
     @PostMapping("/{id}/sync/slack")
     public Map<String, Object> sendSlack(@PathVariable String id,
                                          @RequestBody Map<String, String> body) {

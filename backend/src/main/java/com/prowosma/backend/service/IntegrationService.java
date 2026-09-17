@@ -126,6 +126,86 @@ public class IntegrationService {
         }
     }
 
+    /**
+     * Pulls open pull requests from a Bitbucket Cloud repository and mirrors
+     * them into Prowosma tasks — same shape as syncGitHub above.
+     *
+     * Auth: Bitbucket Cloud App Passwords use HTTP Basic Auth with the
+     * account's own username (not email) as the username component —
+     * https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/
+     */
+    public Map<String, Object> syncBitbucket(String id) {
+        Integration integration = integrationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Integration not found"));
+        Map<String, String> cfg = integration.getConfig();
+        if (cfg == null) throw new RuntimeException("Bitbucket is not configured yet");
+        String workspaceSlug = cfg.get("workspaceSlug");
+        String repoSlug      = cfg.get("repoSlug");
+        String username      = cfg.get("username");
+        String appPassword   = cfg.get("appPassword");
+        if (workspaceSlug == null || workspaceSlug.isBlank())
+            throw new RuntimeException("Bitbucket workspace slug is required");
+        if (repoSlug == null || repoSlug.isBlank())
+            throw new RuntimeException("Bitbucket repository slug is required");
+        if (username == null || username.isBlank())
+            throw new RuntimeException("Bitbucket username is required (the account the app password belongs to)");
+        if (appPassword == null || appPassword.isBlank())
+            throw new RuntimeException("Bitbucket app password is required");
+        try {
+            RestTemplate rest = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            String creds = java.util.Base64.getEncoder().encodeToString(
+                    (username + ":" + appPassword).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            headers.set("Authorization", "Basic " + creds);
+            headers.set("Accept", "application/json");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            String url = "https://api.bitbucket.org/2.0/repositories/" + workspaceSlug + "/" + repoSlug
+                    + "/pullrequests?state=OPEN&pagelen=50";
+            ResponseEntity<Map> response = rest.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> body = response.getBody();
+            List<Map<String, Object>> prs = body != null && body.get("values") != null
+                    ? (List<Map<String, Object>>) body.get("values") : List.of();
+            int imported = 0;
+            for (Map<String, Object> pr : prs) {
+                String title = "[Bitbucket] " + pr.get("title");
+                String prTitle = (String) pr.get("title");
+                boolean exists = taskRepository.findByTitleContainingIgnoreCase(prTitle).stream()
+                        .anyMatch(t -> t.getTitle().startsWith("[Bitbucket]"));
+                if (!exists) {
+                    Map<String, Object> author = (Map<String, Object>) pr.get("author");
+                    Task task = new Task();
+                    task.setTitle(title);
+                    task.setDescription((String) pr.getOrDefault("description", ""));
+                    task.setStatus("TODO");
+                    task.setPriority("MEDIUM");
+                    task.setTags(List.of("bitbucket", "pull-request"));
+                    task.setCreatedAt(LocalDateTime.now());
+                    task.setUpdatedAt(LocalDateTime.now());
+                    if (author != null && author.get("display_name") != null) {
+                        task.setDescription(task.getDescription()
+                                + "\n\nOpened by " + author.get("display_name") + " on Bitbucket.");
+                    }
+                    taskRepository.save(task);
+                    imported++;
+                }
+            }
+            integration.setLastSyncAt(LocalDateTime.now());
+            integrationRepository.save(integration);
+            notificationService.create("Bitbucket Sync",
+                    imported + " pull requests imported from " + workspaceSlug + "/" + repoSlug,
+                    "SUCCESS", "TASK", null);
+            return Map.of("imported", imported, "total", prs.size());
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 401)
+                throw new RuntimeException("Bitbucket authentication failed (401). Check the username and app password.");
+            if (e.getStatusCode().value() == 404)
+                throw new RuntimeException("Bitbucket repository not found (404). Check the workspace and repository slug.");
+            throw new RuntimeException("Bitbucket sync failed: " + e.getStatusCode() + " " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Bitbucket sync failed: " + e.getMessage());
+        }
+    }
+
     public Map<String, Object> sendSlackMessage(String id, String message) {
         Integration integration = integrationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Integration not found"));
