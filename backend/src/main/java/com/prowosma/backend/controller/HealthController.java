@@ -82,17 +82,33 @@ public class HealthController {
     @Value("${app.deployment.region:US}")
     private String deploymentRegion;
 
+    // Render (and most PaaS providers) inject the deployed commit's SHA as
+    // an env var automatically — RENDER_GIT_COMMIT for Render specifically.
+    // Previously "build" here was LocalDateTime.now().toLocalDate(), which
+    // is computed fresh on every single request — it always shows *today*,
+    // regardless of when the running process was actually built or
+    // deployed. That made this endpoint actively misleading for the one
+    // thing people reach for it to answer: "is this the new build or the
+    // old one?" gitCommit + startedAt (this JVM's actual process start
+    // time, not request time) are the two things that can genuinely answer
+    // that — compare gitCommit against the commit you just pushed, or
+    // check whether startedAt is recent enough to be your latest deploy.
+    @Value("${RENDER_GIT_COMMIT:}")
+    private String gitCommit;
+
     /** Version info — shown in admin panel and due diligence docs */
     @GetMapping("/info")
     public Map<String, Object> info() {
-        return Map.of(
-            "app",       "Prowosma",
-            "version",   "1.0.0",
-            "build",     LocalDateTime.now().toLocalDate().toString(),
-            "stack",     Map.of("backend","Spring Boot 3 / Java 21","db","MongoDB Atlas","ai","Claude Anthropic"),
-            "deploymentRegion", deploymentRegion,
-            "status",    "production-ready"
-        );
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("app",       "Prowosma");
+        result.put("version",   "1.0.0");
+        result.put("gitCommit", gitCommit.isBlank() ? "(not set — not running on Render, or var not exposed to this service)" : gitCommit);
+        result.put("startedAt", java.time.Instant.ofEpochMilli(START_TIME).toString());
+        result.put("uptimeSeconds", (System.currentTimeMillis() - START_TIME) / 1000);
+        result.put("stack",     Map.of("backend","Spring Boot 3 / Java 21","db","MongoDB Atlas","ai","Claude Anthropic"));
+        result.put("deploymentRegion", deploymentRegion);
+        result.put("status",    "production-ready");
+        return result;
     }
 
     private String formatUptime(long seconds) {
