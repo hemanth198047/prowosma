@@ -55,8 +55,27 @@ export default function AcceptInvite() {
         setMode(inv.accountExists ? "login" : "register");
         setStep("form");
       } catch (e) {
+        // Distinct from every other failure: this means the person
+        // genuinely, completely already joined — not a broken/expired
+        // link. Route them somewhere useful (log in) instead of a red
+        // dead-end error, and carry their email over so they don't have
+        // to retype it.
+        if (e.response?.data?.alreadyMember) {
+          setInvitedEmail(e.response.data.email || "");
+          setStep("already_member");
+          return;
+        }
         setStep("error");
         setError(
+          // getInfo()'s own inline error responses (expired/revoked/not
+          // found) use an "error" field holding the actual human-readable
+          // reason — this previously only checked "message" (the shape
+          // thrown-exception errors elsewhere in this app use), so a
+          // specific, useful reason like "Invitation has expired" was
+          // always silently discarded in favor of the generic fallback
+          // below. Checking both means whichever shape the failure came
+          // in gets shown.
+          e.response?.data?.error ||
           e.response?.data?.message ||
           "This invitation link is invalid or has expired."
         );
@@ -116,7 +135,16 @@ export default function AcceptInvite() {
 
       setStep("success");
     } catch (e) {
+      // Same distinct case as the info-fetch above — a race is possible
+      // (e.g. two tabs completing the same invite around the same time).
+      if (e.response?.data?.alreadyMember) {
+        setStep("already_member");
+        return;
+      }
       setError(
+        // acceptByBody()'s error responses use an "error" field, not
+        // "message" — see the matching note on the info-fetch catch above.
+        e.response?.data?.error ||
         e.response?.data?.message ||
         (mode === "login"
           ? "Incorrect password. Please try again."
@@ -156,6 +184,27 @@ export default function AcceptInvite() {
               onClick={() => navigate("/login")}
             >
               Go to Login
+            </button>
+          </div>
+        )}
+
+        {/* Already a member — distinct from a broken/expired link. Friendly
+            "welcome back" framing, not a red error, since nothing is
+            actually wrong: this person just already finished joining. */}
+        {step === "already_member" && (
+          <div style={{ textAlign: "center" }}>
+            <div className="accept-invite-icon">👋</div>
+            <h2 className="accept-invite-title">You're already in!</h2>
+            <p className="accept-invite-desc">
+              {invitedEmail ? <>The account for <strong>{invitedEmail}</strong> has</> : "This account has"}{" "}
+              already joined {invitedWorkspace || "this workspace"}. Just log in to pick up where you left off.
+            </p>
+            <button
+              className="btn-primary"
+              style={{ width: "100%", marginTop: "16px" }}
+              onClick={() => navigate(`/login${invitedEmail ? `?email=${encodeURIComponent(invitedEmail)}` : ""}`)}
+            >
+              Go to Login →
             </button>
           </div>
         )}

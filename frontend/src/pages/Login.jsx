@@ -1,6 +1,6 @@
 import { useState, useEffect, Fragment } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
@@ -38,8 +38,12 @@ const STAT_KEYS = [
 
 export default function Login() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [mode, setMode]   = useState("login");
-  const [form, setForm]   = useState({ name: "", email: "", password: "" });
+  // Pre-fills when arriving from the "you're already a member — log in"
+  // redirect on the Accept Invite page, so the person doesn't have to
+  // retype the email they were just shown.
+  const [form, setForm]   = useState({ name: "", email: searchParams.get("email") || "", password: "" });
   const [resetForm, setResetForm] = useState({ newPassword: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
