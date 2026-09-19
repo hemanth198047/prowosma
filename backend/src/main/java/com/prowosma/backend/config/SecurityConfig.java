@@ -55,6 +55,16 @@ public class SecurityConfig {
         "/api/auth/**",
         "/api/health/**",
         "/api/invitations/accept",
+        // The AcceptInvite page calls this FIRST, on mount, before the
+        // invitee has any account or token at all — to show their email/
+        // role/workspace name and decide whether to render a "create
+        // account" or "log in" form. It was missing from this list even
+        // though /api/invitations/accept (the very next call in that same
+        // flow) was correctly included, so a brand-new invitee with no
+        // token got a blanket 401 on the *first* request the page makes,
+        // which the frontend's global 401 handler then turned into an
+        // immediate bounce to /login — before they ever saw the invite.
+        "/api/invitations/info",
         "/api/tasks/attachments/**",
         "/api/webhooks/**",
         // Same shape as /api/auth/**: /providers and /metadata/{id} are
