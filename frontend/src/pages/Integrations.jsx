@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { unwrapList } from "../api/client";
-import { getIntegrations, saveIntegration, toggleIntegration } from "../api/integrations";
+import { getIntegrations, saveIntegration, toggleIntegration, syncGitHub, syncBitbucket } from "../api/integrations";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import PageHeader from "../components/PageHeader";
@@ -70,8 +70,15 @@ const TIERS = [
         capabilities:["Merge request tracking","Pipeline status","Issue sync","Deployment tracking"],
         docsUrl:"https://gitlab.com/-/profile/personal_access_tokens", docsLabel:"Create Token →" },
       { key:"BITBUCKET",   name:"Bitbucket",    icon:"🪣", color:"#0052CC", tagline:"Atlassian repos and pipelines",
-        status:"coming_soon", effort:"oauth",
-        fields:[{key:"workspaceSlug",label:"Workspace Slug",type:"text",placeholder:"my-workspace"},{key:"appPassword",label:"App Password",type:"password",placeholder:"Bitbucket app password"}],
+        status:"available", effort:"oauth",
+        fields:[{key:"workspaceSlug",label:"Workspace Slug",type:"text",placeholder:"my-workspace",
+           help:"The part after bitbucket.org/ in your workspace URL"},
+          {key:"repoSlug",label:"Repository Slug",type:"text",placeholder:"my-repo",
+           help:"The repository to pull pull requests from"},
+          {key:"username",label:"Bitbucket Username",type:"text",placeholder:"janedoe",
+           help:"The account your app password belongs to — not your email"},
+          {key:"appPassword",label:"App Password",type:"password",placeholder:"Bitbucket app password",
+           help:"Bitbucket → Personal settings → App passwords → grant Repositories: Read + Pull requests: Read"}],
         capabilities:["PR to task linking","Pipeline triggers","Branch policies","Code review stats"],
         docsUrl:"https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/", docsLabel:"App Passwords →" },
       { key:"AZURE_DEVOPS", name:"Azure DevOps", icon:"🔷", color:"#0078D4", tagline:"Work items, pipelines, and repos",
@@ -323,10 +330,42 @@ const STATUS_LABELS = {
 // ═══════════════════════════════════════════════════════════════════════════
 // INTEGRATION CARD
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// SYNC ACTIONS — integrations with a real backend sync endpoint get a
+// "Sync Now" button on their connected card. Not every integration needs
+// one (some are link/attach-style, wired through IntegrationPanel.jsx
+// instead) — this map only covers the pull-data-in ones.
+// ═══════════════════════════════════════════════════════════════════════════
+const SYNC_ACTIONS = {
+  GITHUB:    { fn: syncGitHub,    label: "Sync Issues",  resultLabel: "issues" },
+  BITBUCKET: { fn: syncBitbucket, label: "Sync PRs",      resultLabel: "pull requests" },
+};
+
 function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
   const isConnected = !!(savedConfig?.enabled);
   const sl = STATUS_LABELS[isConnected ? "connected" : intg.status] || STATUS_LABELS.available;
   const ef = EFFORT_LABELS[intg.effort] || EFFORT_LABELS.token;
+  const syncAction = SYNC_ACTIONS[intg.key];
+  const [syncState, setSyncState] = useState(null); // null | "syncing" | { ok, message }
+
+  const runSync = async (e) => {
+    e.stopPropagation();
+    if (!savedConfig?.id) {
+      setSyncState({ ok: false, message: "Reconfigure this integration once to enable syncing." });
+      return;
+    }
+    setSyncState("syncing");
+    try {
+      const res = await syncAction.fn(savedConfig.id);
+      const { imported = 0, total = 0 } = res.data || {};
+      setSyncState({ ok: true,
+        message: imported > 0
+          ? `Imported ${imported} new ${syncAction.resultLabel} (${total} open).`
+          : `Up to date — 0 new ${syncAction.resultLabel} (${total} open).` });
+    } catch (err) {
+      setSyncState({ ok: false, message: err.response?.data?.error || err.message || "Sync failed." });
+    }
+  };
 
   return (
     <div style={{
@@ -424,6 +463,20 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
               {isConnected ? "⚙️ Reconfigure" : "🔗 Configure"}
             </button>
 
+            {isConnected && syncAction && (
+              <button
+                type="button"
+                onClick={runSync}
+                disabled={syncState === "syncing"}
+                title={syncAction.label}
+                style={{ padding:"8px 12px", borderRadius:"8px", cursor: syncState === "syncing" ? "default" : "pointer",
+                  border:`1px solid ${intg.color}33`, background:"#fff",
+                  fontSize:"11px", fontWeight:700, color:intg.color, flexShrink:0,
+                  opacity: syncState === "syncing" ? 0.6 : 1 }}>
+                {syncState === "syncing" ? "⏳" : "🔄"} {syncAction.label}
+              </button>
+            )}
+
             {isConnected && (
               <button
                 type="button"
@@ -448,6 +501,15 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
           </a>
         )}
       </div>
+
+      {syncState && syncState !== "syncing" && (
+        <div style={{ padding:"8px 10px", borderRadius:"8px", fontSize:"11px", fontWeight:600,
+          background: syncState.ok ? "#f0fdf4" : "#fff1f2",
+          border: `1px solid ${syncState.ok ? "#86efac" : "#fca5a5"}`,
+          color: syncState.ok ? "#15803d" : "#b91c1c" }}>
+          {syncState.ok ? "✓" : "⚠️"} {syncState.message}
+        </div>
+      )}
     </div>
   );
 }
@@ -770,13 +832,18 @@ export default function Integrations() {
   const handleSave = async (key, config) => {
     const payload = { key, type:key, name:key, enabled:true, config };
     // Always force-update: delete old record and save fresh — guarantees no stale config
+    let saved;
     try {
-      await client.post(`/integrations/${key}/force-update`, payload);
+      saved = (await client.post(`/integrations/${key}/force-update`, payload)).data;
     } catch {
       // Fallback to regular save if force-update fails
-      await saveIntegration(payload);
+      saved = (await saveIntegration(payload)).data;
     }
-    setSavedConfigs(prev => ({ ...prev, [key]:{ ...prev[key], key, type:key, enabled:true, config } }));
+    // Capture the backend-assigned id from the response — without this, a
+    // freshly-connected integration (no prior savedConfigs[key] entry) has
+    // no `.id` in local state until the next page load, which silently
+    // breaks any action that needs it (e.g. "Sync Now") right after connecting.
+    setSavedConfigs(prev => ({ ...prev, [key]: saved || { ...prev[key], key, type:key, enabled:true, config } }));
   };
 
   const handleToggle = async (key) => {

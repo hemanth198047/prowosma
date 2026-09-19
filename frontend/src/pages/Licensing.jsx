@@ -19,7 +19,7 @@ const PLANS = [
     colorBorder: "rgba(99,102,241,0.25)",
     cta: "Start 14-day free trial",
     ctaStyle: "outline",
-    limits: { users:"Up to 5", projects:"3", storage:"500 MB", automations:"10/mo", API:"–" },
+    limits: { users:"Up to 5,000", projects:"3", storage:"500 MB", automations:"10/mo", API:"–" },
     features: [
       // ── Core Work ──────────────────────────────────────────────
       { g:"Work", label:"Projects",              value:"3 active" },

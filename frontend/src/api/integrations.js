@@ -6,6 +6,8 @@ export const toggleIntegration = (key, enabled) =>
   client.patch(`/integrations/${key}/toggle`, { enabled });
 export const syncGitHub = (id) =>
   client.post(`/integrations/${id}/sync/github`);
+export const syncBitbucket = (id) =>
+  client.post(`/integrations/${id}/sync/bitbucket`);
 export const sendSlack = (id, message) =>
   client.post(`/integrations/${id}/sync/slack`, { message });
 export const syncCalendar = (id) =>

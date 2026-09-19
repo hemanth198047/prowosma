@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { acceptInvitation } from "../api/invitations";
 import { login, register } from "../api/auth";
-import client from "../api/client";
+import client, { clearAllCache } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/auth.css";
@@ -10,7 +10,7 @@ export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const navigate = useNavigate();
-  const { loginUser, setActiveWorkspace } = useAuth();
+  const { loginUser, setActiveWorkspace, logoutUser } = useAuth();
 
   // Invite info fetched from backend
   const [invitedEmail, setInvitedEmail]     = useState("");
@@ -34,6 +34,17 @@ export default function AcceptInvite() {
         setError("Invalid invitation link. Please check the link and try again.");
         return;
       }
+      // An invite link is always a fresh start, regardless of what this
+      // browser was doing before — someone else's still-logged-in session
+      // (a shared/demo machine), a stale/expired token left over from an
+      // earlier visit, or cached API responses for a different workspace
+      // can otherwise leak into this flow (a stale Authorization header
+      // on the very first request below used to get this whole page
+      // bounced to /login before the invitee ever saw it — see
+      // SecurityConfig.PUBLIC_PATHS). Clearing everything up front makes
+      // this page behave the same regardless of the browser's prior state.
+      logoutUser();
+      clearAllCache();
       try {
         const res = await client.get(`/invitations/info?token=${token}`);
         const inv = res.data;
@@ -52,6 +63,7 @@ export default function AcceptInvite() {
       }
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleSubmit = async () => {
