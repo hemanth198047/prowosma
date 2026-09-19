@@ -89,15 +89,48 @@ public class InvitationService {
     }
 
     // ── Accept invitation via magic link ──────────────────────
+    /**
+     * Whether the invited email is a *genuinely completed* member of this
+     * workspace already — a real User account exists AND a TeamMember row
+     * exists for them in this specific workspace.
+     *
+     * Why this matters: an invitation's status alone isn't reliable proof
+     * that someone actually finished joining. It can end up "ACCEPTED"
+     * without a real completed membership behind it — e.g. an interrupted
+     * flow, a bug elsewhere in this exact path history, or any future
+     * failure mode that updates status before the rest of the join
+     * completes. Treating status=="ACCEPTED" alone as a hard, permanent
+     * dead-end punishes the person for something that isn't their fault
+     * and gives them no way forward. The only thing that should ever
+     * actually block someone is *already being a real member* — anything
+     * else, the invitation should just keep working.
+     */
+    public boolean isGenuinelyAlreadyMember(Invitation inv) {
+        if (!userRepository.existsByEmail(inv.getEmail())) return false;
+        return teamMemberRepository
+                .findByEmailAndOrganizationId(inv.getEmail(), inv.getWorkspaceId())
+                .isPresent();
+    }
+
     public Map<String, Object> accept(String token, String name,
                                       String password) {
         // 1. Find invitation
         Invitation inv = invitationRepository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid or expired invitation link"));
 
-        // 2. Validate status
-        if (!"PENDING".equals(inv.getStatus()))
-            throw new RuntimeException("This invitation has already been used or cancelled");
+        // 2. Validate status. REVOKED/CANCELLED are genuinely terminal —
+        // an admin explicitly withdrew the invite, so those still block.
+        // ACCEPTED does NOT automatically block: only a real, completed
+        // membership does (see isGenuinelyAlreadyMember above). If status
+        // says ACCEPTED but the person was never actually made a member,
+        // this falls through and completes the join normally instead of
+        // dead-ending them.
+        if ("REVOKED".equals(inv.getStatus()) || "CANCELLED".equals(inv.getStatus()))
+            throw new RuntimeException("This invitation has been cancelled. Ask your workspace admin to send a new one.");
+        if ("ACCEPTED".equals(inv.getStatus()) && isGenuinelyAlreadyMember(inv))
+            throw new AlreadyMemberException(
+                    "You're already part of " + orFallback(inv.getWorkspaceName(), "this workspace") +
+                    ". Please log in instead.");
 
         // 3. Validate expiry (null-safe)
         if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(LocalDateTime.now()))
@@ -322,5 +355,20 @@ public class InvitationService {
                 invitedBy,
                 inv.getRole(),
                 acceptUrl);
+    }
+
+    /**
+     * Distinct from every other invitation-rejection reason: this one
+     * means the person genuinely, completely already joined — a real
+     * User account and a real TeamMember row both exist for them in this
+     * workspace. That's the ONLY case that should permanently block an
+     * invitation link; see isGenuinelyAlreadyMember above. Kept as its
+     * own type (same convention as AuthService.PasswordExpiredException)
+     * so GlobalExceptionHandler can give the frontend a distinct code to
+     * branch on — this should route someone to "log in", not show them a
+     * dead-end error.
+     */
+    public static class AlreadyMemberException extends RuntimeException {
+        public AlreadyMemberException(String message) { super(message); }
     }
 }

@@ -102,6 +102,16 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /** Invite link points at someone who has genuinely already completed joining — distinct code so the frontend shows "log in instead" rather than a dead-end error. See InvitationService.isGenuinelyAlreadyMember. */
+    @ExceptionHandler(com.prowosma.backend.service.InvitationService.AlreadyMemberException.class)
+    public ResponseEntity<Map<String, Object>> handleAlreadyMember(com.prowosma.backend.service.InvitationService.AlreadyMemberException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(
+            "ALREADY_MEMBER",
+            ex.getMessage(),
+            null
+        ));
+    }
+
     /** Password doesn't meet the workspace's complexity policy - real message listing exactly what's missing. */
     @ExceptionHandler(com.prowosma.backend.service.PasswordPolicyService.PasswordPolicyException.class)
     public ResponseEntity<Map<String, Object>> handlePasswordPolicy(com.prowosma.backend.service.PasswordPolicyService.PasswordPolicyException ex) {

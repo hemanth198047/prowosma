@@ -264,12 +264,27 @@ public class InvitationController {
         // free to serve a cached copy of an earlier failed response for
         // that identical URL instead of asking the server again.
         return invitationRepository.findByToken(token).<ResponseEntity<?>>map(inv -> {
-            if ("ACCEPTED".equals(inv.getStatus()))
-                return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    java.util.Map.of("error", "Invitation already used"));
             if ("REVOKED".equals(inv.getStatus()))
                 return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
                     java.util.Map.of("error", "Invitation has been revoked"));
+            // ACCEPTED does NOT automatically mean this link is dead. It
+            // only means that the LAST time someone went through this
+            // flow, the invitation record got marked accepted — that can
+            // happen without the person actually completing the join
+            // (an interrupted flow, a bug elsewhere in this exact path's
+            // history, or any future failure mode). The only thing that
+            // should permanently block this link is the invited email
+            // being a REAL, complete member already (see
+            // InvitationService.isGenuinelyAlreadyMember). Anything short
+            // of that, this falls through and returns the normal invite
+            // payload below so the person can just... finish joining.
+            if ("ACCEPTED".equals(inv.getStatus()) && invitationService.isGenuinelyAlreadyMember(inv))
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                    .cacheControl(org.springframework.http.CacheControl.noStore()).body(
+                    java.util.Map.of(
+                        "error", "You're already part of " + (inv.getWorkspaceName() != null ? inv.getWorkspaceName() : "this workspace") + ". Please log in instead.",
+                        "alreadyMember", true,
+                        "email", inv.getEmail()));
             if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
                 inv.setStatus("EXPIRED");
                 invitationRepository.save(inv);
@@ -347,6 +362,13 @@ public class InvitationController {
         try {
             var result = invitationService.accept(token, name, password);
             return ResponseEntity.ok(result);
+        } catch (InvitationService.AlreadyMemberException e) {
+            // Distinct from every other rejection reason: this one means
+            // "log in instead", not "this link is broken" — the frontend
+            // uses alreadyMember to show a friendly redirect-to-login
+            // screen rather than a dead-end error banner.
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", e.getMessage(), "alreadyMember", true));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -369,6 +391,9 @@ public class InvitationController {
         try {
             var result = invitationService.accept(token, name, password);
             return ResponseEntity.ok(result);
+        } catch (InvitationService.AlreadyMemberException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", e.getMessage(), "alreadyMember", true));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
