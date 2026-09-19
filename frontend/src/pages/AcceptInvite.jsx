@@ -4,6 +4,7 @@ import { acceptInvitation } from "../api/invitations";
 import { login, register } from "../api/auth";
 import client, { clearAllCache } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
+import { apiErrorMessage } from "../utils/apiError";
 
 import "../styles/pages/auth.css";
 
@@ -78,19 +79,10 @@ export default function AcceptInvite() {
           return;
         }
         setStep("error");
-        setError(
-          // getInfo()'s own inline error responses (expired/revoked/not
-          // found) use an "error" field holding the actual human-readable
-          // reason — this previously only checked "message" (the shape
-          // thrown-exception errors elsewhere in this app use), so a
-          // specific, useful reason like "Invitation has expired" was
-          // always silently discarded in favor of the generic fallback
-          // below. Checking both means whichever shape the failure came
-          // in gets shown.
-          e.response?.data?.error ||
-          e.response?.data?.message ||
-          "This invitation link is invalid or has expired."
-        );
+        // getInfo()'s inline replies (expired/revoked) put the human reason in
+        // "error"; thrown-exception replies put a machine CODE in "error" and
+        // the human text in "message". apiErrorMessage handles both shapes.
+        setError(apiErrorMessage(e, "This invitation link is invalid or has expired."));
       }
     };
     init();
@@ -154,15 +146,15 @@ export default function AcceptInvite() {
         setStep("already_member");
         return;
       }
-      setError(
-        // acceptByBody()'s error responses use an "error" field, not
-        // "message" — see the matching note on the info-fetch catch above.
-        e.response?.data?.error ||
-        e.response?.data?.message ||
-        (mode === "login"
+      // Same two reply shapes as the info-fetch above. Previously "error" was
+      // read first, so e.g. a wrong password showed the raw code
+      // "INVALID_CREDENTIALS" instead of "Invalid email or password".
+      setError(apiErrorMessage(
+        e,
+        mode === "login"
           ? "Incorrect password. Please try again."
-          : "Failed to create account. This email may already be registered.")
-      );
+          : "Failed to create account. This email may already be registered."
+      ));
     } finally {
       setLoading(false);
     }

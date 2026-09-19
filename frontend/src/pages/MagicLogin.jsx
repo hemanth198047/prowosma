@@ -1,11 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import client from "../api/client";
+import { useAuth } from "../hooks/useAuth";
+import { apiErrorMessage } from "../utils/apiError";
 
 import "../styles/pages/auth.css";
 export default function MagicLogin() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { loginUser, logoutUser } = useAuth();
+  const verifiedToken = useRef(null);
   const [status, setStatus] = useState("verifying"); // verifying | success | error
   const [error,  setError]  = useState("");
 
@@ -14,17 +18,37 @@ export default function MagicLogin() {
   useEffect(()=>{
     // eslint-disable-next-line react-hooks/set-state-in-effect -- validates the URL token synchronously; async branch below sets state after the API call
     if (!token) { setStatus("error"); setError("No token provided."); return; }
+
+    // A magic-link token is SINGLE-USE — the backend clears it on the first
+    // successful verify — so it must only ever be posted once. React.StrictMode
+    // (see main.jsx) runs effects twice in development, and loginUser below
+    // changes identity on every AuthProvider render; without this guard the
+    // second post 401s ("Invalid or expired") right after the first one signed
+    // the person in, and the page ends up on the error state.
+    if (verifiedToken.current === token) return;
+    verifiedToken.current = token;
+
     client.post("/auth/magic-link/verify", { token })
       .then(r => {
-        localStorage.setItem("token", r.data.token);
-        if (r.data.refreshToken) localStorage.setItem("refreshToken", r.data.refreshToken);
+        // Establish a REAL session through AuthContext (same as Login and
+        // Auth0Callback). Writing only the JWT to localStorage left AuthContext
+        // with no user, so the navigate("/") below hit ProtectedRoute and was
+        // sent straight back to /login. logoutUser() first so nothing from a
+        // previous account in this tab (e.g. its active workspace) carries over.
+        const { token: jwt, refreshToken, ...userData } = r.data;
+        logoutUser();
+        loginUser(userData, jwt);
+        if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
         setStatus("success");
         setTimeout(()=>navigate("/"), 1500);
       })
       .catch(e => {
         setStatus("error");
-        setError(e.response?.data?.error || "Invalid or expired magic link.");
+        setError(apiErrorMessage(e, "Invalid or expired magic link."));
       });
+    // loginUser/logoutUser are recreated on every AuthProvider render; the ref
+    // guard above is what makes re-running this effect safe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[token, navigate]);
 
   return (

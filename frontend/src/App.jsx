@@ -376,7 +376,8 @@ function AppShell() {
   const location = useLocation();
   const isLoginPage  = location.pathname === "/login" || location.pathname === "/auth0/callback";
   const isInvitePage = location.pathname === "/invite/accept";
-  const isStandalonePage = isLoginPage || isInvitePage;
+  const isMagicLinkPage = location.pathname === "/auth/magic";
+  const isStandalonePage = isLoginPage || isInvitePage || isMagicLinkPage;
 
   const [menuOpen, setMenuOpen]           = useState(false);
   const [showPalette, setShowPalette]     = useState(false);
@@ -487,13 +488,14 @@ function AppShell() {
     document.title = name ? `${name} — Prowosma` : "Prowosma";
   }, [location.pathname]);
 
-  // Login / invite pages — render full-screen, bypassing the entire app shell
+  // Login / invite / magic-link pages — render full-screen, bypassing the entire app shell
   if (isStandalonePage) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth0/callback" element={<Auth0Callback />} />
         <Route path="/invite/accept" element={<AcceptInvite />} />
+        <Route path="/auth/magic" element={<MagicLogin />} />
       </Routes>
     );
   }
@@ -703,7 +705,6 @@ function AppShell() {
                   <Route path="/decisions" element={<ProtectedRoute><DecisionLog /></ProtectedRoute>} />
                   <Route path="/scenarios" element={<ProtectedRoute><ScenarioPlanning /></ProtectedRoute>} />
                   <Route path="/epics"     element={<ProtectedRoute><Epics /></ProtectedRoute>} />
-                  <Route path="/auth/magic" element={<MagicLogin />} />
                   <Route path="/deployments" element={<ProtectedRoute><DeploymentAnalytics /></ProtectedRoute>} />
                   <Route path="/knowledge-graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
                   <Route path="/ai-intelligence" element={<ProtectedRoute><AIIntelligence /></ProtectedRoute>} />

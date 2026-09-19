@@ -195,6 +195,10 @@ describe("AcceptInvite — a 401 on this page must not eject the user", () => {
     // button leaves its "Please wait…" state), then check we weren't ejected.
     await waitFor(() => expect(screen.getByRole("button", { name: /sign in & join/i })).toBeEnabled());
     await new Promise((r) => setTimeout(r, 200));
+
+    // ...and the reason shown is the readable text, not the raw "INVALID_CREDENTIALS" code.
+    expect(screen.getByText(/Invalid email or password/)).toBeInTheDocument();
+    expect(screen.queryByText(/INVALID_CREDENTIALS/)).not.toBeInTheDocument();
     expect(toLogin, "wrong password bounced the user off the invite page").not.toHaveBeenCalled();
     expect(screen.getByText(/you've been invited/i)).toBeInTheDocument();
   });

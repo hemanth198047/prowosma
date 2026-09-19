@@ -53,7 +53,9 @@ export const navigation = {
  * bounce them off the page they're using. "/login" is matched with
  * includes() because it's also reached as e.g. "/login?email=...". */
 function isPublicPage(pathname) {
-  return pathname.includes("/login") || pathname.startsWith("/invite/accept");
+  return pathname.includes("/login")
+    || pathname.startsWith("/invite/accept")
+    || pathname.startsWith("/auth/magic");
 }
 
 const client = axios.create({
