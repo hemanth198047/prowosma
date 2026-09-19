@@ -255,17 +255,25 @@ public class InvitationController {
         description = "Called by the AcceptInvite page to load invitation info before the user submits the form."
     )
     public ResponseEntity<?> getInfo(@RequestParam String token) {
-        return invitationRepository.findByToken(token).map(inv -> {
+        // Explicit no-store: this endpoint's response depends entirely on
+        // this invitation's current status (pending/accepted/expired/
+        // revoked), which can change between visits to the exact same
+        // URL (same token) — e.g. a first click that fails, then the
+        // issue gets fixed and the person clicks the same emailed link
+        // again. Without this header, a browser (or any intermediary) is
+        // free to serve a cached copy of an earlier failed response for
+        // that identical URL instead of asking the server again.
+        return invitationRepository.findByToken(token).<ResponseEntity<?>>map(inv -> {
             if ("ACCEPTED".equals(inv.getStatus()))
-                return ResponseEntity.badRequest().body(
+                return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
                     java.util.Map.of("error", "Invitation already used"));
             if ("REVOKED".equals(inv.getStatus()))
-                return ResponseEntity.badRequest().body(
+                return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
                     java.util.Map.of("error", "Invitation has been revoked"));
             if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
                 inv.setStatus("EXPIRED");
                 invitationRepository.save(inv);
-                return ResponseEntity.badRequest().body(
+                return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
                     java.util.Map.of("error", "Invitation has expired"));
             }
             java.util.Map<String, Object> result = new java.util.HashMap<>();
@@ -282,8 +290,8 @@ public class InvitationController {
             // the same flow failed), since retrying "New Account" would just
             // hit a confusing "Email already registered" error instead.
             result.put("accountExists", userRepository.existsByEmail(inv.getEmail()));
-            return ResponseEntity.ok(result);
-        }).orElse(ResponseEntity.notFound().build());
+            return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(result);
+        }).orElse(ResponseEntity.notFound().cacheControl(org.springframework.http.CacheControl.noStore()).build());
     }
 
     @GetMapping("/validate/{token}")
