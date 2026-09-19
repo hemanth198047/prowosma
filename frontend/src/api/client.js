@@ -37,6 +37,25 @@ function endTrackedRequest(config) {
   }
 }
 
+/* ── Redirect seam ───────────────────────────────────────────────
+ * The one place that hard-navigates to the login page after a 401.
+ * Kept as a tiny object (rather than an inline `window.location.href =`)
+ * so tests can observe "the app tried to leave this page" — jsdom can't
+ * actually navigate, which is how this went unnoticed.
+ */
+export const navigation = {
+  toLogin() { window.location.href = "/login"; },
+};
+
+/* Pages a signed-out person is *supposed* to be on. A 401 while on one of
+ * these is expected (wrong password while accepting an invite, a background
+ * call made after the page cleared the old session, ...) and must never
+ * bounce them off the page they're using. "/login" is matched with
+ * includes() because it's also reached as e.g. "/login?email=...". */
+function isPublicPage(pathname) {
+  return pathname.includes("/login") || pathname.startsWith("/invite/accept");
+}
+
 const client = axios.create({
   // Was hardcoded to "http://localhost:9090/api" unconditionally — worked
   // fine for local `npm run dev` (where the backend really is on
@@ -184,8 +203,8 @@ client.interceptors.response.use(
         }
       }
       delete client.defaults.headers.common["Authorization"];
-      if (!window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
+      if (!isPublicPage(window.location.pathname)) {
+        navigation.toLogin();
       }
     }
 

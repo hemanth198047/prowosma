@@ -6,6 +6,17 @@ import client, { clearAllCache } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/auth.css";
+
+/** Older backends only embed the workspace name in the 409 message
+ *  ("You're already part of <name>. Please log in instead."); newer ones also
+ *  send it as `workspaceName`. Prefer the field, fall back to the message,
+ *  and never surface the generic "this workspace" placeholder as a name. */
+function workspaceNameFromConflict(data) {
+  if (data?.workspaceName) return data.workspaceName;
+  const fromMessage = /already part of (.+?)\. Please log in/.exec(data?.error || "")?.[1];
+  return fromMessage && fromMessage !== "this workspace" ? fromMessage : "";
+}
+
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -62,6 +73,7 @@ export default function AcceptInvite() {
         // to retype it.
         if (e.response?.data?.alreadyMember) {
           setInvitedEmail(e.response.data.email || "");
+          setInvitedWorkspace(workspaceNameFromConflict(e.response.data));
           setStep("already_member");
           return;
         }
@@ -138,6 +150,7 @@ export default function AcceptInvite() {
       // Same distinct case as the info-fetch above — a race is possible
       // (e.g. two tabs completing the same invite around the same time).
       if (e.response?.data?.alreadyMember) {
+        setInvitedWorkspace((prev) => prev || workspaceNameFromConflict(e.response.data));
         setStep("already_member");
         return;
       }
@@ -190,14 +203,43 @@ export default function AcceptInvite() {
 
         {/* Already a member — distinct from a broken/expired link. Friendly
             "welcome back" framing, not a red error, since nothing is
-            actually wrong: this person just already finished joining. */}
+            actually wrong: this person just already finished joining. Says
+            plainly that there is nothing to accept and spells out exactly
+            how to get in (which account, which password), so they aren't
+            left wondering whether the link failed. */}
         {step === "already_member" && (
-          <div style={{ textAlign: "center" }}>
-            <div className="accept-invite-icon">👋</div>
-            <h2 className="accept-invite-title">You're already in!</h2>
+          <div style={{ textAlign: "center" }} data-testid="already-member">
+            <div className="accept-invite-icon">✅</div>
+            <h2 className="accept-invite-title">You're already a member</h2>
             <p className="accept-invite-desc">
-              {invitedEmail ? <>The account for <strong>{invitedEmail}</strong> has</> : "This account has"}{" "}
-              already joined {invitedWorkspace || "this workspace"}. Just log in to pick up where you left off.
+              This invitation has already been used, so there's nothing left to accept.
+              Log in with the account below to open your workspace.
+            </p>
+
+            <div className="invite-summary-box" style={{ textAlign: "left" }}>
+              {invitedWorkspace && (
+                <div className="invite-summary-row">
+                  <span className="invite-summary-label">Workspace</span>
+                  <span className="invite-summary-value">{invitedWorkspace}</span>
+                </div>
+              )}
+              {invitedEmail && (
+                <div className="invite-summary-row">
+                  <span className="invite-summary-label">Log in with</span>
+                  <span className="invite-summary-value"
+                    style={{ color: "var(--brand-600)", fontWeight: 700 }}>
+                    {invitedEmail}
+                  </span>
+                </div>
+              )}
+              <div className="invite-summary-row">
+                <span className="invite-summary-label">Password</span>
+                <span className="invite-summary-value">The one you set when you joined</span>
+              </div>
+            </div>
+
+            <p className="accept-invite-desc" style={{ fontSize: "13px", marginTop: "12px" }}>
+              Don't remember it? You can sign in with a magic link from the login page instead.
             </p>
             <button
               className="btn-primary"

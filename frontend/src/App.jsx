@@ -366,6 +366,18 @@ function AppShell() {
   }, []);
 
   const { user } = useAuth();
+
+  // Pages that render full-screen OUTSIDE the app shell: no sidebar/topbar,
+  // and — just as important — none of the shell's authenticated background
+  // calls. /invite/accept used to render inside the shell, so a signed-out
+  // (or just-signed-out) visitor made the shell's pollers fire unauthenticated
+  // requests; the first 401 hard-redirected to /login before the invite page
+  // could show anything (e.g. the "you're already a member" message).
+  const location = useLocation();
+  const isLoginPage  = location.pathname === "/login" || location.pathname === "/auth0/callback";
+  const isInvitePage = location.pathname === "/invite/accept";
+  const isStandalonePage = isLoginPage || isInvitePage;
+
   const [menuOpen, setMenuOpen]           = useState(false);
   const [showPalette, setShowPalette]     = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -393,11 +405,11 @@ function AppShell() {
 
   // ── A-10: Presence ping ──────────────────────────────────────
   useEffect(() => {
-    if (!user) return;
+    if (!user || isStandalonePage) return;
     pingPresence().catch(() => {});
     const interval = setInterval(() => pingPresence().catch(() => {}), 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, isStandalonePage]);
 
   // ── Keyboard shortcuts (safe — inside Router) ───────────────
   useKeyboardShortcuts({
@@ -412,6 +424,9 @@ function AppShell() {
   }, []);
 
   useEffect(() => {
+    // Signed out, or on a public full-screen page: there is nothing to badge,
+    // and an unauthenticated call here 401s (see isStandalonePage above).
+    if (!user || isStandalonePage) return;
     const fetchBadges = async () => {
       try {
         const res = await getDashboardSummary();
@@ -428,10 +443,8 @@ function AppShell() {
     fetchBadges();
     const interval = setInterval(fetchBadges, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user, isStandalonePage]);
 
-  const location = useLocation();
-  const isLoginPage  = location.pathname === "/login" || location.pathname === "/auth0/callback";
   const isDashboard   = location.pathname === "/" || location.pathname === "/dashboard";
   const isDocs        = location.pathname.startsWith("/docs");
 
@@ -474,12 +487,13 @@ function AppShell() {
     document.title = name ? `${name} — Prowosma` : "Prowosma";
   }, [location.pathname]);
 
-  // On login page — render Login full-screen, bypassing the entire app shell
-  if (isLoginPage) {
+  // Login / invite pages — render full-screen, bypassing the entire app shell
+  if (isStandalonePage) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth0/callback" element={<Auth0Callback />} />
+        <Route path="/invite/accept" element={<AcceptInvite />} />
       </Routes>
     );
   }
@@ -814,7 +828,6 @@ function AppShell() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/invite/accept" element={<AcceptInvite />} />
                   <Route
                     path="/workspace-settings"
                     element={
