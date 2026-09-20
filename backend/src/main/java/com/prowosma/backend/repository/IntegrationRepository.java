@@ -11,4 +11,7 @@ public interface IntegrationRepository extends MongoRepository<Integration, Stri
     Optional<Integration> findByOrganizationIdAndKey(String organizationId, String key);
     List<Integration> findByEnabledTrue();
     List<Integration> findByOrganizationId(String organizationId);
+
+    /** Used by the public inbound-event endpoint: the token itself is never stored, only its hash. */
+    Optional<Integration> findByTypeAndInboundTokenHash(String type, String inboundTokenHash);
 }

@@ -41,6 +41,8 @@ public class MongoIndexConfig {
             ensure("tasks", idx().on("parentTaskId",   ASC));                          // subtask lookup
             ensure("tasks", idx().on("linkedGoalId",   ASC));                          // goal→task link
             ensure("tasks", idx().on("title",          ASC));                          // title search
+            ensure("tasks", idx().on("organizationId", ASC).on("customFieldValues.externalRef", ASC).sparse());   // imported issues / inbound alerts: find by external reference
+            ensure("integrations", idx().on("inboundTokenHash", ASC).sparse());                                    // public inbound-event URL looks integrations up by token hash
 
             // ── projects ─────────────────────────────────────────────────────
             ensure("projects", idx().on("organizationId", ASC).on("status",    ASC));

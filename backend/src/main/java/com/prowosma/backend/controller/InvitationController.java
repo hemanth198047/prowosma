@@ -266,7 +266,7 @@ public class InvitationController {
         return invitationRepository.findByToken(token).<ResponseEntity<?>>map(inv -> {
             if ("REVOKED".equals(inv.getStatus()))
                 return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    Map.of("error", "Invitation has been revoked"));
+                    java.util.Map.of("error", "Invitation has been revoked"));
             // ACCEPTED does NOT automatically mean this link is dead. It
             // only means that the LAST time someone went through this
             // flow, the invitation record got marked accepted — that can
@@ -279,9 +279,9 @@ public class InvitationController {
             // of that, this falls through and returns the normal invite
             // payload below so the person can just... finish joining.
             if ("ACCEPTED".equals(inv.getStatus()) && invitationService.isGenuinelyAlreadyMember(inv))
-                return ResponseEntity.status(HttpStatus.CONFLICT)
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
                     .cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    Map.of(
+                    java.util.Map.of(
                         "error", "You're already part of " + (inv.getWorkspaceName() != null ? inv.getWorkspaceName() : "this workspace") + ". Please log in instead.",
                         "alreadyMember", true,
                         "email", inv.getEmail(),
@@ -289,13 +289,13 @@ public class InvitationController {
                         // "you're already a member" screen without having to
                         // parse it back out of the message above.
                         "workspaceName", inv.getWorkspaceName() != null ? inv.getWorkspaceName() : ""));
-            if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(LocalDateTime.now())) {
+            if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
                 inv.setStatus("EXPIRED");
                 invitationRepository.save(inv);
                 return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    Map.of("error", "Invitation has expired"));
+                    java.util.Map.of("error", "Invitation has expired"));
             }
-            Map<String, Object> result = new HashMap<>();
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
             result.put("email",         inv.getEmail());
             result.put("workspaceId",   inv.getWorkspaceId());
             result.put("workspaceName", inv.getWorkspaceName() != null ? inv.getWorkspaceName() : "");

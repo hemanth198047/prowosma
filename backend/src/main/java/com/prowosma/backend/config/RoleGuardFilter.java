@@ -40,6 +40,7 @@ public class RoleGuardFilter extends OncePerRequestFilter {
             // Viewer must not be able to create or delete webhooks).
             "/api/webhooks/stripe",
             "/api/webhooks/email/",
+            "/api/inbound-events/",
             "/swagger-ui",
             "/v3/api-docs",
             "/favicon.ico"

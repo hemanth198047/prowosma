@@ -38,6 +38,23 @@ public class IntegrationController {
         return integrationService.syncGitHub(id);
     }
 
+    @PostMapping("/{id}/sync/gitlab")
+    public Map<String, Object> syncGitLab(@PathVariable String id) {
+        return integrationService.syncGitLab(id);
+    }
+
+    @PostMapping("/{id}/sync/teams")
+    public Map<String, Object> sendTeams(@PathVariable String id,
+                                         @RequestBody(required = false) Map<String, String> body) {
+        return integrationService.sendTeamsMessage(id, body == null ? null : body.get("message"));
+    }
+
+    /** Returns the inbound event URL's secret once; only its hash is stored. */
+    @PostMapping("/{id}/inbound-token")
+    public Map<String, Object> inboundToken(@PathVariable String id) {
+        return integrationService.generateInboundToken(id);
+    }
+
     @PostMapping("/{id}/sync/bitbucket")
     public Map<String, Object> syncBitbucket(@PathVariable String id) {
         return integrationService.syncBitbucket(id);
@@ -83,6 +100,14 @@ public class IntegrationController {
         String orgId = workspaceContext.getWorkspaceId();
         System.out.println("[force-update] key=" + key + " orgId=" + orgId);
         // Delete ALL existing records for this key across the org
+        // The secret behind an inbound event URL (Datadog / Sentry / Jenkins) is server-managed and
+        // lives on the record being replaced. Carry it over, or every "Save & Connect" from the UI
+        // (which always goes through force-update) would silently break the URL configured elsewhere.
+        String inboundTokenHash = integrationRepository.findByOrganizationId(orgId).stream()
+            .filter(i -> key.equalsIgnoreCase(i.getType()) || key.equalsIgnoreCase(i.getKey()))
+            .map(Integration::getInboundTokenHash)
+            .filter(java.util.Objects::nonNull)
+            .findFirst().orElse(null);
         integrationRepository.findByOrganizationId(orgId).stream()
             .filter(i -> key.equalsIgnoreCase(i.getType()) || key.equalsIgnoreCase(i.getKey()))
             .forEach(i -> {
@@ -91,6 +116,7 @@ public class IntegrationController {
             });
         // Save fresh
         integration.setOrganizationId(orgId);
+        integration.setInboundTokenHash(inboundTokenHash);
         integration.setKey(key.toUpperCase());
         integration.setType(key.toUpperCase());
         integration.setName(key);
@@ -130,6 +156,13 @@ public class IntegrationController {
     public Map<String,Object> createConfluencePage(@RequestBody Map<String,String> body) {
         return integrationService.createConfluencePage(
                 body.get("spaceKey"), body.get("title"), body.get("content"));
+    }
+
+    // Microsoft Teams
+    @PostMapping("/teams/notify")
+    public Map<String,Object> teamsNotify(@RequestBody Map<String,String> body) {
+        return integrationService.sendTeamsNotification(
+                body.get("title"), body.get("message"), body.get("color"));
     }
 
     // ── Slack ─────────────────────────────────────────────────────────────

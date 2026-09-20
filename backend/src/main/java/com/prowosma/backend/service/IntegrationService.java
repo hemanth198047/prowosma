@@ -6,7 +6,15 @@ import com.prowosma.backend.model.Task;
 import com.prowosma.backend.repository.IntegrationRepository;
 import com.prowosma.backend.repository.TaskRepository;
 import com.prowosma.backend.service.ActivityLogService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prowosma.backend.integration.GitLabImporter;
+import com.prowosma.backend.integration.ImportedItem;
+import com.prowosma.backend.integration.InboundSource;
+import com.prowosma.backend.integration.InboundTokens;
+import com.prowosma.backend.integration.OutboundHttp;
+import com.prowosma.backend.integration.OutboundUrlPolicy;
+import com.prowosma.backend.integration.TeamsCards;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -24,6 +32,17 @@ public class IntegrationService {
     private final TaskRepository taskRepository;
     private final NotificationService notificationService;
     private final WorkspaceContext workspaceContext;
+
+    // Outbound calls to user-supplied hosts (GitLab, Teams): no redirects, timeouts, size cap.
+    private final OutboundHttp outboundHttp = new OutboundHttp();
+
+    /** Allow a self-managed GitLab on a private network. https and no-credentials are still required. */
+    @org.springframework.beans.factory.annotation.Value("${app.integrations.allow-private-hosts:false}")
+    private boolean allowPrivateHosts;
+
+    /** Comma-separated extra hosts for Teams webhooks (sovereign clouds), added to the built-in list. */
+    @org.springframework.beans.factory.annotation.Value("${app.integrations.teams.extra-host-suffixes:}")
+    private String teamsExtraHostSuffixes;
     public List<Integration> getAll() {
         return integrationRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
     }
@@ -422,6 +441,155 @@ public class IntegrationService {
             rest.exchange(webhook,HttpMethod.POST,new HttpEntity<>(Map.of("attachments",List.of(attachment)),h),Map.class);
             return Map.of("ok",true);
         } catch(Exception e){ throw new RuntimeException("Slack failed: "+e.getMessage()); }
+    }
+
+    // -- GitLab, Microsoft Teams and inbound events (logic lives in the integration package) --
+
+    /** An integration of the caller's own workspace; anything else looks like it does not exist. */
+    private Integration requireOwned(String id) {
+        Integration integration = integrationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Integration not found"));
+        String orgId = workspaceContext.getWorkspaceId();
+        if (orgId == null || !orgId.equals(integration.getOrganizationId()))
+            throw new RuntimeException("Integration not found");
+        return integration;
+    }
+
+    private static org.springframework.web.server.ResponseStatusException badGateway(String message) {
+        return new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_GATEWAY, message);
+    }
+
+    /**
+     * Imports a GitLab project's open issues and merge requests as tasks (gitlab.com or a
+     * self-managed host). Tasks are created in the integration's own workspace and are
+     * de-duplicated by external reference within it.
+     */
+    public Map<String, Object> syncGitLab(String id) {
+        Integration integration = requireOwned(id);
+        String orgId = integration.getOrganizationId();
+
+        GitLabImporter.Fetcher fetcher = (uri, headers) -> {
+            OutboundHttp.Response response = outboundHttp.get(uri, headers);
+            if (response.status() == 401 || response.status() == 403)
+                throw new IllegalArgumentException("GitLab rejected the access token (HTTP " + response.status() + ")");
+            if (response.status() == 404)
+                throw new IllegalArgumentException("GitLab project not found, or the token cannot see it");
+            if (!response.ok()) throw badGateway("GitLab returned HTTP " + response.status());
+            return objectMapper.readValue(response.body(), new TypeReference<List<Map<String, Object>>>() { });
+        };
+        GitLabImporter.Sink sink = new GitLabImporter.Sink() {
+            @Override public boolean exists(String ref) {
+                return !taskRepository.findByOrganizationIdAndExternalRef(orgId, ref).isEmpty();
+            }
+            @Override public void create(ImportedItem item) {
+                taskRepository.save(gitLabTask(orgId, item));
+            }
+        };
+
+        GitLabImporter.Result result;
+        try {
+            result = new GitLabImporter().run(integration.getConfig(), fetcher, sink, this::checkOutboundHost);
+        } catch (IllegalArgumentException | org.springframework.web.server.ResponseStatusException e) {
+            throw e;
+        } catch (java.io.IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw badGateway("Could not reach GitLab (" + e.getClass().getSimpleName() + ")");
+        } catch (Exception e) {
+            throw badGateway("GitLab sync failed");
+        }
+
+        integration.setLastSyncAt(LocalDateTime.now());
+        integrationRepository.save(integration);
+        notificationService.create("GitLab Sync",
+                result.imported() + " items imported from GitLab",
+                "SUCCESS", "TASK", null);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("imported", result.imported());
+        out.put("total", result.total());
+        out.put("truncated", result.truncated());
+        return out;
+    }
+
+    private void checkOutboundHost(java.net.URI base) {
+        if (allowPrivateHosts) return;
+        OutboundUrlPolicy.requirePublicAddress(base, OutboundUrlPolicy.SYSTEM_RESOLVER, "GitLab URL");
+    }
+
+    private Task gitLabTask(String orgId, ImportedItem item) {
+        Task task = new Task();
+        task.setOrganizationId(orgId);
+        task.setTitle("[GitLab] " + item.title());
+        String description = item.description();
+        if (!item.url().isEmpty()) description = description.isEmpty() ? item.url() : description + "\n\n" + item.url();
+        task.setDescription(description);
+        task.setStatus("TODO");
+        task.setPriority("MEDIUM");
+        List<String> tags = new ArrayList<>(List.of("gitlab", item.kind()));
+        item.labels().stream().limit(5).forEach(l -> tags.add(l.toLowerCase(Locale.ROOT)));
+        task.setTags(tags);
+        Map<String, String> external = new HashMap<>();
+        external.put("externalRef", item.externalRef());
+        external.put("externalSource", "gitlab");
+        task.setCustomFieldValues(external);
+        task.setCreatedAt(LocalDateTime.now());
+        task.setUpdatedAt(LocalDateTime.now());
+        return task;
+    }
+
+    /** Sends a test/one-off message through the Teams integration with this id. */
+    public Map<String, Object> sendTeamsMessage(String id, String message) {
+        Integration integration = requireOwned(id);
+        String text = (message == null || message.isBlank()) ? "Test message from Prowosma" : message;
+        return postToTeams(integration, "Prowosma", text, null);
+    }
+
+    /** Same as the Slack notify endpoint, for the workspace's connected Microsoft Teams integration. */
+    public Map<String, Object> sendTeamsNotification(String title, String message, String color) {
+        Integration integration = findByKey("MICROSOFT_TEAMS")
+                .orElseThrow(() -> new IllegalArgumentException("Microsoft Teams is not connected"));
+        return postToTeams(integration, title, message, color);
+    }
+
+    private List<String> teamsHostSuffixes() {
+        List<String> all = new ArrayList<>(TeamsCards.DEFAULT_HOST_SUFFIXES);
+        if (teamsExtraHostSuffixes != null) {
+            for (String s : teamsExtraHostSuffixes.split(",")) if (!s.isBlank()) all.add(s.trim());
+        }
+        return all;
+    }
+
+    private Map<String, Object> postToTeams(Integration integration, String title, String message, String color) {
+        if (!integration.isEnabled()) throw new IllegalArgumentException("Microsoft Teams is not enabled");
+        String url = integration.getConfig() == null ? null : integration.getConfig().get("webhookUrl");
+        java.net.URI webhook = TeamsCards.validateWebhook(url, teamsHostSuffixes());
+        // Errors below never include the URL: a Teams webhook URL carries its own secret.
+        try {
+            OutboundHttp.Response response = outboundHttp.postJson(webhook,
+                    objectMapper.writeValueAsString(TeamsCards.notification(title, message, color)));
+            if (!response.ok()) throw badGateway("Microsoft Teams rejected the message (HTTP " + response.status() + ")");
+        } catch (java.io.IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw badGateway("Could not reach Microsoft Teams");
+        }
+        return Map.of("ok", true, "message", "Teams message sent successfully");
+    }
+
+    /**
+     * Creates (or replaces) the secret in this integration's inbound event URL. The token is
+     * returned once and only its hash is kept; generating a new one stops the old URL working.
+     */
+    public Map<String, Object> generateInboundToken(String id) {
+        Integration integration = requireOwned(id);
+        InboundSource source = InboundSource.fromIntegrationType(integration.getType())
+                .orElseThrow(() -> new IllegalArgumentException("This integration does not receive events"));
+        String token = InboundTokens.generate();
+        integration.setInboundTokenHash(InboundTokens.hash(token));
+        integrationRepository.save(integration);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("source", source.pathName());
+        out.put("token", token);
+        out.put("path", "/api/inbound-events/" + source.pathName() + "/" + token);
+        return out;
     }
 
     public void deleteById(String id) { integrationRepository.deleteById(id); }

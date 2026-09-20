@@ -34,6 +34,7 @@ public final class TenantGuardPolicy {
             "/api/invitations/validate/",
             "/api/webhooks/stripe",
             "/api/webhooks/email/",
+            "/api/inbound-events/",
             "/api/health"
     );
 

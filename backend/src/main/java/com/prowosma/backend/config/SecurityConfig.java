@@ -73,6 +73,9 @@ public class SecurityConfig {
         // create, edit, delete, rotate-secret, test) reachable with no login.
         "/api/webhooks/stripe",
         "/api/webhooks/email/**",
+        // Datadog / Sentry / Jenkins post events here with no login. The secret in the URL
+        // (or, for Sentry, also a signature) is the authentication: see InboundEventService.
+        "/api/inbound-events/**",
         // Same shape as /api/auth/**: /providers and /metadata/{id} are
         // pre-login informational endpoints (which SSO buttons to show,
         // what URL to give an IdP admin) with nothing sensitive in them,

@@ -3,6 +3,14 @@
 All notable changes from the enterprise-readiness backlog engagement, in the order they were
 completed. Each entry links to the doc with full detail.
 
+## Integrations: GitLab, Microsoft Teams, Datadog / Sentry / Jenkins
+- **GitLab** (gitlab.com and self-managed): open issues and merge requests sync as tasks, de-duplicated within the workspace.
+- **Microsoft Teams**: Adaptive Card messages via Workflows or legacy connector webhooks, restricted to Microsoft hosts.
+- **Datadog, Sentry, Jenkins**: alerts, errors and failed builds open tasks through a per-workspace secret URL; repeats don't
+  duplicate, recoveries close the task. Sentry signatures are verified when a client secret is set.
+- Calls to user-supplied hosts go through a new URL policy (https only, public addresses, no redirects, timeouts, size cap).
+- See `docs/INTEGRATIONS.md`.
+
 ## Tenant Isolation & Webhook Security
 - **Fixed**: the outbound-webhook management API (`/api/webhooks`) was reachable with no login (the
   `/api/webhooks/**` wildcard existed for the Stripe/email callbacks) and its by-id endpoints ignored workspace

@@ -97,7 +97,7 @@ public class TeamMemberController {
         lastSeen = new java.util.concurrent.ConcurrentHashMap<>();
 
     @PostMapping("/presence/ping")
-    public ResponseEntity<?> ping(Authentication auth) {
+    public ResponseEntity<?> ping(org.springframework.security.core.Authentication auth) {
         if (auth != null) lastSeen.put(auth.getName(), System.currentTimeMillis());
         return ResponseEntity.ok(Map.of("ok", true));
     }
@@ -107,7 +107,7 @@ public class TeamMemberController {
         long threshold = System.currentTimeMillis() - (5 * 60 * 1000);
         List<String> online = lastSeen.entrySet().stream()
             .filter(e -> e.getValue() > threshold)
-            .map(Map.Entry::getKey)
+            .map(java.util.Map.Entry::getKey)
             .collect(java.util.stream.Collectors.toList());
         return Map.of("online", online);
     }

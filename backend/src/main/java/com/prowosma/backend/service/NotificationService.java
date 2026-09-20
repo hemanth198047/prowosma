@@ -95,7 +95,7 @@ public class NotificationService {
         });
     }
 
-    public void bulkMarkRead(List<String> ids) {
+    public void bulkMarkRead(java.util.List<String> ids) {
         if (ids == null || ids.isEmpty()) return;
         String orgId = workspaceContext.getWorkspaceId();
         notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId)
@@ -113,17 +113,17 @@ public class NotificationService {
         String orgId = workspaceContext.getWorkspaceId();
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
-        List<Notification> all = notificationRepository
+        java.util.List<Notification> all = notificationRepository
             .findByOrganizationIdOrderByCreatedAtDesc(orgId)
             .stream()
             .filter(n -> n.getSnoozedUntil() == null || n.getSnoozedUntil().isBefore(now))
             .toList();
 
         // Group by category
-        java.util.Map<String, List<Notification>> grouped = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.List<Notification>> grouped = new java.util.LinkedHashMap<>();
         for (String cat : new String[]{"ASSIGNMENT","MENTION","APPROVAL","GOAL","RISK","SYSTEM"}) {
             String catFinal = cat;
-            List<Notification> catItems = all.stream()
+            java.util.List<Notification> catItems = all.stream()
                 .filter(n -> catFinal.equals(n.getCategory()))
                 .toList();
             if (!catItems.isEmpty()) grouped.put(cat, catItems);
