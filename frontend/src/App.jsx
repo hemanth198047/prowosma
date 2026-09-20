@@ -324,16 +324,6 @@ function SidebarNav({ onNav, badges }) {
         <CanDo action="adminOnly">
           <NavLink to="/admin"     onClick={onNav}>🛡 Admin Centre</NavLink>
         </CanDo>
-        <div className="sidebar-upgrade-block" onClick={() => { onNav(); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => { onNav(); })?.(e); } }}>
-          <NavLink to="/licensing" onClick={onNav} className="sidebar-upgrade-link">
-            <span className="sidebar-upgrade-icon">💎</span>
-            <div className="sidebar-upgrade-text">
-              <span className="sidebar-upgrade-title">Upgrade Plan</span>
-              <span className="sidebar-upgrade-sub">Unlock all features</span>
-            </div>
-            <span className="sidebar-upgrade-arrow">→</span>
-          </NavLink>
-        </div>
         <NavLink to="/white-label" onClick={onNav}>🎨 White-label</NavLink>
         <NavLink to="/jira-board/settings" onClick={onNav}>⚙️ Jira Settings</NavLink>
         <NavLink to="/developer" onClick={onNav}>🛠 Developer</NavLink>

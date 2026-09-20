@@ -1673,62 +1673,6 @@
 .upgrade-cta-icon  { font-size: 14px; }
 .upgrade-cta-label { font-size: 12.5px; font-weight: 600; }
 
-/*  Sidebar Upgrade block  */
-.sidebar-upgrade-block {
-  margin: 12px 10px 8px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(124,58,237,0.2) 100%);
-  border: 1px solid rgba(245,158,11,0.35);
-  position: relative;
-}
-.sidebar-upgrade-block::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 2px;
-  background: var(--brand-500);
-}
-.sidebar-upgrade-link {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px !important;
-  text-decoration: none;
-  color: inherit !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-  width: 100%;
-}
-.sidebar-upgrade-link:hover {
-  background: rgba(91,95,238,0.12) !important;
-}
-.sidebar-upgrade-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.sidebar-upgrade-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-.sidebar-upgrade-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #ffffff;
-}
-.sidebar-upgrade-sub {
-  font-size: 10px;
-  color: rgba(255,255,255,0.5);
-}
-.sidebar-upgrade-arrow {
-  font-size: 13px;
-  color: var(--brand-400);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
 .cc3-status-strip {
   display: flex;
   align-items: center;

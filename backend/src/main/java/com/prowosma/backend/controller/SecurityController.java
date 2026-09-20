@@ -34,7 +34,6 @@ public class SecurityController {
     private final GoalRepository     goalRepository;
     private final WorkspaceContext   workspaceContext;
     private final TeamMemberRepository teamMemberRepository;
-    private final WorkspaceRepository  workspaceRepository;
 
     /**
      * The users of the caller's workspace: its owner plus its team members.
@@ -56,7 +55,7 @@ public class SecurityController {
                 .flatMap(Optional::stream)
                 .toList();
     }
-
+    private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
     private final com.prowosma.backend.repository.WorkspaceConfigRepository workspaceConfigRepository;
 
     // ── 2FA: begin setup — generate secret + QR ──────────────
