@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { getToken } from "../api/client";
 
 const COLLAB_COLORS = [
   "#6366f1","#ec4899","#f59e0b","#10b981","#06b6d4",
@@ -27,6 +28,11 @@ function getTabId() {
 
 const WS_URL = (import.meta.env.VITE_API_URL || "http://localhost:9090") + "/ws";
 
+// The server refuses unauthenticated STOMP connections and checks you belong to the
+// document's workspace. A refused connection would otherwise be retried forever, so give
+// up after a few consecutive STOMP errors.
+const MAX_CONSECUTIVE_STOMP_ERRORS = 3;
+
 export function useDocCollab(docId, currentUser) {
   const clientRef = useRef(null);
   const tabId     = useRef(getTabId());
@@ -42,11 +48,15 @@ export function useDocCollab(docId, currentUser) {
 
     const myTabId = tabId.current;
 
+    let stompErrors = 0;
+
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL),
+      connectHeaders: (() => { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; })(),
       reconnectDelay: 3000,
 
       onConnect: () => {
+        stompErrors = 0;
         setIsConnected(true);
 
         client.subscribe(`/topic/doc/${docId}`, (message) => {
@@ -91,6 +101,10 @@ export function useDocCollab(docId, currentUser) {
 
       onStompError: (frame) => {
         console.warn("[Collab] STOMP error:", frame.headers?.message);
+        if (++stompErrors >= MAX_CONSECUTIVE_STOMP_ERRORS) {
+          console.warn("[Collab] giving up after repeated STOMP errors");
+          client.deactivate();
+        }
       },
     });
 

@@ -25,6 +25,9 @@ export function useWebSocket() {
 
     let stompClient = null;
     let cancelled   = false;
+    // A connection the server keeps refusing (expired token, no access) must not be retried forever.
+    let stompErrors = 0;
+    const MAX_CONSECUTIVE_STOMP_ERRORS = 3;
 
     const connect = async () => {
       try {
@@ -39,6 +42,7 @@ export function useWebSocket() {
           reconnectDelay: 5000,
           onConnect: () => {
             if (cancelled) return;
+            stompErrors = 0;
             setConnected(true);
             // Subscribe to workspace topic
             stompClient.subscribe(
@@ -61,6 +65,10 @@ export function useWebSocket() {
           onDisconnect: () => { if (!cancelled) setConnected(false); },
           onStompError: (frame) => {
             console.warn("STOMP error:", frame.headers?.message);
+            if (++stompErrors >= MAX_CONSECUTIVE_STOMP_ERRORS) {
+              console.warn("Giving up on the WebSocket after repeated STOMP errors");
+              try { stompClient.deactivate(); } catch { /* already disconnected */ }
+            }
           },
         });
 
