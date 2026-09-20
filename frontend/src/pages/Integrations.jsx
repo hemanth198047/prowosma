@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { unwrapList } from "../api/client";
-import { getIntegrations, saveIntegration, toggleIntegration, syncGitHub, syncBitbucket } from "../api/integrations";
+import { getIntegrations, saveIntegration, toggleIntegration, syncGitHub, syncBitbucket, syncGitLab, sendTeamsTest } from "../api/integrations";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import PageHeader from "../components/PageHeader";
+import InboundUrlPanel from "../components/InboundUrlPanel";
 import { apiErrorMessage } from "../utils/apiError";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -65,11 +66,18 @@ const TIERS = [
         ],
         capabilities:["Link PRs to tasks","Auto-close tasks on merge","CI/CD status in task cards","Commit activity timeline"],
         docsUrl:"https://github.com/settings/tokens", docsLabel:"Create Token →" },
-      { key:"GITLAB",      name:"GitLab",       icon:"🦊", color:"#fc6d26", tagline:"MR tracking and pipeline visibility",
+      { key:"GITLAB",      name:"GitLab",       icon:"🦊", color:"#fc6d26", tagline:"Open issues and merge requests, synced as tasks",
         status:"available", effort:"token",
-        fields:[{key:"token",label:"Access Token",type:"password",placeholder:"glpat-xxxx"},{key:"projectId",label:"Project ID or Path",type:"text",placeholder:"123 or group/project"}],
-        capabilities:["Merge request tracking","Pipeline status","Issue sync","Deployment tracking"],
-        docsUrl:"https://gitlab.com/-/profile/personal_access_tokens", docsLabel:"Create Token →" },
+        fields:[
+          {key:"token",label:"Access Token",type:"password",placeholder:"glpat-xxxx",
+           help:"GitLab -> Preferences -> Access tokens. Scope: read_api. A project or group access token is best."},
+          {key:"projectId",label:"Project ID or Path",type:"text",placeholder:"123 or group/project",
+           help:"The numeric Project ID (shown on the project page) or the full path, e.g. acme/backend."},
+          {key:"host",label:"GitLab URL (self-managed only)",type:"text",placeholder:"https://gitlab.com",
+           help:"Leave blank for gitlab.com. A self-managed host must use https and be reachable from the Prowosma server."},
+        ],
+        capabilities:["Open issues become tasks","Open merge requests become tasks","Self-managed GitLab supported","Re-sync any time, no duplicates"],
+        docsUrl:"https://gitlab.com/-/profile/personal_access_tokens", docsLabel:"Create Token ->" },
       { key:"BITBUCKET",   name:"Bitbucket",    icon:"🪣", color:"#0052CC", tagline:"Atlassian repos and pipelines",
         status:"available", effort:"oauth",
         fields:[{key:"workspaceSlug",label:"Workspace Slug",type:"text",placeholder:"my-workspace",
@@ -87,11 +95,11 @@ const TIERS = [
         fields:[{key:"org",label:"Organisation",type:"text",placeholder:"dev.azure.com/yourorg"},{key:"pat",label:"Personal Access Token",type:"password",placeholder:"Azure DevOps PAT"},{key:"project",label:"Project",type:"text",placeholder:"My Project"}],
         capabilities:["Work item ↔ task sync","Build pipeline status","Release tracking","Board mirroring"],
         docsUrl:"https://dev.azure.com", docsLabel:"Azure DevOps →" },
-      { key:"JENKINS",     name:"Jenkins",      icon:"🏗", color:"#d33833", tagline:"Build triggers and deployment events",
-        status:"coming_soon", effort:"webhook",
-        fields:[{key:"url",label:"Jenkins URL",type:"text",placeholder:"https://jenkins.company.com"},{key:"user",label:"Username",type:"text",placeholder:"admin"},{key:"apiToken",label:"API Token",type:"password",placeholder:"Jenkins API token"}],
-        capabilities:["Build status in tasks","Trigger builds from Prowosma","Deployment events","Failure alerts"],
-        docsUrl:"https://www.jenkins.io/doc/book/using/remote-access-api/", docsLabel:"Jenkins API →" },
+      { key:"JENKINS",     name:"Jenkins",      icon:"🏗", color:"#d33833", tagline:"A failed build opens a task; the next good build closes it",
+        status:"available", effort:"webhook", inbound:true,
+        fields:[],
+        capabilities:["Failed build opens a bug task","Next good build closes it","One task per failing job","Unstable builds at medium priority"],
+        docsUrl:"https://plugins.jenkins.io/notification/", docsLabel:"Notification plugin ->" },
       { key:"CIRCLECI",    name:"CircleCI",     icon:"⭕", color:"#343434", tagline:"CI pipeline visibility",
         status:"coming_soon", effort:"token",
         fields:[{key:"token",label:"Personal API Token",type:"password",placeholder:"CircleCI token"},{key:"orgSlug",label:"Org Slug",type:"text",placeholder:"gh/YourOrg"}],
@@ -224,23 +232,19 @@ const TIERS = [
     desc: "Production incidents, alerts, and SLOs feed directly into project work",
     color: "#ef4444", badge: "ENGINEERING",
     integrations: [
-      { key:"DATADOG",    name:"Datadog",        icon:"🐶", color:"#632CA6", tagline:"Incidents auto-create project tasks",
-        status:"coming_soon", effort:"token",
+      { key:"DATADOG",    name:"Datadog",        icon:"🐶", color:"#632CA6", tagline:"Monitor alerts open tasks; recoveries close them",
+        status:"available", effort:"webhook", inbound:true,
+        fields:[],
+        capabilities:["Alert opens an incident task","Repeat alerts do not duplicate","Recovery closes the task","Priority from the monitor's priority"],
+        docsUrl:"https://docs.datadoghq.com/integrations/webhooks/", docsLabel:"Datadog Webhooks ->" },
+      { key:"SENTRY",     name:"Sentry",         icon:"🔭", color:"#362D59", tagline:"New errors open bug tasks; resolving them closes the task",
+        status:"available", effort:"webhook", inbound:true,
         fields:[
-          {key:"apiKey",label:"API Key",           type:"password",placeholder:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-           help:"app.datadoghq.com → Organization Settings → API Keys → New Key. Starts with no prefix."},
-          {key:"appKey",label:"Application Key",   type:"password",placeholder:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-           help:"Organization Settings → Application Keys → New Key. Needed for write operations."},
-          {key:"site",  label:"Datadog Site",      type:"text",    placeholder:"datadoghq.com",
-           help:"datadoghq.com (US), datadoghq.eu (EU), us3.datadoghq.com, us5.datadoghq.com — check your login URL"},
+          {key:"clientSecret",label:"Client Secret (recommended)",type:"password",placeholder:"From your Sentry internal integration",
+           help:"When set, events without a valid Sentry signature are rejected. Leave blank to rely on the secret URL alone."},
         ],
-        capabilities:["Alert → task auto-creation","SLO tracking per project","Monitor dashboards in projects","Incident timeline in tasks"],
-        docsUrl:"https://docs.datadoghq.com/api/latest/", docsLabel:"Datadog API →" },
-      { key:"SENTRY",     name:"Sentry",         icon:"🔭", color:"#362D59", tagline:"Error tracking linked to sprint tasks",
-        status:"coming_soon", effort:"token",
-        fields:[{key:"dsn",label:"DSN",type:"text",placeholder:"https://xxx@sentry.io/xxx"},{key:"authToken",label:"Auth Token",type:"password",placeholder:"Sentry auth token"},{key:"org",label:"Organisation Slug",type:"text",placeholder:"your-org"}],
-        capabilities:["Error → bug task auto-creation","Release tracking","Error frequency in sprint","Regression detection"],
-        docsUrl:"https://docs.sentry.io/api/", docsLabel:"Sentry API →" },
+        capabilities:["New issue opens a bug task","Resolving in Sentry closes it","A regression reopens it","Issue alerts and metric alerts"],
+        docsUrl:"https://docs.sentry.io/", docsLabel:"Sentry docs ->" },
       { key:"NEWRELIC",   name:"New Relic",      icon:"🟢", color:"#00838F", tagline:"APM alerts feed into project incidents",
         status:"coming_soon", effort:"token",
         fields:[{key:"apiKey",label:"User API Key",type:"password",placeholder:"NRAK-xxxx"},{key:"accountId",label:"Account ID",type:"text",placeholder:"New Relic account ID"}],
@@ -340,6 +344,8 @@ const STATUS_LABELS = {
 const SYNC_ACTIONS = {
   GITHUB:    { fn: syncGitHub,    label: "Sync Issues",  resultLabel: "issues" },
   BITBUCKET: { fn: syncBitbucket, label: "Sync PRs",      resultLabel: "pull requests" },
+  GITLAB:    { fn: syncGitLab,    label: "Sync Issues & MRs", resultLabel: "issues and merge requests" },
+  MICROSOFT_TEAMS: { fn: (id) => sendTeamsTest(id), label: "Send test", message: () => "Test message sent to Teams." },
 };
 
 function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
@@ -358,11 +364,16 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
     setSyncState("syncing");
     try {
       const res = await syncAction.fn(savedConfig.id);
-      const { imported = 0, total = 0 } = res.data || {};
+      if (syncAction.message) {          // actions that send something rather than pull data in
+        setSyncState({ ok: true, message: syncAction.message(res.data) });
+        return;
+      }
+      const { imported = 0, total = 0, truncated = false } = res.data || {};
+      const cut = truncated ? " Only the first 500 of each kind were read." : "";
       setSyncState({ ok: true,
         message: imported > 0
-          ? `Imported ${imported} new ${syncAction.resultLabel} (${total} open).`
-          : `Up to date — 0 new ${syncAction.resultLabel} (${total} open).` });
+          ? `Imported ${imported} new ${syncAction.resultLabel} (${total} open).${cut}`
+          : `Up to date: 0 new ${syncAction.resultLabel} (${total} open).${cut}` });
     } catch (err) {
       setSyncState({ ok: false, message: apiErrorMessage(err, err.message || "Sync failed.") });
     }
@@ -519,6 +530,17 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURE MODAL
 // ═══════════════════════════════════════════════════════════════════════════
+// Steps shown for integrations that RECEIVE events (Datadog, Sentry, Jenkins) instead of
+// being given credentials.
+const INBOUND_STEPS = [
+  { n:1, title:"Save & Connect",
+    body:"Read the tool's setup guide, then save this integration. No credentials are needed." },
+  { n:2, title:"Generate your webhook URL",
+    body:"Below, generate the URL that identifies your workspace. It is shown once." },
+  { n:3, title:"Paste it into the tool",
+    body:"Follow the setup steps under the URL, and events start creating tasks." },
+];
+
 function ConfigureModal({ intg, existing, onSave, onClose }) {
   const [form, setForm]       = useState(() => {
     const init = {};
@@ -603,7 +625,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           {/* 3-step guide */}
           <div style={{ background:"#f8fafc", borderRadius:"12px",
             border:"1px solid #e8ecf2", overflow:"hidden" }}>
-            {[
+            {(intg.inbound ? INBOUND_STEPS : [
               { n:1, title:"Get your credentials",
                 body:"Visit the provider dashboard and generate an API key / access token." },
               { n:2, title:"Paste your credentials below",
@@ -612,7 +634,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
                 body: intg.status==="coming_soon"
                   ? "Credentials saved securely. Live sync activates automatically once released."
                   : "Credentials are encrypted and stored securely on your server only." },
-            ].map((step, i) => (
+            ]).map((step, i) => (
               <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 14px",
                 borderBottom: i < 2 ? "1px solid #f1f5f9" : "none" }}>
                 <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0,
@@ -664,6 +686,10 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
               )}
             </div>
           ))}
+
+          {intg.inbound && (
+            <InboundUrlPanel integrationKey={intg.key} savedId={existing?.id} color={intg.color} />
+          )}
 
           {/* Capabilities unlock */}
           {(intg.capabilities||[]).length > 0 && (

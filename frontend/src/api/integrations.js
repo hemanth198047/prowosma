@@ -8,6 +8,13 @@ export const syncGitHub = (id) =>
   client.post(`/integrations/${id}/sync/github`);
 export const syncBitbucket = (id) =>
   client.post(`/integrations/${id}/sync/bitbucket`);
+export const syncGitLab = (id) =>
+  client.post(`/integrations/${id}/sync/gitlab`);
+export const sendTeamsTest = (id, message) =>
+  client.post(`/integrations/${id}/sync/teams`, { message });
+// Returns { source, token, path }. The token is shown once; the server keeps only its hash.
+export const createInboundToken = (id) =>
+  client.post(`/integrations/${id}/inbound-token`);
 export const sendSlack = (id, message) =>
   client.post(`/integrations/${id}/sync/slack`, { message });
 export const syncCalendar = (id) =>
