@@ -56,7 +56,7 @@ public class SecurityController {
                 .flatMap(Optional::stream)
                 .toList();
     }
-    private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
+
     private final com.prowosma.backend.repository.WorkspaceConfigRepository workspaceConfigRepository;
 
     // ── 2FA: begin setup — generate secret + QR ──────────────
