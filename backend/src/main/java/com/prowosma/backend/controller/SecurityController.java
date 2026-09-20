@@ -56,16 +56,29 @@ public class SecurityController {
                 .flatMap(Optional::stream)
                 .toList();
     }
-
+    private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
     private final com.prowosma.backend.repository.WorkspaceConfigRepository workspaceConfigRepository;
 
     // ── 2FA: begin setup — generate secret + QR ──────────────
     @PostMapping("/2fa/setup")
-    public Map<String, Object> setup2fa(Authentication auth) {
+    public ResponseEntity<?> setup2fa(@RequestBody(required = false) Map<String, String> body, Authentication auth) {
         User user = getUser(auth);
+        if (user.isTwoFactorEnabled()) {
+            // Replacing a working authenticator needs proof of the current one. Without this, anyone
+            // holding a stolen session could swap in their own secret (or lock the real user out).
+            twoFactorService.requireNotLocked(user);
+            String code = body == null ? null : body.get("code");
+            if (!proveSecondFactor(user, code)) {
+                twoFactorService.recordFailure(user);
+                userRepository.save(user);
+                return ResponseEntity.badRequest().body(Map.of("error",
+                        "Enter your current 2FA code (or a backup code) to set up a new authenticator"));
+            }
+            twoFactorService.recordSuccess(user);
+        }
         String secret = twoFactorService.generateSecret();
-        // Store secret temporarily (not enabled until verified)
-        user.setTwoFactorSecret(secret);
+        // Kept as PENDING: it only replaces the active secret once a code generated from it is verified.
+        user.setPendingTwoFactorSecret(secret);
         userRepository.save(user);
 
         String uri   = twoFactorService.buildOtpAuthUri(secret, user.getEmail(), "Prowosma");
@@ -75,41 +88,99 @@ public class SecurityController {
         resp.put("secret", secret);
         resp.put("qrUrl",  qrUrl);
         resp.put("uri",    uri);
-        return resp;
+        return ResponseEntity.ok(resp);
     }
 
-    // ── 2FA: verify code and enable ───────────────────────────
+    // -- 2FA: verify a code from the new authenticator, enable, and issue backup codes ---
     @PostMapping("/2fa/verify")
     public ResponseEntity<?> verify2fa(@RequestBody Map<String, String> body, Authentication auth) {
         User   user = getUser(auth);
+        twoFactorService.requireNotLocked(user);
         String code = body.get("code");
-        if (user.getTwoFactorSecret() == null)
+        String candidate = user.getPendingTwoFactorSecret();
+        // A setup started before pending secrets existed left the candidate in twoFactorSecret (not enabled).
+        if (candidate == null && !user.isTwoFactorEnabled()) candidate = user.getTwoFactorSecret();
+        if (candidate == null)
             return ResponseEntity.badRequest().body(Map.of("error", "Run setup first"));
-        if (!twoFactorService.verify(user.getTwoFactorSecret(), code))
+        var step = twoFactorService.matchStep(candidate, code);
+        if (step.isEmpty()) {
+            twoFactorService.recordFailure(user);
+            userRepository.save(user);
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid code"));
+        }
+        java.util.List<String> backupCodes = com.prowosma.backend.auth.BackupCodes.generate(BACKUP_CODE_COUNT);
+        user.setTwoFactorSecret(candidate);
+        user.setPendingTwoFactorSecret(null);
         user.setTwoFactorEnabled(true);
+        user.setTwoFactorLastStep(step.getAsLong());
+        user.setBackupCodes(com.prowosma.backend.auth.BackupCodes.hashAll(backupCodes));
+        twoFactorService.recordSuccess(user);
         userRepository.save(user);
-        return ResponseEntity.ok(Map.of("message", "2FA enabled", "enabled", true));
+        // The plain codes are returned this once; only their hashes are stored.
+        return ResponseEntity.ok(Map.of("message", "2FA enabled", "enabled", true, "backupCodes", backupCodes));
     }
 
-    // ── 2FA: disable ──────────────────────────────────────────
+    // -- 2FA: disable ------------------------------------------
     @PostMapping("/2fa/disable")
     public ResponseEntity<?> disable2fa(@RequestBody Map<String, String> body, Authentication auth) {
         User   user = getUser(auth);
         String code = body.get("code");
-        if (user.isTwoFactorEnabled() && !twoFactorService.verify(user.getTwoFactorSecret(), code))
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid code — enter your current 2FA code to disable"));
+        if (user.isTwoFactorEnabled()) {
+            twoFactorService.requireNotLocked(user);
+            if (!proveSecondFactor(user, code)) {
+                twoFactorService.recordFailure(user);
+                userRepository.save(user);
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid code -- enter your current 2FA code to disable"));
+            }
+        }
         user.setTwoFactorEnabled(false);
         user.setTwoFactorSecret(null);
+        user.setPendingTwoFactorSecret(null);
+        user.setBackupCodes(new java.util.ArrayList<>());
+        user.setTwoFactorLastStep(-1);
+        twoFactorService.recordSuccess(user);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "2FA disabled", "enabled", false));
     }
 
-    // ── 2FA: status ───────────────────────────────────────────
+    // -- 2FA: a fresh set of backup codes (the old ones stop working) ------------
+    @PostMapping("/2fa/backup-codes")
+    public ResponseEntity<?> regenerateBackupCodes(@RequestBody Map<String, String> body, Authentication auth) {
+        User user = getUser(auth);
+        if (!user.isTwoFactorEnabled())
+            return ResponseEntity.badRequest().body(Map.of("error", "Turn on 2FA first"));
+        twoFactorService.requireNotLocked(user);
+        if (!proveSecondFactor(user, body.get("code"))) {
+            twoFactorService.recordFailure(user);
+            userRepository.save(user);
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid code -- enter your current 2FA code"));
+        }
+        java.util.List<String> backupCodes = com.prowosma.backend.auth.BackupCodes.generate(BACKUP_CODE_COUNT);
+        user.setBackupCodes(com.prowosma.backend.auth.BackupCodes.hashAll(backupCodes));
+        twoFactorService.recordSuccess(user);
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("backupCodes", backupCodes));
+    }
+
+    // -- 2FA: status -------------------------------------------
     @GetMapping("/2fa/status")
     public Map<String, Object> get2faStatus(Authentication auth) {
         User user = getUser(auth);
-        return Map.of("enabled", user.isTwoFactorEnabled());
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("enabled", user.isTwoFactorEnabled());
+        status.put("backupCodesRemaining", user.getBackupCodes() == null ? 0 : user.getBackupCodes().size());
+        return status;
+    }
+
+    private static final int BACKUP_CODE_COUNT = 10;
+
+    /** A current authenticator code, or an unused backup code (which is spent). The caller saves the user. */
+    private boolean proveSecondFactor(User user, String code) {
+        if (user.getTwoFactorSecret() != null && twoFactorService.verify(user.getTwoFactorSecret(), code)) return true;
+        java.util.List<String> remaining = com.prowosma.backend.auth.BackupCodes.consume(user.getBackupCodes(), code);
+        if (remaining == null) return false;
+        user.setBackupCodes(remaining);
+        return true;
     }
 
     // ── Sessions: list active sessions ────────────────────────

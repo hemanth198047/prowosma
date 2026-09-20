@@ -2,6 +2,7 @@ package com.prowosma.backend.controller;
 
 import com.prowosma.backend.model.User;
 import com.prowosma.backend.service.AuthService;
+import com.prowosma.backend.config.ClientIpResolver;
 import com.prowosma.backend.service.Auth0TokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final Auth0TokenVerifier auth0TokenVerifier;
+    private final ClientIpResolver clientIpResolver;
 
     @PostMapping("/register")
     public Map<String, Object> register(@RequestBody Map<String, String> body,
@@ -31,6 +33,15 @@ public class AuthController {
                                       HttpServletRequest request) {
         return authService.login(
                 body.get("email"), body.get("password"),
+                extractIp(request), request.getHeader("User-Agent"));
+    }
+
+    /** Second step of a login for an account with 2FA: the challenge from /login plus a code. */
+    @PostMapping("/login/2fa")
+    public Map<String, Object> loginTwoFactor(@RequestBody Map<String, String> body,
+                                              HttpServletRequest request) {
+        return authService.completeTwoFactorLogin(
+                body.get("twoFactorToken"), body.get("code"),
                 extractIp(request), request.getHeader("User-Agent"));
     }
 
@@ -66,13 +77,9 @@ public class AuthController {
         return Map.of("message", "Logged out successfully");
     }
 
-    /** Resolve real IP even behind a proxy */
+    /** The client's address; X-Forwarded-For is believed only from a trusted proxy (see ClientIpResolver). */
     private String extractIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) return realIp;
-        return request.getRemoteAddr();
+        return clientIpResolver.of(request);
     }
 
     // ── Auth0 / OIDC SSO login ────────────────────────────────────

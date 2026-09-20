@@ -25,6 +25,7 @@ public class AuthService {
     private final WorkspaceContext    workspaceContext;
     private final ActivityLogService  activityLogService;
     private final PasswordPolicyService passwordPolicyService;
+    private final TwoFactorService twoFactorService;
     @Lazy
     private final com.prowosma.backend.controller.SecurityController securityController;
 
@@ -79,6 +80,16 @@ public class AuthService {
                     null, null, null, ipAddress, userAgent);
             throw new PasswordExpiredException(
                     "Your password has expired and must be reset before you can log in.");
+        }
+
+        if (user.isTwoFactorEnabled() && user.getTwoFactorSecret() != null) {
+            // The password alone is not enough for this account: no session and no access token yet,
+            // only a short-lived challenge that is worth something together with a valid code
+            // (see completeTwoFactorLogin). Before this, 2FA was switchable but never asked for.
+            Map<String, Object> challenge = new HashMap<>();
+            challenge.put("requiresTwoFactor", true);
+            challenge.put("twoFactorToken", jwtUtil.generateTwoFactorChallenge(email));
+            return challenge;
         }
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
@@ -139,6 +150,63 @@ public class AuthService {
 
         // Log them in immediately with the new password, same as a normal login flow.
         return login(email, newPassword, ipAddress, userAgent);
+    }
+
+    /**
+     * Second step of a login for an account with 2FA: the challenge from {@link #login} plus either
+     * a code from the authenticator app or an unused backup code.
+     *
+     * A code that has already been used is refused (RFC 6238 section 5.2), and after five wrong
+     * codes the account's code entry is locked for 15 minutes, so the six digits can't be guessed.
+     */
+    public Map<String, Object> completeTwoFactorLogin(String challengeToken, String code,
+                                                      String ipAddress, String userAgent) {
+        String email = jwtUtil.extractTwoFactorChallengeEmail(challengeToken);
+        User user = email == null ? null : userRepository.findByEmail(email).orElse(null);
+        if (user == null || !user.isTwoFactorEnabled() || user.getTwoFactorSecret() == null) {
+            throw new InvalidCredentialsException("This sign-in has expired. Please log in again.");
+        }
+        twoFactorService.requireNotLocked(user);
+
+        boolean accepted = false;
+        boolean usedBackupCode = false;
+        var step = twoFactorService.matchStep(user.getTwoFactorSecret(), code);
+        if (step.isPresent()) {
+            if (step.getAsLong() > user.getTwoFactorLastStep()) {
+                user.setTwoFactorLastStep(step.getAsLong());
+                accepted = true;
+            }                                                     // else: a code that was already used
+        } else {
+            java.util.List<String> remaining = com.prowosma.backend.auth.BackupCodes.consume(user.getBackupCodes(), code);
+            if (remaining != null) {
+                user.setBackupCodes(remaining);
+                accepted = true;
+                usedBackupCode = true;
+            }
+        }
+
+        if (!accepted) {
+            twoFactorService.recordFailure(user);
+            userRepository.save(user);
+            activityLogService.logFull("SECURITY", user.getId(), email,
+                    "LOGIN_2FA_FAILED", null, null, email,
+                    null, null, null, ipAddress, userAgent);
+            throw new InvalidCredentialsException("Invalid verification code");
+        }
+
+        twoFactorService.recordSuccess(user);
+        userRepository.save(user);
+        if (usedBackupCode) {
+            activityLogService.logFull("SECURITY", user.getId(), email,
+                    "LOGIN_2FA_BACKUP_CODE_USED", null, null, email,
+                    null, null, null, ipAddress, userAgent);
+        }
+        String sessionId = safeRecordSession(user, ipAddress, userAgent);
+        String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);
+        activityLogService.logFull("SECURITY", user.getId(), email,
+                "LOGIN_SUCCESS", null, null, email,
+                null, null, null, ipAddress, userAgent);
+        return buildResponse(user, token);
     }
 
     public Map<String, Object> login(String email, String password) {

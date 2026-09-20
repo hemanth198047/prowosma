@@ -38,9 +38,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private int maxRequestsPerMinute;
 
     private final MongoTemplate mongoTemplate;
+    private final ClientIpResolver clientIpResolver;
 
-    public RateLimitFilter(MongoTemplate mongoTemplate) {
+    public RateLimitFilter(MongoTemplate mongoTemplate, ClientIpResolver clientIpResolver) {
         this.mongoTemplate = mongoTemplate;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @Override
@@ -104,9 +106,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "ip:" + getClientIp(req);
     }
 
+    /**
+     * X-Forwarded-For is believed only from a trusted proxy. It used to be taken from any caller,
+     * so a client could rotate it to get a fresh rate-limit bucket on every request.
+     */
     private String getClientIp(HttpServletRequest req) {
-        String xff = req.getHeader("X-Forwarded-For");
-        return (xff != null && !xff.isBlank()) ? xff.split(",")[0].trim() : req.getRemoteAddr();
+        return clientIpResolver.of(req);
     }
 
     @Override

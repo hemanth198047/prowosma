@@ -48,6 +48,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading,      setLoading]      = useState(false);
+  // Two-step verification: set after the password step when the account has 2FA on.
+  const [twoFactorToken, setTwoFactorToken] = useState("");
+  const [twoFactorCode,  setTwoFactorCode]  = useState("");
   const navigate = useNavigate();
   const { loginUser } = useAuth();
   const { loginWithRedirect: auth0Login } = useAuth0();
@@ -78,6 +81,38 @@ export default function Login() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  // Shared by the password step and the 2FA step: store the session, greet, go in.
+  const finishLogin = async (res, greet) => {
+    const { token, ...userData } = res.data;
+    loginUser(userData, token);   // stores in sessionStorage + sets auth header
+
+    // Brief, honest confirmation of what role/workspace the person is
+    // entering as — previously login went straight to navigate("/") with
+    // zero feedback about this at all. Best-effort: never blocks
+    // navigation if the lookup fails or the account has no workspace yet
+    // (e.g. a brand-new registration, which routes into workspace setup
+    // instead, where the "you'll be the Owner" framing lives).
+    if (greet) {
+      try {
+        const wsRes = await axios.get(`${API}/workspaces`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const list = Array.isArray(wsRes.data) ? wsRes.data : [];
+        if (list.length > 0) {
+          const primary = list[0];
+          const roleLabel = {
+            OWNER: t("login.roleOwner"), ADMIN: t("login.roleAdmin"),
+            MEMBER: t("login.roleMember"), VIEWER: t("login.roleViewer"),
+          }[primary.role] || primary.role || t("login.roleMember");
+          const extra = list.length > 1 ? ` (+${list.length - 1})` : "";
+          setSuccess(t("login.signedInAs", { role: roleLabel, workspace: primary.name }) + extra);
+          await new Promise((r) => setTimeout(r, 700));
+        }
+      } catch { /* best-effort only */ }
+    }
+    navigate("/");
+  };
+
   const handleSubmit = async () => {
     setError("");
     setLoading(true);
@@ -87,34 +122,14 @@ export default function Login() {
         ? { email: form.email, password: form.password }
         : { name: form.name, email: form.email, password: form.password };
       const res = await axios.post(`${API}${endpoint}`, payload);
-      const { token, ...userData } = res.data;
-      loginUser(userData, token);   // stores in sessionStorage + sets auth header
-
-      // Brief, honest confirmation of what role/workspace the person is
-      // entering as — previously login went straight to navigate("/") with
-      // zero feedback about this at all. Best-effort: never blocks
-      // navigation if the lookup fails or the account has no workspace yet
-      // (e.g. a brand-new registration, which routes into workspace setup
-      // instead, where the "you'll be the Owner" framing lives).
-      if (mode === "login") {
-        try {
-          const wsRes = await axios.get(`${API}/workspaces`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const list = Array.isArray(wsRes.data) ? wsRes.data : [];
-          if (list.length > 0) {
-            const primary = list[0];
-            const roleLabel = {
-              OWNER: t("login.roleOwner"), ADMIN: t("login.roleAdmin"),
-              MEMBER: t("login.roleMember"), VIEWER: t("login.roleViewer"),
-            }[primary.role] || primary.role || t("login.roleMember");
-            const extra = list.length > 1 ? ` (+${list.length - 1})` : "";
-            setSuccess(t("login.signedInAs", { role: roleLabel, workspace: primary.name }) + extra);
-            await new Promise((r) => setTimeout(r, 700));
-          }
-        } catch { /* best-effort only */ }
+      if (res.data?.requiresTwoFactor) {
+        // Password accepted, but this account also needs a code: no session exists yet.
+        setTwoFactorToken(res.data.twoFactorToken);
+        setTwoFactorCode("");
+        setMode("twoFactor");
+        return;
       }
-      navigate("/");
+      await finishLogin(res, mode === "login");
     } catch (err) {
       if (err.response?.data?.error === "PASSWORD_EXPIRED") {
         // Password matched, but it's expired — route to the dedicated reset
@@ -143,15 +158,79 @@ export default function Login() {
         oldPassword: form.password,
         newPassword: resetForm.newPassword,
       });
-      const { token, ...userData } = res.data;
-      loginUser(userData, token);
-      navigate("/");
+      if (res.data?.requiresTwoFactor) {
+        setTwoFactorToken(res.data.twoFactorToken);
+        setTwoFactorCode("");
+        setMode("twoFactor");
+        return;
+      }
+      await finishLogin(res, false);
     } catch (err) {
       setError(err.response?.data?.message || t("login.errors.resetFailed"));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleTwoFactor = async () => {
+    if (!twoFactorCode.trim()) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/auth/login/2fa`, { twoFactorToken, code: twoFactorCode.trim() });
+      await finishLogin(res, true);
+    } catch (err) {
+      const message = err.response?.data?.message;
+      if (err.response?.status === 401 && /expired/i.test(message || "")) {
+        // The five-minute window after the password step ran out: start again.
+        setMode("login");
+        setTwoFactorToken("");
+        setError(message);
+      } else {
+        setError(message || t("login.errors.genericFailed"));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (mode === "twoFactor") {
+    return (
+      <div className="auth-page">
+        <div className="auth-right" style={{ margin: "0 auto", maxWidth: 440 }}>
+          <div className="auth-right-inner">
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+              <LanguageSwitcher />
+            </div>
+            <h2 className="auth-form-heading">{t("login.twoFactor.heading")}</h2>
+            <p className="auth-form-sub">{t("login.twoFactor.subtitle")}</p>
+
+            {error && <div className="auth-error" role="alert">{error}</div>}
+
+            <div className="auth-field">
+              <label className="auth-field-label" htmlFor="two-factor-code">{t("login.twoFactor.codeLabel")}</label>
+              <input id="two-factor-code" className="auth-input" type="text"
+                autoComplete="one-time-code" autoCapitalize="off" spellCheck={false} autoFocus
+                placeholder="123456" value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleTwoFactor(); }} />
+            </div>
+
+            <button className="auth-submit" onClick={handleTwoFactor} disabled={loading || !twoFactorCode.trim()}>
+              {loading ? t("login.twoFactor.verifying") : t("login.twoFactor.submit")}
+            </button>
+
+            <p className="auth-switch">
+              <button className="auth-switch-btn"
+                onClick={() => { setMode("login"); setError(""); setTwoFactorToken(""); setTwoFactorCode(""); }}>
+                {t("login.twoFactor.back")}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleKey = (e) => { if (e.key === "Enter") handleSubmit(); };
 

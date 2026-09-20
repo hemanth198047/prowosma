@@ -27,6 +27,8 @@ public class IpAllowlistFilter extends OncePerRequestFilter {
     public static final ConcurrentHashMap<String, List<String>> ALLOWLISTS
         = new ConcurrentHashMap<>();
 
+    private final ClientIpResolver clientIpResolver;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -44,8 +46,10 @@ public class IpAllowlistFilter extends OncePerRequestFilter {
         }
 
         String clientIp = getClientIp(request);
-        boolean permitted = allowed.stream().anyMatch(cidr ->
-            cidr.equals(clientIp) || clientIp.startsWith(cidr.replace("*",""))
+        // Matched by address (exact, CIDR, or an "10.1.*" style prefix on whole octets); this used to be a
+        // plain string-prefix test, so CIDR entries never matched and "1.2" allowed 1.20.x.x.
+        boolean permitted = allowed.stream().anyMatch(entry ->
+            com.prowosma.backend.auth.IpRanges.allowlistMatches(entry, clientIp)
         );
 
         if (!permitted) {
@@ -56,9 +60,8 @@ public class IpAllowlistFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    /** X-Forwarded-For is believed only from a trusted proxy; a caller could otherwise claim an allowed address. */
     private String getClientIp(HttpServletRequest req) {
-        String xff = req.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
-        return req.getRemoteAddr();
+        return clientIpResolver.of(req);
     }
 }

@@ -69,12 +69,42 @@ public class JwtUtil {
                 .getSubject();
     }
 
+    /** A valid ACCESS token. A second-factor challenge token is signed with the same key but is not one. */
     public boolean isValid(String token) {
         try {
-            Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token);
-            return true;
+            var claims = Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token).getPayload();
+            return claims.get(PURPOSE_CLAIM) == null;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private static final String PURPOSE_CLAIM = "purpose";
+    private static final String PURPOSE_TWO_FACTOR = "2fa";
+    private static final long   CHALLENGE_TTL_MS = 5 * 60 * 1000L;
+
+    /**
+     * Issued after a correct password when the account has 2FA on. It proves the password step
+     * happened, nothing more: isValid() rejects it, so it can't be used as a session, and it is
+     * only good for /api/auth/login/2fa, together with a valid code, for five minutes.
+     */
+    public String generateTwoFactorChallenge(String email) {
+        return Jwts.builder()
+                .subject(email)
+                .claim(PURPOSE_CLAIM, PURPOSE_TWO_FACTOR)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + CHALLENGE_TTL_MS))
+                .signWith(getKey())
+                .compact();
+    }
+
+    /** The email of a valid, unexpired second-factor challenge; null for anything else (including access tokens). */
+    public String extractTwoFactorChallengeEmail(String token) {
+        try {
+            var claims = Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token).getPayload();
+            return PURPOSE_TWO_FACTOR.equals(claims.get(PURPOSE_CLAIM, String.class)) ? claims.getSubject() : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 }

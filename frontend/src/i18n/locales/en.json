@@ -63,6 +63,14 @@
       "submit": "Set new password →",
       "backToSignIn": "← Back to sign in"
     },
+    "twoFactor": {
+      "heading": "Two-step verification",
+      "subtitle": "Enter the 6-digit code from your authenticator app, or one of your backup codes.",
+      "codeLabel": "Verification code",
+      "submit": "Verify →",
+      "verifying": "Verifying...",
+      "back": "← Back to sign in"
+    },
     "errors": {
       "genericFailed": "Something went wrong. Please try again.",
       "passwordMismatch": "New passwords don't match.",

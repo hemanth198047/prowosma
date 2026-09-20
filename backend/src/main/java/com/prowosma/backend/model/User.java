@@ -1,5 +1,6 @@
 package com.prowosma.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,6 +14,7 @@ public class User {
     private String organizationId;
     private String name;
     private String email;
+    @JsonIgnore
     private String password;
     /** When the password was last set - drives expiry policy checks at login. */
     private java.time.LocalDateTime passwordChangedAt = java.time.LocalDateTime.now();
@@ -21,6 +23,19 @@ public class User {
 
     // ── 2FA ──────────────────────────────────────────────────
     private boolean twoFactorEnabled = false;
+    // Second-factor state. None of this is ever serialised (see @JsonIgnore above and below).
+    /** The secret being enrolled. It replaces twoFactorSecret only once a code generated from it is verified. */
+    @JsonIgnore
+    private String  pendingTwoFactorSecret;
+    /** Wrong second-factor codes since the last success; see LockoutPolicy. */
+    @JsonIgnore
+    private int     twoFactorFailedAttempts = 0;
+    @JsonIgnore
+    private java.time.Instant twoFactorLockedUntil;
+    /** The last TOTP step that was accepted: a code can not be used twice. */
+    @JsonIgnore
+    private long    twoFactorLastStep = -1;
+    @JsonIgnore
     private String  twoFactorSecret;              // base32 TOTP secret
 
     // ── Session tracking ─────────────────────────────────────
@@ -44,7 +59,9 @@ public class User {
     private String        lastLoginIp;
 
     // ── Magic link / passwordless ────────────────────────────
+    @JsonIgnore
     private String  magicLinkToken;
+    @JsonIgnore
     private java.time.LocalDateTime magicLinkExpiry;
 
     // ── Social auth ───────────────────────────────────────────
@@ -52,19 +69,26 @@ public class User {
     private String  socialId;              // provider-specific user ID
 
     // ── Email OTP MFA ─────────────────────────────────────────
+    @JsonIgnore
     private String  emailOtpCode;
+    @JsonIgnore
     private java.time.LocalDateTime emailOtpExpiry;
 
     // ── Backup codes (MFA) ────────────────────────────────────
+    @JsonIgnore
     private java.util.List<String> backupCodes = new java.util.ArrayList<>();  // hashed
 
     // ── Refresh tokens ────────────────────────────────────────
+    @JsonIgnore
     private String  refreshToken;
+    @JsonIgnore
     private java.time.LocalDateTime refreshTokenExpiry;
 
     // ── Guest / external ─────────────────────────────────────
     private boolean isGuest = false;       // true = limited external collaborator
+    @JsonIgnore
     private String  guestToken;            // token for passwordless guest access
+    @JsonIgnore
     private java.time.LocalDateTime guestTokenExpiry;
 
     // ── Fine-grained permissions ──────────────────────────────

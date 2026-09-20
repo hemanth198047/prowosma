@@ -63,6 +63,14 @@
       "submit": "Establecer nueva contraseña →",
       "backToSignIn": "← Volver a iniciar sesión"
     },
+    "twoFactor": {
+      "heading": "Verificación en dos pasos",
+      "subtitle": "Introduce el código de 6 dígitos de tu aplicación de autenticación, o uno de tus códigos de respaldo.",
+      "codeLabel": "Código de verificación",
+      "submit": "Verificar →",
+      "verifying": "Verificando...",
+      "back": "← Volver a iniciar sesión"
+    },
     "errors": {
       "genericFailed": "Algo salió mal. Inténtalo de nuevo.",
       "passwordMismatch": "Las nuevas contraseñas no coinciden.",

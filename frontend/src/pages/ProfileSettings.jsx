@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import { apiErrorMessage } from "../utils/apiError";
+import BackupCodesPanel from "../components/BackupCodesPanel";
 
 export default function ProfileSettings() {
   const { user, logoutUser } = useAuth();
@@ -22,6 +23,9 @@ export default function ProfileSettings() {
   const [twoFaCode, setTwoFaCode]         = useState("");
   const [twoFaLoading, setTwoFaLoading]   = useState(false);
   const [disableCode, setDisableCode]     = useState("");
+  const [backupCodes, setBackupCodes]         = useState(null);   // shown once, right after they are generated
+  const [backupRemaining, setBackupRemaining] = useState(null);
+  const [regenCode, setRegenCode]             = useState("");
 
   // ── Sessions state ────────────────────────────────────────
   const [sessions, setSessions]           = useState([]);
@@ -39,7 +43,7 @@ export default function ProfileSettings() {
   // Load 2FA status when security tab opens
   useEffect(() => {
     if (section !== "security") return;
-    client.get("/security/2fa/status").then(r => setTwoFaEnabled(r.data.enabled)).catch(() => {});
+    client.get("/security/2fa/status").then(r => { setTwoFaEnabled(r.data.enabled); setBackupRemaining(r.data.backupCodesRemaining ?? null); }).catch(() => {});
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard load-on-mount pattern
     loadSessions();
   }, [section]);
@@ -62,7 +66,9 @@ export default function ProfileSettings() {
     if (twoFaCode.length !== 6) return;
     setTwoFaLoading(true); setError("");
     try {
-      await client.post("/security/2fa/verify", { code: twoFaCode });
+      const r = await client.post("/security/2fa/verify", { code: twoFaCode });
+      setBackupCodes(r.data?.backupCodes || null);
+      setBackupRemaining(r.data?.backupCodes?.length ?? null);
       setTwoFaEnabled(true); setTwoFaSetup(null); setTwoFaCode("");
       setSuccess("2FA enabled successfully!");
       setTimeout(() => setSuccess(""), 4000);
@@ -71,13 +77,25 @@ export default function ProfileSettings() {
   };
 
   const disable2fa = async () => {
-    if (!disableCode || disableCode.length !== 6) return;
+    if (!disableCode || disableCode.length < 6) return;
     setTwoFaLoading(true); setError("");
     try {
       await client.post("/security/2fa/disable", { code: disableCode });
       setTwoFaEnabled(false); setDisableCode("");
       setSuccess("2FA disabled.");
       setTimeout(() => setSuccess(""), 4000);
+    } catch (e) { setError(apiErrorMessage(e, "Invalid code")); }
+    finally { setTwoFaLoading(false); }
+  };
+
+  const regenerateBackupCodes = async () => {
+    if (regenCode.length < 6) return;
+    setTwoFaLoading(true); setError("");
+    try {
+      const r = await client.post("/security/2fa/backup-codes", { code: regenCode });
+      setBackupCodes(r.data?.backupCodes || null);
+      setBackupRemaining(r.data?.backupCodes?.length ?? null);
+      setRegenCode("");
     } catch (e) { setError(apiErrorMessage(e, "Invalid code")); }
     finally { setTwoFaLoading(false); }
   };
@@ -176,19 +194,35 @@ export default function ProfileSettings() {
               Add an extra layer of security. Once enabled, you'll need a 6-digit code from your authenticator app on every login.
             </p>
 
+            {backupCodes && backupCodes.length > 0 && (
+              <BackupCodesPanel codes={backupCodes} onDone={() => setBackupCodes(null)} />
+            )}
+
             {twoFaEnabled ? (
               <div>
                 <div className="sec-2fa-enabled-badge">✅ 2FA is enabled on your account</div>
+                <div style={{ marginTop:"16px" }} data-testid="backup-codes-section">
+                  <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"8px" }}>
+                    Backup codes remaining: <b>{backupRemaining ?? "-"}</b>
+                  </div>
+                  <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+                    <input value={regenCode} onChange={e => setRegenCode(e.target.value.replace(/[^A-Za-z0-9-]/g,"").slice(0,11))}
+                      placeholder="2FA code" aria-label="2FA code to generate new backup codes" autoComplete="off"
+                      style={{ width:"150px", letterSpacing:"0.15em", fontSize:"16px", textAlign:"center" }} />
+                    <button className="btn-secondary" disabled={regenCode.length < 6 || twoFaLoading}
+                      onClick={regenerateBackupCodes}>Generate new backup codes</button>
+                  </div>
+                </div>
                 <div style={{ marginTop:"16px" }}>
                   <label style={{ fontSize:"13px", fontWeight:600, display:"block", marginBottom:"8px" }} htmlFor={"profile-settings-enter-your-2fa-code-to-disable"}>
-                    Enter your 2FA code to disable:
+                    Enter your 2FA code (or a backup code) to disable:
                   </label>
                   <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-                    <input value={disableCode} onChange={e => setDisableCode(e.target.value.replace(/\D/g,"").slice(0,6))}
-                      placeholder="000000" maxLength={6}
-                      style={{ width:"120px", letterSpacing:"0.3em", fontSize:"16px", textAlign:"center" }} id={"profile-settings-enter-your-2fa-code-to-disable"} />
+                    <input value={disableCode} onChange={e => setDisableCode(e.target.value.replace(/[^A-Za-z0-9-]/g,"").slice(0,11))}
+                      placeholder="000000" maxLength={11} autoComplete="off"
+                      style={{ width:"150px", letterSpacing:"0.15em", fontSize:"16px", textAlign:"center" }} id={"profile-settings-enter-your-2fa-code-to-disable"} />
                     <button className="btn-secondary" style={{ color:"var(--danger)" }}
-                      disabled={disableCode.length !== 6 || twoFaLoading}
+                      disabled={disableCode.length < 6 || twoFaLoading}
                       onClick={disable2fa}>
                       {twoFaLoading ? "⏳" : "🔓 Disable 2FA"}
                     </button>

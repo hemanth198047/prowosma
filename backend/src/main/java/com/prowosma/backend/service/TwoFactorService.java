@@ -39,12 +39,48 @@ public class TwoFactorService {
 
     // ── Verify a 6-digit code ─────────────────────────────────
     public boolean verify(String secret, String code) {
-        if (code == null || code.length() != 6) return false;
-        long currentWindow = System.currentTimeMillis() / 30_000L;
-        for (int i = -WINDOW; i <= WINDOW; i++) {
-            if (generateCode(secret, currentWindow + i).equals(code)) return true;
+        return matchStep(secret, code).isPresent();
+    }
+
+    /** The 30-second step a valid code belongs to (so a caller can refuse a code already used), or empty. */
+    public java.util.OptionalLong matchStep(String secret, String code) {
+        try {
+            return com.prowosma.backend.auth.Totp.matchStep(secret, code, System.currentTimeMillis(), WINDOW);
+        } catch (IllegalArgumentException malformedSecret) {
+            return java.util.OptionalLong.empty();
         }
-        return false;
+    }
+
+    // -- Attempt limiting for second-factor codes (shared by login and the 2FA settings endpoints) --
+
+    private static com.prowosma.backend.auth.LockoutPolicy.State lockState(com.prowosma.backend.model.User user) {
+        return new com.prowosma.backend.auth.LockoutPolicy.State(
+                user.getTwoFactorFailedAttempts(), user.getTwoFactorLockedUntil());
+    }
+
+    /** @throws org.springframework.web.server.ResponseStatusException 429 while the account's code entry is locked */
+    public void requireNotLocked(com.prowosma.backend.model.User user) {
+        java.time.Instant now = java.time.Instant.now();
+        var state = lockState(user);
+        if (com.prowosma.backend.auth.LockoutPolicy.isLocked(state, now)) {
+            long minutes = Math.max(1, (com.prowosma.backend.auth.LockoutPolicy.remaining(state, now).toSeconds() + 59) / 60);
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                    "Too many incorrect codes. Try again in " + minutes + " minute" + (minutes == 1 ? "" : "s") + ".");
+        }
+    }
+
+    /** Counts a wrong code; the caller saves the user. */
+    public void recordFailure(com.prowosma.backend.model.User user) {
+        var next = com.prowosma.backend.auth.LockoutPolicy.afterFailure(lockState(user), java.time.Instant.now());
+        user.setTwoFactorFailedAttempts(next.failures());
+        user.setTwoFactorLockedUntil(next.lockedUntil());
+    }
+
+    /** Clears the count after a correct code; the caller saves the user. */
+    public void recordSuccess(com.prowosma.backend.model.User user) {
+        user.setTwoFactorFailedAttempts(0);
+        user.setTwoFactorLockedUntil(null);
     }
 
     // ── Generate a code for a specific time window ────────────

@@ -3,6 +3,28 @@
 All notable changes from the enterprise-readiness backlog engagement, in the order they were
 completed. Each entry links to the doc with full detail.
 
+## Account Security: two-factor login, backup codes, forged client addresses, leaked credentials
+- **Fixed**: two-factor authentication was switchable but never asked for. An account with 2FA on could be entered with
+  the password alone. Login is now two steps for those accounts (password, then a code), on web and mobile.
+  Codes can't be replayed, and five wrong codes lock code entry for 15 minutes.
+- **Fixed**: turning on 2FA created no backup codes (a lost phone would have meant a locked-out account once 2FA was
+  enforced). It now returns ten single-use codes, shown once; they can be regenerated and used to sign in or switch 2FA off.
+- **Fixed**: `/2fa/setup` replaced the *active* secret immediately, with no proof of the old one, so a stolen session
+  could swap in its own authenticator. The new secret now stays pending until a code from it is verified, and replacing an
+  active authenticator needs the current code (or a backup code).
+- **Fixed**: `/api/auth/profile` and `/api/users/me` returned the raw user record: password hash, TOTP secret, backup
+  codes, refresh token, magic-link, OTP and guest tokens. The web app copied that into `localStorage`. None of it is
+  serialised any more (existing copies are overwritten at the next profile refresh).
+- **Fixed**: `X-Forwarded-For` was believed from any caller, so the rate limiter could be dodged by rotating the header
+  and a workspace IP allow-list could be walked through by claiming an allowed address. The header is now believed only
+  from a trusted proxy (`TRUSTED_PROXIES`; default: loopback and private ranges).
+- **Fixed**: IP allow-list entries were matched as string prefixes: CIDR ranges never matched and `1.2` allowed `1.20.x.x`.
+  Exact addresses, CIDR and whole-octet wildcards (`10.1.*`) now match correctly.
+- **Action needed**: if your load balancer or CDN reaches the app from a *public* address, set `TRUSTED_PROXIES` (see
+  `docs/ACCOUNT_SECURITY.md`). API clients that call `/api/auth/login` for accounts with 2FA must now follow with
+  `/api/auth/login/2fa`.
+- See `docs/ACCOUNT_SECURITY.md`.
+
 ## Integrations: GitLab, Microsoft Teams, Datadog / Sentry / Jenkins
 - **GitLab** (gitlab.com and self-managed): open issues and merge requests sync as tasks, de-duplicated within the workspace.
 - **Microsoft Teams**: Adaptive Card messages via Workflows or legacy connector webhooks, restricted to Microsoft hosts.
