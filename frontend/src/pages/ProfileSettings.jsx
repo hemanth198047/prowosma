@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
+import { apiErrorMessage } from "../utils/apiError";
 
 export default function ProfileSettings() {
   const { user, logoutUser } = useAuth();
@@ -53,7 +54,7 @@ export default function ProfileSettings() {
       // the QR/secret data needed to actually complete 2FA setup was being
       // silently discarded every time.
       setTwoFaSetup(r.data);
-    } catch (e) { setError(e.response?.data?.error || "Setup failed"); }
+    } catch (e) { setError(apiErrorMessage(e, "Setup failed")); }
     finally { setTwoFaLoading(false); }
   };
 
@@ -65,7 +66,7 @@ export default function ProfileSettings() {
       setTwoFaEnabled(true); setTwoFaSetup(null); setTwoFaCode("");
       setSuccess("2FA enabled successfully!");
       setTimeout(() => setSuccess(""), 4000);
-    } catch (e) { setError(e.response?.data?.error || "Invalid code"); }
+    } catch (e) { setError(apiErrorMessage(e, "Invalid code")); }
     finally { setTwoFaLoading(false); }
   };
 
@@ -77,7 +78,7 @@ export default function ProfileSettings() {
       setTwoFaEnabled(false); setDisableCode("");
       setSuccess("2FA disabled.");
       setTimeout(() => setSuccess(""), 4000);
-    } catch (e) { setError(e.response?.data?.error || "Invalid code"); }
+    } catch (e) { setError(apiErrorMessage(e, "Invalid code")); }
     finally { setTwoFaLoading(false); }
   };
 

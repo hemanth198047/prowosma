@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getBillingSummary, startCheckout, openBillingPortal, startTrial } from "../api/billing";
 
 import "../styles/pages/licensing.css";
+import { apiErrorMessage } from "../utils/apiError";
 /* ══════════════════════════════════════════════════════════════════
    PLAN DEFINITIONS — every feature in the application
    ══════════════════════════════════════════════════════════════════ */
@@ -445,8 +446,7 @@ export default function Licensing() {
         navigate("/");
       } catch (err) {
         setBillingError(
-          err?.response?.data?.error ||
-          "Couldn't start your trial. Please try again in a moment."
+          apiErrorMessage(err, "Couldn't start your trial. Please try again in a moment.")
         );
       } finally {
         setCheckoutLoading(null);
@@ -462,8 +462,7 @@ export default function Licensing() {
       window.location.href = res.data.url; // hand off to Stripe's real hosted checkout page
     } catch (err) {
       setBillingError(
-        err?.response?.data?.error ||
-        "Couldn't start checkout. Please try again in a moment."
+        apiErrorMessage(err, "Couldn't start checkout. Please try again in a moment.")
       );
       setCheckoutLoading(null);
     }
@@ -487,8 +486,7 @@ export default function Licensing() {
       window.location.href = res.data.url;
     } catch (err) {
       setBillingError(
-        err?.response?.data?.error ||
-        "Couldn't open the billing portal. Please try again."
+        apiErrorMessage(err, "Couldn't open the billing portal. Please try again.")
       );
       setPortalLoading(false);
     }

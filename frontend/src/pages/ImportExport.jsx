@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
+import { apiErrorMessage } from "../utils/apiError";
 
 const SECTIONS = [
   { key:"projects", icon:"📁", label:"Projects",  color:"#3b82f6", desc:"Name, status, category, due date, budget, linked goal" },
@@ -44,7 +45,7 @@ export default function ImportExport() {
       setResult(res.data);
       setFile(null);
     } catch (e) {
-      setError(e.response?.data?.error || e.message || "Import failed");
+      setError(apiErrorMessage(e, e.message || "Import failed"));
     } finally { setImporting(false); }
   };
 

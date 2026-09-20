@@ -5,6 +5,7 @@ import { getIntegrations, saveIntegration, toggleIntegration, syncGitHub, syncBi
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import PageHeader from "../components/PageHeader";
+import { apiErrorMessage } from "../utils/apiError";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTEGRATION CATALOGUE — 5 Tiers
@@ -363,7 +364,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
           ? `Imported ${imported} new ${syncAction.resultLabel} (${total} open).`
           : `Up to date — 0 new ${syncAction.resultLabel} (${total} open).` });
     } catch (err) {
-      setSyncState({ ok: false, message: err.response?.data?.error || err.message || "Sync failed." });
+      setSyncState({ ok: false, message: apiErrorMessage(err, err.message || "Sync failed.") });
     }
   };
 

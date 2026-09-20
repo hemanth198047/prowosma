@@ -28,6 +28,7 @@ import PageHeader from "../components/PageHeader";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/ai.css";
+import { apiErrorMessage } from "../utils/apiError";
 const PANELS = [
   {
     key: "chat",
@@ -289,10 +290,10 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
         ...prev,
         {
           role: "assistant",
-          content:
-            (error?.response?.data?.error || error?.response?.data?.message
-              ? `⚠️ ${error.response.data.error || error.response.data.message}`
-              : "⚠️ Could not reach the AI service. Please add your API key in AI Settings → API Configuration."),
+          content: `⚠️ ${apiErrorMessage(
+            error,
+            "Could not reach the AI service. Please add your API key in AI Settings → API Configuration."
+          )}`,
         },
       ]);
     } finally {
@@ -411,9 +412,7 @@ export default function AIAssistant() {
       setResult(unwrapList(res));
     } catch (err) {
       setResult({
-        error:
-          err.response?.data?.error ||
-          "Feature not enabled or AI not configured",
+        error: apiErrorMessage(err, "Feature not enabled or AI not configured"),
       });
     } finally {
       setLoading(false);

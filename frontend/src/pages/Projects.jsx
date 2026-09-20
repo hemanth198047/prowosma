@@ -22,6 +22,7 @@ import CustomFieldValues from "../components/CustomFieldValues";
 import EntityActivityTab from "../components/EntityActivityTab";
 import { useAuth } from "../hooks/useAuth";
 import { getMeetingsForProject } from "../api/meetings";
+import { apiErrorMessage } from "../utils/apiError";
 
 const COLORS = [
   "#6366f1",
@@ -105,7 +106,7 @@ function ProjectForm({
       setNewCatColor("#6366f1");
       setShowNewCat(false);
     } catch (e) {
-      const msg = e.response?.data?.error || e.response?.data?.message || e.message;
+      const msg = apiErrorMessage(e, e.message);
       alert("Failed to create category: " + msg);
     } finally {
       setCatSaving(false);
@@ -132,7 +133,7 @@ function ProjectForm({
       setNewGoalStatus("ACTIVE");
       setShowNewGoal(false);
     } catch (e) {
-      const msg = e.response?.data?.error || e.response?.data?.message || e.message;
+      const msg = apiErrorMessage(e, e.message);
       alert("Failed to create goal: " + msg);
     } finally {
       setGoalSaving(false);
@@ -990,12 +991,12 @@ export default function Projects() {
       } catch (err) {
         // Revert on failure — reload fresh from server
         load();
-        const errMsg =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
+        const errMsg = apiErrorMessage(
+          err,
           (typeof err.response?.data === "string" ? err.response.data : null) ||
-          err.message ||
-          "Failed to delete project";
+            err.message ||
+            "Failed to delete project"
+        );
         showToast(errMsg, "error");
       }
     }

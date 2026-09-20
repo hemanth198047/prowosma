@@ -9,6 +9,7 @@ import {
 import PageHeader from "../components/PageHeader";
 import { useConfirm } from "../hooks/useConfirm";
 import CanDo from "../components/CanDo";
+import { apiErrorMessage } from "../utils/apiError";
 
 const COLORS = [
   "#6366f1",
@@ -137,7 +138,7 @@ export default function Categories() {
       setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch (e) {
       const status = e.response?.status;
-      const msg    = e.response?.data?.message || e.response?.data?.error || e.message;
+      const msg    = apiErrorMessage(e, e.message);
       alert("Delete failed (" + status + "): " + msg);
     }
   };

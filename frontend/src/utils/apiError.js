@@ -12,7 +12,10 @@
  * when it reads like a sentence rather than an ALL_CAPS code. Anything else gets
  * the caller's own fallback.
  */
-const MACHINE_CODE = /^[A-Z][A-Z0-9_]*$/;
+// Also matches Spring's status-prefixed form, e.g. "403 FORBIDDEN" / "404 NOT_FOUND"
+// (GlobalExceptionHandler uses ex.getStatusCode().toString() as the code for
+// ResponseStatusException).
+const MACHINE_CODE = /^(?:\d{3}\s+)?[A-Z][A-Z0-9_]*$/;
 
 function clean(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;

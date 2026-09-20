@@ -9,6 +9,7 @@ import { getTeamMembers, updateTeamMember, deleteTeamMember } from "../api/team"
 import { getPendingInvites, sendInvitation, cancelInvitation, resendInvitation } from "../api/invitations";
 import { getProjects } from "../api/projects";
 import { useRole } from "../hooks/useRole";
+import { apiErrorMessage } from "../utils/apiError";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -359,7 +360,7 @@ function EmailSettingsPanel() {
       toast(unwrapList(res).message || "Email settings saved", unwrapList(res).emailConfigured ? "success" : "info");
       load();
     } catch (e) {
-      toast(e.response?.data?.error || "Couldn't save email settings", "error");
+      toast(apiErrorMessage(e, "Couldn't save email settings"), "error");
     } finally {
       setSaving(false);
     }
@@ -373,7 +374,7 @@ function EmailSettingsPanel() {
       toast(unwrapList(res).message || "Test email sent", "success");
       load();
     } catch (e) {
-      toast(e.response?.data?.error || "Test email failed to send", "error");
+      toast(apiErrorMessage(e, "Test email failed to send"), "error");
       load();
     } finally {
       setTesting(false);
@@ -508,7 +509,7 @@ function SecurityPolicyPanel() {
       toast("Security policy saved", "success");
       load();
     } catch (e) {
-      toast(e.response?.data?.error || "Couldn't save security policy", "error");
+      toast(apiErrorMessage(e, "Couldn't save security policy"), "error");
     } finally {
       setSaving(false);
     }
@@ -756,7 +757,7 @@ function Billing() {
     } catch (err) {
       setBanner({
         type: "error",
-        text: err?.response?.data?.error || "Couldn't start checkout. Please try again.",
+        text: apiErrorMessage(err, "Couldn't start checkout. Please try again."),
       });
       setActionLoading(null);
     }
@@ -771,7 +772,7 @@ function Billing() {
     } catch (err) {
       setBanner({
         type: "error",
-        text: err?.response?.data?.error || "Couldn't open the billing portal.",
+        text: apiErrorMessage(err, "Couldn't open the billing portal."),
       });
       setActionLoading(null);
     }
@@ -1651,7 +1652,7 @@ function WorkspacePeople() {
       setMembers(ms => ms.map(m => m.id === member.id ? { ...m, role } : m));
       toast(`${member.name}'s role is now ${role}`, "success");
     } catch (e) {
-      toast(e.response?.data?.error || "Couldn't update this member's role.", "error");
+      toast(apiErrorMessage(e, "Couldn't update this member's role."), "error");
     } finally {
       setBusyId(null);
     }
@@ -1666,7 +1667,7 @@ function WorkspacePeople() {
       setMembers(ms => ms.filter(m => m.id !== member.id));
       toast("Member removed", "success");
     } catch (e) {
-      toast(e.response?.data?.error || "Couldn't remove this member.", "error");
+      toast(apiErrorMessage(e, "Couldn't remove this member."), "error");
     } finally {
       setBusyId(null);
     }
@@ -1682,7 +1683,7 @@ function WorkspacePeople() {
       setInviteOpen(false);
       load();
     } catch (e) {
-      setInviteError(e.response?.data?.error || "Failed to send invitation");
+      setInviteError(apiErrorMessage(e, "Failed to send invitation"));
     } finally {
       setInviteBusy(false);
     }
@@ -1707,7 +1708,7 @@ function WorkspacePeople() {
       await resendInvitation(inv.id);
       toast(`Invitation resent to ${inv.email}`, "success");
     } catch (e) {
-      toast(e.response?.data?.error || `Couldn't resend the invitation to ${inv.email}`, "error");
+      toast(apiErrorMessage(e, `Couldn't resend the invitation to ${inv.email}`), "error");
     } finally {
       setBusyId(null);
     }

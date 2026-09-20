@@ -37,6 +37,7 @@ import EntityActivityTab from "../components/EntityActivityTab";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/goals.css";
+import { apiErrorMessage } from "../utils/apiError";
 const STATUSES  = ["ACTIVE", "ACHIEVED", "PAUSED"];
 const LEVELS    = ["COMPANY", "TEAM", "INDIVIDUAL"];
 const QUARTERS  = ["Q1 2025","Q2 2025","Q3 2025","Q4 2025","Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
@@ -1878,12 +1879,12 @@ export default function Goals() {
         showToast("Goal deleted successfully", "success");
       } catch (err) {
         load();
-        const errMsg =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
+        const errMsg = apiErrorMessage(
+          err,
           (typeof err.response?.data === "string" ? err.response.data : null) ||
-          err.message ||
-          "Failed to delete goal";
+            err.message ||
+            "Failed to delete goal"
+        );
         showToast(errMsg, "error");
       }
     }

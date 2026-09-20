@@ -35,6 +35,7 @@ const expertiseApi = {
 import CanDo from "../components/CanDo";
 import { useAuth } from "../hooks/useAuth";
 import { useRole } from "../hooks/useRole";
+import { apiErrorMessage } from "../utils/apiError";
 
 const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
@@ -312,7 +313,7 @@ export default function Team() {
       setEditing(null);
       load();
     } catch (e) {
-      toast(e.response?.data?.error || "Couldn't save this member.", "error");
+      toast(apiErrorMessage(e, "Couldn't save this member."), "error");
     } finally {
       setSavingMember(false);
     }
@@ -352,7 +353,7 @@ export default function Team() {
         setInviteSuccess("");
       }, 2000);
     } catch (e) {
-      setInviteError(e.response?.data?.error || e.response?.data?.message || "Failed to send invitation");
+      setInviteError(apiErrorMessage(e, "Failed to send invitation"));
     } finally {
       setInviteLoading(false);
     }
@@ -378,7 +379,7 @@ export default function Team() {
       await resendInvitation(invite.id);
       toast(`Invitation resent to ${invite.email}`, "success");
     } catch (e) {
-      toast(e.response?.data?.error || `Couldn't resend the invitation to ${invite.email}`, "error");
+      toast(apiErrorMessage(e, `Couldn't resend the invitation to ${invite.email}`), "error");
     } finally {
       setInviteRowBusy((m) => { const n = { ...m }; delete n[invite.id]; return n; });
     }

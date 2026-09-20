@@ -11,6 +11,7 @@ import PageHeader from "../components/PageHeader";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 import "../styles/pages/workspace.css";
+import { apiErrorMessage } from "../utils/apiError";
 const DATE_FORMATS = ["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","DD-MM-YYYY","MMM DD, YYYY"];
 
 const NOTIF_PREFS = [
@@ -163,7 +164,7 @@ export default function WorkspaceSettings() {
       setInviteForm({ email: "", role: "MEMBER" });
       loadInvites();
     } catch (e) {
-      setInviteError(e.response?.data?.message || "Failed to send invite");
+      setInviteError(apiErrorMessage(e, "Failed to send invite"));
     } finally { setInviteSending(false); }
   };
 

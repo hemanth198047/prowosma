@@ -27,6 +27,7 @@ import TaskTable from "../components/TaskTable";
 import TaskDrawer from "../components/TaskDrawer";
 
 import "../styles/pages/tasks.css";
+import { apiErrorMessage } from "../utils/apiError";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -626,7 +627,7 @@ export default function Tasks() {
       await patchTask(id, fields);
     } catch (err) {
       load(); // fields didn't actually save - resync with the server and let the user see the real state
-      showToast(err.response?.data?.error || err.response?.data?.message || "Couldn't save that change", "error");
+      showToast(apiErrorMessage(err, "Couldn't save that change"), "error");
     }
   };
 
