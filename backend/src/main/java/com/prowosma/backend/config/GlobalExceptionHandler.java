@@ -1,5 +1,6 @@
 package com.prowosma.backend.config;
 
+import com.prowosma.backend.config.tenant.TenantViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -128,6 +129,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorBody(
             "INVALID_CREDENTIALS",
             ex.getMessage(),
+            null
+        ));
+    }
+
+    /**
+     * A write that would have overwritten another workspace's record (blocked by the
+     * tenant guard). Answered exactly like a record that does not exist, so it can't be
+     * used to find out which ids belong to other workspaces.
+     */
+    @ExceptionHandler(TenantViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleTenantViolation(TenantViolationException ex) {
+        log.warn("Blocked cross-workspace write: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(
+            "NOT_FOUND",
+            "Resource not found",
             null
         ));
     }

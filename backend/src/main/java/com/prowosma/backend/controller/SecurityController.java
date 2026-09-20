@@ -5,6 +5,8 @@ import com.prowosma.backend.repository.TaskRepository;
 import com.prowosma.backend.repository.ProjectRepository;
 import com.prowosma.backend.repository.GoalRepository;
 import com.prowosma.backend.repository.UserRepository;
+import com.prowosma.backend.repository.TeamMemberRepository;
+import com.prowosma.backend.repository.WorkspaceRepository;
 import com.prowosma.backend.service.TwoFactorService;
 import com.prowosma.backend.config.WorkspaceContext;
 import com.prowosma.backend.repository.ActivityLogRepository;
@@ -31,7 +33,30 @@ public class SecurityController {
     private final ProjectRepository  projectRepository;
     private final GoalRepository     goalRepository;
     private final WorkspaceContext   workspaceContext;
-    private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final WorkspaceRepository  workspaceRepository;
+
+    /**
+     * The users of the caller's workspace: its owner plus its team members.
+     *
+     * The security dashboard endpoints below used to call userRepository.findAll(), so
+     * a workspace admin saw EVERY user on the platform — emails, IP addresses and
+     * devices included — across all workspaces. No workspace selected => no users.
+     */
+    private List<User> workspaceUsers() {
+        String orgId = workspaceContext.getWorkspaceId();
+        if (orgId == null) return List.of();
+        Set<String> emails = new LinkedHashSet<>();
+        workspaceRepository.findById(orgId).map(ws -> ws.getOwnerEmail()).ifPresent(emails::add);
+        teamMemberRepository.findByOrganizationId(orgId).forEach(m -> {
+            if (m.getEmail() != null) emails.add(m.getEmail());
+        });
+        return emails.stream()
+                .map(userRepository::findByEmail)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+    private final WorkspaceRepository workspaceRepository;
     private final com.prowosma.backend.repository.WorkspaceConfigRepository workspaceConfigRepository;
 
     // ── 2FA: begin setup — generate secret + QR ──────────────
@@ -212,7 +237,7 @@ public class SecurityController {
         // each request's session id against this same list.
         int cap = maxConcurrentSessionsFor(user.getEmail());
         if (cap > 0 && user.getLoginSessions().size() >= cap) {
-            user.getLoginSessions().sort(java.util.Comparator.comparing(User.LoginSession::getCreatedAt));
+            user.getLoginSessions().sort(Comparator.comparing(User.LoginSession::getCreatedAt));
             int toRemove = user.getLoginSessions().size() - cap + 1;
             for (int i = 0; i < toRemove && !user.getLoginSessions().isEmpty(); i++) {
                 user.getLoginSessions().remove(0);
@@ -262,32 +287,32 @@ public class SecurityController {
 
     // C-3: Security Centre stats
     @GetMapping("/stats")
-    public java.util.Map<String, Object> getSecurityStats() {
-        java.util.List<com.prowosma.backend.model.User> users = userRepository.findAll();
+    public Map<String, Object> getSecurityStats() {
+        List<User> users = workspaceUsers();
         long total   = users.size();
-        long twoFa   = users.stream().filter(com.prowosma.backend.model.User::isTwoFactorEnabled).count();
+        long twoFa   = users.stream().filter(User::isTwoFactorEnabled).count();
         long deact   = users.stream().filter(u -> "DEACTIVATED".equals(u.getRole())).count();
-        java.util.Map<String, Object> r = new java.util.LinkedHashMap<>();
+        Map<String, Object> r = new LinkedHashMap<>();
         r.put("totalUsers",        total);
         r.put("twoFaUsers",        twoFa);
         r.put("deactivatedUsers",  deact);
         r.put("mfaAdoptionPct",    total == 0 ? 0 : Math.round(twoFa * 100.0 / total));
         long failed24h = activityLogRepository.countByOrganizationIdAndActionAndCreatedAtBetween(
             workspaceContext.getWorkspaceId(), "LOGIN_FAILED",
-            java.time.LocalDateTime.now().minusDays(1), java.time.LocalDateTime.now());
+            LocalDateTime.now().minusDays(1), LocalDateTime.now());
         r.put("failedLogins24h", failed24h);
         r.put("anomalousLogins", failed24h > 5 ? failed24h - 5 : 0);
         return r;
     }
 
     @GetMapping("/sessions/all")
-    public PagedResponse<java.util.Map<String, Object>> getAllSessions(
+    public PagedResponse<Map<String, Object>> getAllSessions(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
-        var all = userRepository.findAll().stream()
-            .flatMap(u -> (u.getLoginSessions() != null ? u.getLoginSessions() : java.util.List.<com.prowosma.backend.model.User.LoginSession>of())
+        var all = workspaceUsers().stream()
+            .flatMap(u -> (u.getLoginSessions() != null ? u.getLoginSessions() : List.<User.LoginSession>of())
                 .stream().map(s -> {
-                    java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id",           s.getId());
                     m.put("email",        u.getEmail());
                     m.put("ipAddress",    s.getIpAddress());

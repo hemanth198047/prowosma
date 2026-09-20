@@ -379,9 +379,8 @@ public class ActivityLogService {
     // ── Queries ────────────────────────────────────────────────
     public List<ActivityLog> getRecent(int limit) {
         String orgId = workspaceContext.getWorkspaceId();
-        if (orgId != null)
-            return repo.findByOrganizationIdOrderByCreatedAtDesc(orgId, PageRequest.of(0, limit));
-        return repo.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit));
+        if (orgId == null) return List.of();      // never fall back to every workspace's activity
+        return repo.findByOrganizationIdOrderByCreatedAtDesc(orgId, PageRequest.of(0, limit));
     }
 
     public List<ActivityLog> getByDateRange(LocalDateTime from, LocalDateTime to) {

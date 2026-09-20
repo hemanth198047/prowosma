@@ -3,6 +3,19 @@
 All notable changes from the enterprise-readiness backlog engagement, in the order they were
 completed. Each entry links to the doc with full detail.
 
+## Tenant Isolation & Webhook Security
+- **Fixed**: the outbound-webhook management API (`/api/webhooks`) was reachable with no login (the
+  `/api/webhooks/**` wildcard existed for the Stripe/email callbacks) and its by-id endpoints ignored workspace
+  ownership, so signing secrets could be read, rotated or deleted across workspaces.
+- **Fixed**: by-id access to any workspace-owned record was unchecked (89 call sites). Added a tenant guard around
+  every workspace-owned repository, switchable with `TENANT_GUARD_MODE=enforce|log|off`.
+- **Fixed**: several services fell back to a *global* query when no `X-Workspace-Id` was sent: notifications
+  (including "mark all read" and "clear all", which acted on every workspace), the recent-activity feed, and team
+  lookup by email. The security dashboard (`/api/security/sessions/all`, `/stats`) listed every user on the platform.
+- **Fixed**: WebSocket traffic was unauthenticated and unauthorised (anonymous CONNECT, no SUBSCRIBE/SEND checks, and
+  `/app/doc/{id}/edit` persisted content for any document). `useDocCollab` also now sends its token.
+- See `docs/TENANT_ISOLATION.md`.
+
 ## Documentation & Enablement
 - Added `docs/ARCHITECTURE.md` with three verified-syntax Mermaid diagrams (system overview, request
   flow, data-residency routing).

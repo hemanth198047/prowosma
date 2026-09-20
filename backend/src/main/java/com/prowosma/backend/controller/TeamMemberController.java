@@ -1,5 +1,6 @@
 package com.prowosma.backend.controller;
 
+import com.prowosma.backend.config.WorkspaceContext;
 import com.prowosma.backend.model.TeamMember;
 import com.prowosma.backend.repository.TeamMemberRepository;
 import com.prowosma.backend.service.TeamMemberService;
@@ -18,6 +19,7 @@ public class TeamMemberController {
 
     private final TeamMemberService    teamMemberService;
     private final TeamMemberRepository teamMemberRepository;
+    private final WorkspaceContext     workspaceContext;
 
     @GetMapping
     public List<TeamMember> getAll() {
@@ -28,9 +30,18 @@ public class TeamMemberController {
     @GetMapping("/by-email")
     public ResponseEntity<?> getByEmail(
             @RequestParam String email,
-            @RequestParam(required = false) String workspaceId) {
+            @RequestParam(required = false) String workspaceId,
+            Authentication auth) {
         // workspaceId passed explicitly → bypass WorkspaceContext (handles initial load race)
         if (workspaceId != null && !workspaceId.isBlank()) {
+            // Anyone may resolve THEIR OWN role in a workspace id they pass (RoleContext does
+            // exactly this on first load, before the workspace header is set). Looking up
+            // somebody ELSE's membership is only allowed inside the workspace this caller was
+            // already verified to belong to — otherwise it enumerates other workspaces' members.
+            boolean self = auth != null && email.equalsIgnoreCase(auth.getName());
+            if (!self && !workspaceId.equals(workspaceContext.getWorkspaceId())) {
+                return ResponseEntity.notFound().build();
+            }
             return teamMemberRepository.findByEmailAndOrganizationId(email, workspaceId)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
@@ -86,7 +97,7 @@ public class TeamMemberController {
         lastSeen = new java.util.concurrent.ConcurrentHashMap<>();
 
     @PostMapping("/presence/ping")
-    public ResponseEntity<?> ping(org.springframework.security.core.Authentication auth) {
+    public ResponseEntity<?> ping(Authentication auth) {
         if (auth != null) lastSeen.put(auth.getName(), System.currentTimeMillis());
         return ResponseEntity.ok(Map.of("ok", true));
     }
@@ -96,7 +107,7 @@ public class TeamMemberController {
         long threshold = System.currentTimeMillis() - (5 * 60 * 1000);
         List<String> online = lastSeen.entrySet().stream()
             .filter(e -> e.getValue() > threshold)
-            .map(java.util.Map.Entry::getKey)
+            .map(Map.Entry::getKey)
             .collect(java.util.stream.Collectors.toList());
         return Map.of("online", online);
     }

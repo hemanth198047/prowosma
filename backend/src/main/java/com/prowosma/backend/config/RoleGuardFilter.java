@@ -35,7 +35,11 @@ public class RoleGuardFilter extends OncePerRequestFilter {
             "/api/auth/",
             "/api/invitations/accept",
             "/api/tasks/attachments/",
-            "/api/webhooks/",
+            // Inbound provider callbacks only. The webhook MANAGEMENT api
+            // under /api/webhooks is subject to the normal role rules (a
+            // Viewer must not be able to create or delete webhooks).
+            "/api/webhooks/stripe",
+            "/api/webhooks/email/",
             "/swagger-ui",
             "/v3/api-docs",
             "/favicon.ico"

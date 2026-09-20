@@ -28,12 +28,33 @@ public class WebhookController {
     private final RestTemplate      restTemplate;  // kept for /test endpoint
     private final WebhookService    webhookService;
 
+    /**
+     * The caller's workspace. Every webhook belongs to exactly one, so a request
+     * without one is malformed — not a request for "webhooks with no owner".
+     */
+    private String requireWorkspace() {
+        String orgId = workspaceContext.getWorkspaceId();
+        if (orgId == null || orgId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "X-Workspace-Id header is required");
+        }
+        return orgId;
+    }
+
+    /**
+     * By-id lookup limited to the caller's workspace. Another workspace's webhook
+     * is indistinguishable from one that does not exist (same 404), so ids cannot
+     * be probed across workspaces.
+     */
+    private Optional<Webhook> findOwned(String id) {
+        return webhookRepository.findByIdAndOrganizationId(id, requireWorkspace());
+    }
+
     @GetMapping
     public PagedResponse<Webhook> getAll(
             @RequestParam(defaultValue = "false") boolean activeOnly,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
-        String orgId = workspaceContext.getWorkspaceId();
+        String orgId = requireWorkspace();
         var items = activeOnly ? webhookRepository.findByOrganizationIdAndActiveTrue(orgId)
                                : webhookRepository.findByOrganizationId(orgId);
         return PagedResponse.ofList(items, page, Math.min(size, 200));
@@ -41,17 +62,17 @@ public class WebhookController {
 
     @GetMapping("/{id}")
     public Webhook getById(@PathVariable String id) {
-        return webhookRepository.findById(id)
+        return findOwned(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Webhook not found: " + id));
     }
 
     @PostMapping
     public Webhook create(@RequestBody Map<String, Object> body, Authentication auth) {
         Webhook webhook = new Webhook();
-        webhook.setOrganizationId(workspaceContext.getWorkspaceId());
+        webhook.setOrganizationId(requireWorkspace());
         webhook.setUrl((String) body.get("url"));
         webhook.setDescription((String) body.get("description"));
-        webhook.setCreatedBy(auth.getName());
+        webhook.setCreatedBy(auth != null ? auth.getName() : null);
         webhook.setActive(true);
         webhook.setSecret(generateSecret());
         webhook.setFailureCount(0);
@@ -65,7 +86,7 @@ public class WebhookController {
 
     @PutMapping("/{id}")
     public Webhook update(@PathVariable String id, @RequestBody Map<String, Object> patch) {
-        return webhookRepository.findById(id).map(w -> {
+        return findOwned(id).map(w -> {
             if (patch.containsKey("url"))         w.setUrl((String) patch.get("url"));
             if (patch.containsKey("description")) w.setDescription((String) patch.get("description"));
             @SuppressWarnings("unchecked")
@@ -78,7 +99,7 @@ public class WebhookController {
 
     @PatchMapping("/{id}/toggle")
     public Webhook toggle(@PathVariable String id) {
-        return webhookRepository.findById(id).map(w -> {
+        return findOwned(id).map(w -> {
             w.setActive(!w.isActive());
             w.setUpdatedAt(LocalDateTime.now());
             return webhookRepository.save(w);
@@ -87,7 +108,7 @@ public class WebhookController {
 
     @PostMapping("/{id}/rotate-secret")
     public Map<String, String> rotateSecret(@PathVariable String id) {
-        return webhookRepository.findById(id).map(w -> {
+        return findOwned(id).map(w -> {
             String newSecret = generateSecret();
             w.setSecret(newSecret);
             w.setUpdatedAt(LocalDateTime.now());
@@ -98,7 +119,7 @@ public class WebhookController {
 
     @PostMapping("/{id}/test")
     public Map<String, Object> test(@PathVariable String id) {
-        Webhook webhook = webhookRepository.findById(id)
+        Webhook webhook = findOwned(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Webhook not found: " + id));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("event",     "webhook.test");
@@ -130,7 +151,7 @@ public class WebhookController {
     @PostMapping("/dispatch")
     public ResponseEntity<Map<String, Object>> dispatch(@RequestBody Map<String, Object> event) {
         String eventType = (String) event.get("event");
-        String orgId     = workspaceContext.getWorkspaceId();
+        String orgId     = requireWorkspace();
         try {
             webhookService.fire(orgId, eventType, event);
             return ResponseEntity.ok(Map.of(
@@ -148,7 +169,8 @@ public class WebhookController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable String id) {
-        webhookRepository.deleteById(id);
+        // Only ever deletes a webhook of the caller's workspace; another workspace's id is a silent no-op.
+        findOwned(id).ifPresent(webhookRepository::delete);
         return ResponseEntity.ok(Map.of("message", "Webhook deleted"));
     }
 

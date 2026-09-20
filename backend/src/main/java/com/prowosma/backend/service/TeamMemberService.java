@@ -62,10 +62,8 @@ public class TeamMemberService {
         // Scope to active workspace — avoids returning wrong role when user
         // belongs to multiple workspaces
         String orgId = workspaceContext.getWorkspaceId();
-        if (orgId != null) {
-            return teamMemberRepository.findByEmailAndOrganizationId(email, orgId);
-        }
-        return teamMemberRepository.findByEmail(email);
+        if (orgId == null) return Optional.empty();   // no workspace => no lookup (was: any workspace's member with that email)
+        return teamMemberRepository.findByEmailAndOrganizationId(email, orgId);
     }
 
     public TeamMember create(TeamMember member) {

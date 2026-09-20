@@ -27,30 +27,24 @@ public class NotificationService {
     }
 
     public List<Notification> getAll() {
-        // Fixed: scope to workspace
+        // No workspace selected => no notifications. This used to fall back to a
+        // global query, which returned every workspace's notifications to anyone
+        // who simply left out the X-Workspace-Id header.
         String orgId = workspaceContext.getWorkspaceId();
-        if (orgId != null) {
-            return notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId);
-        }
-        return notificationRepository.findAllByOrderByCreatedAtDesc();
+        if (orgId == null) return List.of();
+        return notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId);
     }
 
     public List<Notification> getUnread() {
-        // Fixed: scope to workspace
         String orgId = workspaceContext.getWorkspaceId();
-        if (orgId != null) {
-            return notificationRepository.findByOrganizationIdAndReadFalse(orgId);
-        }
-        return notificationRepository.findByReadFalse();
+        if (orgId == null) return List.of();
+        return notificationRepository.findByOrganizationIdAndReadFalse(orgId);
     }
 
     public long getUnreadCount() {
-        // Fixed: scope to workspace
         String orgId = workspaceContext.getWorkspaceId();
-        if (orgId != null) {
-            return notificationRepository.countByOrganizationIdAndReadFalse(orgId);
-        }
-        return notificationRepository.countByReadFalse();
+        if (orgId == null) return 0L;
+        return notificationRepository.countByOrganizationIdAndReadFalse(orgId);
     }
 
     public Notification markRead(String id) {
@@ -61,7 +55,10 @@ public class NotificationService {
     }
 
     public void markAllRead() {
-        List<Notification> unread = notificationRepository.findByReadFalse();
+        // Only this workspace's notifications (this used to mark EVERY workspace's as read).
+        String orgId = workspaceContext.getWorkspaceId();
+        if (orgId == null) return;
+        List<Notification> unread = notificationRepository.findByOrganizationIdAndReadFalse(orgId);
         unread.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unread);
     }
@@ -71,7 +68,10 @@ public class NotificationService {
     }
 
     public void deleteAll() {
-        notificationRepository.deleteAll();
+        // Only this workspace's notifications (this used to delete EVERY workspace's).
+        String orgId = workspaceContext.getWorkspaceId();
+        if (orgId == null) return;
+        notificationRepository.deleteAll(notificationRepository.findByOrganizationId(orgId));
     }
 
     // ── Smart Inbox (item 6) ────────────────────────────────────
@@ -95,7 +95,7 @@ public class NotificationService {
         });
     }
 
-    public void bulkMarkRead(java.util.List<String> ids) {
+    public void bulkMarkRead(List<String> ids) {
         if (ids == null || ids.isEmpty()) return;
         String orgId = workspaceContext.getWorkspaceId();
         notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId)
@@ -113,17 +113,17 @@ public class NotificationService {
         String orgId = workspaceContext.getWorkspaceId();
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
-        java.util.List<Notification> all = notificationRepository
+        List<Notification> all = notificationRepository
             .findByOrganizationIdOrderByCreatedAtDesc(orgId)
             .stream()
             .filter(n -> n.getSnoozedUntil() == null || n.getSnoozedUntil().isBefore(now))
             .toList();
 
         // Group by category
-        java.util.Map<String, java.util.List<Notification>> grouped = new java.util.LinkedHashMap<>();
+        java.util.Map<String, List<Notification>> grouped = new java.util.LinkedHashMap<>();
         for (String cat : new String[]{"ASSIGNMENT","MENTION","APPROVAL","GOAL","RISK","SYSTEM"}) {
             String catFinal = cat;
-            java.util.List<Notification> catItems = all.stream()
+            List<Notification> catItems = all.stream()
                 .filter(n -> catFinal.equals(n.getCategory()))
                 .toList();
             if (!catItems.isEmpty()) grouped.put(cat, catItems);

@@ -1,5 +1,6 @@
 package com.prowosma.backend.controller;
 
+import com.prowosma.backend.config.WorkspaceContext;
 import com.prowosma.backend.model.Automation;
 import com.prowosma.backend.repository.AutomationRepository;
 import com.prowosma.backend.service.AutomationService;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,6 +25,13 @@ public class InboundWebhookController {
     private final AutomationRepository automationRepository;
     private final AutomationService    automationService;
     private final NotificationService  notificationService;
+    private final WorkspaceContext     workspaceContext;
+
+    /** The caller's workspace's automations — never every workspace's (this used to scan the whole platform). */
+    private List<Automation> workspaceAutomations() {
+        String orgId = workspaceContext.getWorkspaceId();
+        return orgId == null ? List.of() : automationRepository.findByOrganizationId(orgId);
+    }
 
     @PostMapping("/{key}")
     public ResponseEntity<Map<String, Object>> receive(
@@ -33,7 +42,7 @@ public class InboundWebhookController {
         final Map<String, Object> body = payload;
 
         // Find automations triggered by this webhook key
-        long triggered = automationRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 500)).stream()
+        long triggered = workspaceAutomations().stream()
             .filter(a -> a.isEnabled() && "INBOUND_WEBHOOK".equals(a.getTriggerType()))
             .filter(a -> a.getTriggerConfig() != null
                 && key.equals(a.getTriggerConfig().get("webhookKey")))
@@ -60,7 +69,7 @@ public class InboundWebhookController {
 
     @GetMapping("/keys")
     public ResponseEntity<?> listKeys() {
-        var keys = automationRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 500)).stream()
+        var keys = workspaceAutomations().stream()
             .filter(a -> "INBOUND_WEBHOOK".equals(a.getTriggerType()))
             .filter(a -> a.getTriggerConfig() != null && a.getTriggerConfig().containsKey("webhookKey"))
             .map(a -> Map.of(

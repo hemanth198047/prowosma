@@ -66,7 +66,13 @@ public class SecurityConfig {
         // immediate bounce to /login — before they ever saw the invite.
         "/api/invitations/info",
         "/api/tasks/attachments/**",
-        "/api/webhooks/**",
+        // Inbound provider callbacks ONLY, each of which authenticates itself
+        // (Stripe by its signature header, the email providers by a shared
+        // secret). This used to be "/api/webhooks/**", which also made the
+        // whole outbound-webhook MANAGEMENT api (WebhookController: list,
+        // create, edit, delete, rotate-secret, test) reachable with no login.
+        "/api/webhooks/stripe",
+        "/api/webhooks/email/**",
         // Same shape as /api/auth/**: /providers and /metadata/{id} are
         // pre-login informational endpoints (which SSO buttons to show,
         // what URL to give an IdP admin) with nothing sensitive in them,

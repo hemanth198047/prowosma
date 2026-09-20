@@ -7,9 +7,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface NotificationRepository extends MongoRepository<Notification, String> {
-    List<Notification> findAllByOrderByCreatedAtDesc();
-    List<Notification> findByReadFalse();
-    long countByReadFalse();
     List<Notification> findByOrganizationId(String organizationId);
     // Fixed: workspace-scoped queries
     List<Notification> findByOrganizationIdOrderByCreatedAtDesc(String organizationId);
