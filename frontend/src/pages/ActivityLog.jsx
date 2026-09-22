@@ -200,7 +200,7 @@ function BurstGroup({ group }) {
 function HealthPanel({ health }) {
   if (!health) return null;
   const vel = health.velocity || 0;
-  const velColor = vel > 0 ? "#16a34a" : vel < 0 ? "#dc2626" : "#64748b";
+  const velColor = vel > 0 ? "var(--success)" : vel < 0 ? "var(--danger)" : "var(--gray-500)";
 
   return (
     <div className="al-health-panel">
@@ -214,12 +214,12 @@ function HealthPanel({ health }) {
           </div>
         </div>
         <div className="al-health-card">
-          <div className="al-health-num" style={{ color:"#16a34a" }}>{health.completionsThisWeek}</div>
+          <div className="al-health-num" style={{ color:"var(--success)" }}>{health.completionsThisWeek}</div>
           <div className="al-health-lbl">Completions</div>
           <div className="al-health-sub">tasks + goals completed</div>
         </div>
         <div className="al-health-card">
-          <div className="al-health-num" style={{ color: health.deletionsThisWeek > 5 ? "#dc2626" : "#64748b" }}>
+          <div className="al-health-num" style={{ color: health.deletionsThisWeek > 5 ? "var(--danger)" : "var(--gray-500)" }}>
             {health.deletionsThisWeek}
           </div>
           <div className="al-health-lbl">Deletions</div>
@@ -227,7 +227,7 @@ function HealthPanel({ health }) {
         </div>
         {health.recentAlerts?.length > 0 && (
           <div className="al-health-card al-health-card-alert">
-            <div className="al-health-num" style={{ color:"#dc2626" }}>{health.recentAlerts.length}</div>
+            <div className="al-health-num" style={{ color:"var(--danger)" }}>{health.recentAlerts.length}</div>
             <div className="al-health-lbl">Risk Events</div>
             <div className="al-health-sub">warnings + critical</div>
           </div>

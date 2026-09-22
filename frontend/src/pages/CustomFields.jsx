@@ -162,7 +162,7 @@ function CustomFieldForm({ initial, onSave, onCancel }) {
         {/* ── Conditional logic builder ── */}
         <div style={{background:"rgba(99,102,241,.04)",border:"1px solid rgba(99,102,241,.15)",
           borderRadius:"var(--radius-md)",padding:"12px",marginBottom:"12px"}}>
-          <div style={{fontWeight:700,fontSize:"12px",color:"#6366f1",marginBottom:"8px"}}>
+          <div style={{fontWeight:700,fontSize:"12px",color:"var(--brand-500)",marginBottom:"8px"}}>
             🔀 Conditional Logic (optional)
           </div>
           <div className="form-row" style={{marginBottom:"8px"}}>
@@ -307,7 +307,7 @@ export default function CustomFields() {
                     className="task-status-badge"
                     style={{
                       background: "#f0f0ff",
-                      color: "#6366f1",
+                      color: "var(--brand-500)",
                       marginLeft: "8px",
                     }}
                   >

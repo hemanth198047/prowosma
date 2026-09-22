@@ -70,13 +70,13 @@ export default function Search() {
   const total =
     results.projects.length + results.tasks.length + results.goals.length;
 
-  const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
+  const priorityColor = { LOW: "var(--success)", MEDIUM: "var(--warning)", HIGH: "var(--danger)" };
   const statusColor = {
-    TODO: "#6366f1",
-    IN_PROGRESS: "#f59e0b",
-    DONE: "#10b981",
-    ACTIVE: "#6366f1",
-    ACHIEVED: "#10b981",
+    TODO: "var(--brand-500)",
+    IN_PROGRESS: "var(--warning)",
+    DONE: "var(--success)",
+    ACTIVE: "var(--brand-500)",
+    ACHIEVED: "var(--success)",
   };
 
   return (
@@ -176,7 +176,7 @@ export default function Search() {
                 >
                   <div
                     className="search-result-color"
-                    style={{ background: p.color || "#6366f1" }}
+                    style={{ background: p.color || "var(--brand-500)" }}
                   />
                   <div className="search-result-info">
                     <div
@@ -224,7 +224,7 @@ export default function Search() {
                   <div
                     className="task-status-dot"
                     style={{
-                      background: statusColor[t.status] || "#6366f1",
+                      background: statusColor[t.status] || "var(--brand-500)",
                       flexShrink: 0,
                     }}
                   />
@@ -287,7 +287,7 @@ export default function Search() {
                 >
                   <div
                     className="task-status-dot"
-                    style={{ background: "#8b5cf6", flexShrink: 0 }}
+                    style={{ background: "var(--purple)", flexShrink: 0 }}
                   />
                   <div className="search-result-info">
                     <div

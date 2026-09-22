@@ -159,7 +159,7 @@ export default function ProfileSettings() {
           <div className="settings-section-title">Account Information</div>
           <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
             <div style={{ width:"72px", height:"72px", borderRadius:"50%",
-              background:"linear-gradient(135deg,var(--brand-500),var(--brand-700))",
+              background:"var(--brand-600)",
               color:"#fff", fontSize:"28px", fontWeight:800,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
               {user?.name?.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase()}
@@ -439,7 +439,7 @@ export default function ProfileSettings() {
               <div style={{ display:"flex", gap:"10px", flexWrap:"wrap" }}>
                 <input value={confirmation} onChange={e => { setConfirmation(e.target.value); setError(""); }}
                   placeholder="DELETE MY ACCOUNT" style={{ maxWidth:"260px",
-                    borderColor: confirmation === "DELETE MY ACCOUNT" ? "#10b981" : undefined }} id={"profile-settings-type-to-confirm"} />
+                    borderColor: confirmation === "DELETE MY ACCOUNT" ? "var(--success)" : undefined }} id={"profile-settings-type-to-confirm"} />
                 <button className="btn-danger"
                   disabled={deleting || confirmation !== "DELETE MY ACCOUNT"}
                   onClick={handleDeleteAccount}>

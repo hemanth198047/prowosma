@@ -415,7 +415,7 @@ export default function DeveloperPortal() {
                         </span>
                       )}
                       {k.active ? (
-                        <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "#d97706" }}
+                        <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--warning)" }}
                           onClick={() => handleRevokeKey(k.id)}>
                           🔒 Revoke
                         </button>

@@ -56,10 +56,10 @@ export default function Auth0Callback() {
       justifyContent:"center", height:"100vh", gap:"16px",
     }}>
       <div style={{ fontSize:"32px" }}>🔐</div>
-      <div style={{ fontSize:"16px", fontWeight:600, color:"#6366f1" }}>
+      <div style={{ fontSize:"16px", fontWeight:600, color:"var(--brand-500)" }}>
         Signing you in…
       </div>
-      <div style={{ fontSize:"12px", color:"#9ca3af" }}>
+      <div style={{ fontSize:"12px", color:"var(--gray-400)" }}>
         Please wait while we set up your session
       </div>
     </div>

@@ -346,10 +346,10 @@ export default function AISettings() {
 
         {/* Primary LLM Selector */}
         <div style={{ marginBottom: "20px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "#374151",
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--gray-700)",
             marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
             <span>🎯</span> Select Primary LLM
-            <span style={{ fontWeight: 400, fontSize: "11px", color: "#94a3b8" }}>
+            <span style={{ fontWeight: 400, fontSize: "11px", color: "var(--gray-400)" }}>
               — All AI features will use this provider
             </span>
           </div>
@@ -369,35 +369,35 @@ export default function AISettings() {
                     <div style={{
                       position: "absolute", top: "-8px", left: "50%",
                       transform: "translateX(-50%)",
-                      background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                      background: "var(--brand-600)",
                       color: "#fff", fontSize: "9px", fontWeight: 800,
                       padding: "2px 10px", borderRadius: "999px",
                       letterSpacing: "0.06em", textTransform: "uppercase",
-                      whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(99,102,241,0.4)",
+                      whiteSpace: "nowrap", boxShadow: "var(--elevation-2)",
                     }}>⭐ PRIMARY</div>
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px",
                     marginBottom: "6px", marginTop: isPrimary ? "6px" : "0" }}>
                     <span style={{ fontSize: "18px" }}>{ICONS[p.value]}</span>
                     <span style={{ fontWeight: 700, fontSize: "13px",
-                      color: isPrimary ? "#4338ca" : "#1e293b" }}>{p.label}</span>
+                      color: isPrimary ? "var(--brand-700)" : "var(--gray-800)" }}>{p.label}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center",
                     justifyContent: "space-between" }}>
                     <span style={{ fontSize: "10px", fontWeight: 700,
                       padding: "2px 7px", borderRadius: "999px",
-                      background: isPrimary ? "rgba(99,102,241,0.1)" : "#f1f5f9",
-                      color: isPrimary ? "#6366f1" : "#64748b" }}>
+                      background: isPrimary ? "rgba(99,102,241,0.1)" : "var(--gray-100)",
+                      color: isPrimary ? "var(--brand-500)" : "var(--gray-500)" }}>
                       {TAGS[p.value]}
                     </span>
                     {/* Key status indicator */}
                     <span style={{ fontSize: "11px", display: "flex",
                       alignItems: "center", gap: "3px" }}>
                       {hasKey
-                        ? <><span style={{ color: "#10b981" }}>●</span>
-                            <span style={{ color: "#10b981", fontWeight: 600 }}>Key set</span></>
-                        : <><span style={{ color: "#94a3b8" }}>○</span>
-                            <span style={{ color: "#94a3b8" }}>No key</span></>}
+                        ? <><span style={{ color: "var(--success)" }}>●</span>
+                            <span style={{ color: "var(--success)", fontWeight: 600 }}>Key set</span></>
+                        : <><span style={{ color: "var(--gray-400)" }}>○</span>
+                            <span style={{ color: "var(--gray-400)" }}>No key</span></>}
                     </span>
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export default function AISettings() {
 
         {/* API Key for selected provider */}
         <div style={{
-          background: "#f8fafc", border: "1.5px solid #e2e8f0",
+          background: "var(--gray-50)", border: "1.5px solid var(--border)",
           borderRadius: "12px", padding: "16px", marginBottom: "16px",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px",
@@ -416,13 +416,13 @@ export default function AISettings() {
             <span style={{ fontSize: "16px" }}>
               {{ ANTHROPIC:"🟣", OPENAI:"🟢", GEMINI:"🔵", CUSTOM:"⚙️" }[form.apiProvider]}
             </span>
-            <span style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b" }}>
+            <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--gray-800)" }}>
               {selectedProvider.label} Configuration
             </span>
             <span style={{
               marginLeft: "auto", fontSize: "10px", fontWeight: 800,
               padding: "3px 10px", borderRadius: "999px",
-              background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+              background: "var(--brand-600)",
               color: "#fff", letterSpacing: "0.05em",
             }}>PRIMARY LLM</span>
           </div>
@@ -431,8 +431,8 @@ export default function AISettings() {
           <div className="form-group" style={{ flex: 2 }}>
             <label style={{ fontWeight: 700 }}>
               API Key
-              {form.apiKey && testResult === "ok" && <span style={{ color:"#10b981",marginLeft:8,fontSize:11 }}>✓ Verified</span>}
-              {form.apiKey && testResult === "fail" && <span style={{ color:"#ef4444",marginLeft:8,fontSize:11 }}>✗ Invalid key</span>}
+              {form.apiKey && testResult === "ok" && <span style={{ color:"var(--success)",marginLeft:8,fontSize:11 }}>✓ Verified</span>}
+              {form.apiKey && testResult === "fail" && <span style={{ color:"var(--danger)",marginLeft:8,fontSize:11 }}>✗ Invalid key</span>}
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
               <input
@@ -451,14 +451,14 @@ export default function AISettings() {
               )}
             </div>
             {form.apiProvider !== "CUSTOM" && (
-              <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "5px" }}>
+              <p style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "5px" }}>
                 Get your key from{" "}
                 <a href={
                   form.apiProvider === "OPENAI" ? "https://platform.openai.com/api-keys" :
                   form.apiProvider === "GEMINI" ? "https://aistudio.google.com/app/apikey" :
                   "https://console.anthropic.com/settings/keys"
                 } target="_blank" rel="noreferrer"
-                  style={{ color:"#6366f1", textDecoration:"underline" }}>
+                  style={{ color:"var(--brand-500)", textDecoration:"underline" }}>
                   {selectedProvider.label} dashboard
                 </a>. Stored securely on your server only.
               </p>
@@ -536,7 +536,7 @@ export default function AISettings() {
             {saving ? "Saving..." : "💾 Save Configuration"}
           </button>
           {saved && (
-            <span style={{ color: "#10b981", fontSize: "13px" }}>
+            <span style={{ color: "var(--success)", fontSize: "13px" }}>
               ✅ Saved!
             </span>
           )}

@@ -53,26 +53,26 @@ export default function MagicLogin() {
 
   return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",
-      background:"var(--bg-page,#f8fafc)"}}>
-      <div style={{background:"#fff",border:"1px solid var(--border,#e5e7eb)",
+      background:"var(--bg-page,var(--gray-50))"}}>
+      <div style={{background:"#fff",border:"1px solid var(--border,var(--border))",
         borderRadius:"16px",padding:"40px",maxWidth:360,width:"100%",textAlign:"center",
-        boxShadow:"0 4px 24px rgba(0,0,0,.06)"}}>
+        boxShadow:"var(--elevation-2)"}}>
         <div style={{fontSize:"48px",marginBottom:"16px"}}>
           {status==="verifying"?"⏳":status==="success"?"✅":"❌"}
         </div>
-        <h2 style={{fontSize:"20px",fontWeight:800,marginBottom:"8px",color:"#1e293b"}}>
+        <h2 style={{fontSize:"20px",fontWeight:800,marginBottom:"8px",color:"var(--gray-800)"}}>
           {status==="verifying"?"Verifying your link…"
            :status==="success"?"Logged in!"
            :"Login failed"}
         </h2>
-        <p style={{fontSize:"14px",color:"#6b7280"}}>
+        <p style={{fontSize:"14px",color:"var(--gray-500)"}}>
           {status==="verifying"?"Please wait…"
            :status==="success"?"Redirecting to your workspace…"
            :error}
         </p>
         {status==="error" && (
           <button onClick={()=>navigate("/login")}
-            style={{marginTop:"16px",padding:"10px 24px",background:"#6366f1",color:"#fff",
+            style={{marginTop:"16px",padding:"10px 24px",background:"var(--brand-500)",color:"#fff",
               border:"none",borderRadius:"8px",fontWeight:700,cursor:"pointer",fontSize:"14px"}}>
             Back to Login
           </button>

@@ -70,7 +70,7 @@ export default function WorkspaceSettings() {
   const [groups,      setGroups]      = useState([]);
   const [hierarchy,   setHierarchy]   = useState(null);
   const [wsTemplates, setWsTemplates] = useState([]);
-  const [groupForm,   setGroupForm]   = useState({ name:"", description:"", color:"#6366f1", memberEmails:[], permissions:[] });
+  const [groupForm,   setGroupForm]   = useState({ name:"", description:"", color:"var(--brand-500)", memberEmails:[], permissions:[] });
   const [newHoliday,  setNewHoliday]  = useState({ name:"", date:"", recurring:true, region:"ALL" });
   const [calForm,     setCalForm]     = useState({ workingDays:["MON","TUE","WED","THU","FRI"], fiscalYearStart:"01-01" });
   const [bulkEmails,  setBulkEmails]  = useState("");
@@ -508,7 +508,7 @@ export default function WorkspaceSettings() {
                           padding:"5px 12px",borderRadius:"99px",fontSize:"12px",fontWeight:700,
                           border:"1px solid var(--border)",
                           background:active?"rgba(99,102,241,.1)":"var(--bg-card)",
-                          color:active?"#6366f1":"var(--gray-600)",userSelect:"none"}}>
+                          color:active?"var(--brand-500)":"var(--gray-600)",userSelect:"none"}}>
                           <input type="checkbox" style={{display:"none"}} checked={active}
                             onChange={()=>set("quietDays",active
                               ?quietDays.filter(x=>x!==d):[...quietDays,d])} />
@@ -581,7 +581,7 @@ export default function WorkspaceSettings() {
                       const isCurrentOwner = member.email === activeWorkspace?.ownerEmail;
                       return (
                         <div key={member.id} className="ws-member-row">
-                          <div className="ws-member-avatar" style={{ background: member.color || "#6366f1" }}>{initials}</div>
+                          <div className="ws-member-avatar" style={{ background: member.color || "var(--brand-500)" }}>{initials}</div>
                           <div className="ws-member-info">
                             <div className="ws-member-name">
                               {member.name || member.email}
@@ -664,11 +664,11 @@ export default function WorkspaceSettings() {
                 <div>
                   <div className="usage-stats-grid">
                     {[
-                      { label: "Projects",        value: stats.projects,  icon: "📁", color: "#6366f1" },
-                      { label: "Tasks",           value: stats.tasks,     icon: "✅", color: "#10b981" },
-                      { label: "Goals",           value: stats.goals,     icon: "🎯", color: "#f59e0b" },
+                      { label: "Projects",        value: stats.projects,  icon: "📁", color: "var(--brand-500)" },
+                      { label: "Tasks",           value: stats.tasks,     icon: "✅", color: "var(--success)" },
+                      { label: "Goals",           value: stats.goals,     icon: "🎯", color: "var(--warning)" },
                       { label: "Members",         value: stats.members,   icon: "👥", color: "#3b82f6" },
-                      { label: "Storage",         value: (stats.storageMB ?? 0) + " MB", icon: "💾", color: "#8b5cf6" },
+                      { label: "Storage",         value: (stats.storageMB ?? 0) + " MB", icon: "💾", color: "var(--purple)" },
                       { label: "Activities (30d)", value: stats.activityTrend?.reduce((s, d) => s + d.activity, 0), icon: "📋", color: "#ec4899" },
                     ].map((s) => (
                       <div key={s.label} className="usage-stat-card" style={{ borderLeft: "4px solid " + s.color }}>
@@ -685,9 +685,9 @@ export default function WorkspaceSettings() {
                     <div className="settings-section-title">Task Breakdown</div>
                     <div style={{ display: "flex", gap: "12px" }}>
                       {[
-                        { label: "To Do",       value: stats.tasksTodo,       color: "#6366f1" },
-                        { label: "In Progress", value: stats.tasksInProgress, color: "#f59e0b" },
-                        { label: "Done",        value: stats.tasksDone,       color: "#10b981" },
+                        { label: "To Do",       value: stats.tasksTodo,       color: "var(--brand-500)" },
+                        { label: "In Progress", value: stats.tasksInProgress, color: "var(--warning)" },
+                        { label: "Done",        value: stats.tasksDone,       color: "var(--success)" },
                       ].map((s) => (
                         <div key={s.label} style={{
                           flex: 1, background: s.color + "15", border: "1px solid " + s.color + "40",
@@ -708,7 +708,7 @@ export default function WorkspaceSettings() {
                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--gray-400)" }} interval={4} />
                         <YAxis tick={{ fontSize: 10, fill: "var(--gray-400)" }} />
                         <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                        <Bar dataKey="activity" fill="#6366f1" radius={[4, 4, 0, 0]} name="Actions" />
+                        <Bar dataKey="activity" fill="var(--brand-500)" radius={[4, 4, 0, 0]} name="Actions" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -755,7 +755,7 @@ export default function WorkspaceSettings() {
                         background:"var(--bg-card)",border:"1px solid var(--border)",
                         borderRadius:8,cursor:"pointer",transition:"all .12s"}}
                       onClick={() => navigate("/workspace-setup")}
-                      onMouseEnter={e=>e.currentTarget.style.borderColor="#6366f1"}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor="var(--brand-500)"}
                       onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate("/workspace-setup"))?.(e); } }}>
                       <span style={{fontSize:20}}>{t.icon}</span>
                       <div>
@@ -789,7 +789,7 @@ export default function WorkspaceSettings() {
                     <div style={{ display: "flex", gap: "10px" }}>
                       <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)}
                         placeholder={form.name}
-                        style={{ maxWidth: "240px", borderColor: deleteConfirm === form.name && deleteConfirm ? "#10b981" : undefined }} />
+                        style={{ maxWidth: "240px", borderColor: deleteConfirm === form.name && deleteConfirm ? "var(--success)" : undefined }} />
                       <button className="btn-danger"
                         disabled={deleteLoading || deleteConfirm !== form.name}
                         onClick={handleDelete}>
@@ -814,7 +814,7 @@ export default function WorkspaceSettings() {
                       const initials = member.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?";
                       return (
                         <div key={member.id} className="admin-delete-member-row">
-                          <div className="admin-delete-avatar" style={{ background: member.color || "#6366f1" }}>{initials}</div>
+                          <div className="admin-delete-avatar" style={{ background: member.color || "var(--brand-500)" }}>{initials}</div>
                           <div className="admin-delete-info">
                             <div className="admin-delete-name">{member.name}</div>
                             <div className="admin-delete-email">{member.email}</div>
@@ -888,7 +888,7 @@ export default function WorkspaceSettings() {
                   {["MON","TUE","WED","THU","FRI","SAT","SUN"].map(d=>(
                     <label key={d} style={{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer",
                       padding:"6px 12px",borderRadius:"99px",border:"1px solid var(--border)",
-                      background:calForm.workingDays.includes(d)?"#6366f1":"var(--bg-card)",
+                      background:calForm.workingDays.includes(d)?"var(--brand-500)":"var(--bg-card)",
                       color:calForm.workingDays.includes(d)?"#fff":"var(--gray-600)",
                       fontWeight:700,fontSize:"12px",userSelect:"none"}}>
                       <input type="checkbox" style={{display:"none"}} checked={calForm.workingDays.includes(d)}
@@ -962,7 +962,7 @@ export default function WorkspaceSettings() {
                     <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"6px"}}>
                       {(g.permissions||[]).map(p=>(
                         <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"1px 7px",
-                          borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"#6366f1"}}>{p}</span>
+                          borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{p}</span>
                       ))}
                     </div>
                   </div>
@@ -995,7 +995,7 @@ export default function WorkspaceSettings() {
                         padding:"3px 10px",borderRadius:"99px",fontSize:"11px",fontWeight:600,
                         border:"1px solid var(--border)",
                         background:groupForm.permissions.includes(p)?"rgba(99,102,241,.1)":"var(--bg-card)",
-                        color:groupForm.permissions.includes(p)?"#6366f1":"var(--gray-600)"}}>
+                        color:groupForm.permissions.includes(p)?"var(--brand-500)":"var(--gray-600)"}}>
                         <input type="checkbox" style={{display:"none"}} checked={groupForm.permissions.includes(p)}
                           onChange={()=>setGroupForm(f=>({...f,permissions:f.permissions.includes(p)
                             ?f.permissions.filter(x=>x!==p):[...f.permissions,p]}))} />
@@ -1007,7 +1007,7 @@ export default function WorkspaceSettings() {
                 <button className="btn-primary" disabled={!groupForm.name} onClick={async()=>{
                   const r = await client.post("/workspace/groups", groupForm);
                   setGroups(prev=>[...prev, r.data]);
-                  setGroupForm({name:"",description:"",color:"#6366f1",memberEmails:[],permissions:[]});
+                  setGroupForm({name:"",description:"",color:"var(--brand-500)",memberEmails:[],permissions:[]});
                   setSuccess("Group created");
                 }}>+ Create Group</button>
               </div>
@@ -1055,11 +1055,11 @@ export default function WorkspaceSettings() {
                     <div key={role} style={{display:"flex",gap:"12px",alignItems:"flex-start",
                       padding:"10px 12px",background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",marginBottom:"6px"}}>
-                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"#6366f1"}}>{role === "OWNER" ? "MANAGER" : role}</div>
+                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"var(--brand-500)"}}>{role === "OWNER" ? "MANAGER" : role}</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
                         {(Array.isArray(perms)?perms:["ALL"]).map(p=>(
                           <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"2px 7px",
-                            borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"#6366f1"}}>{p}</span>
+                            borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{p}</span>
                         ))}
                       </div>
                     </div>
@@ -1072,7 +1072,7 @@ export default function WorkspaceSettings() {
                     ["GUEST","→","View assigned content only"]].map(([r,a,d])=>(
                     <div key={r} style={{display:"flex",gap:"10px",padding:"7px 10px",
                       borderBottom:"1px solid var(--border)",fontSize:"12px"}}>
-                      <span style={{fontWeight:700,minWidth:70,color:"#6366f1"}}>{r === "OWNER" ? "MANAGER" : r}</span>
+                      <span style={{fontWeight:700,minWidth:70,color:"var(--brand-500)"}}>{r === "OWNER" ? "MANAGER" : r}</span>
                       <span style={{color:"var(--gray-400)"}}>{a}</span>
                       <span style={{color:"var(--gray-600)"}}>{d}</span>
                     </div>
@@ -1103,11 +1103,11 @@ export default function WorkspaceSettings() {
                   {(hierarchy.hierarchy||[]).map(org=>(
                     <div key={org.id} style={{marginBottom:"12px"}}>
                       <div style={{display:"flex",gap:"8px",alignItems:"center",
-                        padding:"10px 12px",background:"var(--bg-card)",border:"2px solid #6366f1",
+                        padding:"10px 12px",background:"var(--bg-card)",border:"2px solid var(--brand-500)",
                         borderRadius:"var(--radius-md)"}}>
                         <span>🏢</span>
                         <span style={{fontWeight:800}}>{org.name}</span>
-                        <span style={{fontSize:"10px",background:"rgba(99,102,241,.1)",color:"#6366f1",
+                        <span style={{fontSize:"10px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)",
                           padding:"2px 8px",borderRadius:"99px"}}>{org.tenantType}</span>
                       </div>
                       {(org.children||[]).map(child=>(
@@ -1221,7 +1221,7 @@ export default function WorkspaceSettings() {
               Permanently deleting the account of:
             </p>
             <div className="admin-delete-member-row" style={{ background: "var(--gray-50)", borderRadius: "var(--radius-md)", padding: "12px 16px", marginBottom: "20px" }}>
-              <div className="admin-delete-avatar" style={{ background: selectedMember.color || "#6366f1" }}>
+              <div className="admin-delete-avatar" style={{ background: selectedMember.color || "var(--brand-500)" }}>
                 {selectedMember.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div className="admin-delete-info">
@@ -1238,7 +1238,7 @@ export default function WorkspaceSettings() {
                   <input value={adminDeleteConfirm}
                     onChange={(e) => { setAdminDeleteConfirm(e.target.value); setAdminDeleteError(""); }}
                     placeholder={selectedMember.email}
-                    style={{ borderColor: adminDeleteConfirm === selectedMember.email ? "#10b981" : undefined }} />
+                    style={{ borderColor: adminDeleteConfirm === selectedMember.email ? "var(--success)" : undefined }} />
                 </div>
                 <div className="form-actions">
                   <button className="btn-secondary" onClick={() => setShowAdminDeleteModal(false)}>Cancel</button>

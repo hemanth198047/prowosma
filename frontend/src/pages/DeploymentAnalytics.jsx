@@ -13,16 +13,16 @@ const api = {
 };
 
 const STATUS_META = {
-  SUCCESS:  { color:"#10b981", bg:"rgba(16,185,129,.1)",  label:"✅ Success"  },
-  FAILED:   { color:"#ef4444", bg:"rgba(239,68,68,.1)",   label:"❌ Failed"   },
-  ROLLBACK: { color:"#f59e0b", bg:"rgba(245,158,11,.1)",  label:"⏮ Rollback" },
+  SUCCESS:  { color:"var(--success)", bg:"rgba(16,185,129,.1)",  label:"✅ Success"  },
+  FAILED:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   label:"❌ Failed"   },
+  ROLLBACK: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  label:"⏮ Rollback" },
 };
 
 const DORA_META = {
-  ELITE:  { color:"#10b981", desc:"Multiple deploys per day" },
-  HIGH:   { color:"#6366f1", desc:"Between once per day and once per week" },
-  MEDIUM: { color:"#f59e0b", desc:"Between once per week and once per month" },
-  LOW:    { color:"#ef4444", desc:"Less than once per month" },
+  ELITE:  { color:"var(--success)", desc:"Multiple deploys per day" },
+  HIGH:   { color:"var(--brand-500)", desc:"Between once per day and once per week" },
+  MEDIUM: { color:"var(--warning)", desc:"Between once per week and once per month" },
+  LOW:    { color:"var(--danger)", desc:"Less than once per month" },
 };
 
 function DoraGauge({ tier }) {
@@ -144,13 +144,13 @@ export default function DeploymentAnalytics() {
           {/* Key metrics */}
           <div className="dep-metrics-grid">
             {[
-              {icon:"🚀",label:"Total Deployments",value:metrics.totalDeployments ?? 0,color:"#6366f1"},
-              {icon:"⚡",label:"Deploy Frequency",value:`${(metrics.deployFrequency ?? 0).toFixed(2)}/day`,color:"#10b981"},
+              {icon:"🚀",label:"Total Deployments",value:metrics.totalDeployments ?? 0,color:"var(--brand-500)"},
+              {icon:"⚡",label:"Deploy Frequency",value:`${(metrics.deployFrequency ?? 0).toFixed(2)}/day`,color:"var(--success)"},
               {icon:"💥",label:"Change Failure Rate",value:`${(metrics.changeFailureRate ?? 0).toFixed(1)}%`,
-                color:(metrics.changeFailureRate??0)>15?"#ef4444":"#10b981"},
-              {icon:"✅",label:"Success",value:metrics.successCount ?? 0,color:"#10b981"},
-              {icon:"❌",label:"Failed",value:metrics.failedCount ?? 0,color:"#ef4444"},
-              {icon:"⏮",label:"Rollbacks",value:metrics.rollbackCount ?? 0,color:"#f59e0b"},
+                color:(metrics.changeFailureRate??0)>15?"var(--danger)":"var(--success)"},
+              {icon:"✅",label:"Success",value:metrics.successCount ?? 0,color:"var(--success)"},
+              {icon:"❌",label:"Failed",value:metrics.failedCount ?? 0,color:"var(--danger)"},
+              {icon:"⏮",label:"Rollbacks",value:metrics.rollbackCount ?? 0,color:"var(--warning)"},
               {icon:"⏱",label:"Avg Duration",value:metrics.avgDurationSec ? `${Math.round(metrics.avgDurationSec/60)} min` : "0 min",color:"var(--gray-700)"},
             ].map(m=>(
               <div key={m.label} className="dep-metric-card">
@@ -171,7 +171,7 @@ export default function DeploymentAnalytics() {
                   <XAxis dataKey="date" tick={{fontSize:10}} tickFormatter={d=>d.slice(5)} />
                   <YAxis tick={{fontSize:10}} allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#6366f1" radius={[3,3,0,0]} />
+                  <Bar dataKey="count" fill="var(--brand-500)" radius={[3,3,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -200,7 +200,7 @@ export default function DeploymentAnalytics() {
                   <div className="dep-breakdown-bar-wrap">
                     <div className="dep-breakdown-bar" style={{
                       width:`${Math.round((v/Math.max(1,metrics.totalDeployments))*100)}%`,
-                      background:"#10b981"}} />
+                      background:"var(--success)"}} />
                   </div>
                   <span className="dep-breakdown-val">{v}</span>
                 </div>

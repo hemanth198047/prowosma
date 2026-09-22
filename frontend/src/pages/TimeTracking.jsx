@@ -15,7 +15,7 @@ function currency(amount, cur = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(amount || 0);
 }
 
-const STATUS_COLORS = { DRAFT:"#94a3b8", SENT:"#6366f1", PAID:"#10b981", OVERDUE:"#ef4444" };
+const STATUS_COLORS = { DRAFT:"var(--gray-400)", SENT:"var(--brand-500)", PAID:"var(--success)", OVERDUE:"var(--danger)" };
 
 // ── Generate Invoice Modal ────────────────────────────────────
 function GenerateModal({ projects, onGenerate, onClose }) {
@@ -199,7 +199,7 @@ export default function TimeTracking() {
     setInvoices(prev => prev.filter(inv => inv.id !== id));
   };
 
-  const CHART_COLORS = ["#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#0ea5e9"];
+  const CHART_COLORS = ["var(--brand-500)","var(--success)","var(--warning)","var(--danger)","var(--purple)","#0ea5e9"];
 
   return (
     <div>
@@ -264,7 +264,7 @@ export default function TimeTracking() {
                   </div>
                 </div>
                 <div className="tt-kpi-card">
-                  <div className="tt-kpi-icon" style={{ background: "rgba(217,119,6,0.12)", color: "#d97706" }}>📋</div>
+                  <div className="tt-kpi-icon" style={{ background: "rgba(217,119,6,0.12)", color: "var(--warning)" }}>📋</div>
                   <div>
                     <div className="tt-kpi-value">{report.entries?.length || 0}</div>
                     <div className="tt-kpi-label">Time Entries</div>
@@ -334,10 +334,10 @@ export default function TimeTracking() {
                         <span style={{ color: "var(--gray-500)", fontSize: "12px" }}>{e.description || "—"}</span>
                         <span style={{ fontWeight: 600 }}>{fmt(e.minutes)}</span>
                         <span>{e.billable
-                          ? <span style={{ color: "#10b981", fontSize: "11px", fontWeight: 700 }}>✓ Billable</span>
+                          ? <span style={{ color: "var(--success)", fontSize: "11px", fontWeight: 700 }}>✓ Billable</span>
                           : <span style={{ color: "var(--gray-400)", fontSize: "11px" }}>Non-billable</span>}
                         </span>
-                        <span style={{ fontWeight: 600, color: e.amount > 0 ? "#6366f1" : "var(--gray-400)" }}>
+                        <span style={{ fontWeight: 600, color: e.amount > 0 ? "var(--brand-500)" : "var(--gray-400)" }}>
                           {e.amount > 0 ? currency(e.amount) : "—"}
                         </span>
                         <span style={{ color: "var(--gray-500)", fontSize: "12px" }}>

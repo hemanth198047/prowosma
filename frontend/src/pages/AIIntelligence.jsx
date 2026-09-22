@@ -49,7 +49,7 @@ function IntelCard({ icon, title, desc, onRun, renderData }) {
   );
 }
 
-const SEV_COLOR = { HIGH:"#ef4444", MEDIUM:"#f59e0b", LOW:"#10b981", NORMAL:"#10b981" };
+const SEV_COLOR = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--success)", NORMAL:"var(--success)" };
 
 export default function AIIntelligence() {
   return (
@@ -108,7 +108,7 @@ export default function AIIntelligence() {
                   <div className="intel-risk-row">
                     <span className="intel-sev" style={{
                       background: d.burnoutRisk==="LOW" ? "#10b98122" : d.burnoutRisk==="MEDIUM" ? "#f59e0b22" : "#ef444422",
-                      color: d.burnoutRisk==="LOW" ? "#10b981" : d.burnoutRisk==="MEDIUM" ? "#f59e0b" : "#ef4444"
+                      color: d.burnoutRisk==="LOW" ? "var(--success)" : d.burnoutRisk==="MEDIUM" ? "var(--warning)" : "var(--danger)"
                     }}>{d.burnoutRisk || "—"}</span>
                     <div className="intel-risk-info">
                       <div className="intel-risk-title">{d.message || "Burnout assessment complete"}</div>
@@ -164,7 +164,7 @@ export default function AIIntelligence() {
                 <div className="intel-risk-row">
                   <span className="intel-sev" style={{
                     background: d.teamHealth==="GOOD"?"#10b98122":d.teamHealth==="FAIR"?"#f59e0b22":"#ef444422",
-                    color: d.teamHealth==="GOOD"?"#10b981":d.teamHealth==="FAIR"?"#f59e0b":"#ef4444"
+                    color: d.teamHealth==="GOOD"?"var(--success)":d.teamHealth==="FAIR"?"var(--warning)":"var(--danger)"
                   }}>{d.teamHealth}</span>
                   <div className="intel-risk-info">
                     <div className="intel-risk-title">Team Health</div>
@@ -205,7 +205,7 @@ export default function AIIntelligence() {
                     <div key={i} className="intel-risk-row">
                       <span className="intel-sev" style={{
                         background: dep.confidence==="HIGH"?"#ef444422":dep.confidence==="MEDIUM"?"#f59e0b22":"#6366f122",
-                        color: dep.confidence==="HIGH"?"#ef4444":dep.confidence==="MEDIUM"?"#f59e0b":"#6366f1"
+                        color: dep.confidence==="HIGH"?"var(--danger)":dep.confidence==="MEDIUM"?"var(--warning)":"var(--brand-500)"
                       }}>{dep.confidence || "—"}</span>
                       <div className="intel-risk-info">
                         <div className="intel-risk-title">
@@ -254,7 +254,7 @@ export default function AIIntelligence() {
             <div className="intel-summary">{d.summary}</div>
             {d.bottlenecks?.map((b,i) => (
               <div key={i} className="intel-risk-row">
-                <span className="intel-sev" style={{ background:"#f59e0b22", color:"#f59e0b" }}>BOTTLENECK</span>
+                <span className="intel-sev" style={{ background:"#f59e0b22", color:"var(--warning)" }}>BOTTLENECK</span>
                 <div className="intel-risk-info">
                   <div className="intel-risk-title">{b.stage}</div>
                   <div className="intel-risk-reason">{b.issue} · Avg {b.avgDays} days</div>
@@ -284,7 +284,7 @@ export default function AIIntelligence() {
               <div key={i} className="intel-priority-row">
                 <div className="intel-priority-rank">
                   <span style={{ fontSize:"10px", fontWeight:700,
-                    color:r.priority==="HIGH"?"#ef4444":r.priority==="MEDIUM"?"#f59e0b":"#10b981" }}>
+                    color:r.priority==="HIGH"?"var(--danger)":r.priority==="MEDIUM"?"var(--warning)":"var(--success)" }}>
                     {r.priority}
                   </span>
                 </div>
@@ -316,7 +316,7 @@ export default function AIIntelligence() {
               <div key={i} className="intel-risk-row">
                 <span className="intel-sev" style={{
                   background:r.type==="GOAL"?"rgba(99,102,241,.1)":"rgba(16,185,129,.1)",
-                  color:r.type==="GOAL"?"#6366f1":"#10b981"
+                  color:r.type==="GOAL"?"var(--brand-500)":"var(--success)"
                 }}>{r.type}</span>
                 <div className="intel-risk-info">
                   <div className="intel-risk-title">{r.title}</div>
@@ -324,7 +324,7 @@ export default function AIIntelligence() {
                 <div className="intel-conf">{Math.round((r.score||0)*100)}%</div>
               </div>
             ))}
-            {d.note && <div className="intel-summary" style={{marginTop:"8px",color:"#8b5cf6"}}>{d.note}</div>}
+            {d.note && <div className="intel-summary" style={{marginTop:"8px",color:"var(--purple)"}}>{d.note}</div>}
           </div>
         )}
       />

@@ -15,7 +15,7 @@ const PLANS = [
     badge: null,
     monthlyPrice: 0,
     yearlyPrice: 0,
-    color: "#6366f1",
+    color: "var(--brand-500)",
     colorLight: "rgba(99,102,241,0.07)",
     colorBorder: "rgba(99,102,241,0.25)",
     cta: "Start 14-day free trial",
@@ -108,7 +108,7 @@ const PLANS = [
     badge: "Best for teams",
     monthlyPrice: 18,
     yearlyPrice: 14,
-    color: "#7c3aed",
+    color: "var(--purple)",
     colorLight: "rgba(124,58,237,0.07)",
     colorBorder: "rgba(124,58,237,0.35)",
     cta: "Upgrade to Pro",
@@ -824,7 +824,7 @@ export default function Licensing() {
           </div>
         </div>
         <div className="lic-cta-banner-actions">
-          <button className="lic-cta-btn lic-cta-primary lic-cta-lg" style={{background:"#6366f1"}}
+          <button className="lic-cta-btn lic-cta-primary lic-cta-lg" style={{background:"var(--brand-500)"}}
             onClick={()=>navigate("/workspace-setup")}>Start free today</button>
           <button className="lic-cta-btn lic-cta-outline lic-cta-lg"
             onClick={()=>window.open("mailto:sales@prowosma.app?subject=Enterprise%20Inquiry","_self")}>

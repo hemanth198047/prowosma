@@ -28,7 +28,7 @@
   display:flex; flex-direction:column; gap:0; box-sizing:border-box; }
 
 .ws-card { background:#fff; border:1px solid var(--border); border-radius:20px;
-  padding:32px; width:100%; max-width:560px; box-shadow:0 4px 24px rgba(0,0,0,0.06); }
+  padding:32px; width:100%; max-width:560px; box-shadow:var(--elevation-2); }
 
 [data-theme="dark"] .ws-card { background:var(--bg-card); border-color:rgba(255,255,255,0.1); }
 
@@ -56,7 +56,7 @@
   padding:10px 20px; border-radius:10px; font-size:13px; font-weight:700;
   cursor:pointer; transition:all .14s; }
 
-.ws-btn-primary:hover:not(:disabled) { background:var(--brand-700); box-shadow:0 4px 14px rgba(99,102,241,0.4); }
+.ws-btn-primary:hover:not(:disabled) { background:var(--brand-700); box-shadow:var(--elevation-2); }
 
 .ws-btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
 
@@ -129,7 +129,7 @@
 [data-theme="dark"] .ws-template-card { background:var(--bg-card); border-color:rgba(255,255,255,0.08); }
 
 .ws-template-card:hover { border-color:var(--brand-500); transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(99,102,241,0.1); }
+  box-shadow:var(--elevation-2); }
 
 .ws-tpl-icon {
   width:52px; height:52px; border-radius:14px; font-size:26px;
@@ -180,7 +180,7 @@
 [data-theme="dark"] .ws-template-card { background:var(--bg-card); border-color:rgba(255,255,255,0.08); }
 
 .ws-template-card:hover { border-color:var(--brand-500); transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(99,102,241,0.1); }
+  box-shadow:var(--elevation-2); }
 
 .ws-tpl-icon { width:44px; height:44px; border-radius:12px; font-size:22px;
   display:flex; align-items:center; justify-content:center; margin-bottom:4px; }

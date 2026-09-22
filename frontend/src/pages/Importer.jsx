@@ -300,12 +300,12 @@ export default function Importer() {
           <h2 className="importer-done-title">Import Complete</h2>
           <div className="importer-done-stats">
             <div className="importer-done-stat">
-              <span className="importer-done-num" style={{ color:"#10b981" }}>{result.created}</span>
+              <span className="importer-done-num" style={{ color:"var(--success)" }}>{result.created}</span>
               <span className="importer-done-label">Tasks created</span>
             </div>
             {result.skipped > 0 && (
               <div className="importer-done-stat">
-                <span className="importer-done-num" style={{ color:"#f59e0b" }}>{result.skipped}</span>
+                <span className="importer-done-num" style={{ color:"var(--warning)" }}>{result.skipped}</span>
                 <span className="importer-done-label">Skipped</span>
               </div>
             )}

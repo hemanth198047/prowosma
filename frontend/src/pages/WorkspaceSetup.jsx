@@ -21,7 +21,7 @@ const TEMPLATES = [
     icon: "💻",
     desc: "Built for engineering teams shipping products — sprints, DORA, deployments, goals.",
     tags: ["Sprints","Tasks","DORA Metrics","Goals","Kanban","Deployments"],
-    color: "#4f46e5",
+    color: "var(--brand-700)",
     defaultPages: ["/","tasks","sprints","kanban","goals","deployments"],
     settings: { dateFormat:"DD/MM/YYYY", defaultTaskStatus:"TODO",
       enableSprints:true, enableDORA:true, enableKanban:true },
@@ -42,7 +42,7 @@ const TEMPLATES = [
     icon: "🏗",
     desc: "Large-scale change programmes — initiatives, milestones, decisions, BPM, automations.",
     tags: ["Initiatives","Roadmap","Decisions","BPM","Automations","Channels"],
-    color: "#7c3aed",
+    color: "var(--purple)",
     defaultPages: ["/","roadmap","decisions","automations","channels","bpm"],
     settings: { dateFormat:"DD/MM/YYYY", enableBPM:true, enableAutomations:true },
   },
@@ -52,7 +52,7 @@ const TEMPLATES = [
     icon: "🎯",
     desc: "Product squads with OKRs, epics, sprints, kanban, and continuous delivery.",
     tags: ["OKRs","Epics","Sprints","Kanban","Backlog","Analytics"],
-    color: "#059669",
+    color: "var(--success)",
     defaultPages: ["/","goals","epics","sprints","kanban","analytics"],
     settings: { dateFormat:"DD/MM/YYYY", enableEpics:true, enableOKR:true, enableKanban:true },
   },
@@ -62,7 +62,7 @@ const TEMPLATES = [
     icon: "📚",
     desc: "Documentation-first team — docs, SOPs, decisions, meetings, knowledge graph.",
     tags: ["Docs","SOPs","Decisions","Meetings","Knowledge Graph","Search"],
-    color: "#d97706",
+    color: "var(--warning)",
     defaultPages: ["/","docs","decisions","meetings","sops","knowledge-graph"],
     settings: { dateFormat:"DD/MM/YYYY", enableDocs:true, enableSOPs:true },
   },
@@ -72,7 +72,7 @@ const TEMPLATES = [
     icon: "⬜",
     desc: "Start from scratch and configure everything yourself.",
     tags: [],
-    color: "#64748b",
+    color: "var(--gray-500)",
     defaultPages: ["/"],
     settings: {},
   },
@@ -320,7 +320,7 @@ export default function WorkspaceSetup() {
             </div>
 
             <div className="ws-field">
-              <label className="ws-label" htmlFor={"workspace-setup-workspace-name"}>Workspace name <span style={{color:"#ef4444"}}>*</span></label>
+              <label className="ws-label" htmlFor={"workspace-setup-workspace-name"}>Workspace name <span style={{color:"var(--danger)"}}>*</span></label>
               <input className="ws-input" value={form.name}
                 onChange={e=>set("name",e.target.value)}
                 placeholder="e.g. Acme Engineering"
@@ -383,7 +383,7 @@ export default function WorkspaceSetup() {
 
             <div style={{
               fontSize: 11.5, lineHeight: 1.5, color: "var(--gray-500)",
-              background: "var(--gray-50, #f9fafb)", border: "1px solid var(--border)",
+              background: "var(--gray-50, var(--gray-50))", border: "1px solid var(--border)",
               borderRadius: 8, padding: "8px 10px", marginTop: 10,
             }}>
               👑 Creating this workspace makes you its <strong>Manager</strong> — full admin

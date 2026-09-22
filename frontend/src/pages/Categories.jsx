@@ -12,12 +12,12 @@ import CanDo from "../components/CanDo";
 import { apiErrorMessage } from "../utils/apiError";
 
 const COLORS = [
-  "#6366f1",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
+  "var(--brand-500)",
+  "var(--warning)",
+  "var(--success)",
+  "var(--danger)",
   "#3b82f6",
-  "#8b5cf6",
+  "var(--purple)",
   "#ec4899",
   "#14b8a6",
   "#f97316",
@@ -39,7 +39,7 @@ const ICONS = [
 
 function CategoryForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(
-    initial || { name: "", color: "#6366f1", icon: "📁" },
+    initial || { name: "", color: "var(--brand-500)", icon: "📁" },
   );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -163,7 +163,7 @@ export default function Categories() {
           <div
             className="category-card"
             key={c.id}
-            style={{ borderLeft: `4px solid ${c.color || "#6366f1"}` }}
+            style={{ borderLeft: `4px solid ${c.color || "var(--brand-500)"}` }}
           >
             <div className="category-icon">{c.icon || "📁"}</div>
             <div className="category-info">

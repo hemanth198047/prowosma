@@ -180,11 +180,11 @@ function AIDisabledBanner({
     return (
       <div
         className="ai-disabled-banner"
-        style={{ borderColor: "#f59e0b", background: "#fffbeb" }}
+        style={{ borderColor: "var(--warning)", background: "#fffbeb" }}
       >
         <div className="ai-disabled-icon">⚙️</div>
         <div className="ai-disabled-content">
-          <div className="ai-disabled-title" style={{ color: "#d97706" }}>
+          <div className="ai-disabled-title" style={{ color: "var(--warning)" }}>
             This feature is disabled
           </div>
           <div className="ai-disabled-desc">
@@ -194,7 +194,7 @@ function AIDisabledBanner({
           <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
             <button
               className="btn-primary"
-              style={{ background: "#f59e0b" }}
+              style={{ background: "var(--warning)" }}
               onClick={() => onToggleFeature(featureKey)}
             >
               ⚡ Enable This Feature
@@ -232,7 +232,7 @@ function ResultCard({ data, onClose }) {
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             className="btn-icon"
-            style={{ color: copied ? "#10b981" : "#fff", fontSize: "14px" }}
+            style={{ color: copied ? "var(--success)" : "#fff", fontSize: "14px" }}
             onClick={handleCopy}
           >
             {copied ? "✅ Copied!" : "📋 Copy"}
@@ -875,7 +875,7 @@ export default function AIAssistant() {
                       style={{
                         fontSize: "10px",
                         marginLeft: "4px",
-                        color: activePanel === p.key ? "#fff" : "#10b981",
+                        color: activePanel === p.key ? "#fff" : "var(--success)",
                       }}
                     >
                       ●

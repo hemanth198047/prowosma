@@ -13,10 +13,10 @@ import "../styles/pages/sops.css";
 // ─── Constants ────────────────────────────────────────────────
 const STATUSES = ["DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"];
 const STATUS_META = {
-  DRAFT:     { label:"Draft",     color:"#6366f1", bg:"rgba(99,102,241,0.12)", icon:"✏️"  },
-  REVIEW:    { label:"In Review", color:"#f59e0b", bg:"rgba(217,119,6,0.12)", icon:"🔍"  },
-  PUBLISHED: { label:"Published", color:"#10b981", bg:"rgba(5,150,105,0.12)", icon:"✅"  },
-  ARCHIVED:  { label:"Archived",  color:"#94a3b8", bg:"#f1f5f9", icon:"📦"  },
+  DRAFT:     { label:"Draft",     color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)", icon:"✏️"  },
+  REVIEW:    { label:"In Review", color:"var(--warning)", bg:"rgba(217,119,6,0.12)", icon:"🔍"  },
+  PUBLISHED: { label:"Published", color:"var(--success)", bg:"rgba(5,150,105,0.12)", icon:"✅"  },
+  ARCHIVED:  { label:"Archived",  color:"var(--gray-400)", bg:"var(--gray-100)", icon:"📦"  },
 };
 
 function fmtDate(iso) {
@@ -235,7 +235,7 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
               {required > 0 && (
                 <div className="sop-ack-bar">
                   <div className="sop-ack-bar-fill"
-                    style={{ width: `${ackPct}%`, background: ackPct === 100 ? "#10b981" : "#6366f1" }} />
+                    style={{ width: `${ackPct}%`, background: ackPct === 100 ? "var(--success)" : "var(--brand-500)" }} />
                 </div>
               )}
 

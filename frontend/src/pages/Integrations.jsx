@@ -15,7 +15,7 @@ const TIERS = [
   {
     id: "identity", label: "Identity & Access", icon: "🔐",
     desc: "SSO, user provisioning, and enterprise authentication",
-    color: "#6366f1", badge: "MUST-HAVE",
+    color: "var(--brand-500)", badge: "MUST-HAVE",
     integrations: [
       { key:"OKTA",       name:"Okta",              icon:"🔵", color:"#007DC1", tagline:"Enterprise SSO and lifecycle management",
         status:"available", effort:"oauth",
@@ -39,12 +39,12 @@ const TIERS = [
         fields:[{key:"clientId",label:"Client ID",type:"text",placeholder:"xxx.apps.googleusercontent.com"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Google OAuth secret"},{key:"domain",label:"Workspace Domain",type:"text",placeholder:"yourcompany.com"}],
         capabilities:["Google OAuth 2.0 SSO","Workspace user directory sync","Google Drive integration","Calendar sync"],
         docsUrl:"https://console.cloud.google.com/apis/credentials", docsLabel:"Google Cloud Console →" },
-      { key:"SAML",       name:"SAML 2.0",           icon:"🛡", color:"#374151", tagline:"Generic SAML 2.0 for any IdP",
+      { key:"SAML",       name:"SAML 2.0",           icon:"🛡", color:"var(--gray-700)", tagline:"Generic SAML 2.0 for any IdP",
         status:"available", effort:"config",
         fields:[{key:"idpMetadata",label:"IdP Metadata URL",type:"text",placeholder:"https://idp.company.com/saml/metadata"},{key:"entityId",label:"Service Provider Entity ID",type:"text",placeholder:"https://app.prowosma.com/saml"}],
         capabilities:["Standard SAML 2.0 SP","Works with Ping, ADFS, OneLogin","Attribute mapping","Just-in-time provisioning"],
         docsUrl:"https://docs.prowosma.com/saml", docsLabel:"Setup Guide →" },
-      { key:"SCIM",       name:"SCIM 2.0",            icon:"👥", color:"#059669", tagline:"Automated user lifecycle management",
+      { key:"SCIM",       name:"SCIM 2.0",            icon:"👥", color:"var(--success)", tagline:"Automated user lifecycle management",
         status:"available", effort:"config",
         fields:[{key:"scimToken",label:"SCIM Bearer Token",type:"password",placeholder:"Auto-generated — click Generate"},{key:"scimEndpoint",label:"SCIM Endpoint",type:"text",placeholder:"Read-only — your SCIM URL"}],
         capabilities:["Auto-create users on hire","Auto-deactivate on departure","Role sync from IdP groups","Bulk user import"],
@@ -115,7 +115,7 @@ const TIERS = [
   {
     id: "knowledge", label: "Docs & Knowledge", icon: "📚",
     desc: "Link tasks to documents, SOPs, PRDs, and meeting notes",
-    color: "#8b5cf6", badge: "PRODUCTIVITY",
+    color: "var(--purple)", badge: "PRODUCTIVITY",
     integrations: [
       { key:"CONFLUENCE", name:"Confluence",    icon:"📘", color:"#0052CC", tagline:"Link tasks to Confluence pages and spaces",
         status:"coming_soon", effort:"oauth",
@@ -159,7 +159,7 @@ const TIERS = [
   {
     id: "crm_hr", label: "CRM & HR Systems", icon: "🏢",
     desc: "Auto-create projects from deals; sync headcount, onboarding, and capacity",
-    color: "#f59e0b", badge: "HIGH VALUE",
+    color: "var(--warning)", badge: "HIGH VALUE",
     integrations: [
       { key:"SALESFORCE",  name:"Salesforce",    icon:"☁️", color:"#00A1E0", tagline:"Deal closed → project created automatically",
         status:"coming_soon", effort:"oauth",
@@ -203,7 +203,7 @@ const TIERS = [
   {
     id: "financial", label: "Financial Systems", icon: "💰",
     desc: "Project budget, actual spend, resource cost, and profitability — in one place",
-    color: "#10b981", badge: "DIFFERENTIATOR",
+    color: "var(--success)", badge: "DIFFERENTIATOR",
     integrations: [
       { key:"QUICKBOOKS",  name:"QuickBooks",    icon:"💚", color:"#2CA01C", tagline:"Project budget vs actuals from QuickBooks",
         status:"coming_soon", effort:"oauth",
@@ -230,7 +230,7 @@ const TIERS = [
   {
     id: "monitoring", label: "Monitoring & Operations", icon: "📡",
     desc: "Production incidents, alerts, and SLOs feed directly into project work",
-    color: "#ef4444", badge: "ENGINEERING",
+    color: "var(--danger)", badge: "ENGINEERING",
     integrations: [
       { key:"DATADOG",    name:"Datadog",        icon:"🐶", color:"#632CA6", tagline:"Monitor alerts open tasks; recoveries close them",
         status:"available", effort:"webhook", inbound:true,
@@ -260,7 +260,7 @@ const TIERS = [
   {
     id: "ai", label: "AI & LLM Providers", icon: "🤖",
     desc: "Power every AI feature with the model of your choice",
-    color: "#6366f1", badge: "ALREADY BUILT",
+    color: "var(--brand-500)", badge: "ALREADY BUILT",
     integrations: [
       { key:"ANTHROPIC",  name:"Anthropic Claude",icon:"🟣", color:"#6B3FA0", tagline:"Claude Sonnet and Opus for all AI features",
         status:"available", effort:"token",
@@ -320,16 +320,16 @@ const ALL_INTEGRATIONS = TIERS.flatMap(t => t.integrations.map(i => ({...i, tier
 
 const EFFORT_LABELS = {
   oauth:   { label:"OAuth",   color:"#3b82f6", tip:"Connect with one click via OAuth" },
-  token:   { label:"API Key", color:"#6366f1", tip:"Paste your API key to connect" },
-  config:  { label:"Config",  color:"#8b5cf6", tip:"Manual configuration required" },
+  token:   { label:"API Key", color:"var(--brand-500)", tip:"Paste your API key to connect" },
+  config:  { label:"Config",  color:"var(--purple)", tip:"Manual configuration required" },
   webhook: { label:"Webhook", color:"#0ea5e9", tip:"Paste a webhook URL to connect" },
 };
 
 const STATUS_LABELS = {
-  available:    { label:"Ready",       color:"#059669", bg:"#dcfce7", dot:"#10b981" },
-  coming_soon:  { label:"Config Only", color:"#6366f1", bg:"#eef2ff", dot:"#6366f1" },
-  connected:    { label:"Connected",   color:"#059669", bg:"#dcfce7", dot:"#10b981" },
-  error:        { label:"Error",       color:"#dc2626", bg:"#fee2e2", dot:"#ef4444" },
+  available:    { label:"Ready",       color:"var(--success)", bg:"#dcfce7", dot:"var(--success)" },
+  coming_soon:  { label:"Config Only", color:"var(--brand-500)", bg:"var(--brand-50)", dot:"var(--brand-500)" },
+  connected:    { label:"Connected",   color:"var(--success)", bg:"#dcfce7", dot:"var(--success)" },
+  error:        { label:"Error",       color:"var(--danger)", bg:"#fee2e2", dot:"var(--danger)" },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -382,17 +382,17 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
   return (
     <div style={{
       background:"#fff",
-      border:`1.5px solid ${isConnected ? intg.color+"55" : "#e8ecf2"}`,
+      border:`1.5px solid ${isConnected ? intg.color+"55" : "var(--border)"}`,
       borderRadius:"14px",
       padding:"16px",
       display:"flex",
       flexDirection:"column",
       gap:"12px",
-      boxShadow: isConnected ? `0 2px 12px ${intg.color}18` : "0 1px 3px rgba(0,0,0,.04)",
+      boxShadow: "var(--elevation-1)",
       transition:"box-shadow .15s, border-color .15s",
     }}
-    onMouseEnter={e => { if(!isConnected) { e.currentTarget.style.borderColor="#c7d2fe"; e.currentTarget.style.boxShadow="0 4px 16px rgba(99,102,241,.08)"; }}}
-    onMouseLeave={e => { if(!isConnected) { e.currentTarget.style.borderColor="#e8ecf2"; e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,.04)"; }}}>
+    onMouseEnter={e => { if(!isConnected) { e.currentTarget.style.borderColor="var(--brand-200)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(99,102,241,.08)"; }}}
+    onMouseLeave={e => { if(!isConnected) { e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,.04)"; }}}>
 
       {/* ── Row 1: Icon + Name + Badges ── */}
       <div style={{ display:"flex", alignItems:"flex-start", gap:"10px" }}>
@@ -403,17 +403,17 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
         }}>{intg.icon}</div>
 
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:800, fontSize:"13px", color:"#0f172a",
+          <div style={{ fontWeight:800, fontSize:"13px", color:"var(--gray-900)",
             marginBottom:"2px", display:"flex", alignItems:"center", gap:"5px", flexWrap:"wrap" }}>
             {intg.name}
             {isConnected && (
               <span style={{ fontSize:"9px", fontWeight:800, padding:"1px 6px",
-                borderRadius:"999px", background:"#dcfce7", color:"#059669" }}>
+                borderRadius:"999px", background:"#dcfce7", color:"var(--success)" }}>
                 ✓ CONNECTED
               </span>
             )}
           </div>
-          <div style={{ fontSize:"11px", color:"#64748b", lineHeight:1.4 }}>{intg.tagline}</div>
+          <div style={{ fontSize:"11px", color:"var(--gray-500)", lineHeight:1.4 }}>{intg.tagline}</div>
         </div>
 
         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end",
@@ -436,12 +436,12 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
       <div style={{ display:"flex", flexWrap:"wrap", gap:"4px" }}>
         {(intg.capabilities || []).slice(0, 3).map((cap, i) => (
           <span key={i} style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"999px",
-            background:"#f8fafc", border:"1px solid #e8ecf2", color:"#64748b" }}>
+            background:"var(--gray-50)", border:"1px solid var(--border)", color:"var(--gray-500)" }}>
             {cap}
           </span>
         ))}
         {(intg.capabilities || []).length > 3 && (
-          <span style={{ fontSize:"10px", color:"#94a3b8", padding:"2px 0" }}>
+          <span style={{ fontSize:"10px", color:"var(--gray-400)", padding:"2px 0" }}>
             +{intg.capabilities.length - 3} more
           </span>
         )}
@@ -453,7 +453,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
           <a href={intg.settingsLink}
             style={{ flex:1, padding:"8px 14px", borderRadius:"8px",
               textAlign:"center", fontSize:"12px", fontWeight:700,
-              background:`linear-gradient(135deg,${intg.color},${intg.color}cc)`,
+              background:intg.color,
               color:"#fff", textDecoration:"none", display:"block",
               boxSizing:"border-box" }}>
             ⚙️ Go to AI Settings
@@ -466,9 +466,9 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
               style={{ flex:1, padding:"8px 14px", borderRadius:"8px", border:"none",
                 fontSize:"12px", fontWeight:700, cursor:"pointer",
                 background: isConnected
-                  ? "#f1f5f9"
-                  : `linear-gradient(135deg,${intg.color},${intg.color}dd)`,
-                color: isConnected ? "#374151" : "#fff",
+                  ? "var(--gray-100)"
+                  : intg.color,
+                color: isConnected ? "var(--gray-700)" : "#fff",
                 transition:"opacity .13s" }}
               onMouseEnter={e => e.currentTarget.style.opacity=".9"}
               onMouseLeave={e => e.currentTarget.style.opacity="1"}>
@@ -495,7 +495,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
                 onClick={(e) => { e.stopPropagation(); onToggle(intg.key); }}
                 style={{ padding:"8px 12px", borderRadius:"8px", cursor:"pointer",
                   border:"1px solid #fee2e2", background:"#fff",
-                  fontSize:"11px", fontWeight:700, color:"#ef4444", flexShrink:0 }}>
+                  fontSize:"11px", fontWeight:700, color:"var(--danger)", flexShrink:0 }}>
                 Disconnect
               </button>
             )}
@@ -506,8 +506,8 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
           <a href={intg.docsUrl} target="_blank" rel="noreferrer"
             title={intg.docsLabel || "Documentation"}
             onClick={e => e.stopPropagation()}
-            style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid #e2e8f0",
-              background:"#fff", fontSize:"13px", color:"#6366f1",
+            style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid var(--border)",
+              background:"#fff", fontSize:"13px", color:"var(--brand-500)",
               textDecoration:"none", flexShrink:0, lineHeight:1 }}>
             📖
           </a>
@@ -589,12 +589,12 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           overflow:"hidden",
           display:"flex", flexDirection:"column",
           background:"#fff", borderRadius:"18px",
-          boxShadow:"0 24px 64px rgba(0,0,0,.3)",
+          boxShadow:"var(--elevation-3)",
           zIndex:99999 }} role="presentation">
 
         {/* Header */}
-        <div style={{ padding:"16px 20px", borderBottom:"1px solid #f1f5f9",
-          background:`linear-gradient(135deg,${intg.color}12,${intg.color}06)`,
+        <div style={{ padding:"16px 20px", borderBottom:"1px solid var(--gray-100)",
+          background:`${intg.color}0d`,
           display:"flex", alignItems:"center", gap:"14px",
           flexShrink:0, borderRadius:"18px 18px 0 0" }}>
           <div style={{ width:48, height:48, borderRadius:"12px", flexShrink:0,
@@ -603,16 +603,16 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
             {intg.icon}
           </div>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:800, fontSize:"16px", color:"#0f172a" }}>
+            <div style={{ fontWeight:800, fontSize:"16px", color:"var(--gray-900)" }}>
               Configure {intg.name}
             </div>
-            <div style={{ fontSize:"12px", color:"#64748b", marginTop:"2px" }}>
+            <div style={{ fontSize:"12px", color:"var(--gray-500)", marginTop:"2px" }}>
               {intg.tagline}
             </div>
           </div>
           <button type="button" onClick={onClose}
             style={{ background:"none", border:"none", cursor:"pointer",
-              fontSize:"20px", color:"#94a3b8", padding:"4px 8px",
+              fontSize:"20px", color:"var(--gray-400)", padding:"4px 8px",
               borderRadius:"6px", lineHeight:1 }}>
             ✕
           </button>
@@ -623,8 +623,8 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           display:"flex", flexDirection:"column", gap:"16px" }}>
 
           {/* 3-step guide */}
-          <div style={{ background:"#f8fafc", borderRadius:"12px",
-            border:"1px solid #e8ecf2", overflow:"hidden" }}>
+          <div style={{ background:"var(--gray-50)", borderRadius:"12px",
+            border:"1px solid var(--border)", overflow:"hidden" }}>
             {(intg.inbound ? INBOUND_STEPS : [
               { n:1, title:"Get your credentials",
                 body:"Visit the provider dashboard and generate an API key / access token." },
@@ -636,16 +636,16 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
                   : "Credentials are encrypted and stored securely on your server only." },
             ]).map((step, i) => (
               <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 14px",
-                borderBottom: i < 2 ? "1px solid #f1f5f9" : "none" }}>
+                borderBottom: i < 2 ? "1px solid var(--gray-100)" : "none" }}>
                 <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0,
                   background:intg.color, color:"#fff", fontSize:"11px", fontWeight:800,
                   display:"flex", alignItems:"center", justifyContent:"center", marginTop:"1px" }}>
                   {step.n}
                 </div>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:700, color:"#1e293b",
+                  <div style={{ fontSize:"12px", fontWeight:700, color:"var(--gray-800)",
                     marginBottom:"2px" }}>{step.title}</div>
-                  <div style={{ fontSize:"11px", color:"#64748b", lineHeight:1.5 }}>
+                  <div style={{ fontSize:"11px", color:"var(--gray-500)", lineHeight:1.5 }}>
                     {i === 0 && intg.docsUrl
                       ? <>{step.body}{" "}<a href={intg.docsUrl} target="_blank"
                           rel="noreferrer" style={{ color:intg.color, fontWeight:700 }}>
@@ -661,7 +661,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           {/* Fields */}
           {(intg.fields || []).map(field => (
             <div key={field.key}>
-              <label style={{ fontSize:"12px", fontWeight:700, color:"#374151",
+              <label style={{ fontSize:"12px", fontWeight:700, color:"var(--gray-700)",
                 display:"block", marginBottom:"5px" }}>
                 {field.label}
               </label>
@@ -672,13 +672,13 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
                 placeholder={field.placeholder || ""}
                 autoComplete="off"
                 style={{ width:"100%", padding:"10px 12px", borderRadius:"8px",
-                  border:"1.5px solid #e2e8f0", fontSize:"13px",
+                  border:"1.5px solid var(--border)", fontSize:"13px",
                   boxSizing:"border-box", outline:"none",
                   fontFamily: field.type==="password" ? "monospace" : "inherit" }}
                 onFocus={e  => e.target.style.borderColor = intg.color}
-                onBlur={e   => e.target.style.borderColor = "#e2e8f0"} />
+                onBlur={e   => e.target.style.borderColor = "var(--border)"} />
               {field.help && (
-                <div style={{ fontSize:"11px", color:"#64748b", marginTop:"4px",
+                <div style={{ fontSize:"11px", color:"var(--gray-500)", marginTop:"4px",
                   lineHeight:1.5, padding:"4px 8px", background:"#fffbeb",
                   borderRadius:"6px", border:"1px solid #fef3c7" }}>
                   💡 {field.help}
@@ -701,9 +701,9 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px" }}>
                 {intg.capabilities.map((cap,i) => (
-                  <div key={i} style={{ fontSize:"11px", color:"#374151",
+                  <div key={i} style={{ fontSize:"11px", color:"var(--gray-700)",
                     display:"flex", gap:"5px", alignItems:"flex-start" }}>
-                    <span style={{ color:"#10b981", fontWeight:700, flexShrink:0 }}>✓</span>
+                    <span style={{ color:"var(--success)", fontWeight:700, flexShrink:0 }}>✓</span>
                     {cap}
                   </div>
                 ))}
@@ -729,22 +729,22 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding:"16px 20px", borderTop:"1px solid #f1f5f9",
+        <div style={{ padding:"16px 20px", borderTop:"1px solid var(--gray-100)",
           display:"flex", gap:"8px", justifyContent:"flex-end", flexShrink:0 }}>
           <button type="button" onClick={onClose}
             style={{ padding:"10px 20px", borderRadius:"9px",
-              border:"1px solid #e2e8f0", background:"#fff",
-              fontSize:"13px", fontWeight:600, cursor:"pointer", color:"#374151" }}>
+              border:"1px solid var(--border)", background:"#fff",
+              fontSize:"13px", fontWeight:600, cursor:"pointer", color:"var(--gray-700)" }}>
             Cancel
           </button>
           <button type="button" onClick={handleSave} disabled={saving||saved}
             style={{ padding:"10px 28px", borderRadius:"9px", border:"none",
               background: saved
-                ? "#10b981"
-                : `linear-gradient(135deg,${intg.color},${intg.color}cc)`,
+                ? "var(--success)"
+                : intg.color,
               color:"#fff", fontSize:"13px", fontWeight:800, cursor:"pointer",
               opacity: (saving||saved) ? 0.85 : 1,
-              boxShadow:`0 2px 10px ${intg.color}44`,
+              boxShadow:"var(--elevation-2)",
               transition:"all .15s" }}>
             {saved ? "✓ Saved!" : saving ? "Saving…" : "💾 Save & Connect"}
           </button>
@@ -762,22 +762,19 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
 function UnifiedLayerBanner({ navigate }) {
   const steps = [
     { icon:"📹", label:"Meeting",    desc:"Zoom / Teams call", color:"#2D8CFF" },
-    { icon:"🤖", label:"AI Extract", desc:"Decisions & actions", color:"#6366f1" },
-    { icon:"✅", label:"Tasks",      desc:"Auto-created",      color:"#f59e0b" },
+    { icon:"🤖", label:"AI Extract", desc:"Decisions & actions", color:"var(--brand-500)" },
+    { icon:"✅", label:"Tasks",      desc:"Auto-created",      color:"var(--warning)" },
     { icon:"📁", label:"Projects",   desc:"Sprint updated",    color:"#3b82f6" },
-    { icon:"🎯", label:"Goals/OKRs", desc:"Progress tracked",  color:"#10b981" },
-    { icon:"💰", label:"Budgets",    desc:"Spend updated",     color:"#059669" },
-    { icon:"📊", label:"Dashboard",  desc:"Exec view refreshed",color:"#8b5cf6" },
+    { icon:"🎯", label:"Goals/OKRs", desc:"Progress tracked",  color:"var(--success)" },
+    { icon:"💰", label:"Budgets",    desc:"Spend updated",     color:"var(--success)" },
+    { icon:"📊", label:"Dashboard",  desc:"Exec view refreshed",color:"var(--purple)" },
   ];
   return (
-    <div style={{ background:"linear-gradient(135deg,#0a1628 0%,#0f2044 60%,#0d1b36 100%)",
+    <div style={{ background:"#0F1729",
       border:"1.5px solid rgba(99,102,241,.35)", borderRadius:"18px",
       padding:"24px 28px", marginBottom:"28px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:3,
-        background:"linear-gradient(90deg,#38bdf8,#6366f1,#8b5cf6,#ec4899)" }} />
-      <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200,
-        background:"radial-gradient(circle,rgba(99,102,241,.12),transparent)",
-        borderRadius:"50%", pointerEvents:"none" }} />
+        background:"var(--brand-500)" }} />
 
       <div style={{ display:"flex", alignItems:"flex-start", gap:"24px", flexWrap:"wrap" }}>
         <div style={{ flex:1, minWidth:240 }}>
@@ -789,16 +786,16 @@ function UnifiedLayerBanner({ navigate }) {
             lineHeight:1.3, marginBottom:"8px" }}>
             Unified Operating Layer
           </div>
-          <div style={{ fontSize:"13px", color:"#94a3b8", lineHeight:1.7, marginBottom:"16px" }}>
+          <div style={{ fontSize:"13px", color:"var(--gray-400)", lineHeight:1.7, marginBottom:"16px" }}>
             No major product does this end-to-end. A Zoom meeting happens → AI extracts decisions
             → tasks auto-created → sprint updated → OKRs tracked → executive dashboard refreshed.
             All automatically.
           </div>
           <button onClick={()=>navigate("/bpm")}
             style={{ padding:"10px 22px", borderRadius:"10px", border:"none",
-              background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+              background:"var(--brand-600)", color:"#fff",
               fontSize:"13px", fontWeight:800, cursor:"pointer",
-              boxShadow:"0 4px 16px rgba(99,102,241,.4)" }}>
+              boxShadow:"var(--elevation-2)" }}>
             Build a Workflow →
           </button>
         </div>
@@ -813,9 +810,9 @@ function UnifiedLayerBanner({ navigate }) {
                   background:`${s.color}22`, border:`1.5px solid ${s.color}44`,
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:"20px" }}>{s.icon}</div>
-                <div style={{ fontSize:"11px", fontWeight:700, color:"#e2e8f0",
+                <div style={{ fontSize:"11px", fontWeight:700, color:"var(--border)",
                   textAlign:"center", lineHeight:1.2 }}>{s.label}</div>
-                <div style={{ fontSize:"9px", color:"#64748b", textAlign:"center",
+                <div style={{ fontSize:"9px", color:"var(--gray-500)", textAlign:"center",
                   lineHeight:1.2 }}>{s.desc}</div>
               </div>
               {i < steps.length-1 && (
@@ -904,20 +901,20 @@ export default function Integrations() {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px",
         marginBottom:"20px" }}>
         {[
-          { label:"Connected",    value:connectedCount,     color:"#10b981", icon:"✓" },
-          { label:"Available",    value:availableCount,     color:"#6366f1", icon:"🔌" },
-          { label:"Coming Soon",  value:comingSoonCount,    color:"#f59e0b", icon:"🚀" },
+          { label:"Connected",    value:connectedCount,     color:"var(--success)", icon:"✓" },
+          { label:"Available",    value:availableCount,     color:"var(--brand-500)", icon:"🔌" },
+          { label:"Coming Soon",  value:comingSoonCount,    color:"var(--warning)", icon:"🚀" },
           { label:"Total",        value:ALL_INTEGRATIONS.length, color:"#0ea5e9", icon:"📦" },
         ].map(s => (
-          <div key={s.label} style={{ background:"#fff", border:`1.5px solid ${s.color}22`,
+          <div key={s.label} style={{ background:"var(--surface-1)", border:`1.5px solid ${s.color}22`,
             borderRadius:"12px", padding:"12px 14px", display:"flex", alignItems:"center",
-            gap:"10px", boxShadow:"0 1px 3px rgba(0,0,0,.04)" }}>
+            gap:"10px", boxShadow:"var(--elevation-1)" }}>
             <div style={{ width:36, height:36, borderRadius:"9px", background:`${s.color}18`,
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"16px", flexShrink:0 }}>{s.icon}</div>
             <div>
               <div style={{ fontSize:"20px", fontWeight:800, color:s.color, lineHeight:1 }}>{s.value}</div>
-              <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600 }}>{s.label}</div>
+              <div style={{ fontSize:"11px", color:"var(--gray-500)", fontWeight:600 }}>{s.label}</div>
             </div>
           </div>
         ))}
@@ -927,10 +924,10 @@ export default function Integrations() {
       <div style={{ display:"flex", gap:"8px", marginBottom:"20px", alignItems:"center", flexWrap:"wrap" }}>
         <input value={search} onChange={e=>setSearch(e.target.value)}
           placeholder="Search integrations…"
-          style={{ padding:"8px 14px", borderRadius:"10px", border:"1.5px solid #e2e8f0",
+          style={{ padding:"8px 14px", borderRadius:"10px", border:"1.5px solid var(--border)",
             fontSize:"13px", width:220, outline:"none" }}
-          onFocus={e=>e.target.style.borderColor="#6366f1"}
-          onBlur={e=>e.target.style.borderColor="#e2e8f0"} />
+          onFocus={e=>e.target.style.borderColor="var(--brand-500)"}
+          onBlur={e=>e.target.style.borderColor="var(--border)"} />
         <div style={{ display:"flex", gap:"4px", flexWrap:"wrap" }}>
           {[{id:"all",label:"All"},
             ...TIERS.map(t=>({id:t.id,label:t.label,color:t.color,icon:t.icon,badge:t.badge}))
@@ -938,14 +935,14 @@ export default function Integrations() {
             <button key={t.id} onClick={()=>setActiveTier(t.id)}
               style={{ padding:"6px 12px", borderRadius:"8px", border:"none",
                 cursor:"pointer", fontSize:"11px", fontWeight:700, transition:"all .13s",
-                background: activeTier===t.id ? (t.color||"#1e293b") : "#f1f5f9",
-                color: activeTier===t.id ? "#fff" : "#64748b" }}>
+                background: activeTier===t.id ? (t.color||"var(--gray-800)") : "var(--gray-100)",
+                color: activeTier===t.id ? "#fff" : "var(--gray-500)" }}>
               {t.icon&&<span style={{ marginRight:4 }}>{t.icon}</span>}{t.label}
             </button>
           ))}
         </div>
         {search && (
-          <span style={{ fontSize:"12px", color:"#94a3b8" }}>
+          <span style={{ fontSize:"12px", color:"var(--gray-400)" }}>
             {filtered.length} result{filtered.length!==1?"s":""}
           </span>
         )}
@@ -965,12 +962,12 @@ export default function Integrations() {
                 <span style={{ fontSize:"20px" }}>{tier.icon}</span>
                 <div>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <span style={{ fontWeight:800, fontSize:"16px", color:"#0f172a" }}>{tier.label}</span>
+                    <span style={{ fontWeight:800, fontSize:"16px", color:"var(--gray-900)" }}>{tier.label}</span>
                     <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 9px",
                       borderRadius:"999px", letterSpacing:".05em",
                       background:`${tier.color}18`, color:tier.color }}>{tier.badge}</span>
                   </div>
-                  <div style={{ fontSize:"12px", color:"#64748b", marginTop:"2px" }}>{tier.desc}</div>
+                  <div style={{ fontSize:"12px", color:"var(--gray-500)", marginTop:"2px" }}>{tier.desc}</div>
                 </div>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"10px" }}>

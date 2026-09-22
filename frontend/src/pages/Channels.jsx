@@ -102,7 +102,7 @@ function StandupPanel() {
             </div>
             {e.yesterday && <div className="channel-standup-item"><span>✅</span><div>{e.yesterday}</div></div>}
             {e.today     && <div className="channel-standup-item"><span>🎯</span><div>{e.today}</div></div>}
-            {e.blockers  && <div className="channel-standup-item"><span>🚧</span><div style={{color:"#ef4444"}}>{e.blockers}</div></div>}
+            {e.blockers  && <div className="channel-standup-item"><span>🚧</span><div style={{color:"var(--danger)"}}>{e.blockers}</div></div>}
           </div>
         ))}
         {entries.length===0 && <div className="empty-state">No standups yet. Post the first one above.</div>}

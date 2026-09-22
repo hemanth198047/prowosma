@@ -124,7 +124,7 @@ function ScimTokenCard() {
       <div className="admin-card-title">🔑 SCIM Provisioning</div>
 
       {newToken && (
-        <div className="admin-audit-note" style={{ marginBottom: "10px", border: "1px solid #f59e0b", borderRadius: "8px", padding: "10px" }}>
+        <div className="admin-audit-note" style={{ marginBottom: "10px", border: "1px solid var(--warning)", borderRadius: "8px", padding: "10px" }}>
           <strong>Copy this token now — it will not be shown again.</strong>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px", alignItems: "center" }}>
             <code className="admin-code" style={{ flex: 1, wordBreak: "break-all" }}>{newToken.token}</code>
@@ -146,7 +146,7 @@ function ScimTokenCard() {
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
             <button className="btn-secondary" disabled={busy} onClick={handleGenerate}>🔄 Regenerate</button>
-            <button className="btn-secondary" disabled={busy} style={{ color: "#ef4444" }} onClick={handleRevoke}>Revoke</button>
+            <button className="btn-secondary" disabled={busy} style={{ color: "var(--danger)" }} onClick={handleRevoke}>Revoke</button>
           </div>
         </>
       ) : (
@@ -187,12 +187,12 @@ function SecurityCentre() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label:"MFA Adoption",       value: stats?.mfaAdoptionPct   ?? "—", unit:"%",  color:"#10b981", icon:"🔐" },
-          { label:"Active Sessions",    value: sessions.length,                color:"#6366f1", icon:"💻" },
-          { label:"Failed Logins (24h)",value: stats?.failedLogins24h  ?? 0,   color:"#ef4444", icon:"⚠️" },
-          { label:"Anomalous Logins",   value: stats?.anomalousLogins  ?? 0,   color:"#f59e0b", icon:"🚨" },
-          { label:"Total Users",        value: stats?.totalUsers       ?? "—", color:"#8b5cf6", icon:"👤" },
-          { label:"2FA Enabled Users",  value: stats?.twoFaUsers       ?? "—", color:"#10b981", icon:"✅" },
+          { label:"MFA Adoption",       value: stats?.mfaAdoptionPct   ?? "—", unit:"%",  color:"var(--success)", icon:"🔐" },
+          { label:"Active Sessions",    value: sessions.length,                color:"var(--brand-500)", icon:"💻" },
+          { label:"Failed Logins (24h)",value: stats?.failedLogins24h  ?? 0,   color:"var(--danger)", icon:"⚠️" },
+          { label:"Anomalous Logins",   value: stats?.anomalousLogins  ?? 0,   color:"var(--warning)", icon:"🚨" },
+          { label:"Total Users",        value: stats?.totalUsers       ?? "—", color:"var(--purple)", icon:"👤" },
+          { label:"2FA Enabled Users",  value: stats?.twoFaUsers       ?? "—", color:"var(--success)", icon:"✅" },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
             <div className="admin-stat-icon">{s.icon}</div>
@@ -224,7 +224,7 @@ function SecurityCentre() {
                 <div className="admin-session-user">{s.email}</div>
                 <div className="admin-session-meta">{s.ipAddress} · {s.deviceInfo || "Unknown device"} · {s.lastActiveAt ? new Date(s.lastActiveAt).toLocaleString() : "—"}</div>
               </div>
-              <button className="btn-secondary" style={{ fontSize:"11px", color:"#ef4444" }}
+              <button className="btn-secondary" style={{ fontSize:"11px", color:"var(--danger)" }}
                 onClick={() => handleRevoke(s.id)}>Revoke</button>
             </div>
           ))
@@ -922,7 +922,7 @@ function IpAllowlist() {
           : ips.map(ip=>(
             <div key={ip} className="admin-session-row">
               <span className="admin-code">{ip}</span>
-              <button className="btn-secondary" style={{fontSize:"11px",color:"#ef4444"}}
+              <button className="btn-secondary" style={{fontSize:"11px",color:"var(--danger)"}}
                 onClick={()=>remove(ip)}>Remove</button>
             </div>
           ))
@@ -1005,7 +1005,7 @@ function Soc2Panel() {
   const done    = Object.values(checks).filter(Boolean).length;
   const total   = SOC2_CONTROLS.length;
   const pct     = Math.round((done/total)*100);
-  const color   = pct>=80?"#10b981":pct>=50?"#f59e0b":"#ef4444";
+  const color   = pct>=80?"var(--success)":pct>=50?"var(--warning)":"var(--danger)";
 
   return (
     <div className="admin-section">
@@ -1035,7 +1035,7 @@ function Soc2Panel() {
                 </div>
                 <input type="checkbox" checked={checks[c.id]}
                   onChange={()=>setChecks(p=>({...p,[c.id]:!p[c.id]}))}
-                  style={{accentColor:"#10b981",width:"16px",height:"16px"}} />
+                  style={{accentColor:"var(--success)",width:"16px",height:"16px"}} />
               </label>
             ))}
           </div>
@@ -1100,15 +1100,15 @@ function LicensePanel() {
             <div className="budget-stat-label">Licensed Seats</div>
           </div>
           <div className="budget-stat">
-            <div className="budget-stat-num" style={{color:pct>90?"#ef4444":"var(--gray-800)"}}>{used}</div>
+            <div className="budget-stat-num" style={{color:pct>90?"var(--danger)":"var(--gray-800)"}}>{used}</div>
             <div className="budget-stat-label">Used</div>
           </div>
           <div className="budget-stat">
-            <div className="budget-stat-num" style={{color:"#10b981"}}>{Math.max(0,total-used)}</div>
+            <div className="budget-stat-num" style={{color:"var(--success)"}}>{Math.max(0,total-used)}</div>
             <div className="budget-stat-label">Available</div>
           </div>
           <div className="budget-stat">
-            <div className="budget-stat-num" style={{color:overage>0?"#ef4444":"#10b981"}}>
+            <div className="budget-stat-num" style={{color:overage>0?"var(--danger)":"var(--success)"}}>
               {overage>0?`+${overage} over`:"OK"}
             </div>
             <div className="budget-stat-label">Status</div>
@@ -1116,7 +1116,7 @@ function LicensePanel() {
         </div>
         <div className="budget-burn-bar" style={{marginTop:"12px"}}>
           <div className="budget-burn-fill" style={{width:`${Math.min(100,pct)}%`,
-            background:pct>90?"#ef4444":pct>70?"#f59e0b":"#10b981"}} />
+            background:pct>90?"var(--danger)":pct>70?"var(--warning)":"var(--success)"}} />
         </div>
         {overage>0 && (
           <div className="admin-warn" style={{marginTop:"10px",fontSize:"13px"}}>
@@ -1148,7 +1148,7 @@ function TenantAnalytics() {
       ))
     : 0;
   const churnRisk = engagementScore < 20 ? "HIGH" : engagementScore < 50 ? "MEDIUM" : "LOW";
-  const churnColor = churnRisk==="HIGH"?"#ef4444":churnRisk==="MEDIUM"?"#f59e0b":"#10b981";
+  const churnColor = churnRisk==="HIGH"?"var(--danger)":churnRisk==="MEDIUM"?"var(--warning)":"var(--success)";
 
   return (
     <div className="admin-section">
@@ -1156,11 +1156,11 @@ function TenantAnalytics() {
         <div className="admin-card-title">📊 Tenant Analytics</div>
         <div className="admin-stat-grid">
           {[
-            { icon:"💼",label:"Projects",    value:usage?.projects||0, color:"#6366f1" },
-            { icon:"✅",label:"Tasks",       value:usage?.tasks||0,    color:"#10b981" },
-            { icon:"📄",label:"Docs",        value:usage?.docs||0,     color:"#f59e0b" },
-            { icon:"🤖",label:"AI Credits",  value:usage?.aiCredits||0,color:"#8b5cf6" },
-            { icon:"⚡",label:"Automations", value:usage?.automationRuns||0, color:"#ef4444" },
+            { icon:"💼",label:"Projects",    value:usage?.projects||0, color:"var(--brand-500)" },
+            { icon:"✅",label:"Tasks",       value:usage?.tasks||0,    color:"var(--success)" },
+            { icon:"📄",label:"Docs",        value:usage?.docs||0,     color:"var(--warning)" },
+            { icon:"🤖",label:"AI Credits",  value:usage?.aiCredits||0,color:"var(--purple)" },
+            { icon:"⚡",label:"Automations", value:usage?.automationRuns||0, color:"var(--danger)" },
           ].map(s=>(
             <div key={s.label} className="admin-stat-card">
               <div className="admin-stat-icon">{s.icon}</div>
@@ -1256,7 +1256,7 @@ function AnnouncementsPanel() {
                 </div>
                 <span className="kpi-status-chip"
                   style={{background:a.priority==="HIGH"?"rgba(239,68,68,.1)":"rgba(99,102,241,.1)",
-                    color:a.priority==="HIGH"?"#ef4444":"#6366f1"}}>
+                    color:a.priority==="HIGH"?"var(--danger)":"var(--brand-500)"}}>
                   {a.priority}
                 </span>
               </div>
@@ -1272,7 +1272,7 @@ function AnnouncementsPanel() {
 // ── White-Label Module ────────────────────────────────────────
 function WhiteLabelPanel() {
   const [form, setForm] = useState({
-    brandName:"", brandPrimaryColor:"#6366f1", brandLogoUrl:"",
+    brandName:"", brandPrimaryColor:"var(--brand-500)", brandLogoUrl:"",
     brandFaviconUrl:"", customDomain:"", supportEmail:"",
     brandFooterText:"", hidePoweredBy:false, cssOverrides:"",
   });
@@ -1362,7 +1362,7 @@ function WhiteLabelPanel() {
                 style={{width:"44px",height:"36px",padding:"2px",cursor:"pointer",borderRadius:"6px"}} id={"admin-center-primary-color"} />
               <input value={form.brandPrimaryColor}
                 onChange={e=>set("brandPrimaryColor",e.target.value)}
-                style={{flex:1}} placeholder="#6366f1" aria-label={"Primary Color"} />
+                style={{flex:1}} placeholder="var(--brand-500)" aria-label={"Primary Color"} />
             </div>
           </div>
         </div>
@@ -1477,8 +1477,8 @@ function DlpPanel() {
     } finally { setScanning(false); }
   };
 
-  const RISK_COLORS = { CLEAN:"#10b981", LOW:"#f59e0b", MEDIUM:"#f97316", HIGH:"#ef4444" };
-  const CLASS_COLORS = { PUBLIC:"#10b981", INTERNAL:"#f59e0b", RESTRICTED:"#f97316", CONFIDENTIAL:"#ef4444" };
+  const RISK_COLORS = { CLEAN:"var(--success)", LOW:"var(--warning)", MEDIUM:"#f97316", HIGH:"var(--danger)" };
+  const CLASS_COLORS = { PUBLIC:"var(--success)", INTERNAL:"var(--warning)", RESTRICTED:"#f97316", CONFIDENTIAL:"var(--danger)" };
   const TOGGLES = [
     { key:"scanOnSave",        label:"Scan content on save" },
     { key:"autoRedact",        label:"Auto-redact matches by default" },
@@ -1615,7 +1615,7 @@ function DlpPanel() {
 // security/billing/compliance — these two tabs extend it to cover people
 // and delivery, reusing the same Team/Invitations/Projects APIs the rest
 // of the app already uses (no new backend surface needed for read access).
-const ADMIN_ROLE_COLOR = { OWNER: "#f59e0b", ADMIN: "#ef4444", MEMBER: "#6366f1", VIEWER: "#10b981" };
+const ADMIN_ROLE_COLOR = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
 
 function WorkspacePeople() {
   const { isOwner } = useRole();
@@ -1724,11 +1724,11 @@ function WorkspacePeople() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label: "Total People", value: members.length, color: "#6366f1", icon: "👥" },
-          { label: "Managers",     value: owners,          color: "#f59e0b", icon: "👑" },
-          { label: "Admins",       value: admins,          color: "#ef4444", icon: "🛡️" },
-          { label: "Viewers",      value: viewers,         color: "#10b981", icon: "👁️" },
-          { label: "Pending Invites", value: invites.length, color: "#f59e0b", icon: "✉️" },
+          { label: "Total People", value: members.length, color: "var(--brand-500)", icon: "👥" },
+          { label: "Managers",     value: owners,          color: "var(--warning)", icon: "👑" },
+          { label: "Admins",       value: admins,          color: "var(--danger)", icon: "🛡️" },
+          { label: "Viewers",      value: viewers,         color: "var(--success)", icon: "👁️" },
+          { label: "Pending Invites", value: invites.length, color: "var(--warning)", icon: "✉️" },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
             <div className="admin-stat-icon">{s.icon}</div>
@@ -1756,7 +1756,7 @@ function WorkspacePeople() {
           : members.map(m => (
             <div key={m.id} className="admin-session-row">
               <div className="admin-session-info">
-                <div className="admin-session-user">{m.name} <span style={{ color: "#9ca3af", fontWeight: 400 }}>· {m.email}</span></div>
+                <div className="admin-session-user">{m.name} <span style={{ color: "var(--gray-400)", fontWeight: 400 }}>· {m.email}</span></div>
                 <div className="admin-session-meta">
                   {(m.skills?.length ? `${m.skills.length} skills declared` : "No skills declared")}
                 </div>
@@ -1841,8 +1841,8 @@ function WorkspacePeople() {
 }
 
 const PROJECT_STATUS_COLOR = {
-  NOT_STARTED: "#9ca3af", IN_PROGRESS: "#6366f1", ON_TRACK: "#10b981",
-  AT_RISK: "#f59e0b", BLOCKED: "#ef4444", COMPLETED: "#10b981", PAUSED: "#9ca3af",
+  NOT_STARTED: "var(--gray-400)", IN_PROGRESS: "var(--brand-500)", ON_TRACK: "var(--success)",
+  AT_RISK: "var(--warning)", BLOCKED: "var(--danger)", COMPLETED: "var(--success)", PAUSED: "var(--gray-400)",
 };
 
 function WorkspaceProjects() {
@@ -1865,9 +1865,9 @@ function WorkspaceProjects() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label: "Total Projects", value: projects.length, color: "#6366f1", icon: "📁" },
-          { label: "Active",         value: active,           color: "#10b981", icon: "🟢" },
-          { label: "At Risk / Blocked", value: atRisk,        color: "#ef4444", icon: "⚠️" },
+          { label: "Total Projects", value: projects.length, color: "var(--brand-500)", icon: "📁" },
+          { label: "Active",         value: active,           color: "var(--success)", icon: "🟢" },
+          { label: "At Risk / Blocked", value: atRisk,        color: "var(--danger)", icon: "⚠️" },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
             <div className="admin-stat-icon">{s.icon}</div>
@@ -1895,14 +1895,14 @@ function WorkspaceProjects() {
             <div key={p.id} className="admin-session-row">
               <div className="admin-session-info">
                 <div className="admin-session-user">
-                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: p.color || "#6366f1", marginRight: 6 }} />
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: p.color || "var(--brand-500)", marginRight: 6 }} />
                   {p.name}
                 </div>
                 <div className="admin-session-meta">{p.description || "No description"}</div>
               </div>
               <span className="badge" style={{
-                background: (PROJECT_STATUS_COLOR[p.status] || "#9ca3af") + "22",
-                color: PROJECT_STATUS_COLOR[p.status] || "#9ca3af",
+                background: (PROJECT_STATUS_COLOR[p.status] || "var(--gray-400)") + "22",
+                color: PROJECT_STATUS_COLOR[p.status] || "var(--gray-400)",
               }}>
                 {p.status?.replace("_", " ") || "—"}
               </span>

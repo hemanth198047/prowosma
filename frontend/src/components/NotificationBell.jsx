@@ -9,17 +9,17 @@ import {
 import client from "../api/client";
 import { useToast } from "./ToastContext";
 
-const TYPE_COLOR = { INFO:"#6366f1", WARNING:"#f59e0b", SUCCESS:"#10b981", ERROR:"#ef4444" };
+const TYPE_COLOR = { INFO:"var(--brand-500)", WARNING:"var(--warning)", SUCCESS:"var(--success)", ERROR:"var(--danger)" };
 const TYPE_ICON  = { INFO:"ℹ️", WARNING:"⚠️", SUCCESS:"✅", ERROR:"❌" };
 const ENTITY_ICON= { TASK:"✅", PROJECT:"📁", GOAL:"🎯", SPRINT:"🏃", AUTOMATION:"⚡", APPROVAL:"📋" };
 
 const CATEGORY_META = {
-  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"#6366f1" },
+  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"var(--brand-500)" },
   MENTION:    { label:"Mentions",    icon:"@",  color:"#ec4899" },
-  APPROVAL:   { label:"Approvals",   icon:"✅", color:"#10b981" },
-  GOAL:       { label:"Goals",       icon:"🎯", color:"#8b5cf6" },
-  RISK:       { label:"Risks",       icon:"⚠️", color:"#f59e0b" },
-  SYSTEM:     { label:"System",      icon:"🔔", color:"#6b7280" },
+  APPROVAL:   { label:"Approvals",   icon:"✅", color:"var(--success)" },
+  GOAL:       { label:"Goals",       icon:"🎯", color:"var(--purple)" },
+  RISK:       { label:"Risks",       icon:"⚠️", color:"var(--warning)" },
+  SYSTEM:     { label:"System",      icon:"🔔", color:"var(--gray-500)" },
 };
 
 const SNOOZE_OPTIONS = [
@@ -180,7 +180,7 @@ export default function NotificationBell() {
                 </button>
               )}
               {notifications.length > 0 && (
-                <button className="btn-link" style={{ fontSize:"11px", color:"#ef4444" }}
+                <button className="btn-link" style={{ fontSize:"11px", color:"var(--danger)" }}
                   onClick={async () => { if(window.confirm("Clear all?")) { await deleteAllNotifications(); setNotifications([]); setUnreadCount(0); } }}>
                   Clear
                 </button>
