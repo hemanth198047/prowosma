@@ -144,13 +144,24 @@ public class AuthService {
 
     /**
      * Step 2 of login for a 2FA-enabled account — called with the 6-digit
-     * TOTP code after login() has already returned {twoFactorRequired:
-     * true} for this email. Requires that the password step actually
-     * happened and hasn't expired (see twoFactorPendingExpiry on User) —
-     * you can't skip straight to this with just an email and a guessed
-     * code. The pending window is cleared as soon as it's used, win or
-     * lose, so each password-verification only buys one OTP attempt
-     * window; a failed code means logging in again from the top.
+     * TOTP code (or a backup code) after login() has already returned
+     * {twoFactorRequired: true} for this email. Requires that the password
+     * step actually happened and hasn't expired (see twoFactorPendingExpiry
+     * on User) — you can't skip straight to this with just an email and a
+     * guessed code. The pending window is cleared as soon as it's used, win
+     * or lose, so each password-verification only buys one OTP attempt
+     * window before the person has to log in again from the top.
+     *
+     * That per-window limit alone isn't enough against someone who already
+     * has the real password, though — they could just log in again for a
+     * fresh window on every guess. The actual brute-force defence is the
+     * same account-level lockout the 2FA settings endpoints use (see
+     * TwoFactorService.requireNotLocked / SecurityController), which
+     * persists across as many password-verified windows as someone burns
+     * through. This also enforces the same one-time-use replay rule
+     * SecurityController.verify2fa applies at setup (RFC 6238 §5.2), and
+     * falls back to a backup code exactly like SecurityController.
+     * proveSecondFactor does for the settings endpoints.
      */
     public Map<String, Object> completeTwoFactorLogin(String email, String code,
                                                         String ipAddress, String userAgent) {
@@ -165,18 +176,49 @@ public class AuthService {
         // code) so it's single-use regardless of outcome — a stolen/replayed
         // code can't be retried against the same password-verified window.
         user.setTwoFactorPendingExpiry(null);
-        userRepository.save(user);
 
         if (!pendingValid) {
+            userRepository.save(user);
             throw new InvalidCredentialsException(
                     "Your login session has expired. Please log in again.");
         }
-        if (!twoFactorService.verify(user.getTwoFactorSecret(), code)) {
+
+        // 429s directly (ResponseStatusException) if this account's second
+        // factor is currently locked out from prior wrong codes.
+        twoFactorService.requireNotLocked(user);
+
+        boolean ok;
+        var step = twoFactorService.matchStep(user.getTwoFactorSecret(), code);
+        if (step.isPresent() && step.getAsLong() != user.getTwoFactorLastStep()) {
+            // A fresh TOTP code, not the same one already spent — record
+            // which step it was so it (and only it) can't be replayed.
+            user.setTwoFactorLastStep(step.getAsLong());
+            ok = true;
+        } else {
+            // Not a fresh authenticator code — try it as a backup code
+            // instead. Losing the authenticator shouldn't lock someone out
+            // of their own account entirely.
+            java.util.List<String> remaining =
+                    com.prowosma.backend.auth.BackupCodes.consume(user.getBackupCodes(), code);
+            if (remaining != null) {
+                user.setBackupCodes(remaining);
+                ok = true;
+            } else {
+                ok = false;
+            }
+        }
+
+        if (!ok) {
+            twoFactorService.recordFailure(user);
+            userRepository.save(user);
             activityLogService.logFull("SECURITY", user.getId(), email,
                     "LOGIN_FAILED", null, "2FA code rejected", email,
                     null, null, null, ipAddress, userAgent);
             throw new InvalidCredentialsException("Invalid authentication code");
         }
+
+        twoFactorService.recordSuccess(user);
+        userRepository.save(user);
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
         String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);

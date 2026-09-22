@@ -21,7 +21,31 @@ public class User {
 
     // ── 2FA ──────────────────────────────────────────────────
     private boolean twoFactorEnabled = false;
-    private String  twoFactorSecret;              // base32 TOTP secret
+    private String  twoFactorSecret;              // base32 TOTP secret, live/active
+
+    /**
+     * A newly-generated secret awaiting its first correct code (see
+     * SecurityController /2fa/setup and /2fa/verify) — kept separate from
+     * twoFactorSecret so a setup nobody finished never silently becomes
+     * the active secret, and so replacing a working authenticator doesn't
+     * disable 2FA in between.
+     */
+    private String pendingTwoFactorSecret;
+
+    /**
+     * The 30-second TOTP step (see auth.Totp) that last succeeded, at setup
+     * or at login — set back to -1 whenever 2FA is disabled. Lets a
+     * verifier refuse a code that was already used once (RFC 6238 section
+     * 5.2), since matchStep alone would otherwise accept the same
+     * intercepted code again within its ~90s validity window.
+     */
+    private long twoFactorLastStep = -1;
+
+    /** Wrong second-factor codes since the last correct one — see auth.LockoutPolicy. Reset to 0 on success. */
+    private int twoFactorFailedAttempts = 0;
+
+    /** Set once twoFactorFailedAttempts hits the limit; null when not locked — see auth.LockoutPolicy. */
+    private java.time.Instant twoFactorLockedUntil;
 
     /**
      * Set by login() once the password step succeeds for a 2FA-enabled
@@ -30,7 +54,13 @@ public class User {
      * needing a separate token to be passed back and forth — the
      * completeTwoFactorLogin() step just checks this hasn't expired.
      * Cleared (set null) the moment the OTP step succeeds OR expires, so
-     * it's single-use and short-lived (5 minutes — see AuthService).
+     * it's single-use and short-lived (5 minutes — see AuthService). This
+     * bounds how long a *correct password* stays useful for; it's
+     * deliberately NOT what limits OTP guesses — that's
+     * twoFactorFailedAttempts/twoFactorLockedUntil above, which survive
+     * across repeated password-verified windows (someone who already has
+     * the real password could otherwise just log in again for a fresh
+     * window per guess).
      */
     private LocalDateTime twoFactorPendingExpiry;
 
