@@ -106,18 +106,22 @@
 }
 
 
+/* Elevation Tier 2 — Raised: sticky over the scrolling canvas below it,
+   so it needs to read as nearer than a Tier 1 card, not just outlined.
+   The border still does the crisp-edge work; --elevation-2 is what
+   makes it register as "in front of" rather than merely "on top of". */
 .topbar {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  background: var(--topbar-bg, var(--bg-card, #ffffff));
+  background: var(--surface-2, var(--topbar-bg, var(--bg-card, #ffffff)));
   border-bottom: 1px solid var(--border, #e2e8f0);
   height: var(--topbar-h);
   position: sticky;
   top: 0;
   z-index: 99;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  box-shadow: var(--elevation-2);
 }
 [data-theme="dark"] .topbar {
   background: var(--bg-card, #111827);

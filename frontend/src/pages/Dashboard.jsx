@@ -125,14 +125,14 @@ function StatusStrip({ summary }) {
       border:"1px solid rgba(99,102,241,0.2)",
       background:"rgba(99,102,241,0.04)",
       position:"relative", overflow:"hidden",
-      borderLeft:"3px solid #6366f1", flexShrink:0,
+      borderLeft:"3px solid var(--brand-500)", flexShrink:0,
     }}>
-      <alert.Icon size={15} style={{ flexShrink:0, color:"#6366f1" }} />
+      <alert.Icon size={15} style={{ flexShrink:0, color:"var(--brand-500)" }} />
       <span style={{ fontWeight:600, fontSize:"var(--text-sm)", color:"var(--gray-800)", whiteSpace:"nowrap" }}>
         {alert.text}
       </span>
       {alert.cta && (
-        <a href={alert.href} style={{ ...linkStyle, color:"#6366f1", borderColor:"rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.08)" }}
+        <a href={alert.href} style={{ ...linkStyle, color:"var(--brand-500)", borderColor:"var(--brand-200)", background:"var(--brand-50)" }}
            onMouseEnter={e=>e.currentTarget.style.opacity=1}
            onMouseLeave={e=>e.currentTarget.style.opacity=0.85}>
           {alert.cta} →
@@ -144,7 +144,7 @@ function StatusStrip({ summary }) {
             <button key={i} onClick={() => setIdx(i)} style={{
               width: i===idx ? "16px":"6px", height:"6px",
               borderRadius:"3px", border:"none", cursor:"pointer", padding:0,
-              background: i===idx ? "#6366f1" : "rgba(100,116,139,0.4)",
+              background: i===idx ? "var(--brand-500)" : "var(--gray-400)",
               transition:"all 0.2s",
             }}/>
           ))}
@@ -278,15 +278,28 @@ function ChartsPanel({ summary, navigate }) {
   const axisColor = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)";
   const tickColor = isDark ? "rgba(255,255,255,0.5)" : "#94a3b8";
 
+  /* One fixed category → color mapping (base.css --viz-*), used by every
+     chart/tab/stat on this page — previously each section (donut, mini
+     stats, task tabs, AI panel) picked its own hex for "in progress" or
+     "done", so the same category wasn't reliably the same color twice. */
+  const vizColor = getComputedStyle(document.documentElement);
+  const VIZ = {
+    todo:     vizColor.getPropertyValue("--viz-todo").trim()     || "#5B5FEE",
+    progress: vizColor.getPropertyValue("--viz-progress").trim() || "#C17D22",
+    done:     vizColor.getPropertyValue("--viz-done").trim()     || "#1E8E5A",
+    overdue:  vizColor.getPropertyValue("--viz-overdue").trim()  || "#D64545",
+    goal:     vizColor.getPropertyValue("--viz-goal").trim()     || "#7C5CBF",
+  };
+
   const taskData = [
-    { name:"Todo",        value: summary.todoTasks||0,       color:"#6366f1" },
-    { name:"In Progress", value: summary.inProgressTasks||0, color:"#f59e0b" },
-    { name:"Done",        value: summary.doneTasks||0,        color:"#10b981" },
+    { name:"Todo",        value: summary.todoTasks||0,       color:VIZ.todo },
+    { name:"In Progress", value: summary.inProgressTasks||0, color:VIZ.progress },
+    { name:"Done",        value: summary.doneTasks||0,        color:VIZ.done },
   ].filter(d => d.value > 0);
 
   const projData = (summary.projectsWithProgress || summary.activeProjectList || []).map(p => ({
     name: p.name.length>14 ? p.name.slice(0,14)+"…" : p.name,
-    progress: p.progress, color: p.color||"#6366f1", id: p.id,
+    progress: p.progress, color: p.color||VIZ.todo, id: p.id,
   }));
 
   const goalData = (summary.activeGoalList||[]).map(g => ({
@@ -344,12 +357,12 @@ function ChartsPanel({ summary, navigate }) {
               </div>
               <div className="cc3-stat-grid">
                 {[
-                  { l:"Todo",       v:summary.todoTasks,              c:"#6366f1", p:"/tasks?status=TODO" },
-                  { l:"Progress",   v:summary.inProgressTasks,        c:"#f59e0b", p:"/tasks?status=IN_PROGRESS" },
-                  { l:"Done",       v:summary.doneTasks,               c:"#10b981", p:"/tasks?status=DONE" },
-                  { l:"Rate",       v:`${completionRate}%`,            c:"#ec4899", p:null },
-                  { l:"Overdue",    v:summary.overdueTasks?.length||0, c:"#ef4444", p:"/tasks?filter=overdue" },
-                  { l:"Today",      v:summary.todayTasks?.length||0,   c:"#d97706", p:"/tasks?filter=today" },
+                  { l:"Todo",       v:summary.todoTasks,              c:VIZ.todo,     p:"/tasks?status=TODO" },
+                  { l:"Progress",   v:summary.inProgressTasks,        c:VIZ.progress, p:"/tasks?status=IN_PROGRESS" },
+                  { l:"Done",       v:summary.doneTasks,               c:VIZ.done,     p:"/tasks?status=DONE" },
+                  { l:"Rate",       v:`${completionRate}%`,            c:VIZ.goal,     p:null },
+                  { l:"Overdue",    v:summary.overdueTasks?.length||0, c:VIZ.overdue,  p:"/tasks?filter=overdue" },
+                  { l:"Today",      v:summary.todayTasks?.length||0,   c:VIZ.progress, p:"/tasks?filter=today" },
                 ].map((s,i) => (
                   <div key={i} className="cc3-mini-stat"
                     style={{ borderLeft:`2px solid ${s.c}`, cursor:s.p?"pointer":"default" }}
@@ -717,7 +730,7 @@ export default function Dashboard() {
               <span className="db-card-title"><ClipboardList size={13} /> TASKS</span>
               <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
                 <div style={{ display:"flex", gap:"4px" }}>
-                  {[{key:"active",label:"Active",color:"#f59e0b",count:dashTasks.active.length},{key:"overdue",label:"Overdue",color:"#ef4444",count:dashTasks.overdue.length},{key:"today",label:"Today",color:"#d97706",count:dashTasks.today.length}].map(tab=>(
+                  {[{key:"active",label:"Active",color:"var(--viz-progress)",count:dashTasks.active.length},{key:"overdue",label:"Overdue",color:"var(--viz-overdue)",count:dashTasks.overdue.length},{key:"today",label:"Today",color:"var(--viz-progress)",count:dashTasks.today.length}].map(tab=>(
                     <button key={tab.key} onClick={() => setDashTaskTab(tab.key)} style={{ padding:"2px 9px", borderRadius:"999px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:700, background:dashTaskTab===tab.key?tab.color:"#f1f5f9", color:dashTaskTab===tab.key?"#fff":"#64748b", display:"flex", alignItems:"center", gap:"3px" }}>
                       {tab.label}<span style={{ background:dashTaskTab===tab.key?"rgba(255,255,255,0.3)":tab.color+"22", color:dashTaskTab===tab.key?"#fff":tab.color, borderRadius:"999px", padding:"0 5px", fontSize:"10px", fontWeight:800 }}>{tab.count}</span>
                     </button>
@@ -747,7 +760,7 @@ export default function Dashboard() {
               {completionRate >= 70 && <span className="db-ai-good"> 🎉 On track!</span>}
             </div>
             <div className="db-ai-stats">
-              {[{l:"Todo",v:summary.todoTasks||0,c:"#6366f1"},{l:"Progress",v:summary.inProgressTasks||0,c:"#f59e0b"},{l:"Done",v:summary.doneTasks||0,c:"#10b981"}].map(s=>(
+              {[{l:"Todo",v:summary.todoTasks||0,c:"var(--viz-todo)"},{l:"Progress",v:summary.inProgressTasks||0,c:"var(--viz-progress)"},{l:"Done",v:summary.doneTasks||0,c:"var(--viz-done)"}].map(s=>(
                 <div key={s.l} className="db-ai-stat" onClick={() => navigate("/tasks")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate("/tasks"))?.(e); } }}>
                   <div className="db-ai-stat-val" style={{color:s.c}}>{s.v}</div>
                   <div className="db-ai-stat-lbl">{s.l}</div>
@@ -807,7 +820,7 @@ export default function Dashboard() {
           <div className="db-compact-list">
             {teamTiles.map(t=><div key={t.to} className="db-compact-item" onClick={() => navigate(t.to)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate(t.to))?.(e); } }}><span className="db-compact-icon"><t.Icon size={15} /></span><span className="db-compact-name">{t.label}</span><span className="db-compact-sub">{t.sub}</span></div>)}
           </div>
-          <div className="db-online-row"><span className="db-live-dot" /><span style={{fontSize:"var(--text-xs)",color:"#10b981",fontWeight:600}}>Team active</span><button className="db-link" style={{marginLeft:"auto"}} onClick={() => navigate("/team")}>See all →</button></div>
+          <div className="db-online-row"><span className="db-live-dot" /><span style={{fontSize:"var(--text-xs)",color:"var(--success)",fontWeight:600}}>Team active</span><button className="db-link" style={{marginLeft:"auto"}} onClick={() => navigate("/team")}>See all →</button></div>
         </div>
         <div className="db-card">
           <div className="db-card-header"><span className="db-card-title"><Settings size={13} /> CONFIGURE</span></div>

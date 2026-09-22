@@ -45,6 +45,18 @@
   --purple: #7C5CBF;
   --info: var(--brand-500);
 
+  /* Data-viz categorical palette — fixed roles, not "whichever hex was
+     closest to hand". Dashboards/charts had accumulated 7+ unrelated
+     hues (bare #6366f1/#f59e0b/#10b981/#8b5cf6/#ef4444/#ec4899/#d97706)
+     assigned ad hoc per component; this is the one set every chart/status
+     indicator should draw from, so the same category (e.g. "in progress")
+     is always the same color everywhere it appears. */
+  --viz-todo:     var(--brand-500);   /* not-yet-started */
+  --viz-progress: var(--warning);     /* active/in-progress */
+  --viz-done:     var(--success);     /* complete */
+  --viz-overdue:  var(--danger);      /* needs attention */
+  --viz-goal:     var(--purple);      /* goals — kept distinct from tasks/projects */
+
   /*  Surfaces — neutral, not hue-tinted (previously a pale sky-blue tint
      on every page background, which read as decorative branding rather
      than a working surface) */
@@ -84,19 +96,51 @@
   --ai-card-btn:         var(--brand-500);
   --border-focus: var(--brand-500);
 
-  /*  Shadows — neutral (grayscale), not tinted to the brand hue. A
-     colored/glowing shadow under every card is one of the more
-     recognizable "generated SaaS" tells; enterprise tools read calmer
-     with plain, low-opacity black shadows used sparingly. */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.03);
+  /*  Shadows — neutral (grayscale), not tinted to the brand hue — and a
+     felt elevation scale, not a decorative one. Each step pairs a soft
+     ambient falloff with a tighter contact shadow from one consistent
+     light source (above), so nearer tiers read as nearer rather than
+     just "more blur". Previous values (0.04-0.07 opacity) were correct
+     in spirit but too faint to actually register against a near-white
+     page — Tier 1 (cards, sidebar) needs to be *seen*, not just
+     technically present. Always pair with a 1px border in the component
+     itself: the border gives the edge, the shadow gives the lift — that
+     combination is what keeps this from reading as glassmorphism/blur,
+     which has lift with no firm edge. */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.09), 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-md:
-    0 2px 6px -1px rgba(15, 23, 42, 0.07), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+    0 3px 8px -2px rgba(15, 23, 42, 0.12), 0 1px 3px -1px rgba(15, 23, 42, 0.07);
   --shadow-lg:
-    0 8px 16px -4px rgba(15, 23, 42, 0.09), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
+    0 10px 20px -6px rgba(15, 23, 42, 0.16), 0 3px 8px -3px rgba(15, 23, 42, 0.08);
   --shadow-xl:
-    0 16px 28px -6px rgba(15, 23, 42, 0.12),
-    0 6px 10px -4px rgba(15, 23, 42, 0.06);
+    0 20px 32px -8px rgba(15, 23, 42, 0.22),
+    0 8px 12px -6px rgba(15, 23, 42, 0.1);
+
+  /*  Elevation tiers — what each shadow step MEANS, so components
+     reference a role ("this is a floating surface") instead of picking a
+     shadow size by feel. Every raised/floating element in the app maps
+     to exactly one of these four; nothing gets a one-off shadow value.
+       Tier 1  Surface   cards, sidebar, table rows        — sits on the page
+       Tier 2  Raised    topbar, dropdowns, popovers        — nearer than Tier 1
+       Tier 3  Overlay   modals, drawers, command palette   — in front of everything
+       Tier 4  Transient toasts, tooltips, context menus    — Tier 3 weight, arrives with motion */
+  --elevation-1: var(--shadow-sm);
+  --elevation-2: var(--shadow-md);
+  --elevation-3: var(--shadow-xl);
+  --elevation-4: var(--shadow-xl);
+
+  /* Canvas vs surface — a real background step (not the ~2% difference
+     --bg-page/--bg-card had before) so a card reads as a distinct object
+     sitting on the page even before its shadow is noticed. */
+  --bg-canvas: #F3F4F8;
+  --surface-1: #ffffff;   /* cards, list rows */
+  --surface-2: #ffffff;   /* topbar, dropdowns — same fill in light mode, differentiated by --elevation-2's tighter shadow; dark theme gives this its own step */
+
+  /* Motion — used for state transitions only (hover/press/open/close),
+     never as a page-load/scroll-triggered flourish. */
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms cubic-bezier(0.2, 0, 0, 1);
 
 
   /*  Typography  */

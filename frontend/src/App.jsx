@@ -57,11 +57,11 @@ const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const AISettings = lazy(() => import("./pages/AISettings"));
-import ThemeSwitcher from "./components/ThemeSwitcher";
-import FontSwitcher from "./components/FontSwitcher";
-import { initTheme } from "./utils/themeUtils";
-import { initFont } from "./utils/fontUtils";
-import { initDesign } from "./utils/designUtils";
+// ThemeSwitcher (named color themes), FontSwitcher, and DesignSwitcher (50
+// built-in skins + a custom color-picker) removed — a product with a fixed,
+// deliberate visual identity doesn't let every viewer swap it out at
+// runtime; see the design-system redesign notes. ThemeToggle (real
+// light/dark only) is the one appearance control that remains.
 import HelpGuide from "./components/HelpGuide";
 import ChatBot from "./components/ChatBot";
 const Licensing = lazy(() => import("./pages/Licensing"));
@@ -376,7 +376,9 @@ function AppShell() {
     overdue: 0, today: 0, inProgress: 0, overdueProjects: 0,
   });
 
-  useEffect(() => { initTheme(); initFont(); initDesign(); }, []);
+  // Multi-skin init calls (initTheme/initFont/initDesign) removed along
+  // with the switcher components above — nothing to re-apply from
+  // localStorage now that there's one fixed visual identity.
 
   // ── Register service worker (prod) / unregister (dev) ───────
   useEffect(() => {
@@ -544,8 +546,6 @@ function AppShell() {
                   <LiveClock />
                   <ConnectionStatus />
                   <NotificationBell />
-                  <ThemeSwitcher />
-                  <FontSwitcher />
                   <HelpGuide />
                   <ThemeToggle />
                   <div className="topbar-divider-v" />
