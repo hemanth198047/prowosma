@@ -1,6 +1,5 @@
 package com.prowosma.backend.config;
 
-import com.prowosma.backend.config.tenant.TenantViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -133,17 +132,12 @@ public class GlobalExceptionHandler {
         ));
     }
 
-    /**
-     * A write that would have overwritten another workspace's record (blocked by the
-     * tenant guard). Answered exactly like a record that does not exist, so it can't be
-     * used to find out which ids belong to other workspaces.
-     */
-    @ExceptionHandler(TenantViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleTenantViolation(TenantViolationException ex) {
-        log.warn("Blocked cross-workspace write: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(
-            "NOT_FOUND",
-            "Resource not found",
+    /** register() found a real, already-password-protected account for this email - 409 with an actionable message, not the generic 500 the bare RuntimeException handler below would otherwise give it. See AuthService.hasUsablePassword. */
+    @ExceptionHandler(com.prowosma.backend.service.AuthService.EmailAlreadyRegisteredException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyRegistered(com.prowosma.backend.service.AuthService.EmailAlreadyRegisteredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(
+            "EMAIL_ALREADY_REGISTERED",
+            ex.getMessage(),
             null
         ));
     }

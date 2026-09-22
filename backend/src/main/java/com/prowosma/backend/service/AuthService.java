@@ -25,18 +25,35 @@ public class AuthService {
     private final WorkspaceContext    workspaceContext;
     private final ActivityLogService  activityLogService;
     private final PasswordPolicyService passwordPolicyService;
-    private final TwoFactorService twoFactorService;
     @Lazy
     private final com.prowosma.backend.controller.SecurityController securityController;
 
     public Map<String, Object> register(String name, String email, String password,
                                          String ipAddress, String userAgent) {
-        if (userRepository.existsByEmail(email))
-            throw new RuntimeException("Email already registered");
+        // A User row existing is not by itself proof someone already
+        // "registered" in any way that should block this. Several other
+        // paths create a User row with no usable local password — the
+        // magic-link flow pre-creates one for an email that just asked for
+        // a link (see AuthEnhancementsController.sendMagicLink), and SSO
+        // JIT-provisions one with password "" (see loginOrCreateSsoUser).
+        // Blocking register() on existsByEmail() alone turns either of
+        // those into a dead end: the person is shown "email already
+        // registered" for an account they never knowingly created and have
+        // no password for. Only a row with a real, usable password
+        // represents a genuine prior registration.
+        User existing = userRepository.findByEmail(email).orElse(null);
+        if (existing != null && hasUsablePassword(existing))
+            throw new EmailAlreadyRegisteredException(
+                    "This email is already registered. Please log in instead.");
+
         // No workspace exists yet at registration time, so this uses the
         // service's built-in default policy (see PasswordPolicyService).
         passwordPolicyService.validate(password, null);
-        User user = new User();
+
+        // Reuse the existing (passwordless) row rather than trying to
+        // insert a second User document for the same email — claim it by
+        // setting a real password on it instead.
+        User user = existing != null ? existing : new User();
         user.setName(name);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
@@ -48,6 +65,18 @@ public class AuthService {
                 "WORKSPACE_JOINED", null, email, email,
                 null, null, null, ipAddress, userAgent);
         return buildResponse(user, token);
+    }
+
+    /**
+     * Whether this User row represents an account someone can actually log
+     * into with a password today — as opposed to a placeholder row created
+     * by magic-link-request or SSO JIT-provisioning, which intentionally
+     * leave password null/blank. Used to decide whether "email already
+     * exists" should really mean "already registered" (register(), and the
+     * accountExists flag InvitationController exposes to AcceptInvite.jsx).
+     */
+    public boolean hasUsablePassword(User user) {
+        return user.getPassword() != null && !user.getPassword().isBlank();
     }
 
     // Backward-compat overload
@@ -80,16 +109,6 @@ public class AuthService {
                     null, null, null, ipAddress, userAgent);
             throw new PasswordExpiredException(
                     "Your password has expired and must be reset before you can log in.");
-        }
-
-        if (user.isTwoFactorEnabled() && user.getTwoFactorSecret() != null) {
-            // The password alone is not enough for this account: no session and no access token yet,
-            // only a short-lived challenge that is worth something together with a valid code
-            // (see completeTwoFactorLogin). Before this, 2FA was switchable but never asked for.
-            Map<String, Object> challenge = new HashMap<>();
-            challenge.put("requiresTwoFactor", true);
-            challenge.put("twoFactorToken", jwtUtil.generateTwoFactorChallenge(email));
-            return challenge;
         }
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
@@ -125,6 +144,15 @@ public class AuthService {
         public InvalidCredentialsException(String message) { super(message); }
     }
 
+    /** Thrown by register() when the email belongs to an account that
+     *  genuinely already has a usable password — see hasUsablePassword().
+     *  Distinct from the generic RuntimeException handler (which maps to
+     *  a sanitised 500 "unexpected error") so this maps to 409 with a
+     *  real, actionable message instead. */
+    public static class EmailAlreadyRegisteredException extends RuntimeException {
+        public EmailAlreadyRegisteredException(String message) { super(message); }
+    }
+
     /**
      * Resets an expired password. Doesn't require a JWT (the user can't get
      * one - that's the whole problem) - identity is proven by the old
@@ -150,63 +178,6 @@ public class AuthService {
 
         // Log them in immediately with the new password, same as a normal login flow.
         return login(email, newPassword, ipAddress, userAgent);
-    }
-
-    /**
-     * Second step of a login for an account with 2FA: the challenge from {@link #login} plus either
-     * a code from the authenticator app or an unused backup code.
-     *
-     * A code that has already been used is refused (RFC 6238 section 5.2), and after five wrong
-     * codes the account's code entry is locked for 15 minutes, so the six digits can't be guessed.
-     */
-    public Map<String, Object> completeTwoFactorLogin(String challengeToken, String code,
-                                                      String ipAddress, String userAgent) {
-        String email = jwtUtil.extractTwoFactorChallengeEmail(challengeToken);
-        User user = email == null ? null : userRepository.findByEmail(email).orElse(null);
-        if (user == null || !user.isTwoFactorEnabled() || user.getTwoFactorSecret() == null) {
-            throw new InvalidCredentialsException("This sign-in has expired. Please log in again.");
-        }
-        twoFactorService.requireNotLocked(user);
-
-        boolean accepted = false;
-        boolean usedBackupCode = false;
-        var step = twoFactorService.matchStep(user.getTwoFactorSecret(), code);
-        if (step.isPresent()) {
-            if (step.getAsLong() > user.getTwoFactorLastStep()) {
-                user.setTwoFactorLastStep(step.getAsLong());
-                accepted = true;
-            }                                                     // else: a code that was already used
-        } else {
-            java.util.List<String> remaining = com.prowosma.backend.auth.BackupCodes.consume(user.getBackupCodes(), code);
-            if (remaining != null) {
-                user.setBackupCodes(remaining);
-                accepted = true;
-                usedBackupCode = true;
-            }
-        }
-
-        if (!accepted) {
-            twoFactorService.recordFailure(user);
-            userRepository.save(user);
-            activityLogService.logFull("SECURITY", user.getId(), email,
-                    "LOGIN_2FA_FAILED", null, null, email,
-                    null, null, null, ipAddress, userAgent);
-            throw new InvalidCredentialsException("Invalid verification code");
-        }
-
-        twoFactorService.recordSuccess(user);
-        userRepository.save(user);
-        if (usedBackupCode) {
-            activityLogService.logFull("SECURITY", user.getId(), email,
-                    "LOGIN_2FA_BACKUP_CODE_USED", null, null, email,
-                    null, null, null, ipAddress, userAgent);
-        }
-        String sessionId = safeRecordSession(user, ipAddress, userAgent);
-        String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);
-        activityLogService.logFull("SECURITY", user.getId(), email,
-                "LOGIN_SUCCESS", null, null, email,
-                null, null, null, ipAddress, userAgent);
-        return buildResponse(user, token);
     }
 
     public Map<String, Object> login(String email, String password) {
@@ -247,7 +218,7 @@ public class AuthService {
 
     // ── SSO helpers (SAML 2.0 / OIDC) ────────────────────────────
 
-    public java.util.Map<String, Object> loginOrCreateSsoUser(String email, String name) {
+    public Map<String, Object> loginOrCreateSsoUser(String email, String name) {
         // Find existing user or create one
         User user;
         try {
@@ -266,8 +237,8 @@ public class AuthService {
         return buildResponse(user, token);
     }
 
-    public java.util.List<java.util.Map<String, String>> getConfiguredSsoProviders() {
-        java.util.List<java.util.Map<String, String>> providers = new java.util.ArrayList<>();
+    public java.util.List<Map<String, String>> getConfiguredSsoProviders() {
+        java.util.List<Map<String, String>> providers = new java.util.ArrayList<>();
         // Read from environment/properties to determine which providers are configured.
         // Mirrors SamlConfig's own "is this a real, usable URL" check (blank or an
         // obvious placeholder value means the provider isn't really configured yet),
@@ -278,10 +249,10 @@ public class AuthService {
         String customUrl = env.getProperty("saml.idp.custom.metadata-url", "");
         String customId  = env.getProperty("saml.idp.custom.registration-id", "custom");
 
-        if (isUsable(oktaUrl))   providers.add(java.util.Map.of("id","okta",   "label","Okta",             "loginUrl","/saml2/authenticate/okta"));
-        if (isUsable(azureUrl))  providers.add(java.util.Map.of("id","azure",  "label","Microsoft Azure",  "loginUrl","/saml2/authenticate/azure"));
-        if (isUsable(googleUrl)) providers.add(java.util.Map.of("id","google", "label","Google Workspace", "loginUrl","/saml2/authenticate/google"));
-        if (isUsable(customUrl)) providers.add(java.util.Map.of("id",customId,"label","Company SSO",       "loginUrl","/saml2/authenticate/"+customId));
+        if (isUsable(oktaUrl))   providers.add(Map.of("id","okta",   "label","Okta",             "loginUrl","/saml2/authenticate/okta"));
+        if (isUsable(azureUrl))  providers.add(Map.of("id","azure",  "label","Microsoft Azure",  "loginUrl","/saml2/authenticate/azure"));
+        if (isUsable(googleUrl)) providers.add(Map.of("id","google", "label","Google Workspace", "loginUrl","/saml2/authenticate/google"));
+        if (isUsable(customUrl)) providers.add(Map.of("id",customId,"label","Company SSO",       "loginUrl","/saml2/authenticate/"+customId));
         return providers;
     }
 

@@ -1,6 +1,7 @@
 package com.prowosma.backend.controller;
 
 import com.prowosma.backend.config.WorkspaceContext;
+import com.prowosma.backend.service.AuthService;
 import com.prowosma.backend.service.BillingService;
 import com.prowosma.backend.service.InvitationService;
 import com.prowosma.backend.model.Invitation;
@@ -65,6 +66,7 @@ public class InvitationController {
     private final WorkspaceContext     workspaceContext;
     private final InvitationService    invitationService;
     private final BillingService       billingService;
+    private final AuthService          authService;
 
     // ── List ─────────────────────────────────────────────────────
 
@@ -266,7 +268,7 @@ public class InvitationController {
         return invitationRepository.findByToken(token).<ResponseEntity<?>>map(inv -> {
             if ("REVOKED".equals(inv.getStatus()))
                 return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    java.util.Map.of("error", "Invitation has been revoked"));
+                    Map.of("error", "Invitation has been revoked"));
             // ACCEPTED does NOT automatically mean this link is dead. It
             // only means that the LAST time someone went through this
             // flow, the invitation record got marked accepted — that can
@@ -279,23 +281,19 @@ public class InvitationController {
             // of that, this falls through and returns the normal invite
             // payload below so the person can just... finish joining.
             if ("ACCEPTED".equals(inv.getStatus()) && invitationService.isGenuinelyAlreadyMember(inv))
-                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                return ResponseEntity.status(HttpStatus.CONFLICT)
                     .cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    java.util.Map.of(
+                    Map.of(
                         "error", "You're already part of " + (inv.getWorkspaceName() != null ? inv.getWorkspaceName() : "this workspace") + ". Please log in instead.",
                         "alreadyMember", true,
-                        "email", inv.getEmail(),
-                        // Lets the AcceptInvite page name the workspace on its
-                        // "you're already a member" screen without having to
-                        // parse it back out of the message above.
-                        "workspaceName", inv.getWorkspaceName() != null ? inv.getWorkspaceName() : ""));
-            if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+                        "email", inv.getEmail()));
+            if (inv.getExpiresAt() != null && inv.getExpiresAt().isBefore(LocalDateTime.now())) {
                 inv.setStatus("EXPIRED");
                 invitationRepository.save(inv);
                 return ResponseEntity.badRequest().cacheControl(org.springframework.http.CacheControl.noStore()).body(
-                    java.util.Map.of("error", "Invitation has expired"));
+                    Map.of("error", "Invitation has expired"));
             }
-            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            Map<String, Object> result = new HashMap<>();
             result.put("email",         inv.getEmail());
             result.put("workspaceId",   inv.getWorkspaceId());
             result.put("workspaceName", inv.getWorkspaceName() != null ? inv.getWorkspaceName() : "");
@@ -308,7 +306,18 @@ public class InvitationController {
             // created the user (e.g. register() succeeded but a later step in
             // the same flow failed), since retrying "New Account" would just
             // hit a confusing "Email already registered" error instead.
-            result.put("accountExists", userRepository.existsByEmail(inv.getEmail()));
+            //
+            // Deliberately NOT plain existsByEmail(): a User row can exist
+            // with no usable password — planted by requesting a magic link
+            // for this email, or by SSO JIT-provisioning — without the
+            // person having ever actually registered. Defaulting such a
+            // case to "login" mode would send them into a password field
+            // for a password that was never set, with no way to know that.
+            // See AuthService.hasUsablePassword / AuthService.register.
+            boolean accountExists = userRepository.findByEmail(inv.getEmail())
+                    .map(authService::hasUsablePassword)
+                    .orElse(false);
+            result.put("accountExists", accountExists);
             return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(result);
         }).orElse(ResponseEntity.notFound().cacheControl(org.springframework.http.CacheControl.noStore()).build());
     }

@@ -40,25 +40,38 @@ public class AuthEnhancementsController {
         String email = body.get("email");
         if (email == null || email.isBlank()) return ResponseEntity.badRequest().build();
 
-        String token = UUID.randomUUID().toString().replace("-","");
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(15);
+        // Only send (and only touch the DB) for an email that's already a
+        // real account. Auto-creating a placeholder User here — as this
+        // used to do via orElseGet — silently plants a real, permanent,
+        // passwordless account for ANY email someone types into this box,
+        // even a pure typo or someone else's address. That has two real
+        // consequences: (1) it makes existsByEmail("that address") true
+        // forever after, so if the real owner later tries to register or
+        // accept a workspace invite with that email, they get told "email
+        // already registered" for an account they never made and have no
+        // password for; (2) it's a way to plant an account for an email
+        // you don't own. The response is identical either way (below) so
+        // this still doesn't leak whether the email is registered.
+        User user = userRepo.findByEmail(email).orElse(null);
+        if (user != null) {
+            String token = UUID.randomUUID().toString().replace("-","");
+            LocalDateTime expiry = LocalDateTime.now().plusMinutes(15);
+            user.setMagicLinkToken(token);
+            user.setMagicLinkExpiry(expiry);
+            userRepo.save(user);
 
-        User user = userRepo.findByEmail(email).orElseGet(() -> {
-            User u = new User(); u.setEmail(email); u.setName(email);
-            u.setRole("USER"); u.setAuthProvider("LOCAL"); return u;
-        });
-        user.setMagicLinkToken(token);
-        user.setMagicLinkExpiry(expiry);
-        userRepo.save(user);
-
-        String link = frontendUrl + "/auth/magic?token=" + token;
-        emailService.sendHtmlEmail(email, user.getName(),
-            "🔑 Your Prowosma login link",
-            "<p>Click below to log in — link expires in 15 minutes:</p>"
-            + "<a href='" + link + "' style='background:#6366f1;color:#fff;padding:12px 24px;"
-            + "border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;"
-            + "margin:12px 0'>Log in to Prowosma →</a>"
-            + "<p style='color:#9ca3af;font-size:12px;'>If you didn't request this, ignore this email.</p>");
+            String link = frontendUrl + "/auth/magic?token=" + token;
+            emailService.sendHtmlEmail(email, user.getName(),
+                "🔑 Your Prowosma login link",
+                "<p>Click below to log in — link expires in 15 minutes:</p>"
+                + "<a href='" + link + "' style='background:#6366f1;color:#fff;padding:12px 24px;"
+                + "border-radius:8px;text-decoration:none;font-weight:700;display:inline-block;"
+                + "margin:12px 0'>Log in to Prowosma →</a>"
+                + "<p style='color:#9ca3af;font-size:12px;'>If you didn't request this, ignore this email.</p>");
+        }
+        // else: no account for this email — say nothing, do nothing. Same
+        // "sent" response either way, so this can't be used to probe which
+        // emails have accounts.
 
         return ResponseEntity.ok(Map.of("sent", true, "email", email, "expiresIn", "15 minutes"));
     }
@@ -66,7 +79,7 @@ public class AuthEnhancementsController {
     @PostMapping("/magic-link/verify")
     public ResponseEntity<Map<String, Object>> verifyMagicLink(@RequestBody Map<String, String> body) {
         String token = body.get("token");
-        java.util.Optional<User> found = userRepo.findByMagicLinkToken(token)
+        Optional<User> found = userRepo.findByMagicLinkToken(token)
             .filter(u -> u.getMagicLinkExpiry() != null
                 && u.getMagicLinkExpiry().isAfter(LocalDateTime.now()));
         if (found.isEmpty()) {
@@ -77,7 +90,7 @@ public class AuthEnhancementsController {
         userRepo.save(u);
         String sessionId = null;
         try { sessionId = securityController.recordSessionForUser(u, null, null, true); } catch (Exception ignored) {}
-        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         result.put("token", sessionId != null ? jwtUtil.generateToken(u.getEmail(), sessionId) : jwtUtil.generateToken(u.getEmail()));
         result.put("email", u.getEmail());
         result.put("name",  u.getName());
@@ -99,7 +112,7 @@ public class AuthEnhancementsController {
     @PostMapping("/refresh")
     public ResponseEntity<Map<String, Object>> refreshToken(@RequestBody Map<String, String> body) {
         String refreshToken = body.get("refreshToken");
-        java.util.Optional<User> rfound = userRepo.findByRefreshToken(refreshToken)
+        Optional<User> rfound = userRepo.findByRefreshToken(refreshToken)
             .filter(u -> u.getRefreshTokenExpiry() != null
                 && u.getRefreshTokenExpiry().isAfter(LocalDateTime.now()));
         if (rfound.isEmpty()) {
@@ -113,7 +126,7 @@ public class AuthEnhancementsController {
         ru.setRefreshToken(newRefresh);
         ru.setRefreshTokenExpiry(LocalDateTime.now().plusDays(30));
         userRepo.save(ru);
-        Map<String, Object> rtok = new java.util.LinkedHashMap<>();
+        Map<String, Object> rtok = new LinkedHashMap<>();
         rtok.put("token", newJwt); rtok.put("refreshToken", newRefresh);
         return ResponseEntity.ok(rtok);
     }
@@ -123,7 +136,7 @@ public class AuthEnhancementsController {
     public ResponseEntity<Map<String, Object>> sendEmailOtp(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String otp   = String.format("%06d", new SecureRandom().nextInt(1_000_000));
-        java.util.Optional<User> otp_user = userRepo.findByEmail(email);
+        Optional<User> otp_user = userRepo.findByEmail(email);
         if (otp_user.isEmpty()) return ResponseEntity.<Map<String,Object>>notFound().build();
         User ou = otp_user.get();
         ou.setEmailOtpCode(otp);
@@ -134,7 +147,7 @@ public class AuthEnhancementsController {
             + "<div style='font-size:32px;font-weight:900;letter-spacing:8px;color:#6366f1;"
             + "padding:16px;background:#eef2ff;border-radius:8px;display:inline-block'>"
             + otp + "</div><p style='color:#9ca3af;font-size:12px;'>Expires in 10 minutes.</p>");
-        Map<String, Object> otpR = new java.util.LinkedHashMap<>();
+        Map<String, Object> otpR = new LinkedHashMap<>();
         otpR.put("sent", true); otpR.put("email", email);
         return ResponseEntity.ok(otpR);
     }
@@ -149,7 +162,7 @@ public class AuthEnhancementsController {
                 && u.getEmailOtpExpiry().isAfter(LocalDateTime.now()))
             .map(u -> {
                 u.setEmailOtpCode(null); u.setEmailOtpExpiry(null); userRepo.save(u);
-                Map<String, Object> ok = new java.util.LinkedHashMap<>();
+                Map<String, Object> ok = new LinkedHashMap<>();
                 ok.put("verified", true);
                 return ResponseEntity.<Map<String,Object>>ok(ok);
             })
@@ -184,7 +197,7 @@ public class AuthEnhancementsController {
             .map(u -> {
                 u.getBackupCodes().remove(code); // each code used once
                 userRepo.save(u);
-                Map<String, Object> r = new java.util.LinkedHashMap<>();
+                Map<String, Object> r = new LinkedHashMap<>();
                 r.put("verified", true); r.put("remainingCodes", u.getBackupCodes().size());
                 return ResponseEntity.<Map<String,Object>>ok(r);
             })
@@ -222,7 +235,7 @@ public class AuthEnhancementsController {
     }
 
     private Map<String, Object> buildErr(String msg) {
-        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        Map<String, Object> m = new LinkedHashMap<>();
         m.put("error", msg);
         return m;
     }
