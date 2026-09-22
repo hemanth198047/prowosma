@@ -19,21 +19,21 @@
 .lic-header-badge {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
-  color: #6366f1; background: rgba(99,102,241,0.1);
-  padding: 5px 14px; border-radius: 99px; border: 1px solid rgba(99,102,241,0.2);
+  color: var(--brand-500); background: rgba(99,102,241,0.1);
+  padding: 5px 14px; border-radius: var(--radius-full); border: 1px solid rgba(99,102,241,0.2);
   margin-bottom: 16px;
 }
 
 .lic-page-title {
   font-size: 36px; font-weight: 900; letter-spacing: -0.8px;
   color: var(--gray-900); margin: 0 0 12px;
-  background: linear-gradient(135deg,#4f46e5,#7c3aed,#0891b2);
+  background: linear-gradient(135deg,var(--brand-700),var(--purple),#0891b2);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 [data-theme="dark"] .lic-page-title {
-  background: linear-gradient(135deg,#818cf8,#a78bfa,#38bdf8);
+  background: linear-gradient(135deg,var(--brand-400),var(--purple),#38bdf8);
   -webkit-background-clip: text; background-clip: text;
 }
 
@@ -41,20 +41,20 @@
 /* Billing toggle */
 .lic-billing-toggle {
   display: inline-flex; border: 1px solid var(--border);
-  border-radius: 99px; padding: 3px; background: var(--gray-50); gap: 2px;
+  border-radius: var(--radius-full); padding: 3px; background: var(--gray-50); gap: 2px;
 }
 
 [data-theme="dark"] .lic-billing-toggle { background: rgba(255,255,255,0.04); }
 
 .lic-bill-btn {
-  padding: 7px 20px; border-radius: 99px; font-size: 13px; font-weight: 600;
+  padding: 7px 20px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600;
   border: none; cursor: pointer; background: transparent; color: var(--gray-500);
   transition: all 0.15s; display: flex; align-items: center; gap: 7px;
 }
 
 .lic-save-badge {
-  font-size: 10px; font-weight: 800; background: #10b981; color: #fff;
-  padding: 2px 6px; border-radius: 99px;
+  font-size: 10px; font-weight: 800; background: var(--success); color: #fff;
+  padding: 2px 6px; border-radius: var(--radius-full);
 }
 /*  Plan cards  */
 .lic-plans-grid {
@@ -76,7 +76,7 @@
 .lic-plan-badge {
   position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
   font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.05em;
-  padding: 4px 14px; border-radius: 99px; white-space: nowrap;
+  padding: 4px 14px; border-radius: var(--radius-full); white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 /* Plan header */
@@ -142,7 +142,7 @@
   border: 2px solid var(--border); font-weight: 700;
 }
 
-.lic-cta-outline:hover { background: var(--gray-50); border-color: #6366f1; color: #6366f1; }
+.lic-cta-outline:hover { background: var(--gray-50); border-color: var(--brand-500); color: var(--brand-500); }
 
 [data-theme="dark"] .lic-cta-outline { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
 /* On the dark navy CTA banner, outline button must always be white */
@@ -161,18 +161,18 @@
 
 .lic-compare-btn {
   background: transparent; border: 1px solid var(--border);
-  color: #6366f1; font-size: 13px; font-weight: 700;
-  padding: 9px 22px; border-radius: 99px; cursor: pointer;
+  color: var(--brand-500); font-size: 13px; font-weight: 700;
+  padding: 9px 22px; border-radius: var(--radius-full); cursor: pointer;
   transition: all 0.14s;
 }
 
-.lic-compare-btn:hover { background: rgba(99,102,241,0.06); border-color: #6366f1; }
+.lic-compare-btn:hover { background: rgba(99,102,241,0.06); border-color: var(--brand-500); }
 /*  Comparison table  */
 .lic-compare-wrap { overflow-x: auto; padding: 0 24px; }
 
 .lic-ct-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; }
 
-.lic-check { color: #10b981; font-weight: 800; font-size: 14px; }
+.lic-check { color: var(--success); font-weight: 800; font-size: 14px; }
 
 .lic-cross { color: var(--gray-300); font-size: 14px; }
 
@@ -198,7 +198,7 @@
   border-radius: 12px; padding: 14px 16px; transition: all 0.14s;
 }
 
-.lic-addon-card:hover { border-color: #6366f1; box-shadow: 0 4px 16px rgba(99,102,241,0.1); }
+.lic-addon-card:hover { border-color: var(--brand-500); box-shadow: 0 4px 16px rgba(99,102,241,0.1); }
 
 [data-theme="dark"] .lic-addon-card { background: var(--bg-card); }
 
@@ -214,7 +214,7 @@
 
 .lic-addon-price { flex-shrink: 0; text-align: right; }
 
-.lic-addon-amount { font-size: 18px; font-weight: 900; color: #6366f1; }
+.lic-addon-amount { font-size: 18px; font-weight: 900; color: var(--brand-500); }
 
 .lic-addon-unit { font-size: 11px; color: var(--gray-400); }
 /*  Trust bar  */
@@ -253,7 +253,7 @@
 
 [data-theme="dark"] .lic-faq-q:hover { background: rgba(255,255,255,0.04); }
 
-.lic-faq-arrow { font-size: 11px; color: #6366f1; flex-shrink: 0; }
+.lic-faq-arrow { font-size: 11px; color: var(--brand-500); flex-shrink: 0; }
 
 .lic-faq-a {
   padding: 0 18px 16px;
@@ -331,13 +331,13 @@
   flex: 1;
   height: 6px;
   background: var(--color-border-tertiary);
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .lic-feat-summary-fill {
   height: 100%;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   transition: width 0.6s ease;
 }
 
@@ -434,7 +434,7 @@
 }
 
 .lic-addon-card:hover {
-  border-color: #6366f1;
+  border-color: var(--brand-500);
   box-shadow: 0 4px 16px rgba(99,102,241,0.12);
   transform: translateY(-2px);
 }
@@ -452,7 +452,7 @@
 .lic-addon-cta {
   font-size: 11px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--brand-500);
   background: rgba(99,102,241,0.08);
   border: 1px solid rgba(99,102,241,0.2);
   border-radius: 6px;
@@ -462,15 +462,15 @@
 }
 
 .lic-addon-card:hover .lic-addon-cta {
-  background: #6366f1;
+  background: var(--brand-500);
   color: #fff;
-  border-color: #6366f1;
+  border-color: var(--brand-500);
 }
 
 .lic-addon-added-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #10b981;
+  color: var(--success);
   background: rgba(16,185,129,0.1);
   border: 1px solid rgba(16,185,129,0.25);
   border-radius: 6px;
@@ -493,7 +493,7 @@
 
 .lic-modal {
   background: var(--bg-card, #fff);
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border, var(--border));
   border-radius: 20px;
   width: 100%;
   max-width: 460px;
@@ -503,7 +503,7 @@
 }
 
 [data-theme="dark"] .lic-modal {
-  background: #0f172a;
+  background: var(--gray-900);
   border-color: rgba(255,255,255,0.1);
 }
 
@@ -512,8 +512,8 @@
   align-items: center;
   gap: 12px;
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
-  background: var(--gray-50, #f8fafc);
+  border-bottom: 1px solid var(--border, var(--border));
+  background: var(--gray-50, var(--gray-50));
 }
 
 [data-theme="dark"] .lic-modal-header {
@@ -528,31 +528,31 @@
 .lic-modal-title {
   font-size: 17px;
   font-weight: 800;
-  color: var(--gray-900, #0f172a);
+  color: var(--gray-900, var(--gray-900));
   letter-spacing: -0.3px;
 }
 
 [data-theme="dark"] .lic-modal-title { color: rgba(255,255,255,0.92); }
 
-.lic-modal-subtitle { font-size: 11px; color: var(--gray-400, #94a3b8); margin-top: 2px; }
+.lic-modal-subtitle { font-size: 11px; color: var(--gray-400, var(--gray-400)); margin-top: 2px; }
 
 .lic-modal-close {
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: var(--gray-100, #f1f5f9);
+  background: var(--gray-100, var(--gray-100));
   border: none; cursor: pointer;
-  font-size: 14px; color: var(--gray-500, #64748b);
+  font-size: 14px; color: var(--gray-500, var(--gray-500));
   display: flex; align-items: center; justify-content: center;
   transition: all 0.12s; flex-shrink: 0;
 }
 
-.lic-modal-close:hover { background: var(--gray-200, #e2e8f0); color: var(--gray-800); }
+.lic-modal-close:hover { background: var(--gray-200, var(--border)); color: var(--gray-800); }
 
 [data-theme="dark"] .lic-modal-close { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
 
 .lic-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
 
-.lic-modal-desc { font-size: 13px; color: var(--gray-600, #475569); line-height: 1.6; }
+.lic-modal-desc { font-size: 13px; color: var(--gray-600, var(--gray-600)); line-height: 1.6; }
 
 [data-theme="dark"] .lic-modal-desc { color: rgba(255,255,255,0.65); }
 
@@ -569,12 +569,12 @@
 .lic-modal-price {
   font-size: 32px;
   font-weight: 900;
-  color: #6366f1;
+  color: var(--brand-500);
   letter-spacing: -0.8px;
   line-height: 1;
 }
 
-.lic-modal-price-unit { font-size: 13px; color: var(--gray-400, #94a3b8); }
+.lic-modal-price-unit { font-size: 13px; color: var(--gray-400, var(--gray-400)); }
 
 .lic-modal-features { display: flex; flex-direction: column; gap: 6px; }
 
@@ -583,7 +583,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--gray-400, #94a3b8);
+  color: var(--gray-400, var(--gray-400));
   margin-bottom: 2px;
 }
 
@@ -592,14 +592,14 @@
   align-items: flex-start;
   gap: 8px;
   font-size: 13px;
-  color: var(--gray-700, #334155);
+  color: var(--gray-700, var(--gray-700));
   line-height: 1.4;
 }
 
 [data-theme="dark"] .lic-modal-feat-item { color: rgba(255,255,255,0.75); }
 
 .lic-modal-feat-check {
-  color: #10b981;
+  color: var(--success);
   font-weight: 800;
   font-size: 13px;
   flex-shrink: 0;
@@ -608,12 +608,12 @@
 
 .lic-modal-note {
   font-size: 11px;
-  color: var(--gray-400, #94a3b8);
+  color: var(--gray-400, var(--gray-400));
   line-height: 1.5;
   padding: 10px 12px;
-  background: var(--gray-50, #f8fafc);
+  background: var(--gray-50, var(--gray-50));
   border-radius: 8px;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border, var(--border));
 }
 
 [data-theme="dark"] .lic-modal-note {
@@ -626,8 +626,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px 20px 20px;
-  border-top: 1px solid var(--border, #e2e8f0);
-  background: var(--gray-50, #f8fafc);
+  border-top: 1px solid var(--border, var(--border));
+  background: var(--gray-50, var(--gray-50));
 }
 
 [data-theme="dark"] .lic-modal-footer {
@@ -639,7 +639,7 @@
   text-align: center;
   font-size: 14px;
   font-weight: 700;
-  color: #10b981;
+  color: var(--success);
   padding: 10px;
   background: rgba(16,185,129,0.08);
   border: 1px solid rgba(16,185,129,0.2);
@@ -651,7 +651,7 @@
   width: 100%;
   padding: 13px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, var(--brand-700), var(--purple));
   color: #fff;
   border: none;
   font-size: 14px;
@@ -663,7 +663,7 @@
 }
 
 .lic-modal-btn-primary:hover {
-  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  background: linear-gradient(135deg, var(--brand-700), #6d28d9);
   box-shadow: 0 6px 20px rgba(99,102,241,0.5);
   transform: translateY(-1px);
 }
@@ -673,8 +673,8 @@
   padding: 11px;
   border-radius: 12px;
   background: transparent;
-  color: var(--gray-500, #64748b);
-  border: 1px solid var(--border, #e2e8f0);
+  color: var(--gray-500, var(--gray-500));
+  border: 1px solid var(--border, var(--border));
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -682,8 +682,8 @@
 }
 
 .lic-modal-btn-secondary:hover {
-  background: var(--gray-100, #f1f5f9);
-  color: var(--gray-700, #334155);
+  background: var(--gray-100, var(--gray-100));
+  color: var(--gray-700, var(--gray-700));
 }
 
 [data-theme="dark"] .lic-modal-btn-secondary {

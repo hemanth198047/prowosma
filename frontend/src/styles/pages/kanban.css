@@ -126,11 +126,11 @@
 
 .kanban-wip-badge {
   font-size:10px; font-weight:700; padding:2px 6px;
-  border-radius:99px; white-space:nowrap;
+  border-radius: var(--radius-full); white-space:nowrap;
 }
 
 .kanban-wip-warning {
-  font-size:11px; font-weight:600; color:#ef4444; margin-top:4px;
+  font-size:11px; font-weight:600; color:var(--danger); margin-top:4px;
 }
 
 .kanban-wip-editor {
@@ -165,6 +165,6 @@
 
 .kanban-card-points {
   font-size:10px; font-weight:700; padding:1px 5px;
-  background:rgba(99,102,241,0.1); color:#818cf8;
+  background:rgba(99,102,241,0.1); color:var(--brand-400);
   border-radius:4px;
 }

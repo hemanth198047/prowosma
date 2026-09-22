@@ -8,7 +8,7 @@
    /* = */
 .sop-pending-banner {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px; background: #fef3c7; border: 1px solid #fbbf24;
+  padding: 10px 16px; background: #fef3c7; border: 1px solid var(--warning);
   border-radius: var(--radius-md); font-size: 13px; color: #92400e;
   margin-bottom: 16px;
 }
@@ -65,7 +65,7 @@
 /* SOP card */
 .sop-card {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--brand-500);
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0; overflow: hidden;
 }
 
@@ -101,9 +101,9 @@
   font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
 }
 
-.sop-publish-btn  { background: rgba(6,95,70,0.12); color: #34d399; border-color: #10b981; }
+.sop-publish-btn  { background: rgba(6,95,70,0.12); color: var(--success); border-color: var(--success); }
 
-.sop-publish-btn:hover { background: #10b981; color: #fff; }
+.sop-publish-btn:hover { background: var(--success); color: #fff; }
 
 .sop-archive-btn  { background: var(--gray-100); color: var(--gray-600); border-color: var(--border); }
 
@@ -158,17 +158,17 @@
 
 .sop-revoke-btn   {
   background: none; border: none; cursor: pointer;
-  font-size: 12px; color: #6b7280; text-decoration: underline; margin-left: auto;
+  font-size: 12px; color: var(--gray-500); text-decoration: underline; margin-left: auto;
 }
 
 .sop-ack-btn      {
-  width: 100%; padding: 10px 16px; border: 2px solid #6366f1;
-  border-radius: var(--radius-md); background: #eef2ff; color: #4338ca;
+  width: 100%; padding: 10px 16px; border: 2px solid var(--brand-500);
+  border-radius: var(--radius-md); background: var(--brand-50); color: var(--brand-700);
   font-size: 13px; font-weight: 600; cursor: pointer;
   transition: background .15s, color .15s;
 }
 
-.sop-ack-btn:hover{ background: #6366f1; color: #fff; }
+.sop-ack-btn:hover{ background: var(--brand-500); color: #fff; }
 
 .sop-ack-list     { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 
@@ -214,11 +214,11 @@
   color:var(--gray-400); padding:2px 6px; border-radius:6px;
 }
 /* Dark mode */
-[data-theme="dark"] .sop-pending-banner { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.3); color: #fbbf24; }
+[data-theme="dark"] .sop-pending-banner { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.3); color: var(--warning); }
 
 [data-theme="dark"] .sop-search, [data-theme="dark"] .sop-cat-filter { background: #0a1e35; border-color: #1e3a5a; color: #cce0f0; }
 
-[data-theme="dark"] .sop-card           { background: #071525; border-color: #1e3a5a; border-left-color: #6366f1; }
+[data-theme="dark"] .sop-card           { background: #071525; border-color: #1e3a5a; border-left-color: var(--brand-500); }
 
 [data-theme="dark"] .sop-card-title     { color: #cce0f0; }
 
@@ -238,11 +238,11 @@
 
 [data-theme="dark"] .sop-ack-bar        { background: #1e3a5a; }
 
-[data-theme="dark"] .sop-acked          { background: rgba(16,185,129,.1); color: #34d399; }
+[data-theme="dark"] .sop-acked          { background: rgba(16,185,129,.1); color: var(--success); }
 
-[data-theme="dark"] .sop-ack-btn        { border-color: #6366f1; background: rgba(99,102,241,.1); color: #818cf8; }
+[data-theme="dark"] .sop-ack-btn        { border-color: var(--brand-500); background: rgba(99,102,241,.1); color: var(--brand-400); }
 
-[data-theme="dark"] .sop-ack-btn:hover  { background: #6366f1; color: #fff; }
+[data-theme="dark"] .sop-ack-btn:hover  { background: var(--brand-500); color: #fff; }
 
 [data-theme="dark"] .sop-history-item   { background: #050f1e; }
 

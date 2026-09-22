@@ -81,7 +81,7 @@
 
 /*  Task Highlight  */
 .task-row-highlight {
-  border-color: var(--highlight-color, #ef4444) !important;
+  border-color: var(--highlight-color, var(--danger)) !important;
   background: var(--highlight-bg, #fff5f5) !important;
   box-shadow: 0 0 0 3px var(--highlight-shadow, rgba(239, 68, 68, 0.15)) !important;
   animation: highlightPulse 2s ease;
@@ -629,7 +629,7 @@
 }
 .goal-steps-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #10b981);
+  background: linear-gradient(90deg, var(--brand-500), var(--success));
   border-radius: 3px;
   transition: width 0.3s;
 }

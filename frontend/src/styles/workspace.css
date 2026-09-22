@@ -1079,7 +1079,7 @@
   box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
 }
 .btn-danger:hover {
-  background: #dc2626;
+  background: var(--danger);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
   transform: translateY(-1px);
 }
@@ -1646,7 +1646,7 @@
   font-size: 10px;
   font-weight: 600;
   background: #fef3c7;
-  color: #d97706;
+  color: var(--warning);
   padding: 1px 6px;
   border-radius: 10px;
 }
@@ -1751,8 +1751,8 @@
 [data-theme="dark"] .settings-danger-section { background: #1a0505; border-color: #3a0a0a; }
 [data-theme="dark"] .admin-delete-member-row { background: var(--bg-card); border-color: var(--border); }
 [data-theme="dark"] .admin-delete-member-row:hover { background: #081628; }
-[data-theme="dark"] .settings-error-banner   { background: #1a0a0a; color: #f87171; border-color: #3a1010; }
-[data-theme="dark"] .settings-success-banner { background: #0a1a0a; color: #34d399; border-color: #103a10; }
+[data-theme="dark"] .settings-error-banner   { background: #1a0a0a; color: var(--danger); border-color: #3a1010; }
+[data-theme="dark"] .settings-success-banner { background: #0a1a0a; color: var(--success); border-color: #103a10; }
 [data-theme="dark"] .sec-2fa-setup           { background: #081628; border-color: var(--border); }
 [data-theme="dark"] .sec-gdpr-card           { background: var(--bg-card); border-color: var(--border); }
 [data-theme="dark"] .sec-session-row         { background: var(--bg-card); border-color: var(--border); }

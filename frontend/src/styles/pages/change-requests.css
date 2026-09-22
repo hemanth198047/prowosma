@@ -24,7 +24,7 @@
 .cr-section-text { font-size:13px; color:var(--text-primary); line-height:1.5; white-space:pre-wrap; }
 .cr-approvers { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
 .cr-approver-chip { font-size:11px; padding:2px 8px; border-radius:20px; background:var(--bg-hover); color:var(--gray-600); }
-.cr-approver-chip.current { background:rgba(99,102,241,.12); color:#6366f1; font-weight:600; }
+.cr-approver-chip.current { background:rgba(99,102,241,.12); color:var(--brand-500); font-weight:600; }
 .cr-rejection { margin-top:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); font-size:13px; color:#b91c1c; }
 
 .cr-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }

@@ -11,16 +11,16 @@
 .exp-member-dept   { font-size:11px; color:var(--gray-400); }
 .exp-member-bio    { font-size:12px; color:var(--gray-600); line-height:1.5; margin:3px 0; }
 .exp-member-skills { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
-.exp-member-mentor { font-size:11px; color:#10b981; margin-top:3px; }
+.exp-member-mentor { font-size:11px; color:var(--success); margin-top:3px; }
 .exp-member-footer { display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap; }
-.exp-more-badge    { font-size:10px; font-weight:700; color:#6b7280; background:var(--gray-100); padding:1px 7px; border-radius:99px; }
+.exp-more-badge    { font-size:10px; font-weight:700; color:var(--gray-500); background:var(--gray-100); padding:1px 7px; border-radius: var(--radius-full); }
 
 /* Availability pill */
-.exp-avail-pill  { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; }
+.exp-avail-pill  { font-size:10px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full); }
 .exp-avail-dot   { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:4px; }
 
 /* Skill chip */
-.exp-skill-chip  { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600; border-width:1px; border-style:solid; white-space:nowrap; }
+.exp-skill-chip  { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius: var(--radius-full); font-size:11px; font-weight:600; border-width:1px; border-style:solid; white-space:nowrap; }
 .exp-chip-remove { background:none; border:none; cursor:pointer; font-size:13px; line-height:1; padding:0; color:inherit; opacity:.7; }
 .exp-chip-remove:hover { opacity:1; }
 
@@ -41,11 +41,11 @@
 /* Expert Finder */
 .exp-finder       { display:flex; flex-direction:column; gap:16px; }
 .exp-ai-bar       { background:rgba(99,102,241,.04); border:1px solid rgba(99,102,241,.15); border-radius:var(--radius-lg); padding:14px; display:flex; flex-direction:column; gap:8px; }
-.exp-ai-bar-label { font-size:11px; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:.06em; }
+.exp-ai-bar-label { font-size:11px; font-weight:700; color:var(--brand-500); text-transform:uppercase; letter-spacing:.06em; }
 .exp-ai-bar-input { display:flex; gap:8px; }
 .exp-ai-bar-input input { flex:1; }
 .exp-ai-result    { background:var(--bg-card); border:1px solid rgba(99,102,241,.2); border-radius:var(--radius-sm); padding:10px; }
-.exp-ai-result-label { font-size:10px; font-weight:700; color:#6366f1; margin-bottom:5px; }
+.exp-ai-result-label { font-size:10px; font-weight:700; color:var(--brand-500); margin-bottom:5px; }
 .exp-ai-result-text  { font-size:13px; color:var(--gray-600); line-height:1.6; }
 .exp-search-bar   { display:flex; gap:8px; flex-wrap:wrap; }
 .exp-search-input { flex:1; min-width:200px; }
@@ -61,10 +61,10 @@
 .exp-result-dept   { font-size:10px; color:var(--gray-400); }
 .exp-result-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
 .exp-result-avail  { display:flex; align-items:center; gap:4px; margin-top:3px; }
-.exp-badge         { font-size:9px; font-weight:700; padding:1px 6px; border-radius:99px; }
-.exp-badge-declared{ background:rgba(99,102,241,.1);  color:#6366f1; }
-.exp-badge-inferred{ background:rgba(245,158,11,.1);  color:#f59e0b; }
-.exp-badge-mentor  { background:rgba(16,185,129,.1);  color:#10b981; }
+.exp-badge         { font-size:9px; font-weight:700; padding:1px 6px; border-radius: var(--radius-full); }
+.exp-badge-declared{ background:rgba(99,102,241,.1);  color:var(--brand-500); }
+.exp-badge-inferred{ background:rgba(245,158,11,.1);  color:var(--warning); }
+.exp-badge-mentor  { background:rgba(16,185,129,.1);  color:var(--success); }
 
 /* Score display */
 .exp-score-num   { font-size:18px; font-weight:800; text-align:center; }
@@ -85,7 +85,7 @@
 .exp-gap-row      { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; flex-wrap:wrap; }
 .exp-gap-skill    { font-size:13px; font-weight:700; color:var(--gray-800); min-width:100px; }
 .exp-gap-count    { font-size:12px; color:var(--gray-500); }
-.exp-gap-priority { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; }
+.exp-gap-priority { font-size:10px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full); }
 .exp-gap-hint     { font-size:11px; color:var(--gray-400); margin-left:auto; }
 
 /* Mentor grid */
@@ -101,7 +101,7 @@
 
 /* Tribal knowledge */
 .exp-tribal-card   { display:flex; align-items:flex-start; gap:10px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; }
-.exp-tribal-risk   { font-size:10px; font-weight:800; padding:3px 10px; border-radius:99px; white-space:nowrap; flex-shrink:0; align-self:center; }
+.exp-tribal-risk   { font-size:10px; font-weight:800; padding:3px 10px; border-radius: var(--radius-full); white-space:nowrap; flex-shrink:0; align-self:center; }
 .exp-tribal-body   { flex:1; min-width:0; }
 .exp-tribal-name   { font-size:13px; font-weight:800; color:var(--gray-800); margin-bottom:2px; }
 .exp-tribal-desc   { font-size:12px; color:var(--gray-600); line-height:1.5; margin-bottom:5px; }

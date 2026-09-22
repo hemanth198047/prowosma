@@ -10,7 +10,7 @@
 .roi-card-header { display:flex; justify-content:space-between; align-items:flex-start; }
 .roi-card-name    { font-size:14px; font-weight:800; color:var(--gray-800); }
 .roi-card-category{ font-size:10px; color:var(--gray-400); margin-top:2px; text-transform:uppercase; letter-spacing:.04em; }
-.roi-health-chip  { font-size:10px; font-weight:700; padding:3px 10px; border-radius:99px; white-space:nowrap; flex-shrink:0; }
+.roi-health-chip  { font-size:10px; font-weight:700; padding:3px 10px; border-radius: var(--radius-full); white-space:nowrap; flex-shrink:0; }
 .roi-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
 .roi-metric { text-align:center; padding:8px 4px; background:var(--gray-50); border-radius:var(--radius-sm); }
 .roi-metric-num   { font-size:16px; font-weight:800; color:var(--gray-800); }
@@ -18,8 +18,8 @@
 .roi-revenue-log  { display:flex; flex-direction:column; gap:4px; }
 .roi-revenue-row  { display:flex; align-items:center; gap:8px; font-size:12px; padding:4px 0; border-bottom:1px solid var(--border); }
 .roi-revenue-row:last-child { border-bottom:none; }
-.roi-rev-type   { font-size:9px; font-weight:700; padding:1px 6px; background:rgba(99,102,241,.1); color:#6366f1; border-radius:99px; flex-shrink:0; }
+.roi-rev-type   { font-size:9px; font-weight:700; padding:1px 6px; background:rgba(99,102,241,.1); color:var(--brand-500); border-radius: var(--radius-full); flex-shrink:0; }
 .roi-rev-desc   { flex:1; color:var(--gray-600); }
-.roi-rev-amount { font-weight:700; color:#10b981; }
+.roi-rev-amount { font-weight:700; color:var(--success); }
 .roi-card-actions { display:flex; gap:6px; margin-top:4px; }
 .roi-add-form { background:var(--gray-50); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; }

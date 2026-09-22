@@ -5,7 +5,7 @@
 .exec-ai-title { font-size:14px; font-weight:800; color:var(--gray-700); flex:1; }
 .exec-ai-text  { font-size:13px; color:var(--gray-600); line-height:1.6; margin-bottom:10px; }
 .exec-ai-risks { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:12px; margin-bottom:8px; }
-.exec-risk-chip { padding:2px 8px; background:rgba(239,68,68,.1); color:#ef4444; border-radius:99px; font-size:11px; font-weight:600; }
+.exec-risk-chip { padding:2px 8px; background:rgba(239,68,68,.1); color:var(--danger); border-radius: var(--radius-full); font-size:11px; font-weight:600; }
 .exec-ai-recs ul { margin:6px 0 0 16px; font-size:12px; color:var(--gray-600); }
 .exec-stat-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
 .exec-stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; display:flex; gap:12px; align-items:flex-start; }
@@ -14,8 +14,8 @@
 .exec-stat-label { font-size:11px; color:var(--gray-400); font-weight:500; }
 .exec-stat-sub   { font-size:10px; color:var(--gray-400); margin-top:2px; }
 .exec-stat-trend { font-size:10px; font-weight:700; margin-top:3px; }
-.exec-stat-trend.up   { color:#10b981; }
-.exec-stat-trend.down { color:#ef4444; }
+.exec-stat-trend.up   { color:var(--success); }
+.exec-stat-trend.down { color:var(--danger); }
 .exec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
 @media(max-width:900px) { .exec-grid { grid-template-columns:1fr; } }
 .exec-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
@@ -23,20 +23,20 @@
 .exec-card-title { font-size:13px; font-weight:800; color:var(--gray-700); margin-bottom:12px; }
 .exec-risk-row { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
 .exec-risk-row:last-child { border-bottom:none; }
-.exec-risk-sev { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; flex-shrink:0; }
+.exec-risk-sev { font-size:10px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full); white-space:nowrap; flex-shrink:0; }
 .exec-risk-info { flex:1; }
 .exec-risk-title { font-size:12px; font-weight:700; color:var(--gray-700); }
 .exec-risk-meta  { font-size:11px; color:var(--gray-400); }
-.exec-risk-low    { background:rgba(16,185,129,.1); color:#10b981; }
-.exec-risk-medium { background:rgba(245,158,11,.1); color:#f59e0b; }
-.exec-risk-high   { background:rgba(239,68,68,.1);  color:#ef4444; }
+.exec-risk-low    { background:rgba(16,185,129,.1); color:var(--success); }
+.exec-risk-medium { background:rgba(245,158,11,.1); color:var(--warning); }
+.exec-risk-high   { background:rgba(239,68,68,.1);  color:var(--danger); }
 .exec-kpi-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .exec-kpi-name { font-size:11px; color:var(--gray-600); min-width:100px; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.exec-kpi-bar  { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.exec-kpi-fill { height:100%; border-radius:99px; transition:width .4s; }
+.exec-kpi-bar  { flex:1; height:6px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.exec-kpi-fill { height:100%; border-radius: var(--radius-full); transition:width .4s; }
 .exec-kpi-pct  { font-size:11px; font-weight:700; min-width:32px; text-align:right; }
-.exec-mini-bar  { width:80px; height:5px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.exec-mini-fill { height:100%; border-radius:99px; }
+.exec-mini-bar  { width:80px; height:5px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.exec-mini-fill { height:100%; border-radius: var(--radius-full); }
 .exec-empty { font-size:12px; color:var(--gray-400); text-align:center; padding:16px; }
 .exec-table { width:100%; border-collapse:collapse; font-size:12px; }
 .exec-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--gray-400); padding:6px 8px; border-bottom:1px solid var(--border); }

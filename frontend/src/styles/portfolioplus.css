@@ -5,11 +5,11 @@
 .pplus-table-row  { display:grid; grid-template-columns:100px 1fr 120px 100px 110px 120px 90px; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); align-items:start; font-size:12px; }
 .pplus-table-row:last-child { border-bottom:none; }
 .pplus-table-row:hover { background:var(--gray-50); }
-.pplus-version-chip { font-family:monospace; font-size:12px; font-weight:700; color:#6366f1; background:rgba(99,102,241,0.1); padding:2px 8px; border-radius:4px; white-space:nowrap; }
+.pplus-version-chip { font-family:monospace; font-size:12px; font-weight:700; color:var(--brand-500); background:rgba(99,102,241,0.1); padding:2px 8px; border-radius:4px; white-space:nowrap; }
 .pplus-row-title { font-weight:700; color:var(--gray-700); margin-bottom:2px; }
 .pplus-row-meta  { font-size:11px; color:var(--gray-400); }
-.pplus-status-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
-.pplus-priority-chip { font-size:10px; font-weight:700; padding:2px 6px; border-radius:99px; background:var(--gray-100); }
+.pplus-status-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full); white-space:nowrap; }
+.pplus-priority-chip { font-size:10px; font-weight:700; padding:2px 6px; border-radius: var(--radius-full); background:var(--gray-100); }
 .pplus-empty { padding:24px; text-align:center; font-size:12px; color:var(--gray-400); }
 
 /* Initiatives */
@@ -19,16 +19,16 @@
 .pplus-initiative-name   { font-size:14px; font-weight:800; color:var(--gray-800); margin-bottom:3px; }
 .pplus-initiative-meta   { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:11px; color:var(--gray-400); }
 .pplus-initiative-desc   { font-size:12px; color:var(--gray-600); line-height:1.5; }
-.pplus-initiative-rationale { font-size:11px; color:#8b5cf6; background:rgba(139,92,246,0.08); padding:6px 10px; border-radius:var(--radius-sm); font-style:italic; }
+.pplus-initiative-rationale { font-size:11px; color:var(--purple); background:rgba(139,92,246,0.08); padding:6px 10px; border-radius:var(--radius-sm); font-style:italic; }
 .pplus-initiative-links { display:flex; gap:6px; flex-wrap:wrap; }
-.pplus-link-chip { font-size:10px; font-weight:600; padding:2px 8px; background:var(--gray-100); border-radius:99px; color:var(--gray-500); }
-.pplus-progress-bar  { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.pplus-progress-fill { height:100%; background:#6366f1; border-radius:99px; transition:width .4s; }
+.pplus-link-chip { font-size:10px; font-weight:600; padding:2px 8px; background:var(--gray-100); border-radius: var(--radius-full); color:var(--gray-500); }
+.pplus-progress-bar  { flex:1; height:6px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.pplus-progress-fill { height:100%; background:var(--brand-500); border-radius: var(--radius-full); transition:width .4s; }
 .pplus-initiative-progress { display:flex; flex-direction:column; gap:4px; }
 .pplus-multi-select { display:flex; flex-wrap:wrap; gap:6px; }
-.pplus-multi-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border:1px solid var(--border); border-radius:99px; font-size:11px; font-weight:600; color:var(--gray-600); cursor:pointer; }
+.pplus-multi-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border:1px solid var(--border); border-radius: var(--radius-full); font-size:11px; font-weight:600; color:var(--gray-600); cursor:pointer; }
 .pplus-multi-chip input { display:none; }
-.pplus-multi-chip.active { border-color:#6366f1; background:rgba(99,102,241,0.08); color:#6366f1; }
+.pplus-multi-chip.active { border-color:var(--brand-500); background:rgba(99,102,241,0.08); color:var(--brand-500); }
 
 /* Programmes */
 .pplus-programme-list { display:flex; flex-direction:column; gap:12px; }
@@ -40,7 +40,7 @@
 .pplus-milestone-panel { border-top:1px solid var(--border); margin-top:10px; padding-top:10px; }
 .pplus-milestone-list  { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
 .pplus-milestone-row   { display:flex; align-items:center; gap:8px; font-size:12px; }
-.pplus-milestone-row input { accent-color:#6366f1; cursor:pointer; }
+.pplus-milestone-row input { accent-color:var(--brand-500); cursor:pointer; }
 .pplus-milestone-title { flex:1; color:var(--gray-700); }
 .pplus-milestone-title.done { text-decoration:line-through; color:var(--gray-400); }
 .pplus-milestone-date  { font-size:11px; color:var(--gray-400); }

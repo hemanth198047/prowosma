@@ -40,14 +40,14 @@
 .auto-trigger-chip {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 8px; background: rgba(99,102,241,0.1);
-  color: #6366f1; border-radius: 99px; font-size: 11px; font-weight: 600;
+  color: var(--brand-500); border-radius: var(--radius-full); font-size: 11px; font-weight: 600;
 }
 .auto-toggle-btn {
   font-size: 20px; line-height: 1; border: none; background: none;
   cursor: pointer; color: var(--gray-300); transition: color .15s;
   padding: 2px 4px;
 }
-.auto-toggle-btn.enabled { color: #10b981; }
+.auto-toggle-btn.enabled { color: var(--success); }
 
 /* Builder modal */
 .auto-builder-modal {
@@ -78,7 +78,7 @@
 }
 .auto-flow-num {
   width: 22px; height: 22px; border-radius: 50%;
-  background: #6366f1; color: #fff;
+  background: var(--brand-500); color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 800; flex-shrink: 0;
 }
@@ -101,10 +101,10 @@
   cursor: pointer; transition: all .15s; text-align: center;
 }
 .auto-trigger-card:hover   { border-color: var(--brand-400); background: rgba(99,102,241,0.04); }
-.auto-trigger-card.active  { border-color: #6366f1; background: rgba(99,102,241,0.08); }
+.auto-trigger-card.active  { border-color: var(--brand-500); background: rgba(99,102,241,0.08); }
 .auto-trigger-icon  { font-size: 18px; }
 .auto-trigger-label { font-size: 11px; font-weight: 600; color: var(--gray-600); line-height: 1.3; }
-.auto-trigger-card.active .auto-trigger-label { color: #6366f1; }
+.auto-trigger-card.active .auto-trigger-label { color: var(--brand-500); }
 
 /* Conditions */
 .auto-conditions, .auto-actions { padding: 12px; }
@@ -122,7 +122,7 @@
 }
 .auto-add-btn {
   font-size: 11px; font-weight: 600; padding: 4px 10px;
-  border: 1px solid var(--brand-400); border-radius: 99px;
+  border: 1px solid var(--brand-400); border-radius: var(--radius-full);
   color: var(--brand-600); background: rgba(99,102,241,0.06);
   cursor: pointer; transition: all .15s; white-space: nowrap;
 }
@@ -135,7 +135,7 @@
   background: var(--bg-card); color: var(--gray-500);
   cursor: pointer; transition: all .15s;
 }
-.auto-op-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.auto-op-btn.active { background: var(--brand-500); color: #fff; border-color: var(--brand-500); }
 
 .auto-condition-row {
   display: flex; align-items: center; gap: 6px;
@@ -224,7 +224,7 @@
 .auto-approval-top  { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .auto-approval-title { font-size: 14px; font-weight: 700; color: var(--gray-800); }
 .auto-approval-status {
-  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-full);
   white-space: nowrap; flex-shrink: 0;
 }
 .auto-approval-desc { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
@@ -237,7 +237,7 @@
   border-radius: var(--radius-sm); background: var(--gray-50);
 }
 .auto-approval-step.active {
-  border-color: #6366f1; background: rgba(99,102,241,0.04);
+  border-color: var(--brand-500); background: rgba(99,102,241,0.04);
 }
 .auto-step-num {
   width: 22px; height: 22px; border-radius: 50%;
@@ -245,7 +245,7 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 800; flex-shrink: 0;
 }
-.auto-approval-step.active .auto-step-num { background: #6366f1; color: #fff; }
+.auto-approval-step.active .auto-step-num { background: var(--brand-500); color: #fff; }
 .auto-step-info   { flex: 1; }
 .auto-step-email  { font-size: 12px; font-weight: 600; color: var(--gray-700); }
 .auto-step-status { font-size: 11px; }
@@ -260,8 +260,8 @@
 }
 .auto-escalate-btn {
   font-size: 11px; font-weight: 600; padding: 5px 12px;
-  border: 1px solid rgba(139,92,246,0.3); border-radius: 99px;
-  color: #8b5cf6; background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.3); border-radius: var(--radius-full);
+  color: var(--purple); background: rgba(139,92,246,0.06);
   cursor: pointer; align-self: flex-start; transition: all .15s;
 }
 .auto-escalate-btn:hover { background: rgba(139,92,246,0.12); }

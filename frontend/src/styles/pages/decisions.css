@@ -47,7 +47,7 @@
 /* Decision card */
 .dec-card {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--brand-500);
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   overflow: hidden; transition: box-shadow .15s;
 }

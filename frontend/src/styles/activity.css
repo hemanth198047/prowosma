@@ -144,11 +144,11 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.al-dot-created  { background: #16a34a; }
+.al-dot-created  { background: var(--success); }
 .al-dot-updated  { background: #2563eb; }
-.al-dot-deleted  { background: #dc2626; }
-.al-dot-status   { background: #d97706; }
-.al-dot-progress { background: #7c3aed; }
+.al-dot-deleted  { background: var(--danger); }
+.al-dot-status   { background: var(--warning); }
+.al-dot-progress { background: var(--purple); }
 
 /*  Right feed  */
 .al-feed {
@@ -248,9 +248,9 @@
 }
 .al-badge-created  { background: #dcfce7; color: #15803d; }
 .al-badge-updated  { background: #dbeafe; color: #1d4ed8; }
-.al-badge-deleted  { background: #fee2e2; color: #dc2626; }
+.al-badge-deleted  { background: #fee2e2; color: var(--danger); }
 .al-badge-status   { background: #fef9c3; color: #a16207; }
-.al-badge-progress { background: #ede9fe; color: #7c3aed; }
+.al-badge-progress { background: #ede9fe; color: var(--purple); }
 
 /* Change diff */
 .al-change {
@@ -408,8 +408,8 @@
   flex-shrink: 0;
   display: inline-block;
 }
-.sev-warning  { background: #f59e0b; }
-.sev-critical { background: #ef4444; box-shadow: 0 0 0 2px #fee2e2; }
+.sev-warning  { background: var(--warning); }
+.sev-critical { background: var(--danger); box-shadow: 0 0 0 2px #fee2e2; }
 
 .al-severity-pill {
   font-size: 9px;
@@ -420,8 +420,8 @@
   letter-spacing: 0.3px;
 }
 .sev-info     { background: #dbeafe; color: #1d4ed8; }
-.sev-warning  { background: #fef3c7; color: #d97706; }
-.sev-critical { background: #fee2e2; color: #dc2626; }
+.sev-warning  { background: #fef3c7; color: var(--warning); }
+.sev-critical { background: #fee2e2; color: var(--danger); }
 
 /* Human-readable sentence */
 .al-human {
@@ -433,15 +433,15 @@
 
 /* Extra badge classes */
 .al-badge-completed { background: #d1fae5; color: #065f46; }
-.al-badge-archived  { background: #f1f5f9; color: #475569; }
+.al-badge-archived  { background: var(--gray-100); color: var(--gray-600); }
 .al-badge-warning   { background: #fef3c7; color: #b45309; }
-.al-badge-progress  { background: #ede9fe; color: #7c3aed; }
+.al-badge-progress  { background: #ede9fe; color: var(--purple); }
 .al-badge-status    { background: #fef9c3; color: #a16207; }
 
 /* Extra dot classes */
-.al-dot-completed { background: #059669; }
-.al-dot-archived  { background: #94a3b8; }
-.al-dot-warning   { background: #d97706; }
+.al-dot-completed { background: var(--success); }
+.al-dot-archived  { background: var(--gray-400); }
+.al-dot-warning   { background: var(--warning); }
 .al-dot-status    { background: #a16207; }
 
 /*  Health panel  */
@@ -545,13 +545,13 @@
   border: 2px solid var(--bg-card);
   box-shadow: 0 0 0 1px var(--border);
 }
-.eat-dot-created   { background: #16a34a; }
+.eat-dot-created   { background: var(--success); }
 .eat-dot-updated   { background: #2563eb; }
-.eat-dot-deleted   { background: #dc2626; }
-.eat-dot-completed { background: #059669; }
-.eat-dot-status    { background: #d97706; }
-.eat-dot-progress  { background: #7c3aed; }
-.eat-dot-warning   { background: #d97706; }
+.eat-dot-deleted   { background: var(--danger); }
+.eat-dot-completed { background: var(--success); }
+.eat-dot-status    { background: var(--warning); }
+.eat-dot-progress  { background: var(--purple); }
+.eat-dot-warning   { background: var(--warning); }
 
 .eat-line {
   width: 2px;
@@ -581,8 +581,8 @@
 .eat-user   { font-size: 11px; font-weight: 600; color: var(--gray-500); }
 .eat-time   { font-size: 11px; color: var(--gray-400); }
 .eat-severity { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
-.eat-sev-warning  { background: #fef3c7; color: #d97706; }
-.eat-sev-critical { background: #fee2e2; color: #dc2626; }
+.eat-sev-warning  { background: #fef3c7; color: var(--warning); }
+.eat-sev-critical { background: #fee2e2; color: var(--danger); }
 .eat-empty { text-align: center; padding: 32px 0; color: var(--gray-400); font-size: 13px; }
 
 /* Dark mode for new classes */
@@ -593,7 +593,7 @@
 [data-theme="dark"] .al-burst-header:hover { background: var(--gray-700); }
 [data-theme="dark"] .al-burst          { border-color: var(--gray-700); }
 [data-theme="dark"] .al-badge-completed { background: #064e3b; color: #6ee7b7; }
-[data-theme="dark"] .al-badge-archived  { background: #1e293b; color: #94a3b8; }
+[data-theme="dark"] .al-badge-archived  { background: var(--gray-800); color: var(--gray-400); }
 [data-theme="dark"] .al-badge-warning   { background: #451a03; color: #fcd34d; }
 
 /* ========================================

@@ -6,13 +6,13 @@
 .intel-card-info   { flex:1; min-width:0; }
 .intel-card-title  { font-size:14px; font-weight:800; color:var(--gray-800); margin-bottom:3px; }
 .intel-card-desc   { font-size:12px; color:var(--gray-500); }
-.intel-error  { margin-top:10px; padding:8px 12px; background:rgba(239,68,68,.08); border-radius:var(--radius-sm); font-size:12px; color:#ef4444; }
+.intel-error  { margin-top:10px; padding:8px 12px; background:rgba(239,68,68,.08); border-radius:var(--radius-sm); font-size:12px; color:var(--danger); }
 .intel-result { margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
 .intel-summary { font-size:12px; color:var(--gray-600); margin-bottom:10px; line-height:1.5; font-style:italic; }
-.intel-ok { font-size:13px; color:#10b981; font-weight:600; }
+.intel-ok { font-size:13px; color:var(--success); font-weight:600; }
 .intel-risk-row { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
 .intel-risk-row:last-child { border-bottom:none; }
-.intel-sev { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; flex-shrink:0; margin-top:2px; }
+.intel-sev { font-size:10px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full); white-space:nowrap; flex-shrink:0; margin-top:2px; }
 .intel-risk-info  { flex:1; }
 .intel-risk-title { font-size:12px; font-weight:700; color:var(--gray-700); }
 .intel-risk-reason { font-size:11px; color:var(--gray-400); margin-top:2px; }
@@ -23,7 +23,7 @@
 .intel-priority-info  { flex:1; }
 .intel-priority-title { font-size:12px; font-weight:700; color:var(--gray-700); }
 .intel-priority-reasons { display:flex; gap:4px; flex-wrap:wrap; margin-top:3px; }
-.intel-reason-chip { font-size:10px; padding:1px 6px; background:rgba(99,102,241,.1); color:#6366f1; border-radius:99px; }
+.intel-reason-chip { font-size:10px; padding:1px 6px; background:rgba(99,102,241,.1); color:var(--brand-500); border-radius: var(--radius-full); }
 .intel-priority-score { font-size:18px; font-weight:800; color:var(--gray-300); min-width:32px; text-align:right; }
 .intel-recs { margin-top:10px; display:flex; flex-direction:column; gap:5px; }
 .intel-rec  { font-size:12px; color:var(--gray-600); background:rgba(99,102,241,.05); padding:6px 10px; border-radius:var(--radius-sm); }
@@ -32,20 +32,20 @@
 .intel-roadmap-icon  { font-size:24px; margin-bottom:6px; }
 .intel-roadmap-title { font-size:13px; font-weight:800; color:var(--gray-700); margin-bottom:4px; }
 .intel-roadmap-desc  { font-size:11px; color:var(--gray-500); line-height:1.4; margin-bottom:10px; }
-.intel-roadmap-badge { font-size:10px; font-weight:700; padding:2px 8px; background:rgba(107,114,128,.1); color:var(--gray-500); border-radius:99px; }
+.intel-roadmap-badge { font-size:10px; font-weight:700; padding:2px 8px; background:rgba(107,114,128,.1); color:var(--gray-500); border-radius: var(--radius-full); }
 /* Resource forecast */
 .resource-forecast-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
 .resource-forecast-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; }
 .resource-forecast-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-.resource-forecast-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
+.resource-forecast-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--brand-500),var(--purple)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
 .resource-forecast-name { font-size:12px; font-weight:700; color:var(--gray-700); }
-.resource-risk-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; }
-.resource-risk-normal     { background:rgba(16,185,129,.1); color:#10b981; }
-.resource-risk-high       { background:rgba(245,158,11,.1); color:#f59e0b; }
-.resource-risk-overloaded { background:rgba(239,68,68,.1);  color:#ef4444; }
+.resource-risk-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius: var(--radius-full); }
+.resource-risk-normal     { background:rgba(16,185,129,.1); color:var(--success); }
+.resource-risk-high       { background:rgba(245,158,11,.1); color:var(--warning); }
+.resource-risk-overloaded { background:rgba(239,68,68,.1);  color:var(--danger); }
 .resource-forecast-bars { display:flex; flex-direction:column; gap:6px; }
 .resource-bar-row { display:flex; align-items:center; gap:8px; }
 .resource-bar-label { font-size:10px; font-weight:700; color:var(--gray-400); min-width:24px; }
-.resource-bar-track { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.resource-bar-fill  { height:100%; border-radius:99px; transition:width .4s; }
+.resource-bar-track { flex:1; height:6px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.resource-bar-fill  { height:100%; border-radius: var(--radius-full); transition:width .4s; }
 .resource-bar-pct   { font-size:10px; font-weight:700; min-width:30px; text-align:right; }

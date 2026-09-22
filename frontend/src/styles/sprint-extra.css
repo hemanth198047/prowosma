@@ -23,8 +23,8 @@
 .sprint-predict-table { display:flex; flex-direction:column; gap:6px; }
 .sprint-predict-row   { display:flex; align-items:center; gap:8px; }
 .sprint-predict-name  { font-size:12px; color:var(--gray-600); min-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.sprint-predict-bar-track { flex:1; height:6px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.sprint-predict-bar   { height:100%; border-radius:99px; transition:width .4s; }
+.sprint-predict-bar-track { flex:1; height:6px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.sprint-predict-bar   { height:100%; border-radius: var(--radius-full); transition:width .4s; }
 .sprint-predict-pct   { font-size:11px; font-weight:700; min-width:35px; text-align:right; }
 .sprint-predict-note  { font-size:11px; color:var(--gray-400); margin-top:10px; border-top:1px solid var(--border); padding-top:8px; }
 
@@ -44,26 +44,26 @@
 .pi-iter-num     { font-size:10px; font-weight:700; color:var(--gray-400); margin-bottom:3px; }
 .pi-iter-name    { font-size:12px; font-weight:700; color:var(--gray-700); margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pi-iter-pts     { font-size:11px; color:var(--gray-500); margin-bottom:4px; }
-.pi-iter-bar     { height:4px; background:var(--gray-100); border-radius:99px; overflow:hidden; }
-.pi-iter-fill    { height:100%; background:#6366f1; border-radius:99px; }
+.pi-iter-bar     { height:4px; background:var(--gray-100); border-radius: var(--radius-full); overflow:hidden; }
+.pi-iter-fill    { height:100%; background:var(--brand-500); border-radius: var(--radius-full); }
 
 /* Grooming */
 .grooming-header     { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
-.grooming-selected-badge { font-size:11px; font-weight:700; color:#6366f1; background:rgba(99,102,241,0.1); padding:2px 8px; border-radius:99px; }
+.grooming-selected-badge { font-size:11px; font-weight:700; color:var(--brand-500); background:rgba(99,102,241,0.1); padding:2px 8px; border-radius: var(--radius-full); }
 .grooming-bulk-bar   { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 12px; background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.2); border-radius:var(--radius-sm); margin-bottom:10px; }
 .grooming-bulk-label { font-size:12px; font-weight:600; color:var(--gray-600); }
 .grooming-fib-row    { display:flex; gap:4px; }
 .grooming-fib-btn    { padding:3px 8px; border:1px solid var(--border); border-radius:4px; font-size:12px; font-weight:700; background:var(--bg-card); color:var(--gray-600); cursor:pointer; }
-.grooming-fib-btn.active { background:#6366f1; color:#fff; border-color:#6366f1; }
+.grooming-fib-btn.active { background:var(--brand-500); color:#fff; border-color:var(--brand-500); }
 .grooming-priority-select { font-size:12px; padding:3px 6px; border:1px solid var(--border); border-radius:4px; }
 .grooming-task-list  { display:flex; flex-direction:column; gap:0; }
 .grooming-task-row   { display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; cursor:pointer; }
 .grooming-task-row:last-child { border-bottom:none; }
 .grooming-task-row.selected { background:rgba(99,102,241,0.05); }
-.grooming-task-row input { accent-color:#6366f1; }
+.grooming-task-row input { accent-color:var(--brand-500); }
 .grooming-task-title  { flex:1; color:var(--gray-700); }
-.grooming-priority    { font-size:10px; font-weight:700; padding:1px 6px; border-radius:99px; }
-.grooming-priority-high   { color:#ef4444; background:rgba(239,68,68,0.1); }
-.grooming-priority-medium { color:#f59e0b; background:rgba(245,158,11,0.1); }
-.grooming-priority-low    { color:#10b981; background:rgba(16,185,129,0.1); }
+.grooming-priority    { font-size:10px; font-weight:700; padding:1px 6px; border-radius: var(--radius-full); }
+.grooming-priority-high   { color:var(--danger); background:rgba(239,68,68,0.1); }
+.grooming-priority-medium { color:var(--warning); background:rgba(245,158,11,0.1); }
+.grooming-priority-low    { color:var(--success); background:rgba(16,185,129,0.1); }
 .grooming-pts  { font-size:11px; color:var(--gray-400); min-width:40px; text-align:right; }

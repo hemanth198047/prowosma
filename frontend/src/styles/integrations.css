@@ -26,7 +26,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: var(--intg-color, #6366f1);
+  background: var(--intg-color, var(--brand-500));
   opacity: 0;
   transition: opacity .2s;
 }
@@ -46,11 +46,11 @@
 
 .intg-badge-new    {
   font-size: 9px; font-weight: 800; padding: 1px 6px;
-  background: rgba(99,102,241,0.12); color: #6366f1;
-  border-radius: 99px; letter-spacing: .04em;
+  background: rgba(99,102,241,0.12); color: var(--brand-500);
+  border-radius: var(--radius-full); letter-spacing: .04em;
 }
 .intg-badge-active {
-  font-size: 9px; font-weight: 700; color: #10b981;
+  font-size: 9px; font-weight: 700; color: var(--success);
 }
 
 .intg-tile-name    { font-size: 13px; font-weight: 800; color: var(--gray-800); line-height: 1.2; }
@@ -66,13 +66,13 @@
 /* Toggle pill */
 .intg-toggle-btn {
   font-size: 10px; font-weight: 700; padding: 3px 8px;
-  border-radius: 99px; border: 1px solid var(--border);
+  border-radius: var(--radius-full); border: 1px solid var(--border);
   background: var(--gray-100); color: var(--gray-500);
   cursor: pointer; transition: all .15s;
 }
 .intg-toggle-btn.on {
   background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,.3);
-  color: #10b981;
+  color: var(--success);
 }
 
 /* Connect / Config button */
@@ -91,11 +91,11 @@
   display: flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 600; color: var(--gray-600);
   background: var(--bg-card); border: 1px solid var(--border);
-  padding: 4px 10px; border-radius: 99px;
+  padding: 4px 10px; border-radius: var(--radius-full);
 }
 .intg-dot          { width:7px; height:7px; border-radius:50%; }
-.intg-dot.connected { background: #6366f1; }
-.intg-dot.active    { background: #10b981; }
+.intg-dot.connected { background: var(--brand-500); }
+.intg-dot.active    { background: var(--success); }
 
 /* Config drawer */
 .intg-drawer { max-width: 480px; width: 100%; }
@@ -188,7 +188,7 @@
 
 .wizard-code {
   font-family: monospace; font-size: 12px;
-  background: var(--gray-100); color: #6366f1;
+  background: var(--gray-100); color: var(--brand-500);
   padding: 1px 6px; border-radius: 4px;
 }
 
@@ -217,4 +217,4 @@
   display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
 }
 
-.wizard-required { color: #ef4444; font-size: 12px; }
+.wizard-required { color: var(--danger); font-size: 12px; }

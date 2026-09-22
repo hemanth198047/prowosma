@@ -194,13 +194,13 @@
     gap: 12px;
     padding: 11px 4px;
     border: none;
-    border-bottom: 1px solid var(--border, #eef0f4);
+    border-bottom: 1px solid var(--border, var(--border));
     border-radius: 0;
     background: transparent;
   }
   [data-theme="dark"] .cc3-hub-tile { border-bottom-color: rgba(255,255,255,.08); background: transparent; }
   .cc3-hub-tile:hover,
-  .cc3-hub-tile:active { transform: none; box-shadow: none; background: var(--gray-50, #f8fafc); }
+  .cc3-hub-tile:active { transform: none; box-shadow: none; background: var(--gray-50, var(--gray-50)); }
   [data-theme="dark"] .cc3-hub-tile:hover,
   [data-theme="dark"] .cc3-hub-tile:active { background: rgba(255,255,255,.05); }
   .cc3-hub-icon-badge { flex-shrink: 0; }

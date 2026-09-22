@@ -42,7 +42,7 @@
 @import './styles/scenario.css';
 @import './styles/deployment.css';
 @import './styles/knowledge-graph.css';
-@import './styles/nx-layout.css';
+/* nx-layout.css removed — abandoned parallel layout system, 27KB, zero design-token usage, never referenced by any component; see design-system redesign notes. */
 
 /* Imported LAST on purpose — see the file's own header comment.
    Overrides every page's fixed desktop-width grid layout with a

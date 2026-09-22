@@ -4,7 +4,7 @@
 .doc-db-block         { border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; margin:6px 0; }
 .doc-db-header        { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--gray-50); border-bottom:1px solid var(--border); font-size:12px; }
 .doc-db-title         { font-weight:800; flex:1; }
-.doc-db-add-col       { font-size:10px; font-weight:700; padding:2px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg-card); cursor:pointer; color:#6366f1; }
+.doc-db-add-col       { font-size:10px; font-weight:700; padding:2px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg-card); cursor:pointer; color:var(--brand-500); }
 .doc-db-table-wrap    { overflow-x:auto; }
 .doc-db-table         { width:100%; border-collapse:collapse; font-size:12px; }
 .doc-db-th            { padding:6px 10px; background:var(--gray-50); border-bottom:1px solid var(--border); border-right:1px solid var(--border); font-weight:700; color:var(--gray-600); text-align:left; white-space:nowrap; }

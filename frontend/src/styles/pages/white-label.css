@@ -19,15 +19,15 @@
 
 .wl-subtitle { font-size:13px; color:var(--gray-500); margin-top:4px; }
 
-.wl-saved-badge { font-size:12px; font-weight:700; color:#10b981;
+.wl-saved-badge { font-size:12px; font-weight:700; color:var(--success);
   background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2);
   padding:5px 12px; border-radius:8px; }
 
-.wl-btn-primary { background:#6366f1; color:#fff; border:none;
+.wl-btn-primary { background:var(--brand-500); color:#fff; border:none;
   padding:9px 20px; border-radius:10px; font-size:13px; font-weight:700;
   cursor:pointer; transition:all .14s; }
 
-.wl-btn-primary:hover:not(:disabled) { background:#4f46e5;
+.wl-btn-primary:hover:not(:disabled) { background:var(--brand-700);
   box-shadow:0 4px 14px rgba(99,102,241,0.4); transform:translateY(-1px); }
 
 .wl-btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
@@ -37,7 +37,7 @@
 
 .wl-btn-xs:hover { background:var(--gray-200); }
 
-.wl-btn-danger { background:rgba(239,68,68,0.08); color:#dc2626; border-color:rgba(239,68,68,0.2); }
+.wl-btn-danger { background:rgba(239,68,68,0.08); color:var(--danger); border-color:rgba(239,68,68,0.2); }
 
 .wl-btn-danger:hover { background:rgba(239,68,68,0.15); }
 
@@ -72,7 +72,7 @@
   border-radius:8px; font-size:13px; font-family:inherit;
   color:var(--gray-800); background:var(--bg-card); outline:none; transition:.13s; }
 
-.wl-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
+.wl-input:focus { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
 
 [data-theme="dark"] .wl-input { color:rgba(255,255,255,0.88); background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.1); }
 
@@ -90,7 +90,7 @@
 
 [data-theme="dark"] .wl-check-row { color:rgba(255,255,255,0.88); }
 
-.wl-check-row input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:#6366f1; }
+.wl-check-row input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:var(--brand-500); }
 /* Colour palette */
 .wl-palette { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 
@@ -107,7 +107,7 @@
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; overflow:hidden; transition:.14s; }
 
-.wl-logo-drop:hover { border-color:#6366f1; background:rgba(99,102,241,0.04); }
+.wl-logo-drop:hover { border-color:var(--brand-500); background:rgba(99,102,241,0.04); }
 
 .wl-logo-placeholder { display:flex; flex-direction:column; align-items:center; gap:4px; }
 /* DNS info box */
@@ -140,7 +140,7 @@
   line-height:1.6; color:var(--gray-800); background:var(--gray-50);
   outline:none; resize:vertical; transition:.13s; }
 
-.wl-code-editor:focus { border-color:#6366f1; background:var(--bg-card);
+.wl-code-editor:focus { border-color:var(--brand-500); background:var(--bg-card);
   box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
 
 [data-theme="dark"] .wl-code-editor { background:rgba(255,255,255,0.03);
@@ -155,7 +155,7 @@
   overflow:hidden; display:flex; flex-direction:column; height:220px; }
 
 .wl-preview-topbar { height:38px; display:flex; align-items:center;
-  justify-content:space-between; padding:0 12px; border-bottom:1px solid #e2e8f0;
+  justify-content:space-between; padding:0 12px; border-bottom:1px solid var(--border);
   flex-shrink:0; }
 
 .wl-preview-note { font-size:10px; color:var(--gray-400); text-align:center; }

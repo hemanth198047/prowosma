@@ -24,7 +24,7 @@
 }
 .kpi-alert-name {
   padding: 2px 8px; background: rgba(239,68,68,0.12);
-  border-radius: 99px; font-size: 12px; font-weight: 600; color: #ef4444;
+  border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: var(--danger);
 }
 
 .kpi-filter-row {
@@ -54,20 +54,20 @@
 
 .kpi-category-chip {
   font-size: 10px; font-weight: 700; padding: 2px 7px;
-  background: rgba(99,102,241,0.1); color: #6366f1; border-radius: 99px;
+  background: rgba(99,102,241,0.1); color: var(--brand-500); border-radius: var(--radius-full);
 }
 .kpi-period-chip {
   font-size: 10px; font-weight: 600; padding: 2px 7px;
-  background: var(--gray-100); color: var(--gray-500); border-radius: 99px;
+  background: var(--gray-100); color: var(--gray-500); border-radius: var(--radius-full);
 }
 .kpi-owner { font-size: 11px; color: var(--gray-400); }
 .kpi-linked-goal {
-  font-size: 10px; color: #8b5cf6; background: rgba(139,92,246,0.1);
-  padding: 2px 7px; border-radius: 99px; font-weight: 600;
+  font-size: 10px; color: var(--purple); background: rgba(139,92,246,0.1);
+  padding: 2px 7px; border-radius: var(--radius-full); font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
 }
 .kpi-status-chip {
-  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 99px; white-space: nowrap;
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-full); white-space: nowrap;
 }
 .kpi-alert-badge { font-size: 14px; cursor: default; }
 
@@ -82,11 +82,11 @@
 
 /* Progress bar */
 .kpi-progress-bar {
-  height: 6px; background: var(--gray-100); border-radius: 99px;
+  height: 6px; background: var(--gray-100); border-radius: var(--radius-full);
   position: relative; overflow: visible;
 }
 .kpi-progress-fill {
-  height: 100%; border-radius: 99px; transition: width .4s ease;
+  height: 100%; border-radius: var(--radius-full); transition: width .4s ease;
 }
 .kpi-threshold-marker {
   position: absolute; top: -4px; width: 2px; height: 14px;
@@ -99,7 +99,7 @@
 
 /* Footer actions */
 .kpi-card-footer { display: flex; gap: 6px; flex-wrap: wrap; }
-.btn-active { background: rgba(99,102,241,0.1) !important; color: #6366f1 !important; border-color: rgba(99,102,241,0.3) !important; }
+.btn-active { background: rgba(99,102,241,0.1) !important; color: var(--brand-500) !important; border-color: rgba(99,102,241,0.3) !important; }
 
 /* Record value panel */
 .kpi-record-panel {
@@ -156,7 +156,7 @@
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; font-weight: 600; color: var(--gray-700); cursor: pointer;
 }
-.kpi-alert-toggle input { cursor: pointer; accent-color: #6366f1; }
+.kpi-alert-toggle input { cursor: pointer; accent-color: var(--brand-500); }
 
 /* Integrations extras */
 .integration-setup-link {
@@ -164,7 +164,7 @@
   padding: 6px 12px; margin-bottom: 12px;
   background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);
   border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
-  color: #6366f1; text-decoration: none; transition: all .15s;
+  color: var(--brand-500); text-decoration: none; transition: all .15s;
 }
 .integration-setup-link:hover { background: rgba(99,102,241,0.15); }
 .integration-field-help {

@@ -278,7 +278,7 @@
   width: 8px; height: 8px;
   border-radius: 50%; background: var(--gray-300); flex-shrink: 0;
 }
-.step-dep-dot.done { background: #10b981; }
+.step-dep-dot.done { background: var(--success); }
 .step-dep-add-list { display: flex; flex-wrap: wrap; gap: 5px; }
 
 /* ========================================
@@ -311,11 +311,11 @@
 }
 .goal-level-badge, .goal-quarter-badge, .goal-owner-badge, .goal-child-indicator {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  padding: 2px 9px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600;
   border: 1px solid transparent;
 }
 .goal-quarter-badge {
-  background: rgba(99,102,241,0.08); color: #818cf8;
+  background: rgba(99,102,241,0.08); color: var(--brand-400);
   border-color: rgba(99,102,241,0.2);
 }
 .goal-owner-badge {
@@ -323,7 +323,7 @@
   border-color: var(--border);
 }
 .goal-child-indicator {
-  background: rgba(245,158,11,0.08); color: #fbbf24;
+  background: rgba(245,158,11,0.08); color: var(--warning);
   border-color: rgba(245,158,11,0.2); font-size: 10px;
 }
 
@@ -342,7 +342,7 @@
 }
 .goal-filter-btn {
   padding: 4px 11px; border: 1px solid var(--border);
-  border-radius: 99px; font-size: 11px; font-weight: 500;
+  border-radius: var(--radius-full); font-size: 11px; font-weight: 500;
   background: var(--bg-card); color: var(--gray-500);
   cursor: pointer; transition: all .15s;
 }
@@ -366,10 +366,10 @@
 .goal-child-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--gray-700); }
 .goal-child-progress-bar {
   width: 80px; height: 5px; background: var(--gray-200);
-  border-radius: 99px; overflow: hidden; flex-shrink: 0;
+  border-radius: var(--radius-full); overflow: hidden; flex-shrink: 0;
 }
 .goal-child-progress-fill {
-  height: 100%; background: #6366f1; border-radius: 99px; transition: width .3s;
+  height: 100%; background: var(--brand-500); border-radius: var(--radius-full); transition: width .3s;
 }
 .goal-child-pct { font-size: 11px; font-weight: 700; color: var(--gray-500); min-width: 30px; text-align: right; }
 .goal-child-status { font-size: 10px; color: var(--gray-400); min-width: 60px; text-align: right; }
@@ -405,10 +405,10 @@
 }
 .goal-confidence-edit-btn:hover { background: var(--gray-100); }
 .goal-confidence-bar {
-  height: 6px; background: var(--gray-200); border-radius: 99px; overflow: hidden;
+  height: 6px; background: var(--gray-200); border-radius: var(--radius-full); overflow: hidden;
 }
 .goal-confidence-fill {
-  height: 100%; border-radius: 99px; transition: width .4s;
+  height: 100%; border-radius: var(--radius-full); transition: width .4s;
 }
 .goal-confidence-form {
   margin-top: 10px; display: flex; flex-direction: column; gap: 8px;
@@ -444,7 +444,7 @@
 }
 .goal-checkin-item {
   padding: 8px 10px; border: 1px solid var(--border);
-  border-left: 3px solid #6366f1; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-left: 3px solid var(--brand-500); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--bg-card); margin-bottom: 6px;
 }
 .goal-checkin-meta {
@@ -460,7 +460,7 @@
 }
 .goal-ci-delete-btn:hover { color: var(--danger); }
 .goal-checkin-update   { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
-.goal-checkin-blockers { font-size: 12px; color: #f59e0b; margin-top: 4px; }
+.goal-checkin-blockers { font-size: 12px; color: var(--warning); margin-top: 4px; }
 .goal-checkin-more {
   font-size: 11px; color: var(--gray-400); text-align: center; padding: 4px;
 }
@@ -491,7 +491,7 @@
 .goal-kr-title { font-size: 13px; font-weight: 700; color: var(--gray-700); flex: 1; }
 .goal-kr-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .goal-kr-status-badge {
-  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full);
 }
 .goal-kr-status-select {
   font-size: 11px; padding: 2px 6px; border: 1px solid var(--border);
@@ -503,10 +503,10 @@
 }
 .goal-kr-progress-bar {
   flex: 1; height: 6px; background: var(--gray-200);
-  border-radius: 99px; overflow: hidden;
+  border-radius: var(--radius-full); overflow: hidden;
 }
 .goal-kr-progress-fill {
-  height: 100%; border-radius: 99px; transition: width .4s;
+  height: 100%; border-radius: var(--radius-full); transition: width .4s;
 }
 .goal-kr-pct { font-size: 12px; font-weight: 700; color: var(--gray-600); min-width: 36px; text-align: right; }
 .goal-kr-values {
@@ -564,16 +564,16 @@
 .scorecard-goal-title { font-weight:600; color:var(--gray-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px; }
 .scorecard-child-tag { font-size:10px; color:var(--gray-400); }
 .scorecard-meta { color:var(--gray-500); font-size:11px; white-space:nowrap; }
-.scorecard-level-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+.scorecard-level-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius: var(--radius-full); white-space:nowrap; }
 .scorecard-progress-wrap { display:flex; align-items:center; gap:8px; min-width:120px; }
-.scorecard-progress-bar { flex:1; height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
-.scorecard-progress-fill { height:100%; border-radius:99px; transition:width .3s; }
+.scorecard-progress-bar { flex:1; height:6px; background:var(--gray-200); border-radius: var(--radius-full); overflow:hidden; }
+.scorecard-progress-fill { height:100%; border-radius: var(--radius-full); transition:width .3s; }
 .scorecard-progress-pct { font-size:11px; font-weight:700; color:var(--gray-500); min-width:30px; }
-.scorecard-conf-bar { width:60px; height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
-.scorecard-status-badge { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; }
-.scorecard-status-active    { background:rgba(99,102,241,0.12);  color:#818cf8; }
-.scorecard-status-achieved  { background:rgba(5,150,105,0.12);   color:#34d399; }
-.scorecard-status-paused    { background:rgba(245,158,11,0.12);  color:#fbbf24; }
+.scorecard-conf-bar { width:60px; height:6px; background:var(--gray-200); border-radius: var(--radius-full); overflow:hidden; }
+.scorecard-status-badge { font-size:11px; font-weight:600; padding:2px 8px; border-radius: var(--radius-full); }
+.scorecard-status-active    { background:rgba(99,102,241,0.12);  color:var(--brand-400); }
+.scorecard-status-achieved  { background:rgba(5,150,105,0.12);   color:var(--success); }
+.scorecard-status-paused    { background:rgba(245,158,11,0.12);  color:var(--warning); }
 .scorecard-empty { padding:24px; text-align:center; color:var(--gray-400); }
 
 /* ========================================
@@ -597,16 +597,16 @@
 .quarterly-icon { font-size:18px; }
 .quarterly-count {
   font-size:12px; font-weight:500; color:var(--gray-400);
-  padding:2px 8px; background:var(--gray-200); border-radius:99px;
+  padding:2px 8px; background:var(--gray-200); border-radius: var(--radius-full);
 }
 .quarterly-meta-row { display:flex; gap:16px; margin-bottom:8px; }
 .quarterly-stat { font-size:12px; color:var(--gray-500); }
 .quarterly-progress-bar {
-  height:6px; background:var(--gray-200); border-radius:99px; overflow:hidden;
+  height:6px; background:var(--gray-200); border-radius: var(--radius-full); overflow:hidden;
 }
 .quarterly-progress-fill {
-  height:100%; background:linear-gradient(90deg,#6366f1,#8b5cf6);
-  border-radius:99px; transition:width .5s;
+  height:100%; background:linear-gradient(90deg,var(--brand-500),var(--purple));
+  border-radius: var(--radius-full); transition:width .5s;
 }
 
 .quarterly-goals-grid {
@@ -623,15 +623,15 @@
 .quarterly-goal-top { display:flex; align-items:flex-start; gap:8px; }
 .quarterly-level-chip { font-size:14px; flex-shrink:0; }
 .quarterly-goal-title { flex:1; font-size:13px; font-weight:700; color:var(--gray-700); line-height:1.35; }
-.quarterly-status { font-size:10px; font-weight:600; padding:2px 6px; border-radius:99px; flex-shrink:0; }
+.quarterly-status { font-size:10px; font-weight:600; padding:2px 6px; border-radius: var(--radius-full); flex-shrink:0; }
 .quarterly-owner { font-size:11px; color:var(--gray-400); }
 .quarterly-goal-progress-row { display:flex; align-items:center; gap:8px; }
-.quarterly-goal-progress-bar { flex:1; height:5px; background:var(--gray-200); border-radius:99px; overflow:hidden; }
+.quarterly-goal-progress-bar { flex:1; height:5px; background:var(--gray-200); border-radius: var(--radius-full); overflow:hidden; }
 .quarterly-pct { font-size:11px; font-weight:700; color:var(--gray-500); min-width:28px; text-align:right; }
 .quarterly-goal-footer { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .quarterly-kr-count {
   font-size:10px; color:var(--gray-400); padding:1px 6px;
-  background:var(--gray-100); border-radius:99px;
+  background:var(--gray-100); border-radius: var(--radius-full);
 }
 
 /* View switcher */

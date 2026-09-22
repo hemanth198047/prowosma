@@ -124,7 +124,7 @@
 
 .meet-convert-btn:disabled { opacity: .6; cursor: not-allowed; }
 
-.meet-converted-badge      { font-size: 11px; color: #10b981; font-weight: 700; flex-shrink: 0; }
+.meet-converted-badge      { font-size: 11px; color: var(--success); font-weight: 700; flex-shrink: 0; }
 /* Meeting form modal */
 .meet-modal {
   max-width: 920px !important; width: 95vw !important;
@@ -242,7 +242,7 @@
 
 /* ── Meeting Continuity panel ─────────────────────────────────── */
 .cont-panel {
-  background: var(--gray-50, #f9fafb);
+  background: var(--gray-50, var(--gray-50));
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
@@ -252,10 +252,10 @@
 .cont-panel-title  { font-size: 14px; font-weight: 700; color: var(--gray-800); }
 .cont-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .cont-chip {
-  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
-  background: var(--gray-200, #e5e7eb); color: var(--gray-700, #374151);
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-full);
+  background: var(--gray-200, var(--border)); color: var(--gray-700, var(--gray-700));
 }
-.cont-chip--danger { background: rgba(239,68,68,0.12); color: #ef4444; }
+.cont-chip--danger { background: rgba(239,68,68,0.12); color: var(--danger); }
 .cont-chip--warn   { background: rgba(245,158,11,0.12); color: #b45309; }
 
 .cont-empty { padding: 14px 4px; color: var(--gray-500); font-size: 13px; text-align: center; }
@@ -270,7 +270,7 @@
 .cont-row-body { flex: 1; min-width: 0; }
 .cont-row-title { font-size: 13px; font-weight: 500; color: var(--gray-700); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .cont-row-meta  { font-size: 11px; color: var(--gray-400); display: flex; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
-.cont-overdue-text { color: #ef4444; font-weight: 600; }
+.cont-overdue-text { color: var(--danger); font-weight: 600; }
 .cont-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .cont-btn {
@@ -279,16 +279,16 @@
   cursor: pointer; white-space: nowrap;
 }
 .cont-btn:hover { background: var(--gray-100); }
-.cont-btn--good  { color: #10b981; border-color: rgba(16,185,129,0.35); }
+.cont-btn--good  { color: var(--success); border-color: rgba(16,185,129,0.35); }
 .cont-btn--muted { color: var(--gray-400); }
 
-.cont-tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
-.cont-tag--deferred { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+.cont-tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-full); }
+.cont-tag--deferred { background: rgba(139,92,246,0.12); color: var(--purple); }
 
 .cont-repeat-badge {
   display: inline-flex; align-items: center; gap: 3px;
   font-size: 10px; font-weight: 700; color: #b45309;
-  background: rgba(245,158,11,0.14); padding: 1px 6px; border-radius: 999px;
+  background: rgba(245,158,11,0.14); padding: 1px 6px; border-radius: var(--radius-full);
 }
 
 [data-theme="dark"] .cont-panel        { background: #0b1420; border-color: #1e3a5a; }
@@ -314,17 +314,17 @@
 .meet-project-remove:hover { color: var(--danger); }
 .meet-quick-update-row { display: flex; gap: 4px; flex-wrap: wrap; }
 .meet-quick-btn {
-  font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: var(--radius-full);
   border: 1px solid var(--border); background: #fff; color: var(--gray-500);
   cursor: pointer;
 }
-.meet-quick-btn.active { background: var(--brand-500, #6366f1); border-color: var(--brand-500, #6366f1); color: #fff; }
+.meet-quick-btn.active { background: var(--brand-500, var(--brand-500)); border-color: var(--brand-500, var(--brand-500)); color: #fff; }
 .meet-add-project-btn {
-  font-size: 12px; font-weight: 600; color: var(--brand-600, #4f46e5);
+  font-size: 12px; font-weight: 600; color: var(--brand-600, var(--brand-700));
   background: none; border: 1px dashed var(--border); border-radius: 6px;
   padding: 6px 10px; cursor: pointer; align-self: flex-start;
 }
-.meet-add-project-btn:hover { background: var(--gray-50, #f9fafb); }
+.meet-add-project-btn:hover { background: var(--gray-50, var(--gray-50)); }
 
 [data-theme="dark"] .meet-project-block { border-color: #1e3a5a; }
 [data-theme="dark"] .meet-quick-btn     { background: #0f1e30; border-color: #1e3a5a; color: #8cb4d0; }
@@ -332,8 +332,8 @@
 
 /* ── Card: type tag, what's-changed, project discussions ─────── */
 .meet-type-tag {
-  font-size: 10px; font-weight: 700; color: var(--brand-600, #4f46e5);
-  background: rgba(99,102,241,0.1); padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; color: var(--brand-600, var(--brand-700));
+  background: rgba(99,102,241,0.1); padding: 1px 6px; border-radius: var(--radius-full);
   margin-left: 6px; text-transform: uppercase; letter-spacing: .03em;
 }
 .meet-loading-inline { color: var(--gray-400); font-size: 12px; }
@@ -346,7 +346,7 @@
 }
 .meet-project-discussion-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .meet-project-discussion-name { font-size: 13px; font-weight: 700; color: var(--gray-800); }
-.meet-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.meet-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); }
 .meet-inline-add { display: flex; gap: 6px; margin-top: 6px; }
 .meet-inline-add input { flex: 1; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; }
 
@@ -384,7 +384,7 @@
   cursor: pointer;
 }
 .meet-toggle-btn.active { border-style: solid; background: var(--gray-100); color: var(--gray-700); }
-.meet-toggle-btn:hover { background: var(--gray-50, #f9fafb); }
+.meet-toggle-btn:hover { background: var(--gray-50, var(--gray-50)); }
 
 [data-theme="dark"] .meet-toggle-btn { border-color: #1e3a5a; color: #8cb4d0; }
 [data-theme="dark"] .meet-toggle-btn.active { background: #16243a; color: #cce0f0; }

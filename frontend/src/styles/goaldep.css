@@ -1,7 +1,7 @@
 /* === GOAL DEPENDENCY MAPPING ================================== */
 .goal-dep-panel        { border-top:1px solid var(--border); padding-top:12px; margin-top:10px; }
 .goal-dep-section-title { font-size:11px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.08em; display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.goal-dep-count        { font-weight:600; color:#6366f1; background:rgba(99,102,241,0.1); padding:1px 7px; border-radius:99px; font-size:10px; text-transform:none; letter-spacing:0; }
+.goal-dep-count        { font-weight:600; color:var(--brand-500); background:rgba(99,102,241,0.1); padding:1px 7px; border-radius: var(--radius-full); font-size:10px; text-transform:none; letter-spacing:0; }
 .goal-dep-group        { margin-bottom:10px; }
 .goal-dep-group-label  { font-size:11px; font-weight:700; color:var(--gray-500); margin-bottom:6px; }
 .goal-dep-row          { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); }
