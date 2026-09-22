@@ -2,7 +2,6 @@ package com.prowosma.backend.controller;
 
 import com.prowosma.backend.model.User;
 import com.prowosma.backend.service.AuthService;
-import com.prowosma.backend.config.ClientIpResolver;
 import com.prowosma.backend.service.Auth0TokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final Auth0TokenVerifier auth0TokenVerifier;
-    private final ClientIpResolver clientIpResolver;
 
     @PostMapping("/register")
     public Map<String, Object> register(@RequestBody Map<String, String> body,
@@ -36,12 +34,17 @@ public class AuthController {
                 extractIp(request), request.getHeader("User-Agent"));
     }
 
-    /** Second step of a login for an account with 2FA: the challenge from /login plus a code. */
+    // Step 2 of login for a 2FA-enabled account. Called after /login
+    // returns {"twoFactorRequired": true} for this email, with the
+    // 6-digit code from the person's authenticator app. See
+    // AuthService.login / AuthService.completeTwoFactorLogin for how the
+    // password-verified "pending" window this relies on is set and
+    // consumed.
     @PostMapping("/login/2fa")
-    public Map<String, Object> loginTwoFactor(@RequestBody Map<String, String> body,
-                                              HttpServletRequest request) {
+    public Map<String, Object> completeTwoFactorLogin(@RequestBody Map<String, String> body,
+                                                        HttpServletRequest request) {
         return authService.completeTwoFactorLogin(
-                body.get("twoFactorToken"), body.get("code"),
+                body.get("email"), body.get("code"),
                 extractIp(request), request.getHeader("User-Agent"));
     }
 
@@ -77,9 +80,13 @@ public class AuthController {
         return Map.of("message", "Logged out successfully");
     }
 
-    /** The client's address; X-Forwarded-For is believed only from a trusted proxy (see ClientIpResolver). */
+    /** Resolve real IP even behind a proxy */
     private String extractIp(HttpServletRequest request) {
-        return clientIpResolver.of(request);
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) return realIp;
+        return request.getRemoteAddr();
     }
 
     // ── Auth0 / OIDC SSO login ────────────────────────────────────

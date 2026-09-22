@@ -25,8 +25,12 @@ public class AuthService {
     private final WorkspaceContext    workspaceContext;
     private final ActivityLogService  activityLogService;
     private final PasswordPolicyService passwordPolicyService;
+    private final TwoFactorService    twoFactorService;
     @Lazy
     private final com.prowosma.backend.controller.SecurityController securityController;
+
+    /** How long the password-verified/awaiting-OTP window stays open. */
+    private static final long TWO_FACTOR_PENDING_MINUTES = 5;
 
     public Map<String, Object> register(String name, String email, String password,
                                          String ipAddress, String userAgent) {
@@ -109,6 +113,69 @@ public class AuthService {
                     null, null, null, ipAddress, userAgent);
             throw new PasswordExpiredException(
                     "Your password has expired and must be reset before you can log in.");
+        }
+
+        // Password is correct, but that's not enough by itself for a 2FA
+        // account — don't issue a real session token yet. Record that the
+        // password step just passed (a short-lived window,
+        // completeTwoFactorLogin() below checks it) and send the caller
+        // back a "need the code" response instead of a token, so a leaked
+        // or guessed password alone still can't produce a working session.
+        if (user.isTwoFactorEnabled()) {
+            user.setTwoFactorPendingExpiry(java.time.LocalDateTime.now().plusMinutes(TWO_FACTOR_PENDING_MINUTES));
+            userRepository.save(user);
+            activityLogService.logFull("SECURITY", user.getId(), email,
+                    "LOGIN_PASSWORD_VERIFIED_2FA_PENDING", null, null, email,
+                    null, null, null, ipAddress, userAgent);
+            Map<String, Object> pending = new HashMap<>();
+            pending.put("twoFactorRequired", true);
+            pending.put("email", email);
+            pending.put("message", "Enter your 6-digit authentication code");
+            return pending;
+        }
+
+        String sessionId = safeRecordSession(user, ipAddress, userAgent);
+        String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);
+        activityLogService.logFull("SECURITY", user.getId(), email,
+                "LOGIN_SUCCESS", null, null, email,
+                null, null, null, ipAddress, userAgent);
+        return buildResponse(user, token);
+    }
+
+    /**
+     * Step 2 of login for a 2FA-enabled account — called with the 6-digit
+     * TOTP code after login() has already returned {twoFactorRequired:
+     * true} for this email. Requires that the password step actually
+     * happened and hasn't expired (see twoFactorPendingExpiry on User) —
+     * you can't skip straight to this with just an email and a guessed
+     * code. The pending window is cleared as soon as it's used, win or
+     * lose, so each password-verification only buys one OTP attempt
+     * window; a failed code means logging in again from the top.
+     */
+    public Map<String, Object> completeTwoFactorLogin(String email, String code,
+                                                        String ipAddress, String userAgent) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || !user.isTwoFactorEnabled())
+            throw new InvalidCredentialsException("Invalid email or code");
+
+        boolean pendingValid = user.getTwoFactorPendingExpiry() != null
+                && user.getTwoFactorPendingExpiry().isAfter(java.time.LocalDateTime.now());
+
+        // Consume the pending window immediately (before verifying the
+        // code) so it's single-use regardless of outcome — a stolen/replayed
+        // code can't be retried against the same password-verified window.
+        user.setTwoFactorPendingExpiry(null);
+        userRepository.save(user);
+
+        if (!pendingValid) {
+            throw new InvalidCredentialsException(
+                    "Your login session has expired. Please log in again.");
+        }
+        if (!twoFactorService.verify(user.getTwoFactorSecret(), code)) {
+            activityLogService.logFull("SECURITY", user.getId(), email,
+                    "LOGIN_FAILED", null, "2FA code rejected", email,
+                    null, null, null, ipAddress, userAgent);
+            throw new InvalidCredentialsException("Invalid authentication code");
         }
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);

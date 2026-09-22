@@ -1,6 +1,5 @@
 package com.prowosma.backend.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,29 +13,26 @@ public class User {
     private String organizationId;
     private String name;
     private String email;
-    @JsonIgnore
     private String password;
     /** When the password was last set - drives expiry policy checks at login. */
-    private java.time.LocalDateTime passwordChangedAt = java.time.LocalDateTime.now();
+    private LocalDateTime passwordChangedAt = LocalDateTime.now();
     private String role = "USER";
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // ── 2FA ──────────────────────────────────────────────────
     private boolean twoFactorEnabled = false;
-    // Second-factor state. None of this is ever serialised (see @JsonIgnore above and below).
-    /** The secret being enrolled. It replaces twoFactorSecret only once a code generated from it is verified. */
-    @JsonIgnore
-    private String  pendingTwoFactorSecret;
-    /** Wrong second-factor codes since the last success; see LockoutPolicy. */
-    @JsonIgnore
-    private int     twoFactorFailedAttempts = 0;
-    @JsonIgnore
-    private java.time.Instant twoFactorLockedUntil;
-    /** The last TOTP step that was accepted: a code can not be used twice. */
-    @JsonIgnore
-    private long    twoFactorLastStep = -1;
-    @JsonIgnore
     private String  twoFactorSecret;              // base32 TOTP secret
+
+    /**
+     * Set by login() once the password step succeeds for a 2FA-enabled
+     * account, instead of issuing a real session token right away. Proves
+     * "the password was already verified, now waiting on the OTP" without
+     * needing a separate token to be passed back and forth — the
+     * completeTwoFactorLogin() step just checks this hasn't expired.
+     * Cleared (set null) the moment the OTP step succeeds OR expires, so
+     * it's single-use and short-lived (5 minutes — see AuthService).
+     */
+    private LocalDateTime twoFactorPendingExpiry;
 
     // ── Session tracking ─────────────────────────────────────
     private java.util.List<LoginSession> loginSessions = new java.util.ArrayList<>();
@@ -59,37 +55,28 @@ public class User {
     private String        lastLoginIp;
 
     // ── Magic link / passwordless ────────────────────────────
-    @JsonIgnore
     private String  magicLinkToken;
-    @JsonIgnore
-    private java.time.LocalDateTime magicLinkExpiry;
+    private LocalDateTime magicLinkExpiry;
 
     // ── Social auth ───────────────────────────────────────────
     private String  authProvider = "LOCAL"; // LOCAL | GOOGLE | MICROSOFT | GITHUB
     private String  socialId;              // provider-specific user ID
 
     // ── Email OTP MFA ─────────────────────────────────────────
-    @JsonIgnore
     private String  emailOtpCode;
-    @JsonIgnore
-    private java.time.LocalDateTime emailOtpExpiry;
+    private LocalDateTime emailOtpExpiry;
 
     // ── Backup codes (MFA) ────────────────────────────────────
-    @JsonIgnore
     private java.util.List<String> backupCodes = new java.util.ArrayList<>();  // hashed
 
     // ── Refresh tokens ────────────────────────────────────────
-    @JsonIgnore
     private String  refreshToken;
-    @JsonIgnore
-    private java.time.LocalDateTime refreshTokenExpiry;
+    private LocalDateTime refreshTokenExpiry;
 
     // ── Guest / external ─────────────────────────────────────
     private boolean isGuest = false;       // true = limited external collaborator
-    @JsonIgnore
     private String  guestToken;            // token for passwordless guest access
-    @JsonIgnore
-    private java.time.LocalDateTime guestTokenExpiry;
+    private LocalDateTime guestTokenExpiry;
 
     // ── Fine-grained permissions ──────────────────────────────
     private java.util.List<String> permissions = new java.util.ArrayList<>();  // ["VIEW_ALL","CREATE_TASK","MANAGE_TEAM"]
