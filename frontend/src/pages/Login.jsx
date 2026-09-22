@@ -45,12 +45,13 @@ export default function Login() {
   // retype the email they were just shown.
   const [form, setForm]   = useState({ name: "", email: searchParams.get("email") || "", password: "" });
   const [resetForm, setResetForm] = useState({ newPassword: "", confirmPassword: "" });
+  // Step 2 of login for a 2FA-enabled account (see AuthService.login /
+  // completeTwoFactorLogin on the backend) — the password already checked
+  // out, this is just the 6-digit authenticator code.
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading,      setLoading]      = useState(false);
-  // Two-step verification: set after the password step when the account has 2FA on.
-  const [twoFactorToken, setTwoFactorToken] = useState("");
-  const [twoFactorCode,  setTwoFactorCode]  = useState("");
   const navigate = useNavigate();
   const { loginUser } = useAuth();
   const { loginWithRedirect: auth0Login } = useAuth0();
@@ -81,9 +82,50 @@ export default function Login() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Shared by the password step and the 2FA step: store the session, greet, go in.
-  const finishLogin = async (res, greet) => {
-    const { token, ...userData } = res.data;
+  const handleSubmit = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
+      const payload  = mode === "login"
+        ? { email: form.email, password: form.password }
+        : { name: form.name, email: form.email, password: form.password };
+      const res = await axios.post(`${API}${endpoint}`, payload);
+
+      // Password checked out, but this account has 2FA enabled — the
+      // backend deliberately withheld a real token (see AuthService.login)
+      // and just wants the authenticator code next. Don't try to treat
+      // this response as a session; hand off to the code-entry step.
+      if (res.data?.twoFactorRequired) {
+        setMode("twoFactor");
+        setError("");
+        return;
+      }
+
+      await completeLogin(res.data);
+    } catch (err) {
+      if (err.response?.data?.error === "PASSWORD_EXPIRED") {
+        // Password matched, but it's expired — route to the dedicated reset
+        // flow instead of showing this as a plain login failure. The old
+        // password (already typed above) carries over to prove identity.
+        setMode("expiredReset");
+        setError("");
+      } else {
+        setError(err.response?.data?.message || t("login.errors.genericFailed"));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Shared by a normal password-only login and the second (2FA-code) step
+   * — both end the same way: store the token, show a brief "signed in as"
+   * confirmation, navigate in. Only "login" (not "register") gets the
+   * workspace-lookup confirmation, same as before this was extracted.
+   */
+  const completeLogin = async (data, { showWorkspaceConfirmation = mode === "login" } = {}) => {
+    const { token, ...userData } = data;
     loginUser(userData, token);   // stores in sessionStorage + sets auth header
 
     // Brief, honest confirmation of what role/workspace the person is
@@ -92,7 +134,7 @@ export default function Login() {
     // navigation if the lookup fails or the account has no workspace yet
     // (e.g. a brand-new registration, which routes into workspace setup
     // instead, where the "you'll be the Owner" framing lives).
-    if (greet) {
+    if (showWorkspaceConfirmation) {
       try {
         const wsRes = await axios.get(`${API}/workspaces`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -113,33 +155,28 @@ export default function Login() {
     navigate("/");
   };
 
-  const handleSubmit = async () => {
+  const handleTwoFactorSubmit = async () => {
     setError("");
+    if (!twoFactorCode.trim()) {
+      setError(t("login.twoFactor.errors.codeRequired", "Enter your 6-digit code"));
+      return;
+    }
     setLoading(true);
     try {
-      const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
-      const payload  = mode === "login"
-        ? { email: form.email, password: form.password }
-        : { name: form.name, email: form.email, password: form.password };
-      const res = await axios.post(`${API}${endpoint}`, payload);
-      if (res.data?.requiresTwoFactor) {
-        // Password accepted, but this account also needs a code: no session exists yet.
-        setTwoFactorToken(res.data.twoFactorToken);
-        setTwoFactorCode("");
-        setMode("twoFactor");
-        return;
-      }
-      await finishLogin(res, mode === "login");
+      const res = await axios.post(`${API}/auth/login/2fa`, {
+        email: form.email,
+        code: twoFactorCode.trim(),
+      });
+      await completeLogin(res.data, { showWorkspaceConfirmation: true });
     } catch (err) {
-      if (err.response?.data?.error === "PASSWORD_EXPIRED") {
-        // Password matched, but it's expired — route to the dedicated reset
-        // flow instead of showing this as a plain login failure. The old
-        // password (already typed above) carries over to prove identity.
-        setMode("expiredReset");
-        setError("");
-      } else {
-        setError(err.response?.data?.message || t("login.errors.genericFailed"));
-      }
+      // A rejected/expired code doesn't get another free attempt against
+      // the same password-verified window (see AuthService.
+      // completeTwoFactorLogin) — send them back to re-enter the password
+      // rather than leaving them stuck retyping a code that can never
+      // succeed anymore.
+      setError(err.response?.data?.message || t("login.twoFactor.errors.failed", "Invalid or expired code. Please log in again."));
+      setMode("login");
+      setTwoFactorCode("");
     } finally {
       setLoading(false);
     }
@@ -158,13 +195,9 @@ export default function Login() {
         oldPassword: form.password,
         newPassword: resetForm.newPassword,
       });
-      if (res.data?.requiresTwoFactor) {
-        setTwoFactorToken(res.data.twoFactorToken);
-        setTwoFactorCode("");
-        setMode("twoFactor");
-        return;
-      }
-      await finishLogin(res, false);
+      const { token, ...userData } = res.data;
+      loginUser(userData, token);
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || t("login.errors.resetFailed"));
     } finally {
@@ -172,27 +205,7 @@ export default function Login() {
     }
   };
 
-  const handleTwoFactor = async () => {
-    if (!twoFactorCode.trim()) return;
-    setError("");
-    setLoading(true);
-    try {
-      const res = await axios.post(`${API}/auth/login/2fa`, { twoFactorToken, code: twoFactorCode.trim() });
-      await finishLogin(res, true);
-    } catch (err) {
-      const message = err.response?.data?.message;
-      if (err.response?.status === 401 && /expired/i.test(message || "")) {
-        // The five-minute window after the password step ran out: start again.
-        setMode("login");
-        setTwoFactorToken("");
-        setError(message);
-      } else {
-        setError(message || t("login.errors.genericFailed"));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleKey = (e) => { if (e.key === "Enter") handleSubmit(); };
 
   if (mode === "twoFactor") {
     return (
@@ -202,28 +215,34 @@ export default function Login() {
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
               <LanguageSwitcher />
             </div>
-            <h2 className="auth-form-heading">{t("login.twoFactor.heading")}</h2>
-            <p className="auth-form-sub">{t("login.twoFactor.subtitle")}</p>
+            <h2 className="auth-form-heading">
+              {t("login.twoFactor.heading", "Two-factor authentication")}
+            </h2>
+            <p className="auth-form-sub">
+              {t("login.twoFactor.subtitle", "Enter the 6-digit code from your authenticator app")}
+            </p>
 
-            {error && <div className="auth-error" role="alert">{error}</div>}
+            {error && <div className="auth-error">{error}</div>}
 
             <div className="auth-field">
-              <label className="auth-field-label" htmlFor="two-factor-code">{t("login.twoFactor.codeLabel")}</label>
+              <label className="auth-field-label" htmlFor="two-factor-code">
+                {t("login.twoFactor.codeLabel", "Authentication code")}
+              </label>
               <input id="two-factor-code" className="auth-input" type="text"
-                autoComplete="one-time-code" autoCapitalize="off" spellCheck={false} autoFocus
+                inputMode="numeric" autoComplete="one-time-code" maxLength={6}
                 placeholder="123456" value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleTwoFactor(); }} />
+                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => { if (e.key === "Enter") handleTwoFactorSubmit(); }} />
             </div>
 
-            <button className="auth-submit" onClick={handleTwoFactor} disabled={loading || !twoFactorCode.trim()}>
-              {loading ? t("login.twoFactor.verifying") : t("login.twoFactor.submit")}
+            <button className="auth-submit" onClick={handleTwoFactorSubmit} disabled={loading}>
+              {loading ? t("login.pleaseWait") : t("login.twoFactor.submit", "Verify & sign in")}
             </button>
 
             <p className="auth-switch">
               <button className="auth-switch-btn"
-                onClick={() => { setMode("login"); setError(""); setTwoFactorToken(""); setTwoFactorCode(""); }}>
-                {t("login.twoFactor.back")}
+                onClick={() => { setMode("login"); setError(""); setTwoFactorCode(""); }}>
+                {t("login.twoFactor.backToSignIn", "Back to sign in")}
               </button>
             </p>
           </div>
@@ -231,8 +250,6 @@ export default function Login() {
       </div>
     );
   }
-
-  const handleKey = (e) => { if (e.key === "Enter") handleSubmit(); };
 
   if (mode === "expiredReset") {
     return (
