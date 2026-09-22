@@ -16,12 +16,12 @@ import PageHeader from "../components/PageHeader";
 import "../styles/pages/kanban.css";
 // C-4: WIP limits per column
 const COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"#6366f1", bg:"rgba(99,102,241,0.12)", wipLimit:null },
-  { id:"IN_PROGRESS", label:"In Progress", color:"#f59e0b", bg:"rgba(217,119,6,0.12)",  wipLimit:5    },
-  { id:"DONE",        label:"Done",        color:"#10b981", bg:"rgba(5,150,105,0.12)",  wipLimit:null },
+  { id:"TODO",        label:"To Do",       color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)", wipLimit:null },
+  { id:"IN_PROGRESS", label:"In Progress", color:"var(--warning)", bg:"rgba(217,119,6,0.12)",  wipLimit:5    },
+  { id:"DONE",        label:"Done",        color:"var(--success)", bg:"rgba(5,150,105,0.12)",  wipLimit:null },
 ];
 
-const PRIORITY_COLOR = { LOW:"#10b981", MEDIUM:"#f59e0b", HIGH:"#ef4444" };
+const PRIORITY_COLOR = { LOW:"var(--success)", MEDIUM:"var(--warning)", HIGH:"var(--danger)" };
 
 // C-4: Swimlane grouping options
 const SWIMLANE_OPTIONS = [
@@ -77,7 +77,7 @@ function KanbanColumn({ column, tasks, getProjectName, activeId }) {
             <span className="kanban-wip-badge"
               style={{
                 background: isOverWip ? "rgba(239,68,68,0.15)" : isAtWip ? "rgba(245,158,11,0.15)" : "var(--gray-100)",
-                color: isOverWip ? "#ef4444" : isAtWip ? "#f59e0b" : "var(--gray-400)",
+                color: isOverWip ? "var(--danger)" : isAtWip ? "var(--warning)" : "var(--gray-400)",
                 border: `1px solid ${isOverWip ? "rgba(239,68,68,0.3)" : isAtWip ? "rgba(245,158,11,0.3)" : "var(--border)"}`,
               }}>
               WIP {tasks.length}/{column.wipLimit}
@@ -106,7 +106,7 @@ function SwimlaneLane({ label, color, children }) {
   return (
     <div className="kanban-swimlane">
       <div className="kanban-swimlane-header" onClick={() => setCollapsed(v => !v)}
-        style={{ borderLeft:`3px solid ${color || "#6366f1"}` }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setCollapsed(v => !v))?.(e); } }}>
+        style={{ borderLeft:`3px solid ${color || "var(--brand-500)"}` }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setCollapsed(v => !v))?.(e); } }}>
         <span className="kanban-swimlane-chevron">{collapsed ? "▶" : "▼"}</span>
         <span className="kanban-swimlane-label">{label}</span>
       </div>
@@ -181,14 +181,14 @@ export default function Kanban() {
       filtered.forEach(t => {
         const key = t.projectId || "no-project";
         const label = getProjectName(t.projectId) || "No Project";
-        if (!groups[key]) groups[key] = { label, color:"#6366f1", tasks:[] };
+        if (!groups[key]) groups[key] = { label, color:"var(--brand-500)", tasks:[] };
         groups[key].tasks.push(t);
       });
       return Object.values(groups);
     }
     if (swimlaneMode === "priority") {
       const order = ["HIGH","MEDIUM","LOW"];
-      const colors = { HIGH:"#ef4444", MEDIUM:"#f59e0b", LOW:"#10b981" };
+      const colors = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--success)" };
       return order.map(p => ({
         label: p, color: colors[p],
         tasks: filtered.filter(t => t.priority === p),
@@ -198,7 +198,7 @@ export default function Kanban() {
       const groups = {};
       filtered.forEach(t => {
         const key = t.assigneeIds?.[0] || "unassigned";
-        if (!groups[key]) groups[key] = { label: key === "unassigned" ? "Unassigned" : key, color:"#8b5cf6", tasks:[] };
+        if (!groups[key]) groups[key] = { label: key === "unassigned" ? "Unassigned" : key, color:"var(--purple)", tasks:[] };
         groups[key].tasks.push(t);
       });
       return Object.values(groups);

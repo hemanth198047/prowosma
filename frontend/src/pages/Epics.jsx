@@ -16,14 +16,14 @@ const api = {
 
 const STATUS_META = {
   OPEN:        { color:"#3b82f6", label:"Open"        },
-  IN_PROGRESS: { color:"#f59e0b", label:"In Progress" },
-  DONE:        { color:"#10b981", label:"Done"        },
-  CANCELLED:   { color:"#6b7280", label:"Cancelled"   },
+  IN_PROGRESS: { color:"var(--warning)", label:"In Progress" },
+  DONE:        { color:"var(--success)", label:"Done"        },
+  CANCELLED:   { color:"var(--gray-500)", label:"Cancelled"   },
 };
 
 function EpicForm({ initial, projects, onSave, onClose }) {
   const [form, setForm] = useState(initial || {
-    name:"", description:"", projectId:"", color:"#6366f1",
+    name:"", description:"", projectId:"", color:"var(--brand-500)",
     status:"OPEN", priority:"MEDIUM", startDate:"", targetDate:"",
   });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -142,9 +142,9 @@ export default function Epics() {
       <div className="kpi-summary-bar" style={{marginBottom:"14px"}}>
         {[
           {label:"Total Epics",   value:epics.length,                      color:"var(--gray-700)"},
-          {label:"In Progress",   value:epics.filter(e=>e.status==="IN_PROGRESS").length, color:"#f59e0b"},
-          {label:"Done",          value:epics.filter(e=>e.status==="DONE").length,        color:"#10b981"},
-          {label:"Story Points",  value:`${donePoints}/${totalPoints}`,    color:"#6366f1"},
+          {label:"In Progress",   value:epics.filter(e=>e.status==="IN_PROGRESS").length, color:"var(--warning)"},
+          {label:"Done",          value:epics.filter(e=>e.status==="DONE").length,        color:"var(--success)"},
+          {label:"Story Points",  value:`${donePoints}/${totalPoints}`,    color:"var(--brand-500)"},
         ].map(s=>(
           <div key={s.label} className="kpi-summary-stat">
             <div className="kpi-summary-num" style={{color:s.color}}>{s.value}</div>
@@ -170,12 +170,12 @@ export default function Epics() {
           const epicTasks = tasks.filter(t=>t.epicId===epic.id || (epic.taskIds||[]).includes(t.id));
           const doneTasks = epicTasks.filter(t=>t.status==="DONE").length;
           return (
-            <div key={epic.id} style={{background:"var(--bg-card)",border:`2px solid ${epic.color||"#6366f1"}22`,
+            <div key={epic.id} style={{background:"var(--bg-card)",border:`2px solid ${epic.color||"var(--brand-500)"}22`,
               borderRadius:"var(--radius-lg)",padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
-                    <div style={{width:10,height:10,borderRadius:"50%",background:epic.color||"#6366f1",flexShrink:0}}/>
+                    <div style={{width:10,height:10,borderRadius:"50%",background:epic.color||"var(--brand-500)",flexShrink:0}}/>
                     <div style={{fontWeight:800,fontSize:"14px",color:"var(--gray-800)"}}>{epic.name}</div>
                   </div>
                   {epic.description && (
@@ -197,7 +197,7 @@ export default function Epics() {
                 </div>
                 <div className="kpi-progress-bar">
                   <div className="kpi-progress-fill"
-                    style={{width:`${pct}%`,background:epic.color||"#6366f1"}} />
+                    style={{width:`${pct}%`,background:epic.color||"var(--brand-500)"}} />
                 </div>
               </div>
 
@@ -215,7 +215,7 @@ export default function Epics() {
                 )}
                 {epic.priority && epic.priority!=="MEDIUM" && (
                   <span style={{fontSize:"9px",fontWeight:700,
-                    color:epic.priority==="HIGH"||epic.priority==="CRITICAL"?"#ef4444":"#f59e0b"}}>
+                    color:epic.priority==="HIGH"||epic.priority==="CRITICAL"?"var(--danger)":"var(--warning)"}}>
                     {epic.priority}
                   </span>
                 )}

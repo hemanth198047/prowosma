@@ -18,24 +18,24 @@ const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
 /* ── Constants ─────────────────────────────────────────────────── */
 const PRIORITY_META = {
-  HIGHEST:{ icon:"🔴", label:"Highest", color:"#dc2626" },
+  HIGHEST:{ icon:"🔴", label:"Highest", color:"var(--danger)" },
   HIGH:   { icon:"🟠", label:"High",    color:"#f97316" },
-  MEDIUM: { icon:"🟡", label:"Medium",  color:"#f59e0b" },
-  LOW:    { icon:"🟢", label:"Low",     color:"#10b981" },
-  LOWEST: { icon:"🔵", label:"Lowest",  color:"#6366f1" },
+  MEDIUM: { icon:"🟡", label:"Medium",  color:"var(--warning)" },
+  LOW:    { icon:"🟢", label:"Low",     color:"var(--success)" },
+  LOWEST: { icon:"🔵", label:"Lowest",  color:"var(--brand-500)" },
 };
 const TYPE_META = {
-  STORY:  { icon:"📗", label:"Story",   color:"#10b981" },
-  BUG:    { icon:"🐛", label:"Bug",     color:"#ef4444" },
-  TASK:   { icon:"✅", label:"Task",    color:"#6366f1" },
-  SUBTASK:{ icon:"🔹", label:"Subtask", color:"#8b5cf6" },
-  EPIC:   { icon:"⚡", label:"Epic",    color:"#f59e0b" },
+  STORY:  { icon:"📗", label:"Story",   color:"var(--success)" },
+  BUG:    { icon:"🐛", label:"Bug",     color:"var(--danger)" },
+  TASK:   { icon:"✅", label:"Task",    color:"var(--brand-500)" },
+  SUBTASK:{ icon:"🔹", label:"Subtask", color:"var(--purple)" },
+  EPIC:   { icon:"⚡", label:"Epic",    color:"var(--warning)" },
 };
 const DEFAULT_COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"#64748b", bg:"rgba(100,116,139,0.08)", wipLimit:null },
+  { id:"TODO",        label:"To Do",       color:"var(--gray-500)", bg:"rgba(100,116,139,0.08)", wipLimit:null },
   { id:"IN_PROGRESS", label:"In Progress", color:"#3b82f6", bg:"rgba(59,130,246,0.08)",  wipLimit:5    },
-  { id:"IN_REVIEW",   label:"In Review",   color:"#8b5cf6", bg:"rgba(139,92,246,0.08)",  wipLimit:3    },
-  { id:"DONE",        label:"Done",        color:"#10b981", bg:"rgba(16,185,129,0.08)",  wipLimit:null },
+  { id:"IN_REVIEW",   label:"In Review",   color:"var(--purple)", bg:"rgba(139,92,246,0.08)",  wipLimit:3    },
+  { id:"DONE",        label:"Done",        color:"var(--success)", bg:"rgba(16,185,129,0.08)",  wipLimit:null },
 ];
 const STORY_POINT_SCALE = {
   fibonacci:  [1,2,3,5,8,13,21,34],
@@ -53,7 +53,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
   const [columns, setColumns] = useState(cfg.columns || DEFAULT_COLUMNS);
   const addColumn = () => setColumns(p=>[...p,{
-    id:"COL_"+Date.now(), label:"New Column", color:"#6366f1",
+    id:"COL_"+Date.now(), label:"New Column", color:"var(--brand-500)",
     bg:"rgba(99,102,241,0.08)", wipLimit:null,
   }]);
   const updateCol = (idx, k, v) => setColumns(p=>p.map((c,i)=>i===idx?{...c,[k]:v}:c));
@@ -101,7 +101,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
                     <button onClick={()=>moveCol(idx,-1)} disabled={idx===0} title="Move up">↑</button>
                     <button onClick={()=>moveCol(idx,1)} disabled={idx===columns.length-1} title="Move down">↓</button>
                     <button onClick={()=>removeCol(idx)} disabled={columns.length<=2}
-                      style={{color:"#ef4444"}} title="Remove">✕</button>
+                      style={{color:"var(--danger)"}} title="Remove">✕</button>
                   </div>
                 </div>
               ))}
@@ -334,7 +334,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
                 <span style={{
                   width:24,height:24,borderRadius:"50%",display:"flex",
                   alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,
-                  background:step>=s?"#4f46e5":"var(--gray-100)",
+                  background:step>=s?"var(--brand-700)":"var(--gray-100)",
                   color:step>=s?"#fff":"var(--gray-400)",
                 }}>{ s}</span>
                 <span style={{fontSize:11,color:"var(--gray-500)"}}>
@@ -423,7 +423,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
               </div>
               <div style={{display:"flex",justifyContent:"space-between"}}>
                 <button className="jb-btn-secondary" onClick={()=>setStep(2)}>← Back</button>
-                <button className="jb-btn-primary" style={{background:"#059669"}}
+                <button className="jb-btn-primary" style={{background:"var(--success)"}}
                   onClick={handleComplete}>
                   Complete Sprint ✓
                 </button>
@@ -495,16 +495,16 @@ function BurndownChart({ sprint, tasks, metric }) {
             stroke="var(--border)" strokeWidth={0.5} strokeDasharray="4,4"/>
         ))}
         {/* Ideal line */}
-        <path d={idealPath} fill="none" stroke="#94a3b8" strokeWidth={1.5}
+        <path d={idealPath} fill="none" stroke="var(--gray-400)" strokeWidth={1.5}
           strokeDasharray="5,4"/>
         {/* Actual line */}
         {actualPath && (
-          <path d={actualPath} fill="none" stroke="#4f46e5" strokeWidth={2.5}
+          <path d={actualPath} fill="none" stroke="var(--brand-700)" strokeWidth={2.5}
             strokeLinecap="round" strokeLinejoin="round"/>
         )}
         {/* Today marker */}
         <line x1={xScale(elapsed)} x2={xScale(elapsed)} y1={PAD} y2={H-PAD}
-          stroke="#ef4444" strokeWidth={1} strokeDasharray="3,3"/>
+          stroke="var(--danger)" strokeWidth={1} strokeDasharray="3,3"/>
         {/* Labels */}
         <text x={PAD} y={H-8} fontSize={9} fill="var(--gray-400)">
           {new Date(start).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}
@@ -512,8 +512,8 @@ function BurndownChart({ sprint, tasks, metric }) {
         <text x={W-PAD} y={H-8} fontSize={9} fill="var(--gray-400)" textAnchor="end">
           {new Date(end).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}
         </text>
-        <text x={xScale(elapsed)+3} y={PAD+10} fontSize={9} fill="#ef4444">Today</text>
-        <text x={W-PAD} y={yScale(0)+4} fontSize={9} fill="#94a3b8" textAnchor="end">Ideal</text>
+        <text x={xScale(elapsed)+3} y={PAD+10} fontSize={9} fill="var(--danger)">Today</text>
+        <text x={W-PAD} y={yScale(0)+4} fontSize={9} fill="var(--gray-400)" textAnchor="end">Ideal</text>
       </svg>
     </div>
   );
@@ -551,7 +551,7 @@ function VelocityChart({ sprints, tasks, metric }) {
           <div key={i} style={{flex:1,display:"flex",flexDirection:"column",
             alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}>
             <div style={{fontSize:9,color:"var(--gray-400)",fontWeight:700}}>{d.done}</div>
-            <div style={{width:"60%",background:"#4f46e5",borderRadius:"3px 3px 0 0",
+            <div style={{width:"60%",background:"var(--brand-700)",borderRadius:"3px 3px 0 0",
               height:`${(d.done/max)*100}%`,minHeight:2,transition:"height .3s"}}/>
             <div style={{width:"80%",background:"rgba(99,102,241,0.2)",borderRadius:"3px 3px 0 0",
               height:`${(d.committed/max)*100}%`,minHeight:2,position:"absolute",
@@ -586,7 +586,7 @@ function IssueCard({ task, onClick, compact, cardColor, spScale }) {
   // Left border colour by config
   const leftColor = cardColor==="priority" ? pri.color
     : cardColor==="type"     ? typ.color
-    : cardColor==="epic"     ? "#f59e0b"
+    : cardColor==="epic"     ? "var(--warning)"
     : "transparent";
 
   return (
@@ -1187,7 +1187,7 @@ export default function JiraBoard() {
             )}
             {displayedSprint.status==="ACTIVE" && (
               <button className="jb-btn-start-sprint"
-                style={{background:"#059669"}}
+                style={{background:"var(--success)"}}
                 onClick={()=>setShowComplete(true)}>
                 ✓ Complete Sprint
               </button>
@@ -1248,7 +1248,7 @@ export default function JiraBoard() {
                     </button>
                   )}
                   {sprint.status==="ACTIVE"&&(
-                    <button className="jb-btn-start-sprint" style={{background:"#059669"}}
+                    <button className="jb-btn-start-sprint" style={{background:"var(--success)"}}
                       onClick={()=>{setFilterSprint(sprint.id);setShowComplete(true);}}>
                       ✓ Complete
                     </button>
@@ -1322,12 +1322,12 @@ export default function JiraBoard() {
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}}>
               {[
-                {l:"Total Issues",  v:boardTasks.length,      c:"#6366f1"},
-                {l:"Done",          v:boardTasks.filter(t=>t.status==="DONE").length, c:"#10b981"},
+                {l:"Total Issues",  v:boardTasks.length,      c:"var(--brand-500)"},
+                {l:"Done",          v:boardTasks.filter(t=>t.status==="DONE").length, c:"var(--success)"},
                 {l:"In Progress",   v:boardTasks.filter(t=>t.status==="IN_PROGRESS").length, c:"#3b82f6"},
-                {l:"Story Points",  v:`${doneSP}/${sprintSP}`, c:"#f59e0b"},
-                {l:"Stories",       v:boardTasks.filter(t=>t.taskType==="STORY").length, c:"#10b981"},
-                {l:"Bugs",          v:boardTasks.filter(t=>t.taskType==="BUG").length,   c:"#ef4444"},
+                {l:"Story Points",  v:`${doneSP}/${sprintSP}`, c:"var(--warning)"},
+                {l:"Stories",       v:boardTasks.filter(t=>t.taskType==="STORY").length, c:"var(--success)"},
+                {l:"Bugs",          v:boardTasks.filter(t=>t.taskType==="BUG").length,   c:"var(--danger)"},
               ].map(m=>(
                 <div key={m.l} style={{padding:"10px 12px",background:"var(--gray-50)",
                   borderRadius:8,textAlign:"center",border:`1px solid ${m.c}22`}}>

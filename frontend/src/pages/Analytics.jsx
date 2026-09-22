@@ -31,9 +31,9 @@ function KpiCard({ icon, label, value, sub, color, suffix = "" }) {
 // ── Health badge ──────────────────────────────────────────────
 function HealthBadge({ health }) {
   const map = {
-    HEALTHY:  { label: "Healthy",  color: "#10b981", bg: "rgba(5,150,105,0.12)" },
-    AT_RISK:  { label: "At Risk",  color: "#f59e0b", bg: "rgba(217,119,6,0.12)" },
-    CRITICAL: { label: "Critical", color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+    HEALTHY:  { label: "Healthy",  color: "var(--success)", bg: "rgba(5,150,105,0.12)" },
+    AT_RISK:  { label: "At Risk",  color: "var(--warning)", bg: "rgba(217,119,6,0.12)" },
+    CRITICAL: { label: "Critical", color: "var(--danger)", bg: "rgba(239,68,68,0.12)" },
   };
   const s = map[health] || map.AT_RISK;
   return (
@@ -70,9 +70,9 @@ function WorkloadView() {
   }, []);
 
   const LOAD_META = {
-    HIGH:   { label: "High Load",   color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
-    MEDIUM: { label: "Medium Load", color: "#f59e0b", bg: "rgba(217,119,6,0.12)" },
-    LOW:    { label: "Available",   color: "#10b981", bg: "rgba(5,150,105,0.12)" },
+    HIGH:   { label: "High Load",   color: "var(--danger)", bg: "rgba(239,68,68,0.12)" },
+    MEDIUM: { label: "Medium Load", color: "var(--warning)", bg: "rgba(217,119,6,0.12)" },
+    LOW:    { label: "Available",   color: "var(--success)", bg: "rgba(5,150,105,0.12)" },
   };
 
   if (loading) return <div className="analytics-loading"><div className="analytics-spinner" /></div>;
@@ -117,10 +117,10 @@ function WorkloadView() {
 
               <div className="workload-stats">
                 {[
-                  { num: m.total,  label: "Total",  color: "#6366f1" },
-                  { num: m.active, label: "Active",  color: "#f59e0b" },
-                  { num: m.done,   label: "Done",    color: "#10b981" },
-                  { num: m.overdue,label: "Overdue", color: "#ef4444" },
+                  { num: m.total,  label: "Total",  color: "var(--brand-500)" },
+                  { num: m.active, label: "Active",  color: "var(--warning)" },
+                  { num: m.done,   label: "Done",    color: "var(--success)" },
+                  { num: m.overdue,label: "Overdue", color: "var(--danger)" },
                 ].map(s => (
                   <div key={s.label} className="workload-stat">
                     <span className="workload-stat-num" style={{ color: s.color }}>{s.num}</span>
@@ -138,7 +138,7 @@ function WorkloadView() {
                 <div className="workload-completion-bar">
                   <div style={{
                     width: `${m.completionRate}%`, height: "100%", borderRadius: "99px", transition: "width .4s",
-                    background: m.completionRate >= 70 ? "#10b981" : m.completionRate >= 40 ? "#f59e0b" : "#ef4444",
+                    background: m.completionRate >= 70 ? "var(--success)" : m.completionRate >= 40 ? "var(--warning)" : "var(--danger)",
                   }} />
                 </div>
               </div>
@@ -156,7 +156,7 @@ function WorkloadView() {
                         <div key={i} title={`${w.week}: ${w.completed} completed`}
                           style={{
                             flex: 1, height: `${h}px`, borderRadius: "2px 2px 0 0",
-                            background: w.completed > 0 ? "#6366f1" : "var(--gray-200)",
+                            background: w.completed > 0 ? "var(--brand-500)" : "var(--gray-200)",
                             transition: "height .3s", alignSelf: "flex-end",
                           }} />
                       );
@@ -217,7 +217,7 @@ function ResourceForecast() {
       <div className="analytics-section-title">📅 Resource Forecast — Next 4 Weeks</div>
       <div className="resource-forecast-grid">
         {(data?.members || []).map((m, i) => {
-          const color = m.risk === "OVERLOADED" ? "#ef4444" : m.risk === "HIGH" ? "#f59e0b" : "#10b981";
+          const color = m.risk === "OVERLOADED" ? "var(--danger)" : m.risk === "HIGH" ? "var(--warning)" : "var(--success)";
           return (
             <div key={i} className="resource-forecast-card">
               <div className="resource-forecast-header">
@@ -396,15 +396,15 @@ export default function Analytics() {
         <div>
           {/* KPI Row */}
           <div className="analytics-kpi-row">
-            <KpiCard icon="✅" label="Completion Rate"   value={kpis.completionRate}  suffix="%" color="#10b981"
+            <KpiCard icon="✅" label="Completion Rate"   value={kpis.completionRate}  suffix="%" color="var(--success)"
               sub={`${kpis.completedTasks} of ${kpis.totalTasks} tasks done`} />
-            <KpiCard icon="⚡" label="In Progress"       value={kpis.inProgress}      color="#f59e0b"
+            <KpiCard icon="⚡" label="In Progress"       value={kpis.inProgress}      color="var(--warning)"
               sub="tasks active right now" />
-            <KpiCard icon="⚠️" label="Overdue Tasks"     value={kpis.overdueTasks}    color="#ef4444"
+            <KpiCard icon="⚠️" label="Overdue Tasks"     value={kpis.overdueTasks}    color="var(--danger)"
               sub={`${kpis.overdueRate}% of all tasks`} />
-            <KpiCard icon="⏱️" label="Avg Task Age"      value={kpis.avgTaskAgeDays}  suffix=" days" color="#6366f1"
+            <KpiCard icon="⏱️" label="Avg Task Age"      value={kpis.avgTaskAgeDays}  suffix=" days" color="var(--brand-500)"
               sub="for open tasks" />
-            <KpiCard icon="🎯" label="Goal Success Rate" value={kpis.goalSuccessRate} suffix="%" color="#8b5cf6"
+            <KpiCard icon="🎯" label="Goal Success Rate" value={kpis.goalSuccessRate} suffix="%" color="var(--purple)"
               sub={`${kpis.achievedGoals} of ${kpis.totalGoals} goals achieved`} />
             <KpiCard icon="🏆" label="Most Productive"   value={kpis.topUser}         color="#0ea5e9"
               sub="this month" />
@@ -424,8 +424,8 @@ export default function Analytics() {
                       <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="created"   name="Created"   fill="#6366f1" radius={[3,3,0,0]} />
-                      <Bar dataKey="completed" name="Completed" fill="#10b981" radius={[3,3,0,0]} />
+                      <Bar dataKey="created"   name="Created"   fill="var(--brand-500)" radius={[3,3,0,0]} />
+                      <Bar dataKey="completed" name="Completed" fill="var(--success)" radius={[3,3,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -463,9 +463,9 @@ export default function Analytics() {
                       <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Line type="monotone" dataKey="remaining" name="Remaining"
-                        stroke="#6366f1" strokeWidth={2} dot={false} />
+                        stroke="var(--brand-500)" strokeWidth={2} dot={false} />
                       <Line type="monotone" dataKey="ideal" name="Ideal"
-                        stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+                        stroke="var(--gray-400)" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -501,7 +501,7 @@ export default function Analytics() {
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip content={<ChartTooltip />} />
                     <Line type="monotone" dataKey="completions" name="Completions"
-                      stroke="#10b981" strokeWidth={2} dot={false} />
+                      stroke="var(--success)" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -565,7 +565,7 @@ export default function Analytics() {
                       {projectHealth.map((p, i) => (
                         <div key={i} className="analytics-health-row">
                           <div className="analytics-health-dot"
-                            style={{ background: p.color || "#6366f1" }} />
+                            style={{ background: p.color || "var(--brand-500)" }} />
                           <div className="analytics-health-info">
                             <div className="analytics-health-name">
                               {p.name}
@@ -576,9 +576,9 @@ export default function Analytics() {
                                 <div className="analytics-health-bar-fill"
                                   style={{
                                     width: `${p.score}%`,
-                                    background: p.health === "HEALTHY" ? "#10b981"
-                                              : p.health === "AT_RISK"  ? "#f59e0b"
-                                              : "#ef4444",
+                                    background: p.health === "HEALTHY" ? "var(--success)"
+                                              : p.health === "AT_RISK"  ? "var(--warning)"
+                                              : "var(--danger)",
                                   }} />
                               </div>
                               <span className="analytics-health-score">{p.score}</span>

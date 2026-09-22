@@ -214,7 +214,7 @@ export default function Reports() {
                         { name:"In Progress", value: report.inProgressCount|| 0 },
                         { name:"Done",        value: report.doneCount      || 0 },
                       ]} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
-                        {["#6366f1","#f59e0b","#10b981"].map((c,i) => <Cell key={i} fill={c} />)}
+                        {["var(--brand-500)","var(--warning)","var(--success)"].map((c,i) => <Cell key={i} fill={c} />)}
                       </Pie>
                       <Tooltip />
                       <Legend />
@@ -235,7 +235,7 @@ export default function Reports() {
                       <YAxis tick={{ fontSize:11 }} />
                       <Tooltip />
                       <Bar dataKey="value">
-                        {["#10b981","#f59e0b","#ef4444"].map((c,i) => <Cell key={i} fill={c} />)}
+                        {["var(--success)","var(--warning)","var(--danger)"].map((c,i) => <Cell key={i} fill={c} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -248,8 +248,8 @@ export default function Reports() {
                     {[
                       { label:"Total Tasks",     value: report.totalTasks     || 0 },
                       { label:"Completed",       value: report.doneCount      || 0 },
-                      { label:"Overdue",         value: report.overdueCount   || 0, color:"#ef4444" },
-                      { label:"Completion Rate", value: `${report.completionRate||0}%`, color:"#10b981" },
+                      { label:"Overdue",         value: report.overdueCount   || 0, color:"var(--danger)" },
+                      { label:"Completion Rate", value: `${report.completionRate||0}%`, color:"var(--success)" },
                       { label:"Active Projects", value: report.activeProjects || 0 },
                       { label:"Active Goals",    value: report.activeGoals    || 0 },
                     ].map(s => (

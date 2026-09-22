@@ -266,9 +266,9 @@ function StatusDropdown({ task, onUpdate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const statusColor = {
-    TODO: "#6366f1",
-    IN_PROGRESS: "#f59e0b",
-    DONE: "#10b981",
+    TODO: "var(--brand-500)",
+    IN_PROGRESS: "var(--warning)",
+    DONE: "var(--success)",
   };
   const statuses = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -398,7 +398,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
       <button className="step-tool-btn" title="Manage step dependencies — set which steps must finish before this one"
         onClick={() => toggle("deps")}>
         🔗{dc > 0
-          ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"#dc2626" }}>{dc} blocked</span>
+          ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"var(--danger)" }}>{dc} blocked</span>
           : <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>deps</span>}
       </button>
 
@@ -460,7 +460,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
                         {b.title}
                       </span>
                       <span style={{ fontSize:"10px", marginLeft:"6px",
-                        color: b.completed ? "#10b981" : "#f59e0b", fontWeight:600 }}>
+                        color: b.completed ? "var(--success)" : "var(--warning)", fontWeight:600 }}>
                         {b.completed ? "✓ Done" : "⏳ Pending"}
                       </span>
                     </div>
@@ -717,11 +717,11 @@ export default function Tasks() {
     return true;
   });
 
-  const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
+  const priorityColor = { LOW: "var(--success)", MEDIUM: "var(--warning)", HIGH: "var(--danger)" };
   const statusColor = {
-    TODO: "#6366f1",
-    IN_PROGRESS: "#f59e0b",
-    DONE: "#10b981",
+    TODO: "var(--brand-500)",
+    IN_PROGRESS: "var(--warning)",
+    DONE: "var(--success)",
   };
 
   /* Inner render helper — shared across all 3 view modes */
@@ -742,7 +742,7 @@ export default function Tasks() {
         onClick={e => e.stopPropagation()}
       />
       <div className="task-status-dot"
-        style={{ background: t.blockedByTaskIds?.length > 0 ? "#ef4444" : statusColor[t.status] }}
+        style={{ background: t.blockedByTaskIds?.length > 0 ? "var(--danger)" : statusColor[t.status] }}
         title={t.blockedByTaskIds?.length > 0 ? "This task has dependencies" : t.status}
       />
       <div className="task-info">
@@ -776,7 +776,7 @@ export default function Tasks() {
             {t.assigneeIds.map((id) => {
               const m = teamMembers.find((m) => m.id === id);
               return m ? (
-                <span key={id} style={{ background: m.color || "#6366f1", color: "#fff", borderRadius: "50%",
+                <span key={id} style={{ background: m.color || "var(--brand-500)", color: "#fff", borderRadius: "50%",
                   width: "18px", height: "18px", fontSize: "9px", fontWeight: 700,
                   display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                   {m.name.slice(0, 2).toUpperCase()}
@@ -802,20 +802,20 @@ export default function Tasks() {
           {t.priority}
         </span>
         {t.type && t.type !== "TASK" && (
-          <span className="badge" style={{ background:"#6366f118",color:"#6366f1",border:"1px solid #6366f133" }}>
+          <span className="badge" style={{ background:"#6366f118",color:"var(--brand-500)",border:"1px solid #6366f133" }}>
             {t.type}
           </span>
         )}
         {t.severity && t.severity !== "NONE" && (
           <span className="badge" style={{
             background: t.severity==="CRITICAL"?"#7c3aed18":t.severity==="HIGH"?"#ef444418":"#f59e0b18",
-            color: t.severity==="CRITICAL"?"#7c3aed":t.severity==="HIGH"?"#ef4444":"#f59e0b",
+            color: t.severity==="CRITICAL"?"var(--purple)":t.severity==="HIGH"?"var(--danger)":"var(--warning)",
           }}>⚡{t.severity}</span>
         )}
         {t.slaStatus && t.slaStatus !== "NONE" && (
           <span className="badge" style={{
             background: t.slaStatus==="BREACHED"?"#ef444418":t.slaStatus==="AT_RISK"?"#f59e0b18":"#10b98118",
-            color: t.slaStatus==="BREACHED"?"#ef4444":t.slaStatus==="AT_RISK"?"#f59e0b":"#10b981",
+            color: t.slaStatus==="BREACHED"?"var(--danger)":t.slaStatus==="AT_RISK"?"var(--warning)":"var(--success)",
           }}>SLA:{t.slaStatus}</span>
         )}
         {(t.subtaskIds||[]).length > 0 && (
@@ -975,9 +975,9 @@ export default function Tasks() {
               borderRadius: "8px",
               fontWeight: 600,
               cursor: "pointer",
-              background: filterSpecial === "overdue" ? "#ef4444" : "#fff5f5",
-              color: filterSpecial === "overdue" ? "#fff" : "#ef4444",
-              border: "1px solid #ef4444",
+              background: filterSpecial === "overdue" ? "var(--danger)" : "#fff5f5",
+              color: filterSpecial === "overdue" ? "#fff" : "var(--danger)",
+              border: "1px solid var(--danger)",
             }}
             onClick={() =>
               setFilterSpecial(filterSpecial === "overdue" ? "" : "overdue")
@@ -992,9 +992,9 @@ export default function Tasks() {
               borderRadius: "8px",
               fontWeight: 600,
               cursor: "pointer",
-              background: filterSpecial === "today" ? "#d97706" : "#fffbeb",
-              color: filterSpecial === "today" ? "#fff" : "#d97706",
-              border: "1px solid #d97706",
+              background: filterSpecial === "today" ? "var(--warning)" : "#fffbeb",
+              color: filterSpecial === "today" ? "#fff" : "var(--warning)",
+              border: "1px solid var(--warning)",
             }}
             onClick={() =>
               setFilterSpecial(filterSpecial === "today" ? "" : "today")
@@ -1045,7 +1045,7 @@ export default function Tasks() {
           <span
             style={{
               background: filterSpecial === "overdue" ? "#fff5f5" : "#fffbeb",
-              color: filterSpecial === "overdue" ? "#ef4444" : "#d97706",
+              color: filterSpecial === "overdue" ? "var(--danger)" : "var(--warning)",
               padding: "4px 12px",
               borderRadius: "20px",
               fontSize: "12px",
@@ -1113,7 +1113,7 @@ export default function Tasks() {
               <div className="project-task-group" key={project?.id || "__none__"}>
                 <div className="project-task-group-header">
                   <div className="project-task-group-dot"
-                    style={{ background: project?.color || "#94a3b8" }} />
+                    style={{ background: project?.color || "var(--gray-400)" }} />
                   <span className="project-task-group-name">
                     {project ? project.name : "No Project"}
                   </span>
@@ -1123,8 +1123,8 @@ export default function Tasks() {
                   {project && (
                     <span className="badge"
                       style={{ fontSize: "10px", padding: "2px 8px",
-                        background: project.status === "ACTIVE" ? "rgba(5,150,105,0.12)" : "#f1f5f9",
-                        color: project.status === "ACTIVE" ? "#15803d" : "#475569" }}>
+                        background: project.status === "ACTIVE" ? "rgba(5,150,105,0.12)" : "var(--gray-100)",
+                        color: project.status === "ACTIVE" ? "#15803d" : "var(--gray-600)" }}>
                       {project.status}
                     </span>
                   )}
@@ -1248,7 +1248,7 @@ export default function Tasks() {
                               </span>
                               <span className="goal-step-mini-progress">
                                 <span className="goal-step-mini-bar">
-                                  <span style={{ width: pct + "%", background: pct === 100 ? "#10b981" : "#6366f1" }} />
+                                  <span style={{ width: pct + "%", background: pct === 100 ? "var(--success)" : "var(--brand-500)" }} />
                                 </span>
                                 {done}/{total} done
                               </span>

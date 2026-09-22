@@ -13,7 +13,7 @@ import "../styles/pages/analytics.css";
 const getAISummary = () => client.get("/ai/executive-summary");
 const getRisks     = () => client.get("/ai/risks");
 
-function StatCard({ icon, label, value, sub, color="#6366f1", trend }) {
+function StatCard({ icon, label, value, sub, color="var(--brand-500)", trend }) {
   return (
     <div className="exec-stat-card">
       <div className="exec-stat-icon" style={{ background:`${color}18`, color }}>{icon}</div>
@@ -127,17 +127,17 @@ export default function ExecutiveDashboard() {
 
       {/* KPI row */}
       <div className="exec-stat-row">
-        <StatCard icon="📁" label="Active Projects"  value={activeProjects}  color="#6366f1"
+        <StatCard icon="📁" label="Active Projects"  value={activeProjects}  color="var(--brand-500)"
           sub={atRiskProjects > 0 ? `${atRiskProjects} at risk` : "All healthy"} />
-        <StatCard icon="🎯" label="Goals On Track"   value={goalOnTrack}     color="#10b981"
+        <StatCard icon="🎯" label="Goals On Track"   value={goalOnTrack}     color="var(--success)"
           sub={goalAtRisk > 0 ? `${goalAtRisk} at risk` : "All on track"} />
         <StatCard icon="📊" label="Portfolio Health"
           value={avgHealth !== null ? `${avgHealth}%` : "—"}
-          color={avgHealth === null ? "#6b7280" : avgHealth >= 70 ? "#10b981" : avgHealth >= 50 ? "#f59e0b" : "#ef4444"}
+          color={avgHealth === null ? "var(--gray-500)" : avgHealth >= 70 ? "var(--success)" : avgHealth >= 50 ? "var(--warning)" : "var(--danger)"}
           sub={avgHealth === null ? "No projects yet" : undefined} />
-        <StatCard icon="⚠️" label="KPI Alerts"       value={kpiAlerts}       color="#ef4444"
+        <StatCard icon="⚠️" label="KPI Alerts"       value={kpiAlerts}       color="var(--danger)"
           sub={kpiAlerts === 0 ? "All clear" : "Threshold breached"} />
-        <StatCard icon="✅" label="Total Goals"       value={goals.length}    color="#8b5cf6"
+        <StatCard icon="✅" label="Total Goals"       value={goals.length}    color="var(--purple)"
           sub={`${goals.filter(g=>g.status==="ACHIEVED").length} achieved`} />
       </div>
 
@@ -149,7 +149,7 @@ export default function ExecutiveDashboard() {
             <RadarChart data={radarData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" tick={{ fontSize:11 }} />
-              <Radar name="Score" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} />
+              <Radar name="Score" dataKey="A" stroke="var(--brand-500)" fill="var(--brand-500)" fillOpacity={0.25} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -179,7 +179,7 @@ export default function ExecutiveDashboard() {
           {kpis.slice(0,6).map(k => {
             const range = k.targetValue - k.baselineValue;
             const pct   = range===0 ? 0 : Math.min(100,Math.round(((k.currentValue-k.baselineValue)/range)*100));
-            const color = k.status==="ON_TRACK" ? "#10b981" : k.status==="ACHIEVED" ? "#6366f1" : k.status==="AT_RISK" ? "#f59e0b" : "#ef4444";
+            const color = k.status==="ON_TRACK" ? "var(--success)" : k.status==="ACHIEVED" ? "var(--brand-500)" : k.status==="AT_RISK" ? "var(--warning)" : "var(--danger)";
             return (
               <div key={k.id} className="exec-kpi-row">
                 <div className="exec-kpi-name">{k.name}</div>
@@ -198,7 +198,7 @@ export default function ExecutiveDashboard() {
           <div className="exec-card-title">🎯 Goal Confidence</div>
           {goals.filter(g=>g.status==="ACTIVE").slice(0,6).map(g => {
             const conf = g.confidence || 50;
-            const color = conf >= 70 ? "#10b981" : conf >= 40 ? "#f59e0b" : "#ef4444";
+            const color = conf >= 70 ? "var(--success)" : conf >= 40 ? "var(--warning)" : "var(--danger)";
             return (
               <div key={g.id} className="exec-kpi-row">
                 <div className="exec-kpi-name">{g.title}</div>
@@ -222,7 +222,7 @@ export default function ExecutiveDashboard() {
             <tbody>
               {portfolio.slice(0,8).map(p => {
                 const h = p.health || 80;
-                const color = h >= 70 ? "#10b981" : h >= 50 ? "#f59e0b" : "#ef4444";
+                const color = h >= 70 ? "var(--success)" : h >= 50 ? "var(--warning)" : "var(--danger)";
                 return (
                   <tr key={p.id}>
                     <td className="exec-table-name">{p.name}</td>

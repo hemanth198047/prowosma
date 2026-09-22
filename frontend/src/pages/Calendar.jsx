@@ -29,10 +29,10 @@ export default function Calendar() {
         date: t.dueDate,
         backgroundColor:
           t.status === "DONE"
-            ? "#10b981"
+            ? "var(--success)"
             : t.status === "IN_PROGRESS"
-              ? "#f59e0b"
-              : "#6366f1",
+              ? "var(--warning)"
+              : "var(--brand-500)",
         borderColor: "transparent",
         textColor: "#fff",
         extendedProps: {
@@ -49,7 +49,7 @@ export default function Calendar() {
         id: `project-${p.id}`,
         title: `📁 ${p.name}`,
         date: p.dueDate,
-        backgroundColor: p.color || "#6366f1",
+        backgroundColor: p.color || "var(--brand-500)",
         borderColor: "transparent",
         textColor: "#fff",
         extendedProps: { type: "project", itemId: p.id, status: p.status },
@@ -61,7 +61,7 @@ export default function Calendar() {
         id: `goal-${g.id}`,
         title: `🎯 ${g.title}`,
         date: g.targetDate,
-        backgroundColor: g.status === "ACHIEVED" ? "#10b981" : "#8b5cf6",
+        backgroundColor: g.status === "ACHIEVED" ? "var(--success)" : "var(--purple)",
         borderColor: "transparent",
         textColor: "#fff",
         extendedProps: { type: "goal", itemId: g.id, status: g.status },
@@ -137,19 +137,19 @@ export default function Calendar() {
       {/* Legend */}
       <div className="calendar-legend">
         <span className="legend-item">
-          <span className="legend-dot" style={{ background: "#6366f1" }} />
+          <span className="legend-dot" style={{ background: "var(--brand-500)" }} />
           Todo Task
         </span>
         <span className="legend-item">
-          <span className="legend-dot" style={{ background: "#f59e0b" }} />
+          <span className="legend-dot" style={{ background: "var(--warning)" }} />
           In Progress
         </span>
         <span className="legend-item">
-          <span className="legend-dot" style={{ background: "#10b981" }} />
+          <span className="legend-dot" style={{ background: "var(--success)" }} />
           Done/Achieved
         </span>
         <span className="legend-item">
-          <span className="legend-dot" style={{ background: "#8b5cf6" }} />
+          <span className="legend-dot" style={{ background: "var(--purple)" }} />
           Goal
         </span>
       </div>

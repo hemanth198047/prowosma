@@ -14,10 +14,10 @@ import {
 } from "recharts";
 
 const STATUS_META = {
-  PLANNING:  { label:"Planning",  color:"#6366f1", bg:"rgba(99,102,241,0.12)" },
-  ACTIVE:    { label:"Active",    color:"#10b981", bg:"rgba(5,150,105,0.12)" },
+  PLANNING:  { label:"Planning",  color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
+  ACTIVE:    { label:"Active",    color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
   COMPLETED: { label:"Completed", color:"#06b6d4", bg:"rgba(6,182,212,0.12)" },
-  CANCELLED: { label:"Cancelled", color:"#6b7280", bg:"rgba(107,114,128,0.12)" },
+  CANCELLED: { label:"Cancelled", color:"var(--gray-500)", bg:"rgba(107,114,128,0.12)" },
 };
 
 const MOOD_META = {
@@ -92,7 +92,7 @@ function VelocityChart({ sprints, tasks }) {
               <div className="velocity-bar-num">{d.completed}</div>
               {d.completion < 80 && d.total > 0 && (
                 <div className="velocity-completion"
-                  style={{ color: d.completion >= 80 ? "#10b981" : "#f59e0b" }}>
+                  style={{ color: d.completion >= 80 ? "var(--success)" : "var(--warning)" }}>
                   {d.completion}%
                 </div>
               )}
@@ -274,8 +274,8 @@ function BurnupChart({ sprint, allTasks }) {
     <div className="sprint-burnup-card">
       <div className="sprint-chart-title">📈 Burnup Chart — {sprint.name}</div>
       <div className="sprint-chart-legend">
-        <span className="sprint-legend-dot" style={{ background:"#6366f1" }} /> Completed
-        <span className="sprint-legend-dot" style={{ background:"#e5e7eb", marginLeft:"12px" }} /> Scope
+        <span className="sprint-legend-dot" style={{ background:"var(--brand-500)" }} /> Completed
+        <span className="sprint-legend-dot" style={{ background:"var(--border)", marginLeft:"12px" }} /> Scope
       </div>
       <div className="sprint-burnup-bars">
         {points.map((p, i) => (
@@ -285,7 +285,7 @@ function BurnupChart({ sprint, allTasks }) {
                 style={{ height:`${(p.scope/maxPts)*100}%` }} />
               <div className="sprint-burnup-done"
                 style={{ height:`${(p.completed/maxPts)*100}%`,
-                  background: p.completed >= p.scope ? "#10b981" : "#6366f1" }} />
+                  background: p.completed >= p.scope ? "var(--success)" : "var(--brand-500)" }} />
             </div>
             <div className="sprint-burnup-label">{p.day}</div>
           </div>
@@ -293,7 +293,7 @@ function BurnupChart({ sprint, allTasks }) {
       </div>
       <div className="sprint-burnup-stats">
         <span>Total scope: <strong>{totalPts} pts</strong></span>
-        <span>Completed: <strong style={{ color:"#6366f1" }}>
+        <span>Completed: <strong style={{ color:"var(--brand-500)" }}>
           {points.length > 0 ? points[points.length-1].completed : 0} pts
         </strong></span>
       </div>
@@ -321,7 +321,7 @@ function PredictabilityPanel({ sprints, allTasks }) {
     ? Math.round(scores.reduce((s,d) => s+d.score, 0) / scores.length)
     : 0;
 
-  const avgColor = avg >= 80 ? "#10b981" : avg >= 60 ? "#f59e0b" : "#ef4444";
+  const avgColor = avg >= 80 ? "var(--success)" : avg >= 60 ? "var(--warning)" : "var(--danger)";
   const label    = avg >= 80 ? "Highly Predictable" : avg >= 60 ? "Moderately Predictable" : "Needs Improvement";
 
   return (
@@ -338,10 +338,10 @@ function PredictabilityPanel({ sprints, allTasks }) {
             <div className="sprint-predict-bar-track">
               <div className="sprint-predict-bar"
                 style={{ width:`${s.score}%`,
-                  background: s.score>=80?"#10b981":s.score>=60?"#f59e0b":"#ef4444" }} />
+                  background: s.score>=80?"var(--success)":s.score>=60?"var(--warning)":"var(--danger)" }} />
             </div>
             <span className="sprint-predict-pct"
-              style={{ color: s.score>=80?"#10b981":s.score>=60?"#f59e0b":"#ef4444" }}>
+              style={{ color: s.score>=80?"var(--success)":s.score>=60?"var(--warning)":"var(--danger)" }}>
               {s.score}%
             </span>
           </div>
@@ -375,7 +375,7 @@ function PIPanel({ sprints, allTasks }) {
   const sprinting = sprints.filter(s => s.status !== "CANCELLED");
   const iterations = sprinting.slice(0, 6); // PI = 6 iterations (sprints)
 
-  const CONF_COLOR = { HIGH:"#10b981", MEDIUM:"#f59e0b", LOW:"#ef4444" };
+  const CONF_COLOR = { HIGH:"var(--success)", MEDIUM:"var(--warning)", LOW:"var(--danger)" };
 
   return (
     <div className="pi-panel">
@@ -560,9 +560,9 @@ function BurndownChart({ sprintId }) {
           <YAxis tick={{ fontSize:11 }} />
           <Tooltip formatter={(v, n) => [v + " pts", n === "remaining" ? "Actual" : "Ideal"]} />
           <Legend />
-          <Line type="monotone" dataKey="remaining" stroke="#6366f1" strokeWidth={2}
+          <Line type="monotone" dataKey="remaining" stroke="var(--brand-500)" strokeWidth={2}
             dot={false} name="Actual" />
-          <Line type="monotone" dataKey="ideal" stroke="#94a3b8" strokeWidth={1.5}
+          <Line type="monotone" dataKey="ideal" stroke="var(--gray-400)" strokeWidth={1.5}
             strokeDasharray="5 5" dot={false} name="Ideal" />
         </LineChart>
       </ResponsiveContainer>
@@ -724,7 +724,7 @@ function SprintGoalsPanel({ sprint, onRefresh }) {
             {achieved}/{milestones.length} achieved
             <div className="sprint-progress-bar" style={{width:120,marginLeft:10}}>
               <div className="sprint-progress-fill"
-                style={{width:`${Math.round(achieved/milestones.length*100)}%`,background:"#10b981"}} />
+                style={{width:`${Math.round(achieved/milestones.length*100)}%`,background:"var(--success)"}} />
             </div>
           </div>
         )}
@@ -804,10 +804,10 @@ function SprintCard({ sprint, allTasks, onEdit, onDelete, onRefresh }) {
       <div className="sprint-progress-section">
         <div className="sprint-progress-label">
           <span>{sprintTasks.length} tasks · {donePts}/{totalPts} pts</span>
-          <span style={{ fontWeight:700, color: pct===100?"#10b981":"var(--gray-600)" }}>{pct}%</span>
+          <span style={{ fontWeight:700, color: pct===100?"var(--success)":"var(--gray-600)" }}>{pct}%</span>
         </div>
         <div className="sprint-progress-bar">
-          <div className="sprint-progress-fill" style={{ width:`${pct}%`, background:pct===100?"#10b981":"#6366f1" }} />
+          <div className="sprint-progress-fill" style={{ width:`${pct}%`, background:pct===100?"var(--success)":"var(--brand-500)" }} />
         </div>
       </div>
 
@@ -935,7 +935,7 @@ export default function Sprints() {
         action={
           <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
             {activeSprint && (
-              <span style={{ fontSize:"12px", fontWeight:600, color:"#10b981",
+              <span style={{ fontSize:"12px", fontWeight:600, color:"var(--success)",
                 background:"rgba(5,150,105,0.12)", padding:"4px 10px", borderRadius:"99px" }}>
                 ● Active: {activeSprint.name}
               </span>
@@ -954,7 +954,7 @@ export default function Sprints() {
           <div className="sprint-summary-label">Total Sprints</div>
         </div>
         <div className="sprint-summary-stat">
-          <div className="sprint-summary-num" style={{ color:"#10b981" }}>
+          <div className="sprint-summary-num" style={{ color:"var(--success)" }}>
             {sprints.filter(s=>s.status==="ACTIVE").length}
           </div>
           <div className="sprint-summary-label">Active</div>
@@ -966,7 +966,7 @@ export default function Sprints() {
           <div className="sprint-summary-label">Completed</div>
         </div>
         <div className="sprint-summary-stat">
-          <div className="sprint-summary-num" style={{ color:"#6366f1" }}>
+          <div className="sprint-summary-num" style={{ color:"var(--brand-500)" }}>
             {totalVelocity}
           </div>
           <div className="sprint-summary-label">Avg Velocity (last 3)</div>

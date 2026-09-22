@@ -39,28 +39,28 @@ import { apiErrorMessage } from "../utils/apiError";
 
 const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
-  "#6366f1",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
+  "var(--brand-500)",
+  "var(--warning)",
+  "var(--success)",
+  "var(--danger)",
   "#3b82f6",
-  "#8b5cf6",
+  "var(--purple)",
   "#ec4899",
   "#14b8a6",
   "#f97316",
 ];
-const roleColor = { OWNER: "#f59e0b", ADMIN: "#ef4444", MEMBER: "#6366f1", VIEWER: "#10b981" };
+const roleColor = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
 // Display-only relabel: the underlying role value is still "OWNER"
 // everywhere it matters (DB, RoleGuardFilter, isOwner checks) — this just
 // changes what the word looks like on screen, per feedback that "Owner"
 // read as too informal/consumer-y for a workspace-management role.
 const roleLabel = (role) => (role === "OWNER" ? "MANAGER" : role);
 const statusColor = {
-  TODO: "#6366f1",
-  IN_PROGRESS: "#f59e0b",
-  DONE: "#10b981",
+  TODO: "var(--brand-500)",
+  IN_PROGRESS: "var(--warning)",
+  DONE: "var(--success)",
 };
-const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
+const priorityColor = { LOW: "var(--success)", MEDIUM: "var(--warning)", HIGH: "var(--danger)" };
 
 function MemberAvatar({ member, size = 36 }) {
   const initials = member.name
@@ -75,7 +75,7 @@ function MemberAvatar({ member, size = 36 }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: member.color || "#6366f1",
+        background: member.color || "var(--brand-500)",
         color: "#fff",
         fontWeight: 700,
         fontSize: size * 0.35,
@@ -92,7 +92,7 @@ function MemberAvatar({ member, size = 36 }) {
 
 function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
   const [form, setForm] = useState(
-    initial || { name: "", email: "", role: "MEMBER", color: "#6366f1" },
+    initial || { name: "", email: "", role: "MEMBER", color: "var(--brand-500)" },
   );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   // Only the workspace Manager can grant/keep the Admin role — see
@@ -144,7 +144,7 @@ function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
             ))}
           </select>
           {!isOwner && (
-            <span style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", display: "block" }}>
+            <span style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "4px", display: "block" }}>
               Only the workspace Manager can grant the Admin role.
             </span>
           )}
@@ -532,7 +532,7 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color: "#f59e0b" }}
+                      style={{ color: "var(--warning)" }}
                     >
                       {inProgressTasks}
                     </span>
@@ -541,7 +541,7 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color: "#10b981" }}
+                      style={{ color: "var(--success)" }}
                     >
                       {doneTasks}
                     </span>
@@ -554,7 +554,7 @@ export default function Team() {
                       className="progress-fill"
                       style={{
                         width: `${Math.round((doneTasks / memberTasks.length) * 100)}%`,
-                        background: m.color || "#6366f1",
+                        background: m.color || "var(--brand-500)",
                       }}
                     />
                   </div>
@@ -582,7 +582,7 @@ export default function Team() {
                   </span>
                   <span
                     className="task-status-badge"
-                    style={{ background: "#f0f0ff", color: "#6366f1" }}
+                    style={{ background: "#f0f0ff", color: "var(--brand-500)" }}
                   >
                     {memberTasks.length} tasks
                   </span>
@@ -836,7 +836,7 @@ export default function Team() {
                 </option>
               </select>
               {!isOwner && (
-                <span style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px", display: "block" }}>
+                <span style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "4px", display: "block" }}>
                   Only the workspace Manager can invite someone as Admin.
                 </span>
               )}
@@ -872,7 +872,7 @@ export default function Team() {
 // ═══════════════════════════════════════════════════════════════
 
 // ── Skill tag chip ────────────────────────────────────────────
-function SkillChip({ skill, onRemove, color = "#6366f1" }) {
+function SkillChip({ skill, onRemove, color = "var(--brand-500)" }) {
   return (
     <span className="exp-skill-chip" style={{ background:`${color}15`, color, borderColor:`${color}33` }}>
       {skill}
@@ -882,7 +882,7 @@ function SkillChip({ skill, onRemove, color = "#6366f1" }) {
 }
 
 // ── Inline tag input ──────────────────────────────────────────
-function TagInput({ value = [], onChange, placeholder, color = "#6366f1", id }) {
+function TagInput({ value = [], onChange, placeholder, color = "var(--brand-500)", id }) {
   const [input, setInput] = React.useState("");
   const add = () => {
     const v = input.trim();
@@ -978,20 +978,20 @@ function ExpertiseProfileModal({ member, onSave, onClose }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="team-skills-input">Skills <span style={{color:"#6b7280",fontWeight:400,fontSize:"11px"}}>(press Enter or comma to add)</span></label>
-          <TagInput id="team-skills-input" value={form.skills} onChange={v=>set("skills",v)} placeholder="React, Python, ML…" color="#6366f1" />
+          <label htmlFor="team-skills-input">Skills <span style={{color:"var(--gray-500)",fontWeight:400,fontSize:"11px"}}>(press Enter or comma to add)</span></label>
+          <TagInput id="team-skills-input" value={form.skills} onChange={v=>set("skills",v)} placeholder="React, Python, ML…" color="var(--brand-500)" />
         </div>
         <div className="form-group">
           <label htmlFor="team-domains-input">Domains</label>
-          <TagInput id="team-domains-input" value={form.domains} onChange={v=>set("domains",v)} placeholder="Frontend, Data, DevOps…" color="#8b5cf6" />
+          <TagInput id="team-domains-input" value={form.domains} onChange={v=>set("domains",v)} placeholder="Frontend, Data, DevOps…" color="var(--purple)" />
         </div>
         <div className="form-group">
           <label htmlFor="team-mentor-for-input">Can Mentor In</label>
-          <TagInput id="team-mentor-for-input" value={form.mentorFor} onChange={v=>set("mentorFor",v)} placeholder="Skills you can teach others…" color="#10b981" />
+          <TagInput id="team-mentor-for-input" value={form.mentorFor} onChange={v=>set("mentorFor",v)} placeholder="Skills you can teach others…" color="var(--success)" />
         </div>
         <div className="form-group">
           <label htmlFor="team-looking-to-learn-input">Looking to Learn</label>
-          <TagInput id="team-looking-to-learn-input" value={form.lookingToLearn} onChange={v=>set("lookingToLearn",v)} placeholder="Skills you want to develop…" color="#f59e0b" />
+          <TagInput id="team-looking-to-learn-input" value={form.lookingToLearn} onChange={v=>set("lookingToLearn",v)} placeholder="Skills you want to develop…" color="var(--warning)" />
         </div>
 
         <div className="form-actions">
@@ -1045,7 +1045,7 @@ function ExpertFinder() {
     } finally { setInferring(false); }
   };
 
-  const AVAIL_COLOR = { FULL:"#10b981", PARTIAL:"#f59e0b", UNAVAILABLE:"#ef4444" };
+  const AVAIL_COLOR = { FULL:"var(--success)", PARTIAL:"var(--warning)", UNAVAILABLE:"var(--danger)" };
 
   return (
     <div className="exp-finder">
@@ -1091,11 +1091,11 @@ function ExpertFinder() {
           <div className="exp-results-grid">
             {results.map((r,i) => {
               const m = r.member;
-              const avColor = AVAIL_COLOR[m.availability] || "#10b981";
+              const avColor = AVAIL_COLOR[m.availability] || "var(--success)";
               return (
                 <div key={i} className="exp-result-card">
                   <div className="exp-result-rank">#{i+1}</div>
-                  <div className="exp-result-avatar" style={{background:m.color||"#6366f1"}}>
+                  <div className="exp-result-avatar" style={{background:m.color||"var(--brand-500)"}}>
                     {m.name.slice(0,2).toUpperCase()}
                   </div>
                   <div className="exp-result-info">
@@ -1111,7 +1111,7 @@ function ExpertFinder() {
                       <span className="exp-avail-dot" style={{background:avColor}} />
                       <span style={{color:avColor,fontSize:"11px",fontWeight:700}}>{m.availability}</span>
                       {m.capacityPercent < 100 && (
-                        <span style={{fontSize:"10px",color:"#6b7280",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
+                        <span style={{fontSize:"10px",color:"var(--gray-500)",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
                       )}
                     </div>
                   </div>
@@ -1147,7 +1147,7 @@ function SkillMapTab() {
     expertiseApi.gaps().then(r => setGapData(r.data)).catch(() => {});
   }, []);
 
-  const RISK_COLORS = { HIGH:"#ef4444", MEDIUM:"#f59e0b", LOW:"#10b981" };
+  const RISK_COLORS = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--success)" };
 
   return (
     <div>
@@ -1162,11 +1162,11 @@ function SkillMapTab() {
         <div>
           <div className="exp-stat-row">
             <div className="exp-stat-card">
-              <div className="exp-stat-num" style={{color:"#6366f1"}}>{skillData.totalUniqueSkills}</div>
+              <div className="exp-stat-num" style={{color:"var(--brand-500)"}}>{skillData.totalUniqueSkills}</div>
               <div className="exp-stat-label">Unique Skills</div>
             </div>
             <div className="exp-stat-card">
-              <div className="exp-stat-num" style={{color:"#10b981"}}>{skillData.totalMembers}</div>
+              <div className="exp-stat-num" style={{color:"var(--success)"}}>{skillData.totalMembers}</div>
               <div className="exp-stat-label">Team Members</div>
             </div>
           </div>
@@ -1176,7 +1176,7 @@ function SkillMapTab() {
               const opacity = Math.max(0.5, Math.min(1, 0.5 + s.count * 0.1));
               return (
                 <span key={i} className="exp-skill-cloud-item"
-                  style={{ fontSize:size, opacity, color: i%3===0?"#6366f1":i%3===1?"#10b981":"#f59e0b" }}
+                  style={{ fontSize:size, opacity, color: i%3===0?"var(--brand-500)":i%3===1?"var(--success)":"var(--warning)" }}
                   title={`${s.count} member${s.count!==1?"s":""}: ${s.owners.join(", ")}`}>
                   {s.skill}
                 </span>
@@ -1212,7 +1212,7 @@ function SkillMapTab() {
               {gapData.mentorableSkills.map((m,i) => (
                 <div key={i} className="exp-gap-row">
                   <div className="exp-gap-skill">{m.learner}</div>
-                  <div style={{fontSize:"12px",color:"#6b7280"}}>wants to learn {m.skill}</div>
+                  <div style={{fontSize:"12px",color:"var(--gray-500)"}}>wants to learn {m.skill}</div>
                   <span className="exp-badge exp-badge-mentor">{m.availableMentors} mentor{m.availableMentors!==1?"s":""} available</span>
                 </div>
               ))}
@@ -1256,14 +1256,14 @@ function MentorMatchTab() {
       <div className="exp-mentor-grid">
         {filtered.map((m,i) => (
           <div key={i} className="exp-mentor-card">
-            <div className="exp-mentor-avatar" style={{background:m.mentor.color||"#6366f1"}}>
+            <div className="exp-mentor-avatar" style={{background:m.mentor.color||"var(--brand-500)"}}>
               {m.mentor.name.slice(0,2).toUpperCase()}
             </div>
             <div className="exp-mentor-info">
               <div className="exp-mentor-name">{m.mentor.name}</div>
               {m.mentor.title && <div className="exp-mentor-title">{m.mentor.title}</div>}
               <div className="exp-mentor-skills">
-                {m.mentorFor.map(s => <SkillChip key={s} skill={s} color="#10b981" />)}
+                {m.mentorFor.map(s => <SkillChip key={s} skill={s} color="var(--success)" />)}
               </div>
               {m.matchedLearners.length > 0 && (
                 <div className="exp-mentor-matches">
@@ -1272,7 +1272,7 @@ function MentorMatchTab() {
               )}
             </div>
             <div className="exp-mentor-badge">
-              <div className="exp-score-num" style={{color:"#10b981"}}>{m.mentorFor.length}</div>
+              <div className="exp-score-num" style={{color:"var(--success)"}}>{m.mentorFor.length}</div>
               <div className="exp-score-label">topics</div>
             </div>
           </div>
@@ -1292,9 +1292,9 @@ function TribalKnowledgeTab() {
   }, []);
 
   const RISK_META = {
-    HIGH:   { color:"#ef4444", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
-    MEDIUM: { color:"#f59e0b", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
-    LOW:    { color:"#10b981", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
+    HIGH:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
+    MEDIUM: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
+    LOW:    { color:"var(--success)", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
   };
 
   if (loading) return <div className="exp-empty">Analysing tribal knowledge risks…</div>;
@@ -1321,7 +1321,7 @@ function TribalKnowledgeTab() {
                   <div className="exp-tribal-desc">{r.description}</div>
                   {r.areas && r.areas.length > 0 && (
                     <div className="exp-tribal-areas">
-                      {r.areas.map(a => <SkillChip key={a} skill={a} color="#6b7280" />)}
+                      {r.areas.map(a => <SkillChip key={a} skill={a} color="var(--gray-500)" />)}
                     </div>
                   )}
                 </div>
@@ -1391,7 +1391,7 @@ function ExpertiseGraphTab() {
           <button key={v} className={`sprint-filter-btn${filter===v?" active":""}`}
             onClick={()=>setFilter(v)}>{l}</button>
         ))}
-        <span style={{fontSize:"11px",color:"#6b7280",marginLeft:"8px"}}>
+        <span style={{fontSize:"11px",color:"var(--gray-500)",marginLeft:"8px"}}>
           {people.length} people · {skills.length} skill nodes · {graph.edges.length} connections
         </span>
       </div>
@@ -1405,8 +1405,8 @@ function ExpertiseGraphTab() {
             const show = (e.from.startsWith("person_") || e.to.startsWith("person_")) && showPeople
               || (e.from.startsWith("skill_") && e.to.startsWith("skill_")) && showSkills;
             if (!show) return null;
-            const color = e.type === "SHARES_SKILL" ? "#6366f1"
-              : e.type === "MENTORS" ? "#10b981" : "#94a3b8";
+            const color = e.type === "SHARES_SKILL" ? "var(--brand-500)"
+              : e.type === "MENTORS" ? "var(--success)" : "var(--gray-400)";
             return (
               <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                 stroke={color} strokeWidth={e.type==="SHARES_SKILL" ? e.weight : 1}
@@ -1420,11 +1420,11 @@ function ExpertiseGraphTab() {
             if (!pos) return null;
             return (
               <g key={p.id}>
-                <circle cx={pos.x} cy={pos.y} r={22} fill={p.color||"#6366f1"} opacity={0.9} />
+                <circle cx={pos.x} cy={pos.y} r={22} fill={p.color||"var(--brand-500)"} opacity={0.9} />
                 <text x={pos.x} y={pos.y+4} textAnchor="middle" fontSize={11} fill="white" fontWeight="bold">
                   {p.label.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}
                 </text>
-                <text x={pos.x} y={pos.y+34} textAnchor="middle" fontSize={10} fill="#374151">
+                <text x={pos.x} y={pos.y+34} textAnchor="middle" fontSize={10} fill="var(--gray-700)">
                   {p.label.split(" ")[0]}
                 </text>
               </g>
@@ -1439,8 +1439,8 @@ function ExpertiseGraphTab() {
             const r = Math.max(8, Math.min(18, 6 + relatedEdges * 2));
             return (
               <g key={s.id}>
-                <circle cx={pos.x} cy={pos.y} r={r} fill="#10b981" opacity={0.8} />
-                <text x={pos.x} y={pos.y + r + 12} textAnchor="middle" fontSize={9} fill="#059669">
+                <circle cx={pos.x} cy={pos.y} r={r} fill="var(--success)" opacity={0.8} />
+                <text x={pos.x} y={pos.y + r + 12} textAnchor="middle" fontSize={9} fill="var(--success)">
                   {s.label.slice(0,12)}
                 </text>
               </g>
@@ -1450,10 +1450,10 @@ function ExpertiseGraphTab() {
 
         {/* Legend */}
         <div className="exp-graph-legend">
-          <span>⬤ <span style={{color:"#6366f1"}}>Person</span></span>
-          <span>⬤ <span style={{color:"#10b981"}}>Skill</span></span>
-          <span>── <span style={{color:"#6366f1"}}>Shared skill</span></span>
-          <span>── <span style={{color:"#10b981"}}>Mentor link</span></span>
+          <span>⬤ <span style={{color:"var(--brand-500)"}}>Person</span></span>
+          <span>⬤ <span style={{color:"var(--success)"}}>Skill</span></span>
+          <span>── <span style={{color:"var(--brand-500)"}}>Shared skill</span></span>
+          <span>── <span style={{color:"var(--success)"}}>Mentor link</span></span>
         </div>
       </div>
     </div>
@@ -1462,12 +1462,12 @@ function ExpertiseGraphTab() {
 
 // ── Member card with expertise preview ────────────────────────
 function MemberExpertiseCard({ member, onEditProfile }) {
-  const AVAIL_COLOR = { FULL:"#10b981", PARTIAL:"#f59e0b", UNAVAILABLE:"#ef4444" };
-  const avColor = AVAIL_COLOR[member.availability] || "#10b981";
+  const AVAIL_COLOR = { FULL:"var(--success)", PARTIAL:"var(--warning)", UNAVAILABLE:"var(--danger)" };
+  const avColor = AVAIL_COLOR[member.availability] || "var(--success)";
 
   return (
     <div className="exp-member-card">
-      <div className="exp-member-avatar" style={{background:member.color||"#6366f1"}}>
+      <div className="exp-member-avatar" style={{background:member.color||"var(--brand-500)"}}>
         {member.name.slice(0,2).toUpperCase()}
       </div>
       <div className="exp-member-body">
@@ -1479,14 +1479,14 @@ function MemberExpertiseCard({ member, onEditProfile }) {
 
         {(member.skills || []).length > 0 && (
           <div className="exp-member-skills">
-            {(member.skills || []).slice(0,5).map(s => <SkillChip key={s} skill={s} color="#6366f1" />)}
+            {(member.skills || []).slice(0,5).map(s => <SkillChip key={s} skill={s} color="var(--brand-500)" />)}
             {(member.skills || []).length > 5 && (
               <span className="exp-more-badge">+{member.skills.length-5}</span>
             )}
           </div>
         )}
         {(member.skills || []).length === 0 && (
-          <div style={{fontSize:"11px",color:"#9ca3af"}}>No skills declared yet</div>
+          <div style={{fontSize:"11px",color:"var(--gray-400)"}}>No skills declared yet</div>
         )}
 
         {(member.mentorFor || []).length > 0 && (
@@ -1501,7 +1501,7 @@ function MemberExpertiseCard({ member, onEditProfile }) {
             ● {member.availability || "FULL"}
           </span>
           {member.capacityPercent < 100 && (
-            <span style={{fontSize:"10px",color:"#6b7280"}}>{member.capacityPercent}% capacity</span>
+            <span style={{fontSize:"10px",color:"var(--gray-500)"}}>{member.capacityPercent}% capacity</span>
           )}
         </div>
       </div>

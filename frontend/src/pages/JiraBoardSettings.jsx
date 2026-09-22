@@ -10,17 +10,17 @@ const STORY_POINT_SCALE = {
   powers:    [1,2,4,8,16,32],
 };
 const TYPE_META = {
-  STORY:  { icon:"📗", label:"Story",   color:"#10b981" },
-  BUG:    { icon:"🐛", label:"Bug",     color:"#ef4444" },
-  TASK:   { icon:"✅", label:"Task",    color:"#6366f1" },
-  SUBTASK:{ icon:"🔹", label:"Subtask", color:"#8b5cf6" },
-  EPIC:   { icon:"⚡", label:"Epic",    color:"#f59e0b" },
+  STORY:  { icon:"📗", label:"Story",   color:"var(--success)" },
+  BUG:    { icon:"🐛", label:"Bug",     color:"var(--danger)" },
+  TASK:   { icon:"✅", label:"Task",    color:"var(--brand-500)" },
+  SUBTASK:{ icon:"🔹", label:"Subtask", color:"var(--purple)" },
+  EPIC:   { icon:"⚡", label:"Epic",    color:"var(--warning)" },
 };
 const DEFAULT_COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"#64748b", wipLimit:null },
+  { id:"TODO",        label:"To Do",       color:"var(--gray-500)", wipLimit:null },
   { id:"IN_PROGRESS", label:"In Progress", color:"#3b82f6", wipLimit:5   },
-  { id:"IN_REVIEW",   label:"In Review",   color:"#8b5cf6", wipLimit:3   },
-  { id:"DONE",        label:"Done",        color:"#10b981", wipLimit:null },
+  { id:"IN_REVIEW",   label:"In Review",   color:"var(--purple)", wipLimit:3   },
+  { id:"DONE",        label:"Done",        color:"var(--success)", wipLimit:null },
 ];
 const DEFAULT_CONFIG = {
   columns:DEFAULT_COLUMNS, spScale:"fibonacci", showSP:true,
@@ -47,7 +47,7 @@ function ColumnRow({ col, idx, total, onChange, onRemove, onMove }) {
   return (
     <div className="jbs-col-row">
       <div className="jbs-col-handle">⠿</div>
-      <input type="color" value={col.color||"#6366f1"}
+      <input type="color" value={col.color||"var(--brand-500)"}
         onChange={e=>onChange(idx,"color",e.target.value)}
         className="jbs-color-dot" title="Column colour"/>
       <input className="jbs-input jbs-col-name" value={col.label}
@@ -77,8 +77,8 @@ function BoardPreview({ columns }) {
       {columns.map(col=>(
         <div key={col.id} className="jbs-preview-col">
           <div className="jbs-preview-col-head"
-            style={{borderTop:`3px solid ${col.color||"#6366f1"}`}}>
-            <span className="jbs-preview-dot" style={{background:col.color||"#6366f1"}}/>
+            style={{borderTop:`3px solid ${col.color||"var(--brand-500)"}`}}>
+            <span className="jbs-preview-dot" style={{background:col.color||"var(--brand-500)"}}/>
             <span className="jbs-preview-label">{col.label}</span>
             {col.wipLimit&&<span className="jbs-preview-wip">/{col.wipLimit}</span>}
           </div>
@@ -119,7 +119,7 @@ export default function JiraBoardSettings() {
   };
   const addCol = () => set("columns",[...config.columns,{
     id:"COL_"+Date.now(), label:"New Column",
-    color:"#6366f1", wipLimit:null,
+    color:"var(--brand-500)", wipLimit:null,
   }]);
 
   const handleSave = () => {

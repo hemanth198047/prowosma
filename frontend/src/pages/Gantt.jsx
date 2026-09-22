@@ -14,7 +14,7 @@ const ZOOM_LEVELS = {
 };
 
 const STATUS_COLOR = {
-  TODO: "#6366f1", IN_PROGRESS: "#f59e0b", DONE: "#10b981",
+  TODO: "var(--brand-500)", IN_PROGRESS: "var(--warning)", DONE: "var(--success)",
 };
 const STATUS_LABEL = {
   TODO: "To Do", IN_PROGRESS: "In Progress", DONE: "Done",
@@ -60,7 +60,7 @@ function DependencyArrows({ items, ROW_H, dayWidth, timeStart }) {
     <svg style={{ position:"absolute", top:0, left:0, width:maxW, height:maxH, pointerEvents:"none", zIndex:2 }}>
       <defs>
         <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L6,3 z" fill="#ef4444" />
+          <path d="M0,0 L0,6 L6,3 z" fill="var(--danger)" />
         </marker>
       </defs>
       {arrows.map(({ x1, y1, x2, y2, key }) => {
@@ -68,7 +68,7 @@ function DependencyArrows({ items, ROW_H, dayWidth, timeStart }) {
         return (
           <path key={key}
             d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
-            fill="none" stroke="#ef4444" strokeWidth="1.5"
+            fill="none" stroke="var(--danger)" strokeWidth="1.5"
             strokeDasharray="4 2" markerEnd="url(#arrowhead)"
           />
         );
@@ -128,7 +128,7 @@ function GanttPanel({ items, zoom, dragging, dragOffset, resizing, resizeOffset,
     return {
       left:        s * dayWidth,
       width:       isMilestone ? 0 : w,
-      color:       item.color || STATUS_COLOR[item.status] || "#6366f1",
+      color:       item.color || STATUS_COLOR[item.status] || "var(--brand-500)",
       isMilestone,
       endLeft:     e * dayWidth,
       progress:    typeof item.progress === "number" ? item.progress : null,
@@ -153,7 +153,7 @@ function GanttPanel({ items, zoom, dragging, dragOffset, resizing, resizeOffset,
           <span>Status</span>
         </div>
         {items.map((item) => {
-          const barColor   = item.color || STATUS_COLOR[item.status] || "#6366f1";
+          const barColor   = item.color || STATUS_COLOR[item.status] || "var(--brand-500)";
           const isHeader   = item.isProjectHeader;
           const isGoal     = item.isGoal;
           const isChild    = item.isGoalStep || item.isTask;
@@ -329,21 +329,21 @@ export default function Gantt() {
   );
   const taskItems = filterProject !== "ALL"
     ? filteredRaw.map((t) => ({
-        ...t, color: STATUS_COLOR[t.status] || "#6366f1",
+        ...t, color: STATUS_COLOR[t.status] || "var(--brand-500)",
         subtitle: projects.find((p) => p.id === t.projectId)?.name,
         statusLabel: STATUS_LABEL[t.status] || t.status, isTask: true,
       }))
     : projectsWithTasks.flatMap((proj) => {
         const pts = filteredRaw.filter((t) => t.projectId === proj.id)
           .map((t) => ({
-            ...t, color: STATUS_COLOR[t.status] || "#6366f1",
+            ...t, color: STATUS_COLOR[t.status] || "var(--brand-500)",
             subtitle: proj.name,
             statusLabel: STATUS_LABEL[t.status] || t.status, isTask: true,
           }));
         return [
           { id:`proj_header_${proj.id}`, title:proj.name,
             status: proj.status||"ACTIVE", dueDate: proj.dueDate||null, startDate:null,
-            isProjectHeader:true, color: proj.color||"#6366f1", statusLabel: proj.status||"Active" },
+            isProjectHeader:true, color: proj.color||"var(--brand-500)", statusLabel: proj.status||"Active" },
           ...pts,
         ];
       });
@@ -353,7 +353,7 @@ export default function Gantt() {
     { id:`goal_${g.id}`, title:g.title,
       status: g.status==="ACHIEVED"?"DONE":"IN_PROGRESS",
       dueDate: g.targetDate, startDate:null, isGoal:true, goalId:g.id, goalData:g,
-      color: g.status==="ACHIEVED"?"#10b981":"#f59e0b",
+      color: g.status==="ACHIEVED"?"var(--success)":"var(--warning)",
       statusLabel: g.status==="ACHIEVED"?"Achieved":"Active",
       progress: g.progress||0,
     },
@@ -362,7 +362,7 @@ export default function Gantt() {
         id:`step_${g.id}_${sg.id}_${step.id}`, title:step.title,
         status: step.completed?"DONE":"TODO",
         dueDate:g.targetDate, startDate:null, isGoalStep:true, goalId:g.id, goalData:g,
-        color: step.completed?"#10b981":"#8b5cf6",
+        color: step.completed?"var(--success)":"var(--purple)",
         subtitle:`${g.title} › ${sg.title}`,
         statusLabel: step.completed?"Done":"Pending",
       }))
@@ -514,11 +514,11 @@ export default function Gantt() {
         {totalCount > 0 && (
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"10px" }}>
             <span style={{ fontSize:"12px", color:"var(--gray-500)" }}>
-              <strong style={{ color:"#10b981" }}>{doneCount}</strong>/{totalCount} done
+              <strong style={{ color:"var(--success)" }}>{doneCount}</strong>/{totalCount} done
             </span>
             <div style={{ width:"80px", height:"6px", background:"var(--gray-200)", borderRadius:"3px" }}>
               <div style={{ width:`${totalCount?Math.round(doneCount*100/totalCount):0}%`,
-                height:"100%", background:"#10b981", borderRadius:"3px", transition:"width 0.3s" }} />
+                height:"100%", background:"var(--success)", borderRadius:"3px", transition:"width 0.3s" }} />
             </div>
           </div>
         )}
@@ -534,18 +534,18 @@ export default function Gantt() {
               ))
             : <>
                 <div className="gantt-legend-item">
-                  <div className="gantt-legend-dot" style={{ background:"#f59e0b" }} /><span>Active Goal</span>
+                  <div className="gantt-legend-dot" style={{ background:"var(--warning)" }} /><span>Active Goal</span>
                 </div>
                 <div className="gantt-legend-item">
-                  <div className="gantt-legend-dot" style={{ background:"#10b981" }} /><span>Achieved</span>
+                  <div className="gantt-legend-dot" style={{ background:"var(--success)" }} /><span>Achieved</span>
                 </div>
                 <div className="gantt-legend-item">
-                  <div className="gantt-legend-dot" style={{ background:"#8b5cf6" }} /><span>Step</span>
+                  <div className="gantt-legend-dot" style={{ background:"var(--purple)" }} /><span>Step</span>
                 </div>
               </>
           }
           <div className="gantt-legend-item">
-            <div style={{ width:"2px", height:"14px", background:"#ef4444", borderRadius:"1px" }} />
+            <div style={{ width:"2px", height:"14px", background:"var(--danger)", borderRadius:"1px" }} />
             <span>Today</span>
           </div>
           <div className="gantt-legend-item">

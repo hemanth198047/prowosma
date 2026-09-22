@@ -25,12 +25,12 @@ import { getMeetingsForProject } from "../api/meetings";
 import { apiErrorMessage } from "../utils/apiError";
 
 const COLORS = [
-  "#6366f1",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
+  "var(--brand-500)",
+  "var(--warning)",
+  "var(--success)",
+  "var(--danger)",
   "#3b82f6",
-  "#8b5cf6",
+  "var(--purple)",
   "#ec4899",
 ];
 const STATUS = ["ACTIVE", "PAUSED", "DONE"];
@@ -49,7 +49,7 @@ function ProjectForm({
     initial || {
       name: "",
       description: "",
-      color: "#6366f1",
+      color: "var(--brand-500)",
       status: "ACTIVE",
       dueDate: "",
       categoryId: "",
@@ -76,7 +76,7 @@ function ProjectForm({
   // ── Inline category creation ──────────────────────────────
   const [showNewCat, setShowNewCat]   = useState(false);
   const [newCatName, setNewCatName]   = useState("");
-  const [newCatColor, setNewCatColor] = useState("#6366f1");
+  const [newCatColor, setNewCatColor] = useState("var(--brand-500)");
   const [catSaving, setCatSaving]     = useState(false);
 
   // ── Inline goal creation ───────────────────────────────────
@@ -103,7 +103,7 @@ function ProjectForm({
       // 3. Now select it — the option will exist on next render
       set("categoryId", created.id);
       setNewCatName("");
-      setNewCatColor("#6366f1");
+      setNewCatColor("var(--brand-500)");
       setShowNewCat(false);
     } catch (e) {
       const msg = apiErrorMessage(e, e.message);
@@ -201,9 +201,9 @@ function ProjectForm({
               style={{
                 padding: "6px 10px",
                 borderRadius: "6px",
-                border: "1px solid #e2e8f0",
-                background: showNewCat ? "#6366f1" : "#f8fafc",
-                color: showNewCat ? "#fff" : "#6366f1",
+                border: "1px solid var(--border)",
+                background: showNewCat ? "var(--brand-500)" : "var(--gray-50)",
+                color: showNewCat ? "#fff" : "var(--brand-500)",
                 cursor: "pointer",
                 fontWeight: 700,
                 fontSize: "16px",
@@ -219,14 +219,14 @@ function ProjectForm({
             <div style={{
               marginTop: "10px",
               padding: "14px",
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              background: "var(--gray-50)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
               display: "flex",
               flexDirection: "column",
               gap: "10px",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--gray-700)" }}>
                 New Category
               </div>
               <input
@@ -238,21 +238,21 @@ function ProjectForm({
                
                 style={{
                   padding: "8px 10px",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--border)",
                   borderRadius: "6px",
                   fontSize: "14px",
                   outline: "none",
                 }}
               />
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <label style={{ fontSize: "13px", color: "#6b7280" }} htmlFor={"projects-color"}>Color</label>
+                <label style={{ fontSize: "13px", color: "var(--gray-500)" }} htmlFor={"projects-color"}>Color</label>
                 <input
                   type="color"
                   value={newCatColor}
                   onChange={(e) => setNewCatColor(e.target.value)}
                   style={{ width: "36px", height: "30px", border: "none", cursor: "pointer", borderRadius: "4px" }} id={"projects-color"}
                 />
-                <span style={{ fontSize: "13px", color: "#6b7280" }}>{newCatColor}</span>
+                <span style={{ fontSize: "13px", color: "var(--gray-500)" }}>{newCatColor}</span>
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
@@ -261,7 +261,7 @@ function ProjectForm({
                   disabled={catSaving || !newCatName.trim()}
                   style={{
                     padding: "7px 16px",
-                    background: "#6366f1",
+                    background: "var(--brand-500)",
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
@@ -279,11 +279,11 @@ function ProjectForm({
                   style={{
                     padding: "7px 12px",
                     background: "transparent",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--border)",
                     borderRadius: "6px",
                     cursor: "pointer",
                     fontSize: "13px",
-                    color: "#6b7280",
+                    color: "var(--gray-500)",
                   }}
                 >
                   Cancel
@@ -314,9 +314,9 @@ function ProjectForm({
               style={{
                 padding: "6px 10px",
                 borderRadius: "6px",
-                border: "1px solid #e2e8f0",
-                background: showNewGoal ? "#10b981" : "#f8fafc",
-                color: showNewGoal ? "#fff" : "#10b981",
+                border: "1px solid var(--border)",
+                background: showNewGoal ? "var(--success)" : "var(--gray-50)",
+                color: showNewGoal ? "#fff" : "var(--success)",
                 cursor: "pointer",
                 fontWeight: 700,
                 fontSize: "16px",
@@ -339,7 +339,7 @@ function ProjectForm({
               flexDirection: "column",
               gap: "10px",
             }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--gray-700)" }}>
                 🎯 New Goal
               </div>
               <input
@@ -358,7 +358,7 @@ function ProjectForm({
                 }}
               />
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <label style={{ fontSize: "13px", color: "#6b7280" }} htmlFor={"projects-status"}>Status</label>
+                <label style={{ fontSize: "13px", color: "var(--gray-500)" }} htmlFor={"projects-status"}>Status</label>
                 <select
                   value={newGoalStatus}
                   onChange={(e) => setNewGoalStatus(e.target.value)}
@@ -376,7 +376,7 @@ function ProjectForm({
                   disabled={goalSaving || !newGoalTitle.trim()}
                   style={{
                     padding: "7px 16px",
-                    background: "#10b981",
+                    background: "var(--success)",
                     color: "#fff",
                     border: "none",
                     borderRadius: "6px",
@@ -398,7 +398,7 @@ function ProjectForm({
                     borderRadius: "6px",
                     cursor: "pointer",
                     fontSize: "13px",
-                    color: "#6b7280",
+                    color: "var(--gray-500)",
                   }}
                 >
                   Cancel
@@ -496,8 +496,8 @@ function ProjectForm({
           fontSize:"13px", color:"var(--gray-700)",
           cursor:"pointer", marginBottom:"12px",
           padding:"8px 10px",
-          background:"var(--gray-50,#f8fafc)",
-          border:"1px solid var(--border,#e2e8f0)",
+          background:"var(--gray-50,var(--gray-50))",
+          border:"1px solid var(--border,var(--border))",
           borderRadius:"8px",
         }}>
           <input type="checkbox" checked={form.isTemplate||false}
@@ -539,14 +539,14 @@ function SubProjectCard({
   onDelete,
   onAddSubTask,
 }) {
-  const subColor = sub.color || "#6366f1";
+  const subColor = sub.color || "var(--brand-500)";
   const subPct   = progress || 0;
   return (
     <div onClick={(e) => e.stopPropagation()} style={{
       borderLeft: `3px solid ${subColor}`,
       borderRadius: "8px",
-      background: "var(--gray-50,#f8fafc)",
-      border: `1px solid var(--border,#e2e8f0)`,
+      background: "var(--gray-50,var(--gray-50))",
+      border: `1px solid var(--border,var(--border))`,
       borderLeftWidth: "3px",
       borderLeftColor: subColor,
       padding: "8px 10px",
@@ -565,14 +565,14 @@ function SubProjectCard({
             onClick={(e) => { e.stopPropagation(); navigate(`/tasks?projectId=${sub.id}`); }}
             style={{
               fontSize:12, fontWeight:600,
-              color:"var(--gray-800,#1e293b)",
+              color:"var(--gray-800,var(--gray-800))",
               overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
               flex:1, minWidth:0, cursor:"pointer",
             }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => { e.stopPropagation(); navigate(`/tasks?projectId=${sub.id}`); })?.(e); } }}>{sub.name}</span>
           <span style={{
             flexShrink:0, fontSize:"9px", fontWeight:700,
             padding:"1px 7px", borderRadius:"99px",
-            background:"rgba(16,185,129,0.1)", color:"#059669",
+            background:"rgba(16,185,129,0.1)", color:"var(--success)",
             border:"1px solid rgba(16,185,129,0.2)", whiteSpace:"nowrap",
           }}>{sub.status || "ACTIVE"}</span>
         </div>
@@ -604,11 +604,11 @@ function SubProjectCard({
         </div>
       </div>
       {/* Progress bar */}
-      <div style={{ height:3, background:"var(--gray-100,#f1f5f9)", borderRadius:99, overflow:"hidden", margin:"6px 0 3px" }}>
+      <div style={{ height:3, background:"var(--gray-100,var(--gray-100))", borderRadius:99, overflow:"hidden", margin:"6px 0 3px" }}>
         <div style={{ height:"100%", width:`${subPct}%`, background:subColor, borderRadius:99, transition:"width 0.4s" }} />
       </div>
       {/* Footer */}
-      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#94a3b8" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"var(--gray-400)" }}>
         <span>{sub.dueDate ? `📅 ${formatDate(sub.dueDate)}` : "No due date"}</span>
         <span>{subPct}% complete</span>
       </div>
@@ -724,7 +724,7 @@ function ProjectCard({
       <div className="project-card-top">
         <div
           className="project-color-bar"
-          style={{ background: p.color || "#6366f1" }}
+          style={{ background: p.color || "var(--brand-500)" }}
         />
         <div className="project-card-body">
           <div className="project-card-header">
@@ -750,7 +750,7 @@ function ProjectCard({
             <div
               style={{
                 fontSize: "11px",
-                color: "#8b5cf6",
+                color: "var(--purple)",
                 marginBottom: "4px",
               }}
             >
@@ -763,7 +763,7 @@ function ProjectCard({
               className="progress-fill"
               style={{
                 width: `${progress || 0}%`,
-                background: p.color || "#6366f1",
+                background: p.color || "var(--brand-500)",
               }}
             />
           </div>
@@ -1053,7 +1053,7 @@ export default function Projects() {
       return {
         name: "",
         description: "",
-        color: parentForNew.color || "#6366f1",
+        color: parentForNew.color || "var(--brand-500)",
         status: "ACTIVE",
         dueDate: "",
         categoryId: parentForNew.categoryId || "",
