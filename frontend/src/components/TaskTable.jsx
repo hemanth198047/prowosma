@@ -2,8 +2,11 @@ import { useState, useRef, useEffect } from "react";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
-const statusColor = { TODO: "#6366f1", IN_PROGRESS: "#f59e0b", DONE: "#10b981" };
-const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
+// Same fixed status/priority palette as everywhere else in the app
+// (base.css --viz-*) rather than its own local hex — so "In Progress" is
+// the same color here as on the Dashboard, a Kanban card, etc.
+const statusColor = { TODO: "var(--viz-todo)", IN_PROGRESS: "var(--viz-progress)", DONE: "var(--viz-done)" };
+const priorityColor = { LOW: "var(--viz-done)", MEDIUM: "var(--viz-progress)", HIGH: "var(--viz-overdue)" };
 
 /**
  * TaskTable — a real spreadsheet-style, inline-editable grid view.
@@ -31,10 +34,10 @@ export default function TaskTable({
   const allSelected = tasks.length > 0 && tasks.every((t) => selectedIds.has(t.id));
 
   return (
-    <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: 10 }}>
+    <div style={{ overflowX: "auto", border: "1px solid var(--card-border)", borderRadius: "var(--radius-lg)", background: "var(--surface-1)", boxShadow: "var(--elevation-1)" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
-          <tr style={{ background: "var(--gray-50, #f8fafc)", borderBottom: "2px solid var(--border)" }}>
+          <tr style={{ background: "var(--gray-50)", borderBottom: "2px solid var(--border)" }}>
             <Th style={{ width: 32 }}>
               <input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
@@ -114,7 +117,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
   const inputStyle = { width: "100%", padding: "5px 7px", border: "1px solid transparent", borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "transparent", boxSizing: "border-box" };
 
   return (
-    <tr style={{ background: highlighted ? "#fef3c7" : selected ? "var(--accent-50, #eef2ff)" : "transparent" }}>
+    <tr style={{ background: highlighted ? "color-mix(in srgb, var(--warning) 12%, transparent)" : selected ? "var(--brand-50)" : "transparent" }}>
       <td style={cellStyle}>
         <input type="checkbox" checked={selected} onChange={onToggleSelect} />
       </td>
@@ -183,7 +186,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           {assignees.length === 0 && <span style={{ color: "var(--gray-400)" }}>+ Add</span>}
           {assignees.map((m) => (
             <span key={m.id} title={m.name} style={{
-              width: 20, height: 20, borderRadius: "50%", background: m.color || "#6366f1", color: "#fff",
+              width: 20, height: 20, borderRadius: "50%", background: m.color || "var(--brand-500)", color: "#fff",
               fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
               {m.name.slice(0, 2).toUpperCase()}
@@ -192,8 +195,8 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
         </div>
         {assigneeMenuOpen && (
           <div style={{
-            position: "absolute", top: "100%", left: 6, marginTop: 2, background: "#fff", minWidth: 180,
-            border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+            position: "absolute", top: "100%", left: 6, marginTop: 2, background: "var(--surface-1)", minWidth: 180,
+            border: "1px solid var(--card-border)", borderRadius: "var(--radius-md)", boxShadow: "var(--elevation-2)",
             zIndex: 20, maxHeight: 200, overflowY: "auto",
           }}>
             {teamMembers.map((m) => (

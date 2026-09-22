@@ -540,7 +540,12 @@ export default function Tasks() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(newTaskParam === "true");
   const [editing, setEditing] = useState(null);
-  const [viewMode, setViewMode] = useState("project");
+  // Table is the default: a task list is dense, comparable, tabular data
+  // (status/priority/assignee/due-date per row) — the same reasoning that
+  // makes a table the right choice in a spreadsheet applies here. The
+  // other three views (by-project, plain list, by-tag) stay available
+  // for when grouping matters more than side-by-side comparison.
+  const [viewMode, setViewMode] = useState("table");
   const [drawerTask, setDrawerTask] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [activityOpenIds, setActivityOpenIds] = useState({});
@@ -1002,19 +1007,22 @@ export default function Tasks() {
           >
             📅 Due Today
           </button>
+          {/* Table leads: it's the default and the recommended view for
+              comparing tasks side-by-side. The other three stay for when
+              grouping matters more than comparison. */}
+          <button
+            className={viewMode === "table" ? "btn-primary" : "btn-secondary"}
+            style={{ padding: "8px 14px", fontSize: "12px" }}
+            onClick={() => setViewMode("table")}
+          >
+            📊 Table
+          </button>
           <button
             className={viewMode === "project" ? "btn-primary" : "btn-secondary"}
             style={{ padding: "8px 14px", fontSize: "12px" }}
             onClick={() => setViewMode("project")}
           >
             📁 By Project
-          </button>
-          <button
-            className={viewMode === "list" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("list")}
-          >
-            ☰ List
           </button>
           <button
             className={viewMode === "grouped" ? "btn-primary" : "btn-secondary"}
@@ -1024,11 +1032,11 @@ export default function Tasks() {
             🏷️ By Tag
           </button>
           <button
-            className={viewMode === "table" ? "btn-primary" : "btn-secondary"}
+            className={viewMode === "list" ? "btn-primary" : "btn-secondary"}
             style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("table")}
+            onClick={() => setViewMode("list")}
           >
-            📊 Table
+            ☰ List
           </button>
         </div>
       </div>
