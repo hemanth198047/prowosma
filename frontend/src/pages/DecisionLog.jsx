@@ -16,20 +16,20 @@ import "../styles/pages/decisions.css";
 // PortfolioPlus's duplicate Changes tab and api/portfolio.js earlier.
 
 const IMPACT_META = {
-  HIGH:   { color:"#ef4444", bg:"rgba(239,68,68,.1)"  },
-  MEDIUM: { color:"#f59e0b", bg:"rgba(245,158,11,.1)" },
-  LOW:    { color:"#10b981", bg:"rgba(16,185,129,.1)" },
+  HIGH:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)"  },
+  MEDIUM: { color:"var(--warning)", bg:"rgba(245,158,11,.1)" },
+  LOW:    { color:"var(--success)", bg:"rgba(16,185,129,.1)" },
 };
 const STATUS_META = {
   OPEN:        { label:"Open",        color:"#3b82f6" },
-  DECIDED:     { label:"Decided",     color:"#6366f1" },
-  IMPLEMENTED: { label:"Implemented", color:"#10b981" },
-  SUPERSEDED:  { label:"Superseded",  color:"#6b7280" },
+  DECIDED:     { label:"Decided",     color:"var(--brand-500)" },
+  IMPLEMENTED: { label:"Implemented", color:"var(--success)" },
+  SUPERSEDED:  { label:"Superseded",  color:"var(--gray-500)" },
 };
 const REV_META = {
-  REVERSIBLE:   { icon:"↩️", label:"Reversible",   color:"#10b981" },
-  PARTIALLY:    { icon:"⚠️", label:"Partly Rev.",  color:"#f59e0b" },
-  IRREVERSIBLE: { icon:"🔒", label:"Irreversible", color:"#ef4444" },
+  REVERSIBLE:   { icon:"↩️", label:"Reversible",   color:"var(--success)" },
+  PARTIALLY:    { icon:"⚠️", label:"Partly Rev.",  color:"var(--warning)" },
+  IRREVERSIBLE: { icon:"🔒", label:"Irreversible", color:"var(--danger)" },
 };
 
 function DecisionForm({ initial, onSave, onCancel }) {
@@ -236,9 +236,9 @@ export default function DecisionLog() {
         {[
           {label:"Total",       value:decisions.length,  color:"var(--gray-700)"},
           {label:"Open",        value:counts.OPEN||0,    color:"#3b82f6"},
-          {label:"Decided",     value:counts.DECIDED||0, color:"#6366f1"},
-          {label:"High Impact", value:highImpact,        color:"#ef4444"},
-          {label:"Irreversible",value:irreversible,      color:"#f59e0b"},
+          {label:"Decided",     value:counts.DECIDED||0, color:"var(--brand-500)"},
+          {label:"High Impact", value:highImpact,        color:"var(--danger)"},
+          {label:"Irreversible",value:irreversible,      color:"var(--warning)"},
         ].map(s=>(
           <div key={s.label} className="kpi-summary-stat">
             <div className="kpi-summary-num" style={{color:s.color}}>{s.value}</div>

@@ -16,10 +16,10 @@ const addRevenue      = (id, d)     => client.post("/roi", { ...d, projectId: id
 const updateRoiSettings=(id,d)      => client.post("/roi", { ...d, projectId: id });
 
 const HEALTH_META = {
-  EXCELLENT:   { label:"Excellent ROI",   color:"#10b981", icon:"🚀" },
-  GOOD:        { label:"Good ROI",        color:"#6366f1", icon:"✅" },
-  BREAK_EVEN:  { label:"Break Even",      color:"#f59e0b", icon:"⚖️" },
-  NEGATIVE:    { label:"Negative ROI",    color:"#ef4444", icon:"⚠️" },
+  EXCELLENT:   { label:"Excellent ROI",   color:"var(--success)", icon:"🚀" },
+  GOOD:        { label:"Good ROI",        color:"var(--brand-500)", icon:"✅" },
+  BREAK_EVEN:  { label:"Break Even",      color:"var(--warning)", icon:"⚖️" },
+  NEGATIVE:    { label:"Negative ROI",    color:"var(--danger)", icon:"⚠️" },
 };
 
 function ProjectRoiCard({ project, onUpdate }) {
@@ -67,7 +67,7 @@ function ProjectRoiCard({ project, onUpdate }) {
 
   const hm = HEALTH_META[roi.roiHealth] || HEALTH_META.BREAK_EVEN;
   const roiPct = roi.roi || 0;
-  const roiColor = roiPct > 0 ? "#10b981" : "#ef4444";
+  const roiColor = roiPct > 0 ? "var(--success)" : "var(--danger)";
 
   return (
     <div className="roi-card">
@@ -92,7 +92,7 @@ function ProjectRoiCard({ project, onUpdate }) {
           <div className="roi-metric-label">Investment</div>
         </div>
         <div className="roi-metric">
-          <div className="roi-metric-num" style={{color:"#10b981"}}>
+          <div className="roi-metric-num" style={{color:"var(--success)"}}>
             ${(roi.actualRevenue||0).toLocaleString()}
           </div>
           <div className="roi-metric-label">Revenue</div>
@@ -210,7 +210,7 @@ export default function RoiEngine() {
     getPortfolioRoi().then(r=>setPortfolio(r.data)).catch(()=>toast("Failed to load ROI summary", "error"));
   };
 
-  const portfolioRoiColor = portfolio?.portfolioRoi >= 0 ? "#10b981" : "#ef4444";
+  const portfolioRoiColor = portfolio?.portfolioRoi >= 0 ? "var(--success)" : "var(--danger)";
   const chartData = portfolio?.breakdown?.map(b=>({
     name: b.name?.slice(0,12)||"?",
     roi:  Number(b.roi)||0,
@@ -236,13 +236,13 @@ export default function RoiEngine() {
             <div className="roi-portfolio-label">Total Investment</div>
           </div>
           <div className="roi-portfolio-stat">
-            <div className="roi-portfolio-num" style={{color:"#10b981"}}>
+            <div className="roi-portfolio-num" style={{color:"var(--success)"}}>
               ${(portfolio.totalRevenue||0).toLocaleString()}
             </div>
             <div className="roi-portfolio-label">Total Revenue</div>
           </div>
           <div className="roi-portfolio-stat">
-            <div className="roi-portfolio-num" style={{color:"#6366f1"}}>
+            <div className="roi-portfolio-num" style={{color:"var(--brand-500)"}}>
               {(portfolio.positiveRoiProjects ?? '0')}/{portfolio.totalProjects ?? '0'}
             </div>
             <div className="roi-portfolio-label">Positive ROI</div>
@@ -257,7 +257,7 @@ export default function RoiEngine() {
                   <ReferenceLine y={0} stroke="var(--gray-300)" />
                   <Bar dataKey="roi" radius={[3,3,0,0]}>
                     {chartData.map((d,i)=>(
-                      <Cell key={i} fill={d.roi>=0?"#10b981":"#ef4444"} />
+                      <Cell key={i} fill={d.roi>=0?"var(--success)":"var(--danger)"} />
                     ))}
                   </Bar>
                 </BarChart>

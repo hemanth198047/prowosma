@@ -12,9 +12,9 @@ RadialBarChart, RadialBar, ResponsiveContainer,
 import "../styles/pages/analytics.css";
 
 const HEALTH_META = {
-  HEALTHY:  { label:"Healthy",  color:"#10b981", bg:"rgba(5,150,105,0.12)" },
-  AT_RISK:  { label:"At Risk",  color:"#f59e0b", bg:"rgba(217,119,6,0.12)" },
-  CRITICAL: { label:"Critical", color:"#ef4444", bg:"rgba(239,68,68,0.12)" },
+  HEALTHY:  { label:"Healthy",  color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
+  AT_RISK:  { label:"At Risk",  color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
+  CRITICAL: { label:"Critical", color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
 };
 
 function HealthBadge({ health }) {
@@ -47,7 +47,7 @@ function ProjectRow({ project, onOpen, onCriticalPath, cpActive }) {
       <div className="portfolio-row-progress">
         <div className="portfolio-progress-bar">
           <div className="portfolio-progress-fill"
-            style={{ width:`${pct}%`, background: pct===100?"#10b981":project.color }} />
+            style={{ width:`${pct}%`, background: pct===100?"var(--success)":project.color }} />
         </div>
         <span className="portfolio-progress-pct">{pct}%</span>
       </div>
@@ -128,9 +128,9 @@ function ProjectDetailPanel({ project, onClose }) {
   const m = HEALTH_META[project.health] || HEALTH_META.AT_RISK;
 
   const chartData = [
-    { name:"Done",      value:project.doneTasks,    fill:"#10b981" },
-    { name:"Remaining", value:project.totalTasks - project.doneTasks, fill:"#6366f1" },
-    { name:"Overdue",   value:project.overdueTasks, fill:"#ef4444" },
+    { name:"Done",      value:project.doneTasks,    fill:"var(--success)" },
+    { name:"Remaining", value:project.totalTasks - project.doneTasks, fill:"var(--brand-500)" },
+    { name:"Overdue",   value:project.overdueTasks, fill:"var(--danger)" },
   ];
 
   return (
@@ -148,15 +148,15 @@ function ProjectDetailPanel({ project, onClose }) {
         {/* Stats */}
         <div className="portfolio-detail-stats">
           <div className="portfolio-detail-stat">
-            <div className="portfolio-detail-stat-num" style={{ color:"#6366f1" }}>{project.totalTasks}</div>
+            <div className="portfolio-detail-stat-num" style={{ color:"var(--brand-500)" }}>{project.totalTasks}</div>
             <div className="portfolio-detail-stat-label">Total Tasks</div>
           </div>
           <div className="portfolio-detail-stat">
-            <div className="portfolio-detail-stat-num" style={{ color:"#10b981" }}>{project.doneTasks}</div>
+            <div className="portfolio-detail-stat-num" style={{ color:"var(--success)" }}>{project.doneTasks}</div>
             <div className="portfolio-detail-stat-label">Completed</div>
           </div>
           <div className="portfolio-detail-stat">
-            <div className="portfolio-detail-stat-num" style={{ color:"#ef4444" }}>{project.overdueTasks}</div>
+            <div className="portfolio-detail-stat-num" style={{ color:"var(--danger)" }}>{project.overdueTasks}</div>
             <div className="portfolio-detail-stat-label">Overdue</div>
           </div>
           <div className="portfolio-detail-stat">
@@ -249,7 +249,7 @@ function RiskPlanningPanel({ projects, onClose }) {
     } finally { setAnalysing(false); }
   };
 
-  const RISK_COLOR = { LOW:"#10b981", MEDIUM:"#f59e0b", HIGH:"#ef4444", CRITICAL:"#7c3aed" };
+  const RISK_COLOR = { LOW:"var(--success)", MEDIUM:"var(--warning)", HIGH:"var(--danger)", CRITICAL:"var(--purple)" };
 
   return (
     <div className="cp-overlay" style={{width:560}}>
@@ -274,10 +274,10 @@ function RiskPlanningPanel({ projects, onClose }) {
                     ))}
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontWeight:800,fontSize:"18px",color:RISK_COLOR[r.riskLevel]||"#6b7280"}}>
+                    <div style={{fontWeight:800,fontSize:"18px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)"}}>
                       {r.riskScore}
                     </div>
-                    <div style={{fontSize:"10px",color:RISK_COLOR[r.riskLevel]||"#6b7280",fontWeight:700}}>
+                    <div style={{fontSize:"10px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)",fontWeight:700}}>
                       {r.riskLevel}
                     </div>
                   </div>
@@ -312,13 +312,13 @@ function RiskPlanningPanel({ projects, onClose }) {
                     {l:"Risk Level",    v:detail.riskLevel,             c:RISK_COLOR[detail.riskLevel]},
                     {l:"Velocity",      v:`${detail.avgVelocity} pts/sprint`,c:"var(--gray-700)"},
                     {l:"Velocity Trend",v:`${detail.velocityTrend>0?"+":""}${detail.velocityTrend}%`,
-                      c:detail.velocityTrend>=0?"#10b981":"#ef4444"},
+                      c:detail.velocityTrend>=0?"var(--success)":"var(--danger)"},
                     {l:"Nominal deadline",v:detail.nominalDeadline||"Not set",c:"var(--gray-700)"},
-                    {l:"Risk-adjusted deadline",v:detail.riskAdjDeadline,c:"#f59e0b"},
-                    {l:"Buffer sprints",v:`+${detail.bufferSprints} sprints`,c:"#f59e0b"},
+                    {l:"Risk-adjusted deadline",v:detail.riskAdjDeadline,c:"var(--warning)"},
+                    {l:"Buffer sprints",v:`+${detail.bufferSprints} sprints`,c:"var(--warning)"},
                     {l:"Remaining pts", v:detail.remainingPoints,       c:"var(--gray-700)"},
                     {l:"P50 (median-case)",v:detail.p50Deadline,       c:"#3b82f6"},
-                    {l:"P90 (conservative)",v:detail.p90Deadline,      c:"#ef4444"},
+                    {l:"P90 (conservative)",v:detail.p90Deadline,      c:"var(--danger)"},
                   ].map(m=>(
                     <div key={m.l} style={{background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",padding:"8px 10px"}}>
@@ -343,7 +343,7 @@ function RiskPlanningPanel({ projects, onClose }) {
                 )}
                 {detail.aiNarrative && (
                   <div style={{background:"rgba(99,102,241,.06)",borderRadius:"var(--radius-sm)",padding:"10px"}}>
-                    <div style={{fontSize:"10px",fontWeight:700,color:"#6366f1",marginBottom:"5px"}}>🤖 AI ASSESSMENT</div>
+                    <div style={{fontSize:"10px",fontWeight:700,color:"var(--brand-500)",marginBottom:"5px"}}>🤖 AI ASSESSMENT</div>
                     <div style={{fontSize:"12px",color:"var(--gray-600)",lineHeight:1.6}}>{detail.aiNarrative}</div>
                   </div>
                 )}
@@ -421,9 +421,9 @@ export default function Portfolio() {
     });
 
   const healthDist = [
-    { name:"Healthy",  value:data.healthyCount,  fill:"#10b981" },
-    { name:"At Risk",  value:data.atRiskCount,   fill:"#f59e0b" },
-    { name:"Critical", value:data.criticalCount, fill:"#ef4444" },
+    { name:"Healthy",  value:data.healthyCount,  fill:"var(--success)" },
+    { name:"At Risk",  value:data.atRiskCount,   fill:"var(--warning)" },
+    { name:"Critical", value:data.criticalCount, fill:"var(--danger)" },
   ].filter(d => d.value > 0);
 
   return (
@@ -453,19 +453,19 @@ export default function Portfolio() {
           <div className="portfolio-kpi-label">Projects</div>
         </div>
         <div className="portfolio-kpi">
-          <div className="portfolio-kpi-num" style={{ color:"#10b981" }}>{data.healthyCount}</div>
+          <div className="portfolio-kpi-num" style={{ color:"var(--success)" }}>{data.healthyCount}</div>
           <div className="portfolio-kpi-label">Healthy</div>
         </div>
         <div className="portfolio-kpi">
-          <div className="portfolio-kpi-num" style={{ color:"#f59e0b" }}>{data.atRiskCount}</div>
+          <div className="portfolio-kpi-num" style={{ color:"var(--warning)" }}>{data.atRiskCount}</div>
           <div className="portfolio-kpi-label">At Risk</div>
         </div>
         <div className="portfolio-kpi">
-          <div className="portfolio-kpi-num" style={{ color:"#ef4444" }}>{data.criticalCount}</div>
+          <div className="portfolio-kpi-num" style={{ color:"var(--danger)" }}>{data.criticalCount}</div>
           <div className="portfolio-kpi-label">Critical</div>
         </div>
         <div className="portfolio-kpi">
-          <div className="portfolio-kpi-num" style={{ color:"#6366f1" }}>{data.avgProgress}%</div>
+          <div className="portfolio-kpi-num" style={{ color:"var(--brand-500)" }}>{data.avgProgress}%</div>
           <div className="portfolio-kpi-label">Avg Progress</div>
         </div>
         <div className="portfolio-kpi">

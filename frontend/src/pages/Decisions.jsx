@@ -13,16 +13,16 @@ const STATUSES = ["PROPOSED","DECIDED","SUPERSEDED","REVERSED"];
 const IMPACTS  = ["LOW","MEDIUM","HIGH","CRITICAL"];
 
 const STATUS_META = {
-  PROPOSED:   { label:"Proposed",   color:"#818cf8", bg:"rgba(99,102,241,0.12)" },
-  DECIDED:    { label:"Decided",    color:"#34d399", bg:"rgba(5,150,105,0.12)" },
-  SUPERSEDED: { label:"Superseded", color:"#fbbf24", bg:"rgba(217,119,6,0.12)" },
-  REVERSED:   { label:"Reversed",   color:"#f87171", bg:"rgba(239,68,68,0.12)" },
+  PROPOSED:   { label:"Proposed",   color:"var(--brand-400)", bg:"rgba(99,102,241,0.12)" },
+  DECIDED:    { label:"Decided",    color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
+  SUPERSEDED: { label:"Superseded", color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
+  REVERSED:   { label:"Reversed",   color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
 };
 const IMPACT_META = {
-  LOW:      { color:"#10b981" },
-  MEDIUM:   { color:"#f59e0b" },
-  HIGH:     { color:"#ef4444" },
-  CRITICAL: { color:"#7c3aed" },
+  LOW:      { color:"var(--success)" },
+  MEDIUM:   { color:"var(--warning)" },
+  HIGH:     { color:"var(--danger)" },
+  CRITICAL: { color:"var(--purple)" },
 };
 
 // ── Helpers ────────────────────────────────────────────────────

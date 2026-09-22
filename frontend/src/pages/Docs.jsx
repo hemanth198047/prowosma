@@ -68,7 +68,7 @@ function TaskPicker({ onSelect, onClose, allTasks }) {
     .filter(t => t.title?.toLowerCase().includes(q.toLowerCase()))
     .slice(0, 10);
 
-  const statusColor = { TODO:"#6366f1", IN_PROGRESS:"#f59e0b", DONE:"#10b981" };
+  const statusColor = { TODO:"var(--brand-500)", IN_PROGRESS:"var(--warning)", DONE:"var(--success)" };
 
   return (
     <div className="modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
@@ -90,7 +90,7 @@ function TaskPicker({ onSelect, onClose, allTasks }) {
             : filtered.map(t => (
                 <button key={t.id} className="doc-task-picker-item" onClick={() => onSelect(t)}>
                   <span className="doc-task-picker-dot"
-                    style={{ background: statusColor[t.status] || "#6366f1" }} />
+                    style={{ background: statusColor[t.status] || "var(--brand-500)" }} />
                   <span className="doc-task-picker-title">{t.title}</span>
                   <span className="doc-task-picker-status">{t.status?.replace("_"," ")}</span>
                 </button>
@@ -272,8 +272,8 @@ function AIWriteBlock({ onGenerated, onRemove }) {
 // ═══════════════════════════════════════════════════════
 function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
   const task = allTasks?.find(t => t.id === taskId);
-  const statusColor  = { TODO:"#6366f1", IN_PROGRESS:"#f59e0b", DONE:"#10b981" };
-  const priorityColor= { LOW:"#10b981", MEDIUM:"#f59e0b", HIGH:"#ef4444" };
+  const statusColor  = { TODO:"var(--brand-500)", IN_PROGRESS:"var(--warning)", DONE:"var(--success)" };
+  const priorityColor= { LOW:"var(--success)", MEDIUM:"var(--warning)", HIGH:"var(--danger)" };
 
   if (!task) return (
     <div className="doc-task-embed doc-task-embed--missing">
@@ -286,7 +286,7 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
     <div className="doc-task-embed" onClick={() => onOpenTask?.(task)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => onOpenTask?.(task))?.(e); } }}>
       <div className="doc-task-embed-left">
         <span className="doc-task-embed-dot"
-          style={{ background: statusColor[task.status] || "#6366f1" }} />
+          style={{ background: statusColor[task.status] || "var(--brand-500)" }} />
       </div>
       <div className="doc-task-embed-body">
         <div className="doc-task-embed-title">{task.title}</div>
@@ -322,10 +322,10 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
 // DECISION BLOCK — inline decision card inside a doc
 // ═══════════════════════════════════════════════════════
 const DEC_STATUS_META = {
-  PROPOSED:   { label:"Proposed",   color:"#6366f1", bg:"rgba(99,102,241,0.12)" },
-  DECIDED:    { label:"Decided",    color:"#10b981", bg:"rgba(5,150,105,0.12)" },
-  SUPERSEDED: { label:"Superseded", color:"#f59e0b", bg:"rgba(217,119,6,0.12)" },
-  REVERSED:   { label:"Reversed",   color:"#ef4444", bg:"rgba(239,68,68,0.12)" },
+  PROPOSED:   { label:"Proposed",   color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
+  DECIDED:    { label:"Decided",    color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
+  SUPERSEDED: { label:"Superseded", color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
+  REVERSED:   { label:"Reversed",   color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
 };
 
 function DecisionInlineForm({ docId, wsId, initial, onSave, onCancel }) {
@@ -2284,7 +2284,7 @@ export default function Docs() {
                     if (!isStale && !isAgeing) return null;
                     return (
                       <button className="docs-history-btn"
-                        style={{color:isStale?"#ef4444":"#f59e0b",
+                        style={{color:isStale?"var(--danger)":"var(--warning)",
                           background:isStale?"rgba(239,68,68,.08)":"rgba(245,158,11,.08)"}}
                         title={`Last updated ${daysSince} days ago`}
                         onClick={async()=>{
@@ -2303,7 +2303,7 @@ export default function Docs() {
                     title="Inline comments">
                     💬 Comments
                     {activeDoc?.inlineComments?.filter(c=>!c.resolved).length > 0 && (
-                      <span style={{fontSize:"9px",background:"#ef4444",color:"#fff",
+                      <span style={{fontSize:"9px",background:"var(--danger)",color:"#fff",
                         borderRadius:"99px",padding:"1px 5px",marginLeft:"4px"}}>
                         {activeDoc.inlineComments.filter(c=>!c.resolved).length}
                       </span>
@@ -2441,7 +2441,7 @@ export default function Docs() {
                       borderRadius:"var(--radius-md)",padding:"10px"}}>
                       {c.selectedText && (
                         <div style={{fontSize:"11px",color:"var(--gray-400)",
-                          borderLeft:"3px solid #6366f1",paddingLeft:"8px",marginBottom:"6px",
+                          borderLeft:"3px solid var(--brand-500)",paddingLeft:"8px",marginBottom:"6px",
                           fontStyle:"italic"}}>
                           "{c.selectedText.slice(0,80)}{c.selectedText.length>80?"…":""}"
                         </div>
@@ -2454,14 +2454,14 @@ export default function Docs() {
                         <span>💬 {c.authorEmail}</span>
                         {!c.resolved && (
                           <button style={{fontSize:"10px",background:"none",border:"1px solid var(--border)",
-                            borderRadius:"4px",cursor:"pointer",padding:"1px 7px",color:"#10b981"}}
+                            borderRadius:"4px",cursor:"pointer",padding:"1px 7px",color:"var(--success)"}}
                             onClick={async()=>{
                               await client.patch(`/docs/${activeDoc.id}/comments/${c.id}/resolve`);
                               // Reload doc to refresh inline comments
                               window.location.reload();
                             }}>Resolve</button>
                         )}
-                        {c.resolved && <span style={{color:"#10b981",fontWeight:700}}>✓ Resolved</span>}
+                        {c.resolved && <span style={{color:"var(--success)",fontWeight:700}}>✓ Resolved</span>}
                       </div>
                       {(c.replies||[]).map(r=>(
                         <div key={r.id} style={{marginTop:"8px",paddingTop:"8px",

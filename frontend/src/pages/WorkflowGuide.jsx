@@ -8,7 +8,7 @@ const WORKFLOWS = [
     id: "project-manager",
     icon: "🗂",
     label: "Project Manager",
-    color: "#6366f1",
+    color: "var(--brand-500)",
     tagline: "Plan, delegate, and track project delivery",
     steps: [
       {
@@ -98,7 +98,7 @@ const WORKFLOWS = [
     id: "team-lead",
     icon: "👥",
     label: "Team Lead",
-    color: "#10b981",
+    color: "var(--success)",
     tagline: "Align your team and unblock delivery",
     steps: [
       {
@@ -143,7 +143,7 @@ const WORKFLOWS = [
     id: "executive",
     icon: "🏢",
     label: "Executive / Stakeholder",
-    color: "#f59e0b",
+    color: "var(--warning)",
     tagline: "Get the full picture without the noise",
     steps: [
       {
@@ -210,22 +210,22 @@ function StepCard({ step, color, isLast }) {
       {/* Card body */}
       <div style={{
         flex: 1, background: "var(--bg-card, #fff)",
-        border: "1px solid var(--border, #e2e8f0)",
+        border: "1px solid var(--border, var(--border))",
         borderRadius: "10px", padding: "14px 16px",
         marginLeft: "12px", marginBottom: isLast ? 0 : "12px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "18px" }}>{step.icon}</span>
-          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--gray-800, #1e293b)" }}>
+          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--gray-800, var(--gray-800))" }}>
             {step.title}
           </span>
         </div>
-        <p style={{ fontSize: "13px", color: "var(--gray-600, #475569)", lineHeight: 1.6, margin: "0 0 8px" }}>
+        <p style={{ fontSize: "13px", color: "var(--gray-600, var(--gray-600))", lineHeight: 1.6, margin: "0 0 8px" }}>
           {step.desc}
         </p>
         {step.tip && (
           <div style={{
-            fontSize: "12px", color: "#d97706", background: "#fffbeb",
+            fontSize: "12px", color: "var(--warning)", background: "#fffbeb",
             border: "1px solid #fde68a", borderRadius: "6px",
             padding: "6px 10px", marginBottom: "10px",
           }}>
@@ -273,7 +273,7 @@ export default function WorkflowGuide() {
             onClick={() => setSelected(selected === w.id ? null : w.id)}
             style={{
               background: selected === w.id ? w.color : "var(--bg-card, #fff)",
-              border: `2px solid ${selected === w.id ? w.color : "var(--border, #e2e8f0)"}`,
+              border: `2px solid ${selected === w.id ? w.color : "var(--border, var(--border))"}`,
               borderRadius: "12px",
               padding: "20px 16px",
               cursor: "pointer",
@@ -284,12 +284,12 @@ export default function WorkflowGuide() {
             <div style={{ fontSize: "32px", marginBottom: "8px" }}>{w.icon}</div>
             <div style={{
               fontWeight: 700, fontSize: "14px",
-              color: selected === w.id ? "#fff" : "var(--gray-800, #1e293b)",
+              color: selected === w.id ? "#fff" : "var(--gray-800, var(--gray-800))",
               marginBottom: "4px",
             }}>{w.label}</div>
             <div style={{
               fontSize: "11px",
-              color: selected === w.id ? "rgba(255,255,255,0.8)" : "var(--gray-500, #64748b)",
+              color: selected === w.id ? "rgba(255,255,255,0.8)" : "var(--gray-500, var(--gray-500))",
               lineHeight: 1.4,
             }}>{w.tagline}</div>
           </div>
@@ -334,7 +334,7 @@ export default function WorkflowGuide() {
       {!workflow && (
         <div style={{
           textAlign: "center", padding: "40px",
-          color: "var(--gray-400, #94a3b8)", fontSize: "14px",
+          color: "var(--gray-400, var(--gray-400))", fontSize: "14px",
         }}>
           👆 Select your role above to see your personalised workflow
         </div>

@@ -18,10 +18,10 @@ import {
 // RELEASE MANAGEMENT
 // ─────────────────────────────────────────────────────────────
 const REL_STATUS = {
-  PLANNED:    { label:"Planned",     color:"#6366f1", bg:"rgba(99,102,241,0.1)"  },
-  IN_PROGRESS:{ label:"In Progress", color:"#f59e0b", bg:"rgba(245,158,11,0.1)"  },
-  RELEASED:   { label:"Released",    color:"#10b981", bg:"rgba(16,185,129,0.1)"  },
-  CANCELLED:  { label:"Cancelled",   color:"#6b7280", bg:"rgba(107,114,128,0.1)" },
+  PLANNED:    { label:"Planned",     color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)"  },
+  IN_PROGRESS:{ label:"In Progress", color:"var(--warning)", bg:"rgba(245,158,11,0.1)"  },
+  RELEASED:   { label:"Released",    color:"var(--success)", bg:"rgba(16,185,129,0.1)"  },
+  CANCELLED:  { label:"Cancelled",   color:"var(--gray-500)", bg:"rgba(107,114,128,0.1)" },
 };
 
 function ReleaseForm({ initial, projects, onSave, onCancel }) {
@@ -219,7 +219,7 @@ function InitiativesTab({ projects, goals }) {
     await deleteInitiative(id); load(); toast("Deleted","success");
   };
 
-  const PRIORITY_COLOR = {HIGH:"#ef4444",MEDIUM:"#f59e0b",LOW:"#10b981"};
+  const PRIORITY_COLOR = {HIGH:"var(--danger)",MEDIUM:"var(--warning)",LOW:"var(--success)"};
 
   return (
     <div>
@@ -387,7 +387,7 @@ function ProgrammesTab({ projects }) {
     await deleteProgramme(id); load(); toast("Deleted","success");
   };
 
-  const STATUS_COLOR = {ACTIVE:"#10b981",PAUSED:"#f59e0b",COMPLETED:"#6366f1",CANCELLED:"#6b7280"};
+  const STATUS_COLOR = {ACTIVE:"var(--success)",PAUSED:"var(--warning)",COMPLETED:"var(--brand-500)",CANCELLED:"var(--gray-500)"};
 
   return (
     <div>
@@ -410,8 +410,8 @@ function ProgrammesTab({ projects }) {
                   {prog.owner && <div className="pplus-row-meta">👤 {prog.owner}</div>}
                   <div style={{display:"flex",gap:"6px",marginTop:"4px",flexWrap:"wrap"}}>
                     <span className="pplus-status-chip"
-                      style={{color:STATUS_COLOR[prog.status]||"#6b7280",
-                        background:`${STATUS_COLOR[prog.status]||"#6b7280"}1a`}}>
+                      style={{color:STATUS_COLOR[prog.status]||"var(--gray-500)",
+                        background:`${STATUS_COLOR[prog.status]||"var(--gray-500)"}1a`}}>
                       {prog.status}
                     </span>
                     {linkedProjs.map(p=>(

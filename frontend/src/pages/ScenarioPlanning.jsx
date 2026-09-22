@@ -36,10 +36,10 @@ const SCENARIO_TYPES = [
 ];
 
 const RISK_META = {
-  LOW:      { color:"#10b981", bg:"rgba(16,185,129,.1)",  label:"Low Risk"     },
-  MEDIUM:   { color:"#f59e0b", bg:"rgba(245,158,11,.1)",  label:"Medium Risk"  },
-  HIGH:     { color:"#ef4444", bg:"rgba(239,68,68,.1)",   label:"High Risk"    },
-  CRITICAL: { color:"#7c3aed", bg:"rgba(124,58,237,.1)",  label:"Critical Risk"},
+  LOW:      { color:"var(--success)", bg:"rgba(16,185,129,.1)",  label:"Low Risk"     },
+  MEDIUM:   { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  label:"Medium Risk"  },
+  HIGH:     { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   label:"High Risk"    },
+  CRITICAL: { color:"var(--purple)", bg:"rgba(124,58,237,.1)",  label:"Critical Risk"},
 };
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ function MetricCard({ icon, label, value, sub, color = "var(--gray-800)", delta 
         <div className="sc-metric-label">{label}</div>
         {sub   && <div className="sc-metric-sub">{sub}</div>}
         {delta !== undefined && delta !== 0 && (
-          <div className="sc-metric-delta" style={{color: delta > 0 ? "#ef4444" : "#10b981"}}>
+          <div className="sc-metric-delta" style={{color: delta > 0 ? "var(--danger)" : "var(--success)"}}>
             {delta > 0 ? "▲" : "▼"} {Math.abs(delta)}
           </div>
         )}
@@ -108,8 +108,8 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
     : results.estimatedDelayDays < 0
     ? `${Math.abs(results.estimatedDelayDays)}d early`
     : "On time";
-  const delayColor = results.estimatedDelayDays > 0 ? "#ef4444"
-    : results.estimatedDelayDays < 0 ? "#10b981" : "#6b7280";
+  const delayColor = results.estimatedDelayDays > 0 ? "var(--danger)"
+    : results.estimatedDelayDays < 0 ? "var(--success)" : "var(--gray-500)";
 
   return (
     <div className="sc-results">
@@ -133,7 +133,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
         <MetricCard icon="📅" label="Projected Completion"
           value={fmtDate(results.projectedCompletionDate)}
           sub={`Baseline: ${fmtDate(results.baselineCompletionDate)}`}
-          color={results.estimatedDelayDays > 0 ? "#ef4444" : "#10b981"} />
+          color={results.estimatedDelayDays > 0 ? "var(--danger)" : "var(--success)"} />
         <MetricCard icon="⏱" label="Delay Estimate"
           value={delayLabel} color={delayColor}
           sub={`${results.sprintsToCompletion} sprints needed`} />
@@ -143,15 +143,15 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
           delta={results.sprintVelocityProjected > 0 ? undefined : undefined} />
         <MetricCard icon="🎯" label="Goals at Risk"
           value={results.goalsAtRisk}
-          color={results.goalsAtRisk > 0 ? "#ef4444" : "#10b981"}
+          color={results.goalsAtRisk > 0 ? "var(--danger)" : "var(--success)"}
           sub={`Confidence Δ ${results.goalConfidenceImpact > 0 ? "+" : ""}${results.goalConfidenceImpact} pts`} />
         <MetricCard icon="👥" label="Team Load"
           value={`${results.teamLoadChange > 0 ? "+" : ""}${results.teamLoadChange}%`}
-          color={results.teamLoadChange > 20 ? "#ef4444" : results.teamLoadChange > 0 ? "#f59e0b" : "#10b981"}
+          color={results.teamLoadChange > 20 ? "var(--danger)" : results.teamLoadChange > 0 ? "var(--warning)" : "var(--success)"}
           sub={results.burnoutRisk ? "⚠️ Burnout risk" : "Within capacity"} />
         <MetricCard icon="💰" label="Budget Variance"
           value={results.budgetVariance < 0 ? `−$${Math.abs(results.budgetVariance).toLocaleString()}` : "No change"}
-          color={results.budgetVariance < -1000 ? "#ef4444" : "var(--gray-700)"}
+          color={results.budgetVariance < -1000 ? "var(--danger)" : "var(--gray-700)"}
           sub={`Burn: $${(results.projectedBurnRate||0).toLocaleString()}/mo`} />
       </div>
 
@@ -206,9 +206,9 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
                 <div className="sc-goal-impact-bar-wrap">
                   <div className="sc-goal-impact-bar"
                     style={{width:`${g.projectedConf}%`,
-                      background: g.atRisk ? "#ef4444" : "#6366f1"}} />
+                      background: g.atRisk ? "var(--danger)" : "var(--brand-500)"}} />
                   <span className="sc-goal-bar-label"
-                    style={{color: g.atRisk ? "#ef4444" : "#10b981"}}>
+                    style={{color: g.atRisk ? "var(--danger)" : "var(--success)"}}>
                     {g.projectedConf}%
                   </span>
                 </div>
@@ -272,7 +272,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
                 <input type="range" min={-10} max={10} value={inp.teamSizeDelta}
                   onChange={e=>set("teamSizeDelta",Number(e.target.value))} id={"scenario-planning-net-team-size-change"} />
                 <span className="sc-slider-val"
-                  style={{color:inp.teamSizeDelta<0?"#ef4444":inp.teamSizeDelta>0?"#10b981":"var(--gray-500)"}}>
+                  style={{color:inp.teamSizeDelta<0?"var(--danger)":inp.teamSizeDelta>0?"var(--success)":"var(--gray-500)"}}>
                   {inp.teamSizeDelta>0?"+":""}{inp.teamSizeDelta} members
                 </span>
               </div>
@@ -312,7 +312,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
                 <input type="range" min={-90} max={180} step={1} value={inp.deadlineShiftDays}
                   onChange={e=>set("deadlineShiftDays",Number(e.target.value))} id={"scenario-planning-shift-deadline-by-days"} />
                 <span className="sc-slider-val"
-                  style={{color:inp.deadlineShiftDays<0?"#ef4444":inp.deadlineShiftDays>0?"#10b981":"var(--gray-500)"}}>
+                  style={{color:inp.deadlineShiftDays<0?"var(--danger)":inp.deadlineShiftDays>0?"var(--success)":"var(--gray-500)"}}>
                   {inp.deadlineShiftDays>0?"+":""}{inp.deadlineShiftDays}d
                 </span>
               </div>
@@ -344,7 +344,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
               <input type="range" min={-80} max={50} value={inp.sprintVelocityChange}
                 onChange={e=>set("sprintVelocityChange",Number(e.target.value))} id={"scenario-planning-sprint-velocity-change"} />
               <span className="sc-slider-val"
-                style={{color:inp.sprintVelocityChange<0?"#ef4444":inp.sprintVelocityChange>0?"#10b981":"var(--gray-500)"}}>
+                style={{color:inp.sprintVelocityChange<0?"var(--danger)":inp.sprintVelocityChange>0?"var(--success)":"var(--gray-500)"}}>
                 {inp.sprintVelocityChange>0?"+":""}{inp.sprintVelocityChange}%
               </span>
             </div>
@@ -365,7 +365,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
               <div className="sc-slider-wrap">
                 <input type="range" min={0} max={200} step={5} value={inp.scopeAddedPoints}
                   onChange={e=>set("scopeAddedPoints",Number(e.target.value))} id={"scenario-planning-story-points-added-to-backlog"} />
-                <span className="sc-slider-val" style={{color:inp.scopeAddedPoints>0?"#ef4444":"var(--gray-500)"}}>
+                <span className="sc-slider-val" style={{color:inp.scopeAddedPoints>0?"var(--danger)":"var(--gray-500)"}}>
                   +{inp.scopeAddedPoints} pts
                 </span>
               </div>
@@ -375,7 +375,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
               <div className="sc-slider-wrap">
                 <input type="range" min={0} max={200} step={5} value={inp.scopeRemovedPoints}
                   onChange={e=>set("scopeRemovedPoints",Number(e.target.value))} id={"scenario-planning-story-points-removed-from-backlog"} />
-                <span className="sc-slider-val" style={{color:inp.scopeRemovedPoints>0?"#10b981":"var(--gray-500)"}}>
+                <span className="sc-slider-val" style={{color:inp.scopeRemovedPoints>0?"var(--success)":"var(--gray-500)"}}>
                   −{inp.scopeRemovedPoints} pts
                 </span>
               </div>
@@ -394,7 +394,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
               <input type="range" min={0} max={80} step={5} value={inp.budgetCutPercent}
                 onChange={e=>set("budgetCutPercent",Number(e.target.value))} id={"scenario-planning-budget-cut"} />
               <span className="sc-slider-val"
-                style={{color:inp.budgetCutPercent>0?"#ef4444":"var(--gray-500)"}}>
+                style={{color:inp.budgetCutPercent>0?"var(--danger)":"var(--gray-500)"}}>
                 {inp.budgetCutPercent}% cut
               </span>
             </div>
@@ -460,8 +460,8 @@ function CompareView({ scenarios }) {
             <thead>
               <tr>
                 <th>Metric</th>
-                <th style={{color:"#6366f1"}}>{sA.name}</th>
-                <th style={{color:"#10b981"}}>{sB.name}</th>
+                <th style={{color:"var(--brand-500)"}}>{sA.name}</th>
+                <th style={{color:"var(--success)"}}>{sB.name}</th>
               </tr>
             </thead>
             <tbody>
@@ -501,11 +501,11 @@ function CompareView({ scenarios }) {
 
           <div className="sc-cmp-narratives">
             <div className="sc-cmp-narrative-col">
-              <div className="sc-cmp-narrative-title" style={{color:"#6366f1"}}>{sA.name}</div>
+              <div className="sc-cmp-narrative-title" style={{color:"var(--brand-500)"}}>{sA.name}</div>
               <div className="sc-cmp-narrative-text">{sA.aiNarrative || "No narrative"}</div>
             </div>
             <div className="sc-cmp-narrative-col">
-              <div className="sc-cmp-narrative-title" style={{color:"#10b981"}}>{sB.name}</div>
+              <div className="sc-cmp-narrative-title" style={{color:"var(--success)"}}>{sB.name}</div>
               <div className="sc-cmp-narrative-text">{sB.aiNarrative || "No narrative"}</div>
             </div>
           </div>
@@ -673,8 +673,8 @@ export default function ScenarioPlanning() {
                         <div className="sc-saved-meta">
                           {typeMeta?.label.split(" ").slice(1).join(" ")} ·
                           {s.status === "SIMULATED"
-                            ? <span style={{color:"#10b981"}}> Simulated</span>
-                            : <span style={{color:"#6b7280"}}> Draft</span>}
+                            ? <span style={{color:"var(--success)"}}> Simulated</span>
+                            : <span style={{color:"var(--gray-500)"}}> Draft</span>}
                           {s.simulatedAt && ` · ${new Date(s.simulatedAt).toLocaleDateString()}`}
                         </div>
                       </div>

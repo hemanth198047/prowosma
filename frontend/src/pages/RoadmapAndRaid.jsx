@@ -15,13 +15,13 @@ const deleteExpense  = (id, eid)   => client.delete(`/projects/${id}/expenses/${
 const updateBudget   = (id, data)  => client.patch(`/projects/${id}/budget`, data);
 
 const TYPE_META = {
-  RISK:       { label:"Risk",       icon:"⚠️", color:"#ef4444", bg:"rgba(239,68,68,0.1)" },
-  ASSUMPTION: { label:"Assumption", icon:"💭", color:"#6366f1", bg:"rgba(99,102,241,0.1)" },
-  ISSUE:      { label:"Issue",      icon:"🔥", color:"#f59e0b", bg:"rgba(245,158,11,0.1)" },
-  DEPENDENCY: { label:"Dependency", icon:"🔗", color:"#10b981", bg:"rgba(16,185,129,0.1)" },
+  RISK:       { label:"Risk",       icon:"⚠️", color:"var(--danger)", bg:"rgba(239,68,68,0.1)" },
+  ASSUMPTION: { label:"Assumption", icon:"💭", color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)" },
+  ISSUE:      { label:"Issue",      icon:"🔥", color:"var(--warning)", bg:"rgba(245,158,11,0.1)" },
+  DEPENDENCY: { label:"Dependency", icon:"🔗", color:"var(--success)", bg:"rgba(16,185,129,0.1)" },
 };
 const STATUS_COLORS = {
-  OPEN:"#ef4444", IN_PROGRESS:"#f59e0b", CLOSED:"#6b7280", MITIGATED:"#10b981"
+  OPEN:"var(--danger)", IN_PROGRESS:"var(--warning)", CLOSED:"var(--gray-500)", MITIGATED:"var(--success)"
 };
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -37,7 +37,7 @@ function BudgetPanel({ project, onRefresh }) {
   const budget   = project.budget || 0;
   const burnPct  = budget > 0 ? Math.min(100, Math.round((spent/budget)*100)) : 0;
   const variance = budget - spent;
-  const burnColor= burnPct >= 90 ? "#ef4444" : burnPct >= 70 ? "#f59e0b" : "#10b981";
+  const burnColor= burnPct >= 90 ? "var(--danger)" : burnPct >= 70 ? "var(--warning)" : "var(--success)";
 
   const handleAddExpense = async () => {
     if (!form.description || !form.amount) return;
@@ -70,7 +70,7 @@ function BudgetPanel({ project, onRefresh }) {
           <div className="budget-stat-label">Spent</div>
         </div>
         <div className="budget-stat">
-          <div className="budget-stat-num" style={{ color: variance >= 0 ? "#10b981" : "#ef4444" }}>
+          <div className="budget-stat-num" style={{ color: variance >= 0 ? "var(--success)" : "var(--danger)" }}>
             {variance >= 0 ? "+" : ""}${variance.toLocaleString()}
           </div>
           <div className="budget-stat-label">Variance</div>
@@ -298,13 +298,13 @@ function RaidPanel({ projectId }) {
               <span className="raid-owner">{e.owner || "—"}</span>
               <span>
                 <span className="raid-impact-badge"
-                  style={{ color: e.impact==="HIGH"?"#ef4444":e.impact==="MEDIUM"?"#f59e0b":"#10b981" }}>
+                  style={{ color: e.impact==="HIGH"?"var(--danger)":e.impact==="MEDIUM"?"var(--warning)":"var(--success)" }}>
                   {e.impact}
                 </span>
               </span>
               <span>
                 <span className="raid-status-badge"
-                  style={{ color: STATUS_COLORS[e.status] || "#6b7280" }}>{e.status}</span>
+                  style={{ color: STATUS_COLORS[e.status] || "var(--gray-500)" }}>{e.status}</span>
               </span>
               <span className="raid-mitigation">{e.mitigation || "—"}</span>
               <span style={{ display:"flex", gap:"4px" }}>
@@ -372,8 +372,8 @@ function RoadmapView({ projects }) {
           const end   = p.dueDate   || new Date(Date.now() + 90*24*3600*1000).toISOString();
           const left  = getLeft(start);
           const width = getWidth(start, end);
-          const color = p.status === "DONE" ? "#10b981"
-            : p.status === "PAUSED" ? "#6b7280" : "#6366f1";
+          const color = p.status === "DONE" ? "var(--success)"
+            : p.status === "PAUSED" ? "var(--gray-500)" : "var(--brand-500)";
           return (
             <div key={p.id} className="roadmap-row">
               <div className="roadmap-row-label" title={p.name}>{p.name}</div>

@@ -107,11 +107,11 @@ const WORKFLOW_TEMPLATES = [
 ];
 
 const STATUS_META = {
-  PENDING:   { label:"Pending",   color:"#f59e0b", bg:"rgba(217,119,6,0.12)" },
-  APPROVED:  { label:"Approved",  color:"#10b981", bg:"rgba(5,150,105,0.12)" },
-  REJECTED:  { label:"Rejected",  color:"#ef4444", bg:"rgba(239,68,68,0.12)" },
-  ESCALATED: { label:"Escalated", color:"#8b5cf6", bg:"rgba(139,92,246,0.12)" },
-  CANCELLED: { label:"Cancelled", color:"#6b7280", bg:"rgba(107,114,128,0.12)" },
+  PENDING:   { label:"Pending",   color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
+  APPROVED:  { label:"Approved",  color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
+  REJECTED:  { label:"Rejected",  color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
+  ESCALATED: { label:"Escalated", color:"var(--purple)", bg:"rgba(139,92,246,0.12)" },
+  CANCELLED: { label:"Cancelled", color:"var(--gray-500)", bg:"rgba(107,114,128,0.12)" },
 };
 
 // ── Condition Editor ─────────────────────────────────────────
@@ -448,7 +448,7 @@ function AutomationBuilder({ initial, onSave, onCancel }) {
                   <div className="auto-cron-hint">
                     Format: minute hour day month weekday ·
                     <a href="https://crontab.guru" target="_blank" rel="noopener noreferrer"
-                      style={{color:"#6366f1"}}> crontab.guru ↗</a>
+                      style={{color:"var(--brand-500)"}}> crontab.guru ↗</a>
                   </div>
                 </div>
               )}
@@ -612,7 +612,7 @@ function ApprovalsPanel() {
                               placeholder="Optional comment" />
                             <button className="btn-primary" style={{ fontSize:"11px" }}
                               onClick={() => handleRespond(ap.id, step.id, "APPROVED")}>✓ Approve</button>
-                            <button className="btn-secondary" style={{ fontSize:"11px", color:"#ef4444" }}
+                            <button className="btn-secondary" style={{ fontSize:"11px", color:"var(--danger)" }}
                               onClick={() => handleRespond(ap.id, step.id, "REJECTED")}>✗ Reject</button>
                             <button className="btn-secondary" style={{ fontSize:"11px" }}
                               onClick={() => setRespondingTo(null)}>Cancel</button>
@@ -649,7 +649,7 @@ function ApprovalsPanel() {
                   <div className="auto-approval-title">{ap.title}</div>
                   <span className="auto-approval-status" style={{ background:sm.bg, color:sm.color }}>{sm.label}</span>
                 </div>
-                {ap.rejectionReason && <div className="auto-approval-desc" style={{ color:"#ef4444" }}>Reason: {ap.rejectionReason}</div>}
+                {ap.rejectionReason && <div className="auto-approval-desc" style={{ color:"var(--danger)" }}>Reason: {ap.rejectionReason}</div>}
                 <div className="auto-approval-meta">
                   <span>Resolved by <strong>{ap.resolvedBy || "—"}</strong></span>
                 </div>
@@ -756,10 +756,10 @@ export default function Automations() {
       {activeTab === "automations" && (
         <div className="auto-stats-bar">
           <div className="auto-stat"><div className="auto-stat-num">{automations.length}</div><div className="auto-stat-label">Total</div></div>
-          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"#10b981" }}>{enabled.length}</div><div className="auto-stat-label">Active</div></div>
-          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"#6b7280" }}>{disabled.length}</div><div className="auto-stat-label">Disabled</div></div>
-          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"#6366f1" }}>{automations.reduce((s,a)=>s+(a.runCount||0),0)}</div><div className="auto-stat-label">Total Runs</div></div>
-          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"#ef4444" }}>{automations.reduce((s,a)=>s+(a.failCount||0),0)}</div><div className="auto-stat-label">Failures</div></div>
+          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"var(--success)" }}>{enabled.length}</div><div className="auto-stat-label">Active</div></div>
+          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"var(--gray-500)" }}>{disabled.length}</div><div className="auto-stat-label">Disabled</div></div>
+          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"var(--brand-500)" }}>{automations.reduce((s,a)=>s+(a.runCount||0),0)}</div><div className="auto-stat-label">Total Runs</div></div>
+          <div className="auto-stat"><div className="auto-stat-num" style={{ color:"var(--danger)" }}>{automations.reduce((s,a)=>s+(a.failCount||0),0)}</div><div className="auto-stat-label">Failures</div></div>
         </div>
       )}
 
@@ -789,7 +789,7 @@ export default function Automations() {
                     {a.description && <div className="auto-card-desc">{a.description}</div>}
                     <div className="auto-card-runs">
                       {a.runCount > 0 && <span>▶ {a.runCount} runs</span>}
-                      {a.failCount > 0 && <span style={{ color:"#ef4444" }}>✗ {a.failCount} failed</span>}
+                      {a.failCount > 0 && <span style={{ color:"var(--danger)" }}>✗ {a.failCount} failed</span>}
                       {a.lastRunAt && <span>Last: {new Date(a.lastRunAt).toLocaleDateString()}</span>}
                     </div>
                   </div>

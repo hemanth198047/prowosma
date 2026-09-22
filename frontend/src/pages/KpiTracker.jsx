@@ -16,16 +16,16 @@ import {
 const CATEGORIES = ["REVENUE","GROWTH","QUALITY","PRODUCTIVITY","CUSTOM"];
 const PERIODS    = ["DAILY","WEEKLY","MONTHLY","QUARTERLY"];
 const STATUS_META = {
-  ON_TRACK: { label:"On Track", color:"#10b981", bg:"rgba(5,150,105,0.1)" },
-  AT_RISK:  { label:"At Risk",  color:"#f59e0b", bg:"rgba(217,119,6,0.1)" },
-  BEHIND:   { label:"Behind",   color:"#ef4444", bg:"rgba(239,68,68,0.1)" },
-  ACHIEVED: { label:"Achieved", color:"#6366f1", bg:"rgba(99,102,241,0.1)" },
+  ON_TRACK: { label:"On Track", color:"var(--success)", bg:"rgba(5,150,105,0.1)" },
+  AT_RISK:  { label:"At Risk",  color:"var(--warning)", bg:"rgba(217,119,6,0.1)" },
+  BEHIND:   { label:"Behind",   color:"var(--danger)", bg:"rgba(239,68,68,0.1)" },
+  ACHIEVED: { label:"Achieved", color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)" },
 };
 const PREDICT_META = {
-  HIGH:    { label:"High likelihood",  color:"#10b981", icon:"🟢" },
-  MEDIUM:  { label:"Moderate",         color:"#f59e0b", icon:"🟡" },
-  LOW:     { label:"At risk",          color:"#ef4444", icon:"🔴" },
-  UNKNOWN: { label:"Not enough data",  color:"#6b7280", icon:"⚪" },
+  HIGH:    { label:"High likelihood",  color:"var(--success)", icon:"🟢" },
+  MEDIUM:  { label:"Moderate",         color:"var(--warning)", icon:"🟡" },
+  LOW:     { label:"At risk",          color:"var(--danger)", icon:"🔴" },
+  UNKNOWN: { label:"Not enough data",  color:"var(--gray-500)", icon:"⚪" },
 };
 
 // ── KPI Form ──────────────────────────────────────────────────
@@ -398,19 +398,19 @@ export default function KpiTracker() {
           <div className="kpi-summary-label">Total KPIs</div>
         </div>
         <div className="kpi-summary-stat">
-          <div className="kpi-summary-num" style={{ color:"#10b981" }}>{onTrack}</div>
+          <div className="kpi-summary-num" style={{ color:"var(--success)" }}>{onTrack}</div>
           <div className="kpi-summary-label">On Track</div>
         </div>
         <div className="kpi-summary-stat">
-          <div className="kpi-summary-num" style={{ color:"#f59e0b" }}>{atRisk}</div>
+          <div className="kpi-summary-num" style={{ color:"var(--warning)" }}>{atRisk}</div>
           <div className="kpi-summary-label">At Risk</div>
         </div>
         <div className="kpi-summary-stat">
-          <div className="kpi-summary-num" style={{ color:"#6366f1" }}>{achieved}</div>
+          <div className="kpi-summary-num" style={{ color:"var(--brand-500)" }}>{achieved}</div>
           <div className="kpi-summary-label">Achieved</div>
         </div>
         <div className="kpi-summary-stat">
-          <div className="kpi-summary-num" style={{ color:"#ef4444" }}>{alerts.length}</div>
+          <div className="kpi-summary-num" style={{ color:"var(--danger)" }}>{alerts.length}</div>
           <div className="kpi-summary-label">⚠ Alerts</div>
         </div>
       </div>

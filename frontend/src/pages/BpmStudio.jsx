@@ -19,22 +19,22 @@ const api = {
 
 // ── Node type metadata ────────────────────────────────────────────────────────
 const NODE_TYPES = [
-  { type:"TRIGGER",        label:"Trigger",       icon:"⚡", color:"#10b981", bg:"#ecfdf5", desc:"Entry point — starts the workflow" },
-  { type:"AI_STEP",        label:"AI Step",       icon:"🤖", color:"#6366f1", bg:"#eef2ff", desc:"AI performs a task, optionally reviewed by human" },
-  { type:"HUMAN_APPROVAL", label:"Human Review",  icon:"👤", color:"#f59e0b", bg:"#fffbeb", desc:"Pauses and waits for a human decision" },
-  { type:"CONDITION",      label:"Condition",     icon:"⬡",  color:"#8b5cf6", bg:"#f5f3ff", desc:"Routes flow based on a variable" },
+  { type:"TRIGGER",        label:"Trigger",       icon:"⚡", color:"var(--success)", bg:"#ecfdf5", desc:"Entry point — starts the workflow" },
+  { type:"AI_STEP",        label:"AI Step",       icon:"🤖", color:"var(--brand-500)", bg:"var(--brand-50)", desc:"AI performs a task, optionally reviewed by human" },
+  { type:"HUMAN_APPROVAL", label:"Human Review",  icon:"👤", color:"var(--warning)", bg:"#fffbeb", desc:"Pauses and waits for a human decision" },
+  { type:"CONDITION",      label:"Condition",     icon:"⬡",  color:"var(--purple)", bg:"#f5f3ff", desc:"Routes flow based on a variable" },
   { type:"ACTION",         label:"Action",        icon:"⚙️", color:"#3b82f6", bg:"#eff6ff", desc:"Runs an automated action" },
   { type:"FORK",           label:"Fork",          icon:"⑂",  color:"#ec4899", bg:"#fdf2f8", desc:"Splits into parallel branches" },
-  { type:"END",            label:"End",           icon:"⏹",  color:"#64748b", bg:"#f8fafc", desc:"Terminates the workflow" },
+  { type:"END",            label:"End",           icon:"⏹",  color:"var(--gray-500)", bg:"var(--gray-50)", desc:"Terminates the workflow" },
 ];
 
 const STATUS_META = {
   RUNNING:       { label:"Running",        color:"#0ea5e9", bg:"rgba(14,165,233,.1)",  icon:"▶" },
-  WAITING_HUMAN: { label:"Needs Review",   color:"#f59e0b", bg:"rgba(245,158,11,.1)",  icon:"⏸" },
-  WAITING_AI:    { label:"AI Processing",  color:"#6366f1", bg:"rgba(99,102,241,.1)",  icon:"🤖" },
-  COMPLETED:     { label:"Completed",      color:"#10b981", bg:"rgba(16,185,129,.1)",  icon:"✓" },
-  FAILED:        { label:"Failed",         color:"#ef4444", bg:"rgba(239,68,68,.1)",   icon:"✕" },
-  CANCELLED:     { label:"Cancelled",      color:"#64748b", bg:"rgba(100,116,139,.1)", icon:"—" },
+  WAITING_HUMAN: { label:"Needs Review",   color:"var(--warning)", bg:"rgba(245,158,11,.1)",  icon:"⏸" },
+  WAITING_AI:    { label:"AI Processing",  color:"var(--brand-500)", bg:"rgba(99,102,241,.1)",  icon:"🤖" },
+  COMPLETED:     { label:"Completed",      color:"var(--success)", bg:"rgba(16,185,129,.1)",  icon:"✓" },
+  FAILED:        { label:"Failed",         color:"var(--danger)", bg:"rgba(239,68,68,.1)",   icon:"✕" },
+  CANCELLED:     { label:"Cancelled",      color:"var(--gray-500)", bg:"rgba(100,116,139,.1)", icon:"—" },
 };
 
 // ── Built-in templates ────────────────────────────────────────────────────────
@@ -191,9 +191,9 @@ function WorkflowCanvas({ process, onChange }) {
     <div style={{ display:"flex", height:"100%", minHeight:0, overflow:"hidden" }}>
 
       {/* LEFT TOOLBOX */}
-      <div style={{ width:180, flexShrink:0, borderRight:"1px solid #e8ecf2", background:"#fafbfc",
+      <div style={{ width:180, flexShrink:0, borderRight:"1px solid var(--border)", background:"var(--gray-50)",
         display:"flex", flexDirection:"column", gap:0, overflowY:"auto", padding:"12px 10px" }}>
-        <div style={{ fontSize:"10px", fontWeight:800, color:"#94a3b8", letterSpacing:".07em",
+        <div style={{ fontSize:"10px", fontWeight:800, color:"var(--gray-400)", letterSpacing:".07em",
           textTransform:"uppercase", marginBottom:"10px" }}>Node Types</div>
         {NODE_TYPES.map(m => (
           <button key={m.type} onClick={() => addNode(m.type)} title={m.desc}
@@ -206,13 +206,13 @@ function WorkflowCanvas({ process, onChange }) {
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"14px", flexShrink:0, border:`1px solid ${m.color}22` }}>{m.icon}</span>
             <div>
-              <div style={{ fontSize:"11px", fontWeight:700, color:"#374151", lineHeight:1.2 }}>{m.label}</div>
-              <div style={{ fontSize:"9px", color:"#94a3b8", lineHeight:1.3 }}>{m.desc}</div>
+              <div style={{ fontSize:"11px", fontWeight:700, color:"var(--gray-700)", lineHeight:1.2 }}>{m.label}</div>
+              <div style={{ fontSize:"9px", color:"var(--gray-400)", lineHeight:1.3 }}>{m.desc}</div>
             </div>
           </button>
         ))}
-        <div style={{ marginTop:"auto", padding:"10px 6px", fontSize:"10px", color:"#94a3b8",
-          borderTop:"1px solid #f1f5f9", lineHeight:1.6 }}>
+        <div style={{ marginTop:"auto", padding:"10px 6px", fontSize:"10px", color:"var(--gray-400)",
+          borderTop:"1px solid var(--gray-100)", lineHeight:1.6 }}>
           Click to add nodes.<br/>
           Drag nodes to move.<br/>
           Use → Link to connect.
@@ -221,8 +221,8 @@ function WorkflowCanvas({ process, onChange }) {
 
       {/* MAIN CANVAS */}
       <div ref={canvasRef} style={{ flex:1, position:"relative", overflow:"hidden",
-        background:"#f8fafc", cursor:panning?"grabbing":"default",
-        backgroundImage:"radial-gradient(#e2e8f0 1px, transparent 1px)",
+        background:"var(--gray-50)", cursor:panning?"grabbing":"default",
+        backgroundImage:"radial-gradient(var(--border) 1px, transparent 1px)",
         backgroundSize:"24px 24px" }}
         onMouseDown={onCanvasMouseDown}
         onMouseMove={onCanvasMouseMove}
@@ -234,10 +234,10 @@ function WorkflowCanvas({ process, onChange }) {
           <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", overflow:"visible", pointerEvents:"none" }}>
             <defs>
               <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8" />
+                <path d="M0,0 L0,6 L8,3 z" fill="var(--gray-400)" />
               </marker>
               <marker id="arr-active" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L8,3 z" fill="#6366f1" />
+                <path d="M0,0 L0,6 L8,3 z" fill="var(--brand-500)" />
               </marker>
             </defs>
             {transitions.map(t => {
@@ -253,18 +253,18 @@ function WorkflowCanvas({ process, onChange }) {
               return (
                 <g key={t.id} style={{ pointerEvents:"all" }}>
                   <path d={`M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`}
-                    fill="none" stroke={isConn?"#6366f1":"#cbd5e1"} strokeWidth={isConn?2:1.5}
+                    fill="none" stroke={isConn?"var(--brand-500)":"var(--gray-300)"} strokeWidth={isConn?2:1.5}
                     markerEnd={isConn?"url(#arr-active)":"url(#arr)"} />
                   {t.label && (
-                    <text x={mx} y={my-6} textAnchor="middle" fontSize={9} fill="#64748b"
+                    <text x={mx} y={my-6} textAnchor="middle" fontSize={9} fill="var(--gray-500)"
                       style={{ background:"white" }}>{t.label}</text>
                   )}
                   {/* Delete edge button */}
-                  <circle cx={mx} cy={my} r={7} fill="white" stroke="#e2e8f0"
+                  <circle cx={mx} cy={my} r={7} fill="white" stroke="var(--border)"
                     strokeWidth={1.5} style={{ cursor:"pointer" }}
                     onClick={() => deleteTransition(t.id)} />
                   <text x={mx} y={my+3.5} textAnchor="middle" fontSize={9}
-                    fill="#94a3b8" style={{ cursor:"pointer", pointerEvents:"none" }}>✕</text>
+                    fill="var(--gray-400)" style={{ cursor:"pointer", pointerEvents:"none" }}>✕</text>
                 </g>
               );
             })}
@@ -279,7 +279,7 @@ function WorkflowCanvas({ process, onChange }) {
               <div key={node.id}
                 style={{ position:"absolute", left:node.x, top:node.y,
                   width:180, borderRadius:"12px", overflow:"hidden",
-                  border:`2px solid ${isSel?meta.color:isConnSrc?"#6366f1":"#e2e8f0"}`,
+                  border:`2px solid ${isSel?meta.color:isConnSrc?"var(--brand-500)":"var(--border)"}`,
                   background:"#fff", boxShadow: isSel?`0 4px 20px ${meta.color}22`:"0 2px 8px rgba(0,0,0,.06)",
                   cursor:"grab", userSelect:"none", zIndex: isSel?10:1,
                   transition:"box-shadow .15s, border-color .15s" }}
@@ -299,25 +299,25 @@ function WorkflowCanvas({ process, onChange }) {
                     textTransform:"uppercase", letterSpacing:".05em", flex:1 }}>{meta.label}</span>
                   <button onClick={e=>{e.stopPropagation();deleteNode(node.id);}}
                     style={{ background:"none", border:"none", cursor:"pointer",
-                      color:"#94a3b8", fontSize:"12px", padding:"0 2px", lineHeight:1 }}
+                      color:"var(--gray-400)", fontSize:"12px", padding:"0 2px", lineHeight:1 }}
                     title="Delete node">✕</button>
                 </div>
                 {/* Label */}
                 <div style={{ padding:"8px 10px 6px", fontSize:"12px", fontWeight:700,
-                  color:"#1e293b", lineHeight:1.3 }}>{node.label}</div>
+                  color:"var(--gray-800)", lineHeight:1.3 }}>{node.label}</div>
                 {/* Connect button */}
                 <div style={{ padding:"0 8px 8px", display:"flex", gap:"4px" }}>
                   <button onClick={e=>{e.stopPropagation();setConnecting(isConnSrc?null:node.id);}}
                     style={{ flex:1, padding:"3px 8px", borderRadius:"6px", border:"none",
                       fontSize:"10px", fontWeight:700, cursor:"pointer", transition:"all .12s",
-                      background: isConnSrc?"#6366f1":"#f1f5f9",
-                      color: isConnSrc?"#fff":"#64748b" }}>
+                      background: isConnSrc?"var(--brand-500)":"var(--gray-100)",
+                      color: isConnSrc?"#fff":"var(--gray-500)" }}>
                     {isConnSrc?"✓ Connecting…":"→ Connect"}
                   </button>
                   {connecting && connecting!==node.id && (
                     <button onClick={e=>{e.stopPropagation();addTransition(connecting,node.id);}}
-                      style={{ padding:"3px 8px", borderRadius:"6px", border:"1.5px solid #6366f1",
-                        background:"#eef2ff", color:"#6366f1", fontSize:"10px",
+                      style={{ padding:"3px 8px", borderRadius:"6px", border:"1.5px solid var(--brand-500)",
+                        background:"var(--brand-50)", color:"var(--brand-500)", fontSize:"10px",
                         fontWeight:700, cursor:"pointer" }}>
                       Link here
                     </button>
@@ -331,10 +331,10 @@ function WorkflowCanvas({ process, onChange }) {
             <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column",
               alignItems:"center", justifyContent:"center", gap:"10px", pointerEvents:"none" }}>
               <div style={{ fontSize:"48px" }}>🔀</div>
-              <div style={{ fontWeight:700, fontSize:"16px", color:"#64748b" }}>
+              <div style={{ fontWeight:700, fontSize:"16px", color:"var(--gray-500)" }}>
                 Click a node type on the left to start building
               </div>
-              <div style={{ fontSize:"13px", color:"#94a3b8" }}>
+              <div style={{ fontSize:"13px", color:"var(--gray-400)" }}>
                 Or load a template from the library
               </div>
             </div>
@@ -344,7 +344,7 @@ function WorkflowCanvas({ process, onChange }) {
 
       {/* RIGHT — Node Inspector */}
       {selectedNode && (
-        <div style={{ width:260, flexShrink:0, borderLeft:"1px solid #e8ecf2",
+        <div style={{ width:260, flexShrink:0, borderLeft:"1px solid var(--border)",
           background:"#fff", overflowY:"auto", display:"flex", flexDirection:"column" }}>
           {/* Header */}
           <div style={{ padding:"12px 14px", background:selectedMeta?.bg,
@@ -356,27 +356,27 @@ function WorkflowCanvas({ process, onChange }) {
                 textTransform:"uppercase", letterSpacing:".05em" }}>{selectedMeta?.label}</div>
             </div>
             <button onClick={()=>setSelected(null)} style={{ background:"none", border:"none",
-              cursor:"pointer", color:"#94a3b8", fontSize:"14px" }}>✕</button>
+              cursor:"pointer", color:"var(--gray-400)", fontSize:"14px" }}>✕</button>
           </div>
 
           <div style={{ padding:"12px", flex:1 }}>
             {/* Label */}
             <div style={{ marginBottom:"12px" }}>
-              <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+              <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                 textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-label"}>
                 Label
               </label>
               <input value={selectedNode.label||""}
                 onChange={e=>updateNode(selectedNode.id,{label:e.target.value})}
                 style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                  border:"1px solid #e2e8f0", fontSize:"12px", boxSizing:"border-box" }} id={"bpm-studio-label"} />
+                  border:"1px solid var(--border)", fontSize:"12px", boxSizing:"border-box" }} id={"bpm-studio-label"} />
             </div>
 
             {/* AI Step config */}
             {selectedNode.type==="AI_STEP" && (
               <>
                 <div style={{ marginBottom:"12px" }}>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-ai-prompt"}>
                     AI Prompt
                   </label>
@@ -384,11 +384,11 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"prompt",e.target.value)}
                     placeholder="What should the AI do at this step? Be specific about the output format."
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", resize:"vertical",
+                      border:"1px solid var(--border)", fontSize:"11px", resize:"vertical",
                       lineHeight:1.5, boxSizing:"border-box" }} id={"bpm-studio-ai-prompt"} />
                 </div>
                 <label style={{ display:"flex", alignItems:"center", gap:"7px",
-                  cursor:"pointer", fontSize:"12px", color:"#374151", fontWeight:500 }}>
+                  cursor:"pointer", fontSize:"12px", color:"var(--gray-700)", fontWeight:500 }}>
                   <input type="checkbox" checked={!!selectedNode.config?.requiresHumanReview}
                     onChange={e=>updateConfig(selectedNode.id,"requiresHumanReview",e.target.checked)} />
                   Pause for human review after AI output
@@ -399,7 +399,7 @@ function WorkflowCanvas({ process, onChange }) {
             {/* Human Approval config */}
             {selectedNode.type==="HUMAN_APPROVAL" && (
               <div>
-                <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                   textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-approvers-email"}>
                   Approvers (email)
                 </label>
@@ -407,7 +407,7 @@ function WorkflowCanvas({ process, onChange }) {
                   onChange={e=>updateConfig(selectedNode.id,"approvers",e.target.value)}
                   placeholder="manager@company.com"
                   style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                    border:"1px solid #e2e8f0", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-approvers-email"} />
+                    border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-approvers-email"} />
               </div>
             )}
 
@@ -415,7 +415,7 @@ function WorkflowCanvas({ process, onChange }) {
             {selectedNode.type==="CONDITION" && (
               <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-variable-name"}>
                     Variable name
                   </label>
@@ -423,10 +423,10 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"variable",e.target.value)}
                     placeholder="e.g. priority"
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-variable-name"} />
+                      border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-variable-name"} />
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-expected-value"}>
                     Expected value
                   </label>
@@ -434,7 +434,7 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"value",e.target.value)}
                     placeholder="e.g. HIGH"
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-expected-value"} />
+                      border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-expected-value"} />
                 </div>
               </div>
             )}
@@ -443,14 +443,14 @@ function WorkflowCanvas({ process, onChange }) {
             {selectedNode.type==="ACTION" && (
               <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-action-type"}>
                     Action type
                   </label>
                   <select value={selectedNode.config?.actionType||"NOTIFY"}
                     onChange={e=>updateConfig(selectedNode.id,"actionType",e.target.value)}
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-action-type"}>
+                      border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-action-type"}>
                     <option value="NOTIFY">📢 Send Notification</option>
                     <option value="CREATE_TASK">✅ Create Task</option>
                     <option value="UPDATE_STATUS">🔄 Update Status</option>
@@ -459,7 +459,7 @@ function WorkflowCanvas({ process, onChange }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-title-subject"}>
                     Title / Subject
                   </label>
@@ -467,10 +467,10 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"title",e.target.value)}
                     placeholder="Notification title"
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-title-subject"} />
+                      border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-title-subject"} />
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                  <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                     textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-message-body"}>
                     Message / Body
                   </label>
@@ -478,16 +478,16 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"message",e.target.value)}
                     placeholder="Notification message"
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                      border:"1px solid #e2e8f0", fontSize:"11px", resize:"vertical",
+                      border:"1px solid var(--border)", fontSize:"11px", resize:"vertical",
                       lineHeight:1.5, boxSizing:"border-box" }} id={"bpm-studio-message-body"} />
                 </div>
               </div>
             )}
 
             {/* Connections info */}
-            <div style={{ marginTop:"16px", padding:"10px", background:"#f8fafc",
-              borderRadius:"8px", border:"1px solid #f1f5f9" }}>
-              <div style={{ fontSize:"10px", fontWeight:700, color:"#94a3b8",
+            <div style={{ marginTop:"16px", padding:"10px", background:"var(--gray-50)",
+              borderRadius:"8px", border:"1px solid var(--gray-100)" }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-400)",
                 textTransform:"uppercase", letterSpacing:".05em", marginBottom:"6px" }}>
                 Connections
               </div>
@@ -497,17 +497,17 @@ function WorkflowCanvas({ process, onChange }) {
                 const other = nodes.find(n=>n.id===(dir==="→"?t.toNodeId:t.fromNodeId));
                 const om = other ? NODE_TYPES.find(m=>m.type===other.type) : null;
                 return other ? (
-                  <div key={t.id} style={{ fontSize:"11px", color:"#374151",
+                  <div key={t.id} style={{ fontSize:"11px", color:"var(--gray-700)",
                     display:"flex", alignItems:"center", gap:"5px", marginBottom:"3px" }}>
                     <span style={{ color:om?.color, fontSize:"12px" }}>{om?.icon}</span>
-                    <span style={{ color:"#94a3b8" }}>{dir}</span>
+                    <span style={{ color:"var(--gray-400)" }}>{dir}</span>
                     <span style={{ fontWeight:600 }}>{other.label}</span>
-                    {t.label&&<span style={{ color:"#94a3b8", fontSize:"10px" }}>({t.label})</span>}
+                    {t.label&&<span style={{ color:"var(--gray-400)", fontSize:"10px" }}>({t.label})</span>}
                   </div>
                 ) : null;
               })}
               {transitions.filter(t=>t.fromNodeId===selectedNode.id||t.toNodeId===selectedNode.id).length===0 && (
-                <div style={{ fontSize:"11px", color:"#94a3b8" }}>No connections yet. Use → Connect.</div>
+                <div style={{ fontSize:"11px", color:"var(--gray-400)" }}>No connections yet. Use → Connect.</div>
               )}
             </div>
           </div>
@@ -531,23 +531,23 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:0 }}>
       {/* Header */}
-      <div style={{ padding:"14px 16px", borderBottom:"1px solid #e8ecf2",
+      <div style={{ padding:"14px 16px", borderBottom:"1px solid var(--border)",
         display:"flex", alignItems:"center", gap:"12px", background:"#fff", flexShrink:0 }}>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a" }}>
+          <div style={{ fontWeight:800, fontSize:"15px", color:"var(--gray-900)" }}>
             {instance.processName}
           </div>
-          <div style={{ fontSize:"11px", color:"#94a3b8", marginTop:"2px" }}>
+          <div style={{ fontSize:"11px", color:"var(--gray-400)", marginTop:"2px" }}>
             Started by <b>{instance.startedBy}</b> ·{" "}
             {new Date(instance.startedAt).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
           </div>
         </div>
-        <span style={{ padding:"4px 12px", borderRadius:"999px", fontSize:"12px",
+        <span style={{ padding:"4px 12px", borderRadius:"var(--radius-full)", fontSize:"12px",
           fontWeight:700, background:sm.bg, color:sm.color }}>
           {sm.icon} {sm.label}
         </span>
         <button onClick={onClose} style={{ background:"none", border:"none",
-          cursor:"pointer", fontSize:"16px", color:"#94a3b8", padding:"4px" }}>✕</button>
+          cursor:"pointer", fontSize:"16px", color:"var(--gray-400)", padding:"4px" }}>✕</button>
       </div>
 
       {/* Timeline */}
@@ -555,7 +555,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
         <div style={{ position:"relative" }}>
           {/* Vertical line */}
           <div style={{ position:"absolute", left:15, top:0, bottom:0,
-            width:2, background:"#e2e8f0", zIndex:0 }} />
+            width:2, background:"var(--border)", zIndex:0 }} />
 
           {(instance.history||[]).map((h,i) => {
             const meta = NODE_TYPES.find(m=>m.type===h.nodeType)||NODE_TYPES[0];
@@ -568,8 +568,8 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                 {/* Dot */}
                 <div style={{ width:32, height:32, borderRadius:"50%", flexShrink:0,
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:"14px", background: isWaiting?meta.color:isDone?"#10b981":isFailed?"#ef4444":"#94a3b8",
-                  border:"3px solid #fff", boxShadow:"0 0 0 2px "+(isWaiting?meta.color:isDone?"#10b981":"#e2e8f0") }}>
+                  fontSize:"14px", background: isWaiting?meta.color:isDone?"var(--success)":isFailed?"var(--danger)":"var(--gray-400)",
+                  border:"3px solid #fff", boxShadow:"0 0 0 2px "+(isWaiting?meta.color:isDone?"var(--success)":"var(--border)") }}>
                   {isWaiting ? meta.icon : isDone ? "✓" : isFailed ? "✕" : meta.icon}
                 </div>
 
@@ -577,17 +577,17 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px",
                     marginBottom:"6px", flexWrap:"wrap" }}>
-                    <span style={{ fontWeight:700, fontSize:"13px", color:"#1e293b" }}>
+                    <span style={{ fontWeight:700, fontSize:"13px", color:"var(--gray-800)" }}>
                       {h.nodeLabel}
                     </span>
                     <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                      borderRadius:"999px", textTransform:"uppercase", letterSpacing:".04em",
-                      background: isWaiting?meta.color+"18":isDone?"#dcfce7":isFailed?"#fee2e2":"#f1f5f9",
-                      color: isWaiting?meta.color:isDone?"#15803d":isFailed?"#b91c1c":"#64748b" }}>
+                      borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
+                      background: isWaiting?meta.color+"18":isDone?"#dcfce7":isFailed?"#fee2e2":"var(--gray-100)",
+                      color: isWaiting?meta.color:isDone?"#15803d":isFailed?"#b91c1c":"var(--gray-500)" }}>
                       {h.status}
                     </span>
                     {h.completedAt && (
-                      <span style={{ fontSize:"10px", color:"#94a3b8" }}>
+                      <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>
                         {new Date(h.completedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
                       </span>
                     )}
@@ -595,14 +595,14 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
 
                   {/* AI Output */}
                   {h.aiOutput && (
-                    <div style={{ background:"linear-gradient(135deg,#0a1628,#0f2044)",
+                    <div style={{ background:"#0F1729",
                       border:"1px solid rgba(99,102,241,.3)", borderRadius:"10px",
                       padding:"12px 14px", marginBottom:"8px", position:"relative" }}>
                       <div style={{ fontSize:"10px", fontWeight:800, color:"#38bdf8",
                         letterSpacing:".05em", textTransform:"uppercase", marginBottom:"6px" }}>
                         🤖 AI Output
                       </div>
-                      <div style={{ fontSize:"12px", color:"#e2e8f0", lineHeight:1.6,
+                      <div style={{ fontSize:"12px", color:"var(--border)", lineHeight:1.6,
                         whiteSpace:"pre-wrap", maxHeight:"200px", overflowY:"auto" }}>
                         {h.aiOutput}
                       </div>
@@ -625,7 +625,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                           <div style={{ display:"flex", gap:"6px", marginTop:"6px" }}>
                             <button onClick={()=>{onOverride(instance.id,h.nodeId,overrideVal,"Manual correction");setOverrideNode(null);}}
                               style={{ padding:"5px 12px", borderRadius:"6px", border:"none",
-                                background:"#6366f1", color:"#fff", fontSize:"11px",
+                                background:"var(--brand-500)", color:"#fff", fontSize:"11px",
                                 fontWeight:700, cursor:"pointer" }}>
                               Apply Override
                             </button>
@@ -644,9 +644,9 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                   {/* Human decision record */}
                   {h.humanDecision && (
                     <div style={{ display:"inline-flex", alignItems:"center", gap:"6px",
-                      padding:"4px 10px", borderRadius:"999px", fontSize:"11px", fontWeight:700,
+                      padding:"4px 10px", borderRadius:"var(--radius-full)", fontSize:"11px", fontWeight:700,
                       background: h.humanDecision==="APPROVED"?"#dcfce7":h.humanDecision==="REJECTED"?"#fee2e2":"#fef3c7",
-                      color: h.humanDecision==="APPROVED"?"#15803d":h.humanDecision==="REJECTED"?"#b91c1c":"#d97706",
+                      color: h.humanDecision==="APPROVED"?"#15803d":h.humanDecision==="REJECTED"?"#b91c1c":"var(--warning)",
                       marginBottom:"4px" }}>
                       {h.humanDecision==="APPROVED"?"✓":h.humanDecision==="REJECTED"?"✕":"✏️"} {h.humanDecision}
                       {h.humanComment && <span style={{ fontWeight:400, opacity:.8 }}> — "{h.humanComment}"</span>}
@@ -658,35 +658,35 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                   {isWaiting && h.nodeType==="HUMAN_APPROVAL" && (
                     <div style={{ background:"#fffbeb", border:"1.5px solid #f59e0b44",
                       borderRadius:"10px", padding:"12px 14px" }}>
-                      <div style={{ fontWeight:700, fontSize:"12px", color:"#d97706",
+                      <div style={{ fontWeight:700, fontSize:"12px", color:"var(--warning)",
                         marginBottom:"10px" }}>👤 Your decision is required</div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px",
                         marginBottom:"10px" }}>
                         <div>
-                          <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                          <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                             display:"block", marginBottom:"3px" }} htmlFor={"bpm-studio-decision"}>Decision</label>
                           <select value={decision} onChange={e=>setDecision(e.target.value)}
                             style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                              border:"1px solid #e2e8f0", fontSize:"12px" }} id={"bpm-studio-decision"}>
+                              border:"1px solid var(--border)", fontSize:"12px" }} id={"bpm-studio-decision"}>
                             <option value="APPROVED">✓ Approve</option>
                             <option value="REJECTED">✕ Reject</option>
                             <option value="PROCEED">→ Proceed</option>
                           </select>
                         </div>
                         <div>
-                          <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                          <label style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-500)",
                             display:"block", marginBottom:"3px" }} htmlFor={"bpm-studio-comment"}>Comment</label>
                           <input value={comment} onChange={e=>setComment(e.target.value)}
                             placeholder="Optional reason"
                             style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
-                              border:"1px solid #e2e8f0", fontSize:"12px", boxSizing:"border-box" }} id={"bpm-studio-comment"} />
+                              border:"1px solid var(--border)", fontSize:"12px", boxSizing:"border-box" }} id={"bpm-studio-comment"} />
                         </div>
                       </div>
                       <button onClick={()=>{onDecide(instance.id,h.nodeId,decision,comment);setComment("");}}
                         style={{ padding:"8px 20px", borderRadius:"8px", border:"none",
-                          background:"linear-gradient(135deg,#f59e0b,#d97706)", color:"#fff",
+                          background:"var(--warning)", color:"#fff",
                           fontSize:"12px", fontWeight:800, cursor:"pointer",
-                          boxShadow:"0 2px 8px rgba(245,158,11,.3)" }}>
+                          boxShadow:"var(--elevation-2)" }}>
                         Submit Decision
                       </button>
                     </div>
@@ -694,23 +694,23 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
 
                   {/* Waiting for AI review */}
                   {isWaiting && h.nodeType==="AI_STEP" && (
-                    <div style={{ background:"#eef2ff", border:"1.5px solid #6366f144",
+                    <div style={{ background:"var(--brand-50)", border:"1.5px solid #6366f144",
                       borderRadius:"10px", padding:"10px 14px", display:"flex",
                       alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
-                      <span style={{ fontSize:"12px", fontWeight:600, color:"#4338ca", flex:1 }}>
+                      <span style={{ fontSize:"12px", fontWeight:600, color:"var(--brand-700)", flex:1 }}>
                         👁 Review the AI output above and proceed
                       </span>
                       <div style={{ display:"flex", gap:"6px" }}>
                         <button onClick={()=>onDecide(instance.id,h.nodeId,"APPROVED","Reviewed and accepted")}
                           style={{ padding:"6px 14px", borderRadius:"7px", border:"none",
-                            background:"#6366f1", color:"#fff", fontSize:"11px",
+                            background:"var(--brand-500)", color:"#fff", fontSize:"11px",
                             fontWeight:700, cursor:"pointer" }}>
                           ✓ Accept
                         </button>
                         <button onClick={()=>setOverrideNode(h.nodeId)}
                           style={{ padding:"6px 14px", borderRadius:"7px",
-                            border:"1px solid #6366f1", background:"transparent",
-                            color:"#6366f1", fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
+                            border:"1px solid var(--brand-500)", background:"transparent",
+                            color:"var(--brand-500)", fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
                           ✏️ Override
                         </button>
                       </div>
@@ -725,18 +725,18 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
         {/* Process variables */}
         {Object.keys(instance.variables||{}).length > 0 && (
           <details style={{ marginTop:"8px" }}>
-            <summary style={{ fontSize:"11px", fontWeight:700, color:"#64748b",
-              cursor:"pointer", padding:"6px 10px", background:"#f8fafc",
-              borderRadius:"7px", border:"1px solid #e8ecf2" }}>
+            <summary style={{ fontSize:"11px", fontWeight:700, color:"var(--gray-500)",
+              cursor:"pointer", padding:"6px 10px", background:"var(--gray-50)",
+              borderRadius:"7px", border:"1px solid var(--border)" }}>
               ⚙️ Process Variables ({Object.keys(instance.variables).length})
             </summary>
-            <div style={{ background:"#f8fafc", borderRadius:"0 0 7px 7px",
-              border:"1px solid #e8ecf2", borderTop:"none", padding:"8px 10px" }}>
+            <div style={{ background:"var(--gray-50)", borderRadius:"0 0 7px 7px",
+              border:"1px solid var(--border)", borderTop:"none", padding:"8px 10px" }}>
               {Object.entries(instance.variables).map(([k,v]) => (
                 <div key={k} style={{ display:"flex", gap:"8px", padding:"3px 0",
-                  borderBottom:"1px solid #f1f5f9", fontSize:"11px" }}>
-                  <span style={{ fontWeight:700, color:"#374151", flexShrink:0 }}>{k}</span>
-                  <span style={{ color:"#64748b", wordBreak:"break-all" }}>{String(v).slice(0,120)}</span>
+                  borderBottom:"1px solid var(--gray-100)", fontSize:"11px" }}>
+                  <span style={{ fontWeight:700, color:"var(--gray-700)", flexShrink:0 }}>{k}</span>
+                  <span style={{ color:"var(--gray-500)", wordBreak:"break-all" }}>{String(v).slice(0,120)}</span>
                 </div>
               ))}
             </div>
@@ -857,47 +857,47 @@ export default function BpmStudio() {
     <div style={{ height:"100%", display:"flex", flexDirection:"column", minHeight:0 }}>
       {/* Designer toolbar */}
       <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 16px",
-        background:"#fff", borderBottom:"1px solid #e8ecf2", flexShrink:0 }}>
+        background:"#fff", borderBottom:"1px solid var(--border)", flexShrink:0 }}>
         <button onClick={()=>setView("dashboard")}
-          style={{ padding:"6px 12px", borderRadius:"8px", border:"1px solid #e2e8f0",
-            background:"#f8fafc", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"#374151" }}>
+          style={{ padding:"6px 12px", borderRadius:"8px", border:"1px solid var(--border)",
+            background:"var(--gray-50)", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"var(--gray-700)" }}>
           ← Back
         </button>
         <input value={editing.name||""} onChange={e=>setEditing(p=>({...p,name:e.target.value}))}
           placeholder="Workflow name…"
           style={{ flex:1, maxWidth:280, padding:"7px 12px", borderRadius:"8px",
-            border:"1.5px solid #e2e8f0", fontSize:"14px", fontWeight:700,
-            color:"#0f172a", outline:"none" }}
-          onFocus={e=>e.target.style.borderColor="#6366f1"}
-          onBlur={e=>e.target.style.borderColor="#e2e8f0"} />
+            border:"1.5px solid var(--border)", fontSize:"14px", fontWeight:700,
+            color:"var(--gray-900)", outline:"none" }}
+          onFocus={e=>e.target.style.borderColor="var(--brand-500)"}
+          onBlur={e=>e.target.style.borderColor="var(--border)"} />
         <input value={editing.description||""} onChange={e=>setEditing(p=>({...p,description:e.target.value}))}
           placeholder="Description…"
           style={{ flex:2, padding:"7px 12px", borderRadius:"8px",
-            border:"1px solid #e2e8f0", fontSize:"12px", color:"#374151", outline:"none" }} />
+            border:"1px solid var(--border)", fontSize:"12px", color:"var(--gray-700)", outline:"none" }} />
         <select value={editing.category||"PRODUCT"} onChange={e=>setEditing(p=>({...p,category:e.target.value}))}
-          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid #e2e8f0",
-            fontSize:"12px", fontWeight:600, color:"#374151" }}>
+          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid var(--border)",
+            fontSize:"12px", fontWeight:600, color:"var(--gray-700)" }}>
           {["PRODUCT","HR","FINANCE","IT","LEGAL","CUSTOM"].map(c=>(
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
         <select value={editing.status||"DRAFT"} onChange={e=>setEditing(p=>({...p,status:e.target.value}))}
-          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid #e2e8f0",
+          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid var(--border)",
             fontSize:"12px", fontWeight:600,
-            color: editing.status==="ACTIVE"?"#059669":editing.status==="ARCHIVED"?"#94a3b8":"#d97706" }}>
+            color: editing.status==="ACTIVE"?"var(--success)":editing.status==="ARCHIVED"?"var(--gray-400)":"var(--warning)" }}>
           <option value="DRAFT">Draft</option>
           <option value="ACTIVE">Active</option>
           <option value="ARCHIVED">Archived</option>
         </select>
         <div style={{ marginLeft:"auto", display:"flex", gap:"6px" }}>
-          <span style={{ fontSize:"11px", color:"#94a3b8", display:"flex", alignItems:"center" }}>
+          <span style={{ fontSize:"11px", color:"var(--gray-400)", display:"flex", alignItems:"center" }}>
             {editing.nodes?.length||0} nodes · {editing.transitions?.length||0} edges
           </span>
           <button onClick={handleSave}
             style={{ padding:"8px 20px", borderRadius:"9px", border:"none",
-              background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+              background:"var(--brand-600)", color:"#fff",
               fontSize:"13px", fontWeight:800, cursor:"pointer",
-              boxShadow:"0 2px 8px rgba(99,102,241,.3)" }}>
+              boxShadow:"var(--elevation-2)" }}>
             💾 Save
           </button>
         </div>
@@ -913,14 +913,14 @@ export default function BpmStudio() {
   // ── RUNNER VIEW ─────────────────────────────────────────────────────────────
   if (view==="runner" && viewInstance) return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column", minHeight:0 }}>
-      <div style={{ padding:"10px 16px", background:"#fff", borderBottom:"1px solid #e8ecf2",
+      <div style={{ padding:"10px 16px", background:"#fff", borderBottom:"1px solid var(--border)",
         flexShrink:0, display:"flex", alignItems:"center", gap:"10px" }}>
         <button onClick={()=>setView("dashboard")}
-          style={{ padding:"6px 12px", borderRadius:"8px", border:"1px solid #e2e8f0",
-            background:"#f8fafc", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"#374151" }}>
+          style={{ padding:"6px 12px", borderRadius:"8px", border:"1px solid var(--border)",
+            background:"var(--gray-50)", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"var(--gray-700)" }}>
           ← All Runs
         </button>
-        <span style={{ fontSize:"14px", fontWeight:700, color:"#1e293b" }}>Execution Detail</span>
+        <span style={{ fontSize:"14px", fontWeight:700, color:"var(--gray-800)" }}>Execution Detail</span>
       </div>
       <div style={{ flex:1, minHeight:0, overflow:"hidden", padding:"16px" }}>
         <InstanceViewer instance={viewInstance}
@@ -940,20 +940,20 @@ export default function BpmStudio() {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px",
         marginBottom:"20px" }}>
         {[
-          { label:"Workflows",     value:processes.length,  icon:"🔀", color:"#6366f1" },
+          { label:"Workflows",     value:processes.length,  icon:"🔀", color:"var(--brand-500)" },
           { label:"Active Runs",   value:running,           icon:"▶",  color:"#0ea5e9" },
-          { label:"Needs Review",  value:pendingDecisions,  icon:"⏸",  color:"#f59e0b" },
-          { label:"Completed",     value:completed,         icon:"✓",  color:"#10b981" },
+          { label:"Needs Review",  value:pendingDecisions,  icon:"⏸",  color:"var(--warning)" },
+          { label:"Completed",     value:completed,         icon:"✓",  color:"var(--success)" },
         ].map(s => (
           <div key={s.label} style={{ background:"#fff", border:`1.5px solid ${s.color}22`,
             borderRadius:"12px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px",
-            boxShadow:"0 1px 3px rgba(0,0,0,.04)" }}>
+            boxShadow:"var(--elevation-1)" }}>
             <div style={{ width:40, height:40, borderRadius:"10px", background:`${s.color}18`,
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"18px", flexShrink:0 }}>{s.icon}</div>
             <div>
               <div style={{ fontSize:"22px", fontWeight:800, color:s.color, lineHeight:1 }}>{s.value}</div>
-              <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600, marginTop:"2px" }}>{s.label}</div>
+              <div style={{ fontSize:"11px", color:"var(--gray-500)", fontWeight:600, marginTop:"2px" }}>{s.label}</div>
             </div>
           </div>
         ))}
@@ -964,37 +964,37 @@ export default function BpmStudio() {
         {/* LEFT — My Workflows */}
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-            <span style={{ fontWeight:800, fontSize:"15px", color:"#0f172a" }}>My Workflows</span>
-            <span style={{ fontSize:"11px", color:"#94a3b8",
-              background:"#f1f5f9", padding:"2px 8px", borderRadius:"999px" }}>
+            <span style={{ fontWeight:800, fontSize:"15px", color:"var(--gray-900)" }}>My Workflows</span>
+            <span style={{ fontSize:"11px", color:"var(--gray-400)",
+              background:"var(--gray-100)", padding:"2px 8px", borderRadius:"var(--radius-full)" }}>
               {processes.length}
             </span>
             <div style={{ marginLeft:"auto", display:"flex", gap:"6px" }}>
               <button onClick={newProcess}
                 style={{ padding:"7px 16px", borderRadius:"9px", border:"none",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                  background:"var(--brand-600)", color:"#fff",
                   fontSize:"12px", fontWeight:700, cursor:"pointer",
-                  boxShadow:"0 2px 8px rgba(99,102,241,.25)" }}>
+                  boxShadow:"var(--elevation-2)" }}>
                 + New Workflow
               </button>
             </div>
           </div>
 
           {loading ? (
-            <div style={{ textAlign:"center", padding:"40px", color:"#94a3b8" }}>Loading…</div>
+            <div style={{ textAlign:"center", padding:"40px", color:"var(--gray-400)" }}>Loading…</div>
           ) : processes.length===0 ? (
-            <div style={{ background:"#fff", border:"1px dashed #e2e8f0", borderRadius:"16px",
+            <div style={{ background:"#fff", border:"1px dashed var(--border)", borderRadius:"16px",
               padding:"48px 24px", textAlign:"center" }}>
               <div style={{ fontSize:"48px", marginBottom:"12px" }}>🔀</div>
-              <div style={{ fontWeight:700, fontSize:"16px", color:"#1e293b", marginBottom:"8px" }}>
+              <div style={{ fontWeight:700, fontSize:"16px", color:"var(--gray-800)", marginBottom:"8px" }}>
                 No workflows yet
               </div>
-              <div style={{ fontSize:"13px", color:"#64748b", marginBottom:"20px" }}>
+              <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"20px" }}>
                 Create one from scratch or pick a template from the library →
               </div>
               <button onClick={newProcess}
                 style={{ padding:"10px 24px", borderRadius:"9px", border:"none",
-                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                  background:"var(--brand-600)", color:"#fff",
                   fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
                 + Create Workflow
               </button>
@@ -1006,11 +1006,11 @@ export default function BpmStudio() {
                 const pWaiting   = pInstances.filter(i=>i.status==="WAITING_HUMAN").length;
                 const pRunning   = pInstances.filter(i=>i.status==="RUNNING").length;
                 return (
-                  <div key={p.id} style={{ background:"#fff", border:"1px solid #e8ecf2",
+                  <div key={p.id} style={{ background:"#fff", border:"1px solid var(--border)",
                     borderRadius:"14px", padding:"14px 16px",
-                    boxShadow:"0 1px 3px rgba(0,0,0,.04)", transition:"box-shadow .15s" }}
-                    onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.07)"}
-                    onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,.04)"}>
+                    boxShadow:"var(--elevation-1)", transition:"box-shadow var(--transition-fast)" }}
+                    onMouseEnter={e=>e.currentTarget.style.boxShadow="var(--elevation-2)"}
+                    onMouseLeave={e=>e.currentTarget.style.boxShadow="var(--elevation-1)"}>
                     <div style={{ display:"flex", alignItems:"flex-start", gap:"12px" }}>
                       <div style={{ width:40, height:40, borderRadius:"10px",
                         background:"rgba(99,102,241,.1)", display:"flex",
@@ -1020,29 +1020,29 @@ export default function BpmStudio() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:"8px",
                           flexWrap:"wrap", marginBottom:"3px" }}>
-                          <span style={{ fontWeight:800, fontSize:"14px", color:"#0f172a" }}>
+                          <span style={{ fontWeight:800, fontSize:"14px", color:"var(--gray-900)" }}>
                             {p.name}
                           </span>
                           <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                            borderRadius:"999px", textTransform:"uppercase", letterSpacing:".04em",
-                            background: p.status==="ACTIVE"?"#dcfce7":p.status==="ARCHIVED"?"#f1f5f9":"#fef3c7",
-                            color: p.status==="ACTIVE"?"#15803d":p.status==="ARCHIVED"?"#64748b":"#d97706" }}>
+                            borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
+                            background: p.status==="ACTIVE"?"#dcfce7":p.status==="ARCHIVED"?"var(--gray-100)":"#fef3c7",
+                            color: p.status==="ACTIVE"?"#15803d":p.status==="ARCHIVED"?"var(--gray-500)":"var(--warning)" }}>
                             {p.status}
                           </span>
-                          <span style={{ fontSize:"10px", color:"#94a3b8",
-                            background:"#f8fafc", padding:"2px 7px", borderRadius:"999px" }}>
+                          <span style={{ fontSize:"10px", color:"var(--gray-400)",
+                            background:"var(--gray-50)", padding:"2px 7px", borderRadius:"var(--radius-full)" }}>
                             {p.category}
                           </span>
                         </div>
                         {p.description && (
-                          <div style={{ fontSize:"12px", color:"#64748b",
+                          <div style={{ fontSize:"12px", color:"var(--gray-500)",
                             marginBottom:"8px", lineHeight:1.5 }}>{p.description}</div>
                         )}
-                        <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#94a3b8" }}>
+                        <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"var(--gray-400)" }}>
                           <span>🔢 {p.nodes?.length||0} nodes</span>
                           <span>▶ {p.runCount||0} runs</span>
                           {pRunning>0&&<span style={{ color:"#0ea5e9", fontWeight:700 }}>▶ {pRunning} running</span>}
-                          {pWaiting>0&&<span style={{ color:"#f59e0b", fontWeight:700 }}>⏸ {pWaiting} waiting review</span>}
+                          {pWaiting>0&&<span style={{ color:"var(--warning)", fontWeight:700 }}>⏸ {pWaiting} waiting review</span>}
                         </div>
                       </div>
                       <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
@@ -1051,17 +1051,17 @@ export default function BpmStudio() {
                             <input value={startVars} onChange={e=>setStartVars(e.target.value)}
                               placeholder='{"key":"value"}'
                               style={{ width:"160px", padding:"5px 8px", borderRadius:"7px",
-                                border:"1px solid #e2e8f0", fontSize:"11px" }} />
+                                border:"1px solid var(--border)", fontSize:"11px" }} />
                             <button onClick={handleStart}
                               style={{ padding:"6px 12px", borderRadius:"7px", border:"none",
-                                background:"#10b981", color:"#fff", fontSize:"11px",
+                                background:"var(--success)", color:"#fff", fontSize:"11px",
                                 fontWeight:700, cursor:"pointer" }}>
                               ▶ Start
                             </button>
                             <button onClick={()=>setStartingFor(null)}
                               style={{ padding:"6px 10px", borderRadius:"7px",
-                                border:"1px solid #e2e8f0", background:"#fff",
-                                fontSize:"11px", cursor:"pointer", color:"#64748b" }}>
+                                border:"1px solid var(--border)", background:"#fff",
+                                fontSize:"11px", cursor:"pointer", color:"var(--gray-500)" }}>
                               ✕
                             </button>
                           </div>
@@ -1069,20 +1069,20 @@ export default function BpmStudio() {
                           <>
                             <button onClick={()=>setStartingFor(p.id)}
                               style={{ padding:"6px 14px", borderRadius:"8px", border:"none",
-                                background:"#10b981", color:"#fff", fontSize:"11px",
+                                background:"var(--success)", color:"#fff", fontSize:"11px",
                                 fontWeight:700, cursor:"pointer" }}>
                               ▶ Run
                             </button>
                             <button onClick={()=>{setEditing({...p});setView("designer");}}
                               style={{ padding:"6px 12px", borderRadius:"8px",
-                                border:"1px solid #e2e8f0", background:"#fff",
-                                fontSize:"11px", fontWeight:600, cursor:"pointer", color:"#374151" }}>
+                                border:"1px solid var(--border)", background:"#fff",
+                                fontSize:"11px", fontWeight:600, cursor:"pointer", color:"var(--gray-700)" }}>
                               ✏️ Edit
                             </button>
                             <button onClick={()=>handleDelete(p.id)}
                               style={{ padding:"6px 10px", borderRadius:"8px",
                                 border:"1px solid #fee2e2", background:"#fff",
-                                fontSize:"11px", cursor:"pointer", color:"#ef4444" }}>
+                                fontSize:"11px", cursor:"pointer", color:"var(--danger)" }}>
                               🗑
                             </button>
                           </>
@@ -1098,12 +1098,12 @@ export default function BpmStudio() {
           {/* Recent Runs */}
           {instances.length > 0 && (
             <div style={{ marginTop:"24px" }}>
-              <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a", marginBottom:"12px",
+              <div style={{ fontWeight:800, fontSize:"15px", color:"var(--gray-900)", marginBottom:"12px",
                 display:"flex", alignItems:"center", gap:"8px" }}>
                 Recent Runs
                 {pendingDecisions > 0 && (
                   <span style={{ fontSize:"11px", fontWeight:800, padding:"2px 9px",
-                    borderRadius:"999px", background:"#fef3c7", color:"#d97706" }}>
+                    borderRadius:"var(--radius-full)", background:"#fef3c7", color:"var(--warning)" }}>
                     {pendingDecisions} needs review
                   </span>
                 )}
@@ -1115,24 +1115,24 @@ export default function BpmStudio() {
                   return (
                     <div key={inst.id}
                       onClick={()=>{ setViewInstance(inst); setView("runner"); }}
-                      style={{ background:"#fff", border:`1px solid ${inst.status==="WAITING_HUMAN"?"#f59e0b44":"#e8ecf2"}`,
+                      style={{ background:"#fff", border:`1px solid ${inst.status==="WAITING_HUMAN"?"#f59e0b44":"var(--border)"}`,
                         borderRadius:"10px", padding:"10px 14px", cursor:"pointer",
                         display:"flex", alignItems:"center", gap:"12px",
                         transition:"all .13s" }}
-                      onMouseEnter={e=>{ e.currentTarget.style.background="#f8fafc"; }}
-                      onMouseLeave={e=>{ e.currentTarget.style.background="#fff"; }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>{ setViewInstance(inst); setView("runner"); })?.(e); } }}>
+                      onMouseEnter={e=>{ e.currentTarget.style.background="var(--gray-50)"; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.background="var(--surface-1)"; }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>{ setViewInstance(inst); setView("runner"); })?.(e); } }}>
                       <span style={{ fontSize:"16px", width:28, textAlign:"center" }}>{sm.icon}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:700, fontSize:"12px", color:"#1e293b" }}>
+                        <div style={{ fontWeight:700, fontSize:"12px", color:"var(--gray-800)" }}>
                           {inst.processName}
                         </div>
-                        <div style={{ fontSize:"10px", color:"#94a3b8" }}>
+                        <div style={{ fontSize:"10px", color:"var(--gray-400)" }}>
                           {lastStep ? `Step: ${lastStep.nodeLabel}` : "Starting…"} ·{" "}
                           {new Date(inst.startedAt).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
                         </div>
                       </div>
                       <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                        borderRadius:"999px", background:sm.bg, color:sm.color,
+                        borderRadius:"var(--radius-full)", background:sm.bg, color:sm.color,
                         whiteSpace:"nowrap" }}>
                         {sm.label}
                       </span>
@@ -1146,34 +1146,34 @@ export default function BpmStudio() {
 
         {/* RIGHT — Template Library */}
         <div style={{ position:"sticky", top:80 }}>
-          <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a",
+          <div style={{ fontWeight:800, fontSize:"15px", color:"var(--gray-900)",
             marginBottom:"12px", display:"flex", alignItems:"center", gap:"8px" }}>
             📚 Template Library
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
             {TEMPLATES.map((tpl,i) => (
-              <div key={i} style={{ background:"#fff", border:"1px solid #e8ecf2",
+              <div key={i} style={{ background:"#fff", border:"1px solid var(--border)",
                 borderRadius:"12px", padding:"12px 14px",
                 transition:"all .15s", cursor:"pointer" }}
-                onMouseEnter={e=>{ e.currentTarget.style.borderColor="#c7d2fe"; e.currentTarget.style.boxShadow="0 4px 12px rgba(99,102,241,.08)"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.borderColor="#e8ecf2"; e.currentTarget.style.boxShadow="none"; }}>
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor="var(--brand-200)"; e.currentTarget.style.boxShadow="var(--elevation-1)"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.boxShadow="none"; }}>
                 <div style={{ display:"flex", alignItems:"flex-start", gap:"10px",
                   marginBottom:"8px" }}>
                   <span style={{ fontSize:"20px" }}>{tpl.icon}</span>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700, fontSize:"13px", color:"#1e293b",
+                    <div style={{ fontWeight:700, fontSize:"13px", color:"var(--gray-800)",
                       marginBottom:"3px" }}>{tpl.name}</div>
-                    <div style={{ fontSize:"11px", color:"#64748b",
+                    <div style={{ fontSize:"11px", color:"var(--gray-500)",
                       lineHeight:1.5 }}>{tpl.description}</div>
                   </div>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <span style={{ fontSize:"10px", color:"#94a3b8" }}>
+                  <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>
                     {tpl.nodes.length} nodes · {tpl.transitions.length} edges
                   </span>
                   <button onClick={()=>loadTemplate(tpl)}
                     style={{ padding:"5px 14px", borderRadius:"7px", border:"none",
-                      background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                      background:"var(--brand-600)", color:"#fff",
                       fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
                     Use Template →
                   </button>
@@ -1190,31 +1190,31 @@ export default function BpmStudio() {
           display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}
           onClick={()=>setStartingFor(null)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setStartingFor(null))?.(e); } }}>
           <div style={{ background:"#fff", borderRadius:"16px", padding:"24px",
-            width:"460px", boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}
+            width:"460px", boxShadow:"var(--elevation-3)" }}
             onClick={e=>e.stopPropagation()} role="presentation">
-            <div style={{ fontWeight:800, fontSize:"16px", color:"#0f172a",
+            <div style={{ fontWeight:800, fontSize:"16px", color:"var(--gray-900)",
               marginBottom:"6px" }}>▶ Start Workflow</div>
-            <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"16px" }}>
+            <div style={{ fontSize:"12px", color:"var(--gray-500)", marginBottom:"16px" }}>
               Optionally pass initial variables as JSON. Leave as <code>{"{}"}</code> for defaults.
             </div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:"#64748b",
+            <label style={{ fontSize:"11px", fontWeight:700, color:"var(--gray-500)",
               display:"block", marginBottom:"5px" }} htmlFor={"bpm-studio-initial-variables-json"}>Initial Variables (JSON)</label>
             <textarea rows={5} value={startVars} onChange={e=>setStartVars(e.target.value)}
               style={{ width:"100%", padding:"10px", borderRadius:"9px",
-                border:"1.5px solid #e2e8f0", fontSize:"12px", fontFamily:"monospace",
+                border:"1.5px solid var(--border)", fontSize:"12px", fontFamily:"monospace",
                 resize:"vertical", lineHeight:1.5, boxSizing:"border-box" }} id={"bpm-studio-initial-variables-json"} />
             <div style={{ display:"flex", gap:"8px", marginTop:"14px", justifyContent:"flex-end" }}>
               <button onClick={()=>setStartingFor(null)}
                 style={{ padding:"8px 18px", borderRadius:"9px",
-                  border:"1px solid #e2e8f0", background:"#fff", fontSize:"12px",
-                  fontWeight:600, cursor:"pointer", color:"#374151" }}>
+                  border:"1px solid var(--border)", background:"#fff", fontSize:"12px",
+                  fontWeight:600, cursor:"pointer", color:"var(--gray-700)" }}>
                 Cancel
               </button>
               <button onClick={handleStart}
                 style={{ padding:"8px 24px", borderRadius:"9px", border:"none",
-                  background:"linear-gradient(135deg,#10b981,#0d9488)", color:"#fff",
+                  background:"var(--success)", color:"#fff",
                   fontSize:"12px", fontWeight:800, cursor:"pointer",
-                  boxShadow:"0 2px 8px rgba(16,185,129,.3)" }}>
+                  boxShadow:"var(--elevation-2)" }}>
                 ▶ Start Now
               </button>
             </div>

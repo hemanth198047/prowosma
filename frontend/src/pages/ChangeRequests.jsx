@@ -8,17 +8,17 @@ import { fetchProjects } from "../api/projects";
 import "../styles/pages/change-requests.css";
 
 const IMPACT_META = {
-  HIGH:   { color: "#ef4444", bg: "rgba(239,68,68,.1)" },
-  MEDIUM: { color: "#f59e0b", bg: "rgba(245,158,11,.1)" },
-  LOW:    { color: "#10b981", bg: "rgba(16,185,129,.1)" },
+  HIGH:   { color: "var(--danger)", bg: "rgba(239,68,68,.1)" },
+  MEDIUM: { color: "var(--warning)", bg: "rgba(245,158,11,.1)" },
+  LOW:    { color: "var(--success)", bg: "rgba(16,185,129,.1)" },
 };
 const CATEGORIES = ["SCOPE", "BUDGET", "TIMELINE", "RESOURCE", "PROCESS"];
 const STATUS_META = {
-  DRAFT:       { label: "Draft",       color: "#6b7280", bg: "rgba(107,114,128,.12)" },
+  DRAFT:       { label: "Draft",       color: "var(--gray-500)", bg: "rgba(107,114,128,.12)" },
   SUBMITTED:   { label: "Submitted",   color: "#3b82f6", bg: "rgba(59,130,246,.12)" },
-  APPROVED:    { label: "Approved",    color: "#10b981", bg: "rgba(16,185,129,.12)" },
-  REJECTED:    { label: "Rejected",    color: "#ef4444", bg: "rgba(239,68,68,.12)" },
-  IMPLEMENTED: { label: "Implemented", color: "#8b5cf6", bg: "rgba(139,92,246,.12)" },
+  APPROVED:    { label: "Approved",    color: "var(--success)", bg: "rgba(16,185,129,.12)" },
+  REJECTED:    { label: "Rejected",    color: "var(--danger)", bg: "rgba(239,68,68,.12)" },
+  IMPLEMENTED: { label: "Implemented", color: "var(--purple)", bg: "rgba(139,92,246,.12)" },
 };
 
 function ChangeRequestForm({ initial, projects, onSave, onCancel }) {
@@ -287,7 +287,7 @@ export default function ChangeRequests() {
           { label: "Submitted", value: counts.SUBMITTED || 0, color: STATUS_META.SUBMITTED.color },
           { label: "Approved",  value: counts.APPROVED || 0,  color: STATUS_META.APPROVED.color },
           { label: "Rejected",  value: counts.REJECTED || 0,  color: STATUS_META.REJECTED.color },
-          { label: "High Impact", value: highImpact,          color: "#ef4444" },
+          { label: "High Impact", value: highImpact,          color: "var(--danger)" },
         ].map((s) => (
           <div key={s.label} className="kpi-summary-stat">
             <div className="kpi-summary-num" style={{ color: s.color }}>{s.value}</div>

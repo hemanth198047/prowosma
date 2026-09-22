@@ -35,7 +35,7 @@ function projectNameFor(projects, id) {
   return projects?.find(p => p.id === id)?.name || "Unknown project";
 }
 
-const PRIORITY_COLOR = { HIGH:"#ef4444", MEDIUM:"#f59e0b", LOW:"#10b981" };
+const PRIORITY_COLOR = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--success)" };
 
 const MEETING_TYPES = [
   { value: "STANDUP", label: "Morning Stand-up" },
@@ -52,8 +52,8 @@ const QUICK_UPDATE_OPTIONS = [
   { value: "NEEDS_DISCUSSION",label: "Needs discussion" },
 ];
 const STATUS_BADGE_COLOR = {
-  NOT_STARTED: "#9ca3af", IN_PROGRESS: "#6366f1", ON_TRACK: "#10b981",
-  AT_RISK: "#f59e0b", BLOCKED: "#ef4444", COMPLETED: "#10b981",
+  NOT_STARTED: "var(--gray-400)", IN_PROGRESS: "var(--brand-500)", ON_TRACK: "var(--success)",
+  AT_RISK: "var(--warning)", BLOCKED: "var(--danger)", COMPLETED: "var(--success)",
 };
 
 // ── Meeting Form Modal ─────────────────────────────────────────
@@ -251,14 +251,14 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
                   {extracted.actionItems.map((a, i) => (
                     <div key={i} className="meet-ai-action">
                       <span className="meet-ai-action-dot"
-                        style={{ background: PRIORITY_COLOR[a.priority] || "#f59e0b" }} />
+                        style={{ background: PRIORITY_COLOR[a.priority] || "var(--warning)" }} />
                       <div className="meet-ai-action-body">
                         <div className="meet-ai-action-title">{a.title}</div>
                         <div className="meet-ai-action-meta">
                           {a.assignee && <span>👤 {a.assignee}</span>}
                           {a.dueDate  && <span>📅 {a.dueDate}</span>}
                           <span className="meet-ai-priority"
-                            style={{ color: PRIORITY_COLOR[a.priority] || "#f59e0b" }}>
+                            style={{ color: PRIORITY_COLOR[a.priority] || "var(--warning)" }}>
                             {a.priority}
                           </span>
                         </div>
@@ -495,7 +495,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
                   <div className="meet-project-discussion-header">
                     <span className="meet-project-discussion-name">{projectNameFor(projects, pd.projectId)}</span>
                     {pd.statusSnapshot && (
-                      <span className="meet-status-badge" style={{ background: (STATUS_BADGE_COLOR[pd.statusSnapshot] || "#9ca3af") + "22", color: STATUS_BADGE_COLOR[pd.statusSnapshot] || "#6b7280" }}>
+                      <span className="meet-status-badge" style={{ background: (STATUS_BADGE_COLOR[pd.statusSnapshot] || "var(--gray-400)") + "22", color: STATUS_BADGE_COLOR[pd.statusSnapshot] || "var(--gray-500)" }}>
                         {pd.statusSnapshot.replace("_"," ")}
                       </span>
                     )}
@@ -581,7 +581,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
                 {m.actionItems.map(a => (
                   <div key={a.id} className={`meet-action-row${a.converted ? " converted" : ""}`}>
                     <span className="meet-action-dot"
-                      style={{ background: a.converted ? "#10b981" : (PRIORITY_COLOR[a.priority] || "#f59e0b") }} />
+                      style={{ background: a.converted ? "var(--success)" : (PRIORITY_COLOR[a.priority] || "var(--warning)") }} />
                     <div className="meet-action-body">
                       <span className="meet-action-title">{a.title}</span>
                       <span className="meet-action-meta">
