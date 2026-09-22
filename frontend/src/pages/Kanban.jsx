@@ -16,9 +16,9 @@ import PageHeader from "../components/PageHeader";
 import "../styles/pages/kanban.css";
 // C-4: WIP limits per column
 const COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)", wipLimit:null },
-  { id:"IN_PROGRESS", label:"In Progress", color:"var(--warning)", bg:"rgba(217,119,6,0.12)",  wipLimit:5    },
-  { id:"DONE",        label:"Done",        color:"var(--success)", bg:"rgba(5,150,105,0.12)",  wipLimit:null },
+  { id:"TODO",        label:"To Do",       color:"var(--brand-500)", bg:"var(--brand-50)", wipLimit:null },
+  { id:"IN_PROGRESS", label:"In Progress", color:"var(--warning)", bg:"color-mix(in srgb, var(--warning) 12%, transparent)",  wipLimit:5    },
+  { id:"DONE",        label:"Done",        color:"var(--success)", bg:"color-mix(in srgb, var(--success) 12%, transparent)",  wipLimit:null },
 ];
 
 const PRIORITY_COLOR = { LOW:"var(--success)", MEDIUM:"var(--warning)", HIGH:"var(--danger)" };
@@ -76,9 +76,9 @@ function KanbanColumn({ column, tasks, getProjectName, activeId }) {
           {column.wipLimit && (
             <span className="kanban-wip-badge"
               style={{
-                background: isOverWip ? "rgba(239,68,68,0.15)" : isAtWip ? "rgba(245,158,11,0.15)" : "var(--gray-100)",
+                background: isOverWip ? "color-mix(in srgb, var(--danger) 15%, transparent)" : isAtWip ? "color-mix(in srgb, var(--warning) 15%, transparent)" : "var(--gray-100)",
                 color: isOverWip ? "var(--danger)" : isAtWip ? "var(--warning)" : "var(--gray-400)",
-                border: `1px solid ${isOverWip ? "rgba(239,68,68,0.3)" : isAtWip ? "rgba(245,158,11,0.3)" : "var(--border)"}`,
+                border: `1px solid ${isOverWip ? "color-mix(in srgb, var(--danger) 30%, transparent)" : isAtWip ? "color-mix(in srgb, var(--warning) 30%, transparent)" : "var(--border)"}`,
               }}>
               WIP {tasks.length}/{column.wipLimit}
             </span>
