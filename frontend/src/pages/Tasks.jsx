@@ -550,9 +550,14 @@ export default function Tasks() {
   const [filterProject, setFilterProject] = useState(
     searchParams.get("projectId") || "",
   );
+  // Extended to cover more than the original overdue/today (see the
+  // combined "Due Date" dropdown below) — kept as one state, still
+  // seeded from ?filter=, so existing links into this page (the
+  // Dashboard's Overdue/Today stat tiles) keep working unchanged.
   const [filterSpecial, setFilterSpecial] = useState(
     searchParams.get("filter") || "",
   );
+  const [filterAssignee, setFilterAssignee] = useState("");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(newTaskParam === "true");
   const [editing, setEditing] = useState(null);
@@ -735,20 +740,40 @@ export default function Tasks() {
     return [projectId, ...subIds];
   };
 
+  // Due-date windows for the "This Week" / "This Month" options below —
+  // calendar week (through Sunday) and calendar month, not a rolling
+  // 7/30-day count, since "due this week" normally means "by the end of
+  // the current week" rather than "within the next 7 days from right now".
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfWeek = new Date(startOfToday);
+  endOfWeek.setDate(endOfWeek.getDate() + (6 - endOfWeek.getDay())); // through Saturday
+  endOfWeek.setHours(23, 59, 59, 999);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
   const filtered = tasks.filter((t) => {
     if (filterSpecial === "overdue") {
-      return t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE";
-    }
-    if (filterSpecial === "today") {
-      return (
-        t.dueDate && new Date(t.dueDate).toDateString() === now.toDateString()
-      );
+      if (!(t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE")) return false;
+    } else if (filterSpecial === "today") {
+      if (!(t.dueDate && new Date(t.dueDate).toDateString() === now.toDateString())) return false;
+    } else if (filterSpecial === "week") {
+      if (!(t.dueDate && new Date(t.dueDate) >= startOfToday && new Date(t.dueDate) <= endOfWeek)) return false;
+    } else if (filterSpecial === "month") {
+      if (!(t.dueDate && new Date(t.dueDate) >= startOfToday && new Date(t.dueDate) <= endOfMonth)) return false;
+    } else if (filterSpecial === "nodate") {
+      if (t.dueDate) return false;
     }
     if (filterStatus && t.status !== filterStatus) return false;
     if (filterPriority && t.priority !== filterPriority) return false;
     if (filterProject) {
       const validIds = getProjectAndSubIds(filterProject);
       if (!validIds.includes(t.projectId)) return false;
+    }
+    if (filterAssignee) {
+      if (filterAssignee === "__unassigned__") {
+        if (t.assigneeIds?.length > 0) return false;
+      } else if (!t.assigneeIds?.includes(filterAssignee)) {
+        return false;
+      }
     }
     if (search && !t.title.toLowerCase().includes(search.toLowerCase()))
       return false;
@@ -998,6 +1023,27 @@ export default function Tasks() {
               </optgroup>
             ))}
         </select>
+        <select
+          value={filterAssignee}
+          onChange={(e) => setFilterAssignee(e.target.value)}
+        >
+          <option value="">All Assignees</option>
+          <option value="__unassigned__">Unassigned</option>
+          {teamMembers.map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+        <select
+          value={filterSpecial}
+          onChange={(e) => setFilterSpecial(e.target.value)}
+        >
+          <option value="">Any Due Date</option>
+          <option value="overdue">⚠️ Overdue</option>
+          <option value="today">📅 Due Today</option>
+          <option value="week">Due This Week</option>
+          <option value="month">Due This Month</option>
+          <option value="nodate">No Due Date</option>
+        </select>
         <div
           style={{
             marginLeft: "auto",
@@ -1006,40 +1052,13 @@ export default function Tasks() {
             flexWrap: "wrap",
           }}
         >
-          <button
-            style={{
-              padding: "8px 14px",
-              fontSize: "12px",
-              borderRadius: "8px",
-              fontWeight: 600,
-              cursor: "pointer",
-              background: filterSpecial === "overdue" ? "var(--danger)" : "#fff5f5",
-              color: filterSpecial === "overdue" ? "#fff" : "var(--danger)",
-              border: "1px solid var(--danger)",
-            }}
-            onClick={() =>
-              setFilterSpecial(filterSpecial === "overdue" ? "" : "overdue")
-            }
-          >
-            ⚠️ Overdue
-          </button>
-          <button
-            style={{
-              padding: "8px 14px",
-              fontSize: "12px",
-              borderRadius: "8px",
-              fontWeight: 600,
-              cursor: "pointer",
-              background: filterSpecial === "today" ? "var(--warning)" : "#fffbeb",
-              color: filterSpecial === "today" ? "#fff" : "var(--warning)",
-              border: "1px solid var(--warning)",
-            }}
-            onClick={() =>
-              setFilterSpecial(filterSpecial === "today" ? "" : "today")
-            }
-          >
-            📅 Due Today
-          </button>
+          {/* Overdue/Due Today used to be their own standalone toggle
+              buttons here, duplicating what the new "Due Date" dropdown
+              above now covers (plus This Week/This Month/No Due Date,
+              which the buttons never offered) — one control for this
+              instead of two. Deep links into this page still work the
+              same either way (?filter=overdue / ?filter=today), since
+              both drove and still drive the same filterSpecial state. */}
           {/* Table leads: it's the default and the recommended view for
               comparing tasks side-by-side. The other three stay for when
               grouping matters more than comparison. */}
