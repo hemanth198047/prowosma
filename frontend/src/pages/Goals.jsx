@@ -1360,7 +1360,36 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
 }
 
 function ScorecardView({ goals }) {
-  const sorted = [...goals].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+  // Was a fixed progress-descending sort with no user control — now the
+  // column headers below are clickable and this is just the starting/
+  // default state (same order as before until someone picks a column).
+  const [scSortKey, setScSortKey] = useState("progress");
+  const [scSortDir, setScSortDir] = useState("desc");
+  const onScSort = (key) => {
+    if (scSortKey !== key) { setScSortKey(key); setScSortDir("asc"); return; }
+    if (scSortDir === "asc") { setScSortDir("desc"); return; }
+    setScSortKey(null); setScSortDir("asc");
+  };
+  const sorted = !scSortKey ? goals : [...goals].sort((a, b) => {
+    let av, bv;
+    switch (scSortKey) {
+      case "title":      av = a.title?.toLowerCase() || "";                    bv = b.title?.toLowerCase() || "";                    break;
+      case "level":      av = a.level || "";                                   bv = b.level || "";                                   break;
+      case "quarter":    av = a.quarter || "";                                 bv = b.quarter || "";                                 break;
+      case "owner":      av = a.owner?.toLowerCase() || "";                    bv = b.owner?.toLowerCase() || "";                    break;
+      case "progress":   av = a.progress || 0;                                 bv = b.progress || 0;                                 break;
+      case "confidence": av = a.confidence ?? 50;                              bv = b.confidence ?? 50;                              break;
+      case "krs":        av = a.keyResults?.length || 0;                       bv = b.keyResults?.length || 0;                       break;
+      case "checkins":   av = a.checkIns?.length || 0;                         bv = b.checkIns?.length || 0;                         break;
+      case "status":     av = a.status || "";                                  bv = b.status || "";                                  break;
+      default: av = 0; bv = 0;
+    }
+    if (av < bv) return scSortDir === "asc" ? -1 : 1;
+    if (av > bv) return scSortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+  const scArrow = (key) => scSortKey === key ? (scSortDir === "asc" ? " ▲" : " ▼") : " ↕";
+  const scThStyle = { cursor: "pointer", userSelect: "none" };
 
   const avgConfidence = goals.length
     ? Math.round(goals.reduce((s, g) => s + (g.confidence ?? 50), 0) / goals.length)
@@ -1402,15 +1431,15 @@ function ScorecardView({ goals }) {
         <table className="scorecard-table">
           <thead>
             <tr>
-              <th>Goal</th>
-              <th>Level</th>
-              <th>Quarter</th>
-              <th>Owner</th>
-              <th>Progress</th>
-              <th>Confidence</th>
-              <th>KRs</th>
-              <th>Check-ins</th>
-              <th>Status</th>
+              <th style={scThStyle} onClick={()=>onScSort("title")}>Goal{scArrow("title")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("level")}>Level{scArrow("level")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("quarter")}>Quarter{scArrow("quarter")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("owner")}>Owner{scArrow("owner")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("progress")}>Progress{scArrow("progress")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("confidence")}>Confidence{scArrow("confidence")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("krs")}>KRs{scArrow("krs")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("checkins")}>Check-ins{scArrow("checkins")}</th>
+              <th style={scThStyle} onClick={()=>onScSort("status")}>Status{scArrow("status")}</th>
             </tr>
           </thead>
           <tbody>

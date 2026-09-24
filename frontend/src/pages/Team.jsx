@@ -255,6 +255,7 @@ export default function Team() {
   const [editing, setEditing] = useState(null);
   const [assignTask, setAssignTask] = useState(null);
   const [activeTab, setActiveTab] = useState("members");
+  const [memberSort, setMemberSort] = useState("");
 
   // F03 — Invitation state
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -469,8 +470,30 @@ export default function Team() {
 
       {/* Members Tab */}
       {activeTab === "members" && (
+        <>
+        {members.length > 1 && (
+          <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"10px" }}>
+            <select value={memberSort} onChange={e=>setMemberSort(e.target.value)} style={{ fontSize:"12px" }}>
+              <option value="">Sort by: Default</option>
+              <option value="name">Sort by: Name</option>
+              <option value="role">Sort by: Role</option>
+              <option value="load">Sort by: Task Load</option>
+            </select>
+          </div>
+        )}
         <div className="cards-grid">
-          {members.map((m) => {
+          {[...members].sort((a, b) => {
+            if (memberSort === "name") return (a.name||"").localeCompare(b.name||"");
+            // Manager (Owner) > Admin > Member > Viewer — the natural
+            // reading order of a permissions hierarchy, not alphabetical
+            // (which would put Admin before Manager before Member).
+            if (memberSort === "role") {
+              const order = { OWNER: 0, ADMIN: 1, MEMBER: 2, VIEWER: 3 };
+              return (order[a.role] ?? 9) - (order[b.role] ?? 9);
+            }
+            if (memberSort === "load") return getTasksForMember(b.id).length - getTasksForMember(a.id).length;
+            return 0;
+          }).map((m) => {
             const memberTasks = getTasksForMember(m.id);
             const doneTasks = memberTasks.filter(
               (t) => t.status === "DONE",
@@ -566,6 +589,7 @@ export default function Team() {
             <p className="empty-state">No team members yet.</p>
           )}
         </div>
+        </>
       )}
 
       {/* Assignments Tab */}

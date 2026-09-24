@@ -339,6 +339,7 @@ export default function KpiTracker() {
   const [showForm,   setShowForm]   = useState(false);
   const [editing,    setEditing]    = useState(null);
   const [filterCat,  setFilterCat]  = useState("");
+  const [sortBy,     setSortBy]     = useState("");
   const { show: showToast } = useToast();
   const confirm = useConfirm();
 
@@ -369,9 +370,24 @@ export default function KpiTracker() {
     showToast("KPI deleted", "success");
   };
 
-  const filtered = filterCat
+  // Most-attention-needed first, not alphabetical — Behind before At Risk
+  // before On Track before Achieved matches how anyone would actually
+  // want to triage a list of KPIs.
+  const KPI_STATUS_URGENCY = { BEHIND: 0, AT_RISK: 1, ON_TRACK: 2, ACHIEVED: 3 };
+  const kpiProgress = (k) => {
+    const range = k.targetValue - k.baselineValue;
+    return range === 0 ? 0 : Math.min(100, Math.max(0, Math.round(((k.currentValue - k.baselineValue) / range) * 100)));
+  };
+
+  const filteredUnsorted = filterCat
     ? kpis.filter(k => k.category === filterCat)
     : kpis;
+  const filtered = !sortBy ? filteredUnsorted : [...filteredUnsorted].sort((a, b) => {
+    if (sortBy === "name")     return (a.name||"").localeCompare(b.name||"");
+    if (sortBy === "status")   return (KPI_STATUS_URGENCY[a.status] ?? 9) - (KPI_STATUS_URGENCY[b.status] ?? 9);
+    if (sortBy === "progress") return kpiProgress(b) - kpiProgress(a); // highest progress first
+    return 0;
+  });
 
   const alerts  = kpis.filter(k => k.alertTriggered);
   const onTrack = kpis.filter(k => k.status === "ON_TRACK").length;
@@ -424,14 +440,22 @@ export default function KpiTracker() {
       )}
 
       {/* Category filter */}
-      <div className="kpi-filter-row">
-        {["", ...CATEGORIES].map(c => (
-          <button key={c}
-            className={`sprint-filter-btn${filterCat === c ? " active" : ""}`}
-            onClick={() => setFilterCat(c)}>
-            {c || "All"}
-          </button>
-        ))}
+      <div className="kpi-filter-row" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"8px" }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>
+          {["", ...CATEGORIES].map(c => (
+            <button key={c}
+              className={`sprint-filter-btn${filterCat === c ? " active" : ""}`}
+              onClick={() => setFilterCat(c)}>
+              {c || "All"}
+            </button>
+          ))}
+        </div>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ fontSize:"12px" }}>
+          <option value="">Sort by: Default</option>
+          <option value="name">Sort by: Name</option>
+          <option value="status">Sort by: Status (needs attention first)</option>
+          <option value="progress">Sort by: Progress</option>
+        </select>
       </div>
 
       {/* KPI cards */}
