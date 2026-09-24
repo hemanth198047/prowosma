@@ -61,6 +61,10 @@ function buildGraph(docs, tasks, goals, projects) {
 // each other via edges — undirected for this purpose). A workspace
 // with many separate projects, each with their own tasks and nobody
 // cross-linked, is many small components, not one big graph.
+// Splits nodes into their connected components (groups reachable from
+// each other via edges — undirected for this purpose). A workspace
+// with many separate projects, each with their own tasks and nobody
+// cross-linked, is many small components, not one big graph.
 function connectedComponents(nodes, edges) {
   const adj = new Map();
   nodes.forEach(n => adj.set(n.id, []));
@@ -87,68 +91,58 @@ function connectedComponents(nodes, edges) {
   return components;
 }
 
-// Lays out every connected component in its own cell instead of running
-// one shared physics simulation where every component's gravity pulls
-// toward the same center point. With several separate project clusters
-// that's exactly what was making them collide and overlap into each
-// other as shown in the screenshots — this gives each its own space,
-// flowing left-to-right and wrapping rows, sized to how many nodes it
-// actually has (a lone pair doesn't take as much room as a 12-node hub).
-function clusteredLayout(nodes, edges, W) {
-  const components = connectedComponents(nodes, edges)
-    .sort((a, b) => b.length - a.length);
-  if (!components.length) return { pos: {}, height: 500 };
+// Minimum center-to-center distance enforced between ANY two nodes in a
+// layout, connected or not — chosen to comfortably fit a truncated
+// 18-character label (see the node render below) below a node without
+// touching its neighbor. Previously nodes were placed to fit a
+// pre-guessed box (a fixed circle radius, or a fixed cell size), which
+// meant the box's size — not how much room the nodes actually needed —
+// decided the spacing, and small/cramped boxes produced literally
+// touching labels ("Personal Project 3Personal Project 3" in adjacent
+// nodes' labels, no gap at all). Layout is now sized the other way
+// around: figure out how much room this many nodes need at a safe
+// minimum spacing, THEN size the box to that — never the reverse.
+const MIN_SPACING = 95;
 
-  const PAD = 16;
+// Lays out one connected component's nodes and returns not just their
+// positions but the {width, height} box they actually ended up needing
+// — callers (clusteredLayout) use that real size to place components
+// next to each other, rather than guessing a size upfront.
+function forceLayout(nodes, edges) {
+  if (!nodes.length) return { pos: {}, width: 200, height: 200 };
+  const n = nodes.length;
   const pos = {};
-  let cursorX = PAD, cursorY = PAD, rowHeight = 0, totalHeight = PAD;
 
-  components.forEach(comp => {
-    // Cell size scales with node count — small clusters stay compact,
-    // large ones get proportionally more room to spread out in.
-    const side = Math.max(160, Math.min(500, 90 + comp.length * 45));
-    const cellW = side, cellH = side * 0.75;
-
-    if (cursorX + cellW > W - PAD && cursorX > PAD) {
-      // Wrap to a new row
-      cursorX = PAD;
-      cursorY += rowHeight + PAD;
-      totalHeight = cursorY;
-      rowHeight = 0;
-    }
-
-    const compEdges = edges.filter(e =>
-      comp.find(n => n.id === e.from) && comp.find(n => n.id === e.to));
-    const localPos = forceLayout(comp, compEdges, cellW, cellH);
-    comp.forEach(n => {
-      const p = localPos[n.id];
-      pos[n.id] = { x: cursorX + (p?.x ?? cellW / 2), y: cursorY + (p?.y ?? cellH / 2) };
-    });
-
-    cursorX += cellW + PAD;
-    rowHeight = Math.max(rowHeight, cellH);
-    totalHeight = Math.max(totalHeight, cursorY + rowHeight + PAD);
-  });
-
-  return { pos, height: Math.max(500, totalHeight) };
-}
-
-function forceLayout(nodes, edges, W, H) {
-  if (!nodes.length) return {};
-  const pos = {}, n = nodes.length;
   if (n <= 10) {
+    // Small components: place on a circle sized so consecutive nodes
+    // are at least MIN_SPACING apart along the circumference — not a
+    // fraction of some outer box, which is what let radius shrink below
+    // what the labels needed whenever the box itself was small.
+    const r = n === 1 ? 0 : Math.max(60, (n * MIN_SPACING) / (2 * Math.PI));
     nodes.forEach((node, i) => {
       const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
-      const r = n === 1 ? 0 : Math.min(W, H) * 0.32;
-      pos[node.id] = { x: W/2 + r*Math.cos(angle), y: H/2 + r*Math.sin(angle) };
+      pos[node.id] = { x: r * Math.cos(angle), y: r * Math.sin(angle) };
     });
-    return pos;
+    const extent = r + 60;
+    nodes.forEach(node => { pos[node.id].x += extent; pos[node.id].y += extent; });
+    return { pos, width: extent * 2, height: extent * 2 };
   }
+
+  // Larger components: the same repel/attract/center-pull simulation as
+  // before, in a canvas sized to the node count (not a fixed 900x500),
+  // followed by a hard minimum-spacing relaxation pass — this is what
+  // actually *guarantees* no pair ends up closer than MIN_SPACING,
+  // regardless of how the simulation itself converges. Tuning the
+  // simulation's own force constants can reduce crowding but can't
+  // promise zero overlap the way an explicit "push apart if too close"
+  // pass afterward can.
+  const side = Math.max(320, MIN_SPACING * Math.sqrt(n) * 1.25);
+  const W = side, H = side;
   nodes.forEach((node, i) => {
     const angle = (i / n) * 2 * Math.PI;
     pos[node.id] = { x: W/2 + Math.min(W,H)*0.35*Math.cos(angle), y: H/2 + Math.min(W,H)*0.35*Math.sin(angle) };
   });
-  const k = Math.min(90, Math.sqrt((W*H)/Math.max(1,n))*0.65);
+  const k = Math.max(MIN_SPACING * 0.6, Math.sqrt((W*H)/Math.max(1,n))*0.65);
   for (let iter = 0; iter < 100; iter++) {
     const disp = {};
     nodes.forEach(nd => { disp[nd.id] = {x:0,y:0}; });
@@ -173,11 +167,83 @@ function forceLayout(nodes, edges, W, H) {
     const temp = k*Math.max(0.1, 1-iter/100);
     nodes.forEach(nd => {
       const d = disp[nd.id], len = Math.max(1, Math.sqrt(d.x*d.x+d.y*d.y)), move = Math.min(len,temp);
-      pos[nd.id].x = Math.max(40, Math.min(W-40, pos[nd.id].x+(d.x/len)*move));
-      pos[nd.id].y = Math.max(40, Math.min(H-40, pos[nd.id].y+(d.y/len)*move));
+      pos[nd.id].x += (d.x/len)*move;
+      pos[nd.id].y += (d.y/len)*move;
     });
   }
-  return pos;
+
+  // Hard minimum-spacing relaxation — several passes since separating
+  // one pair can push another pair back together; this converges
+  // quickly in practice for the node counts a knowledge graph realistically has.
+  for (let pass = 0; pass < 8; pass++) {
+    for (let i = 0; i < n; i++) for (let j = i+1; j < n; j++) {
+      const a = nodes[i], b = nodes[j];
+      const dx = pos[a.id].x-pos[b.id].x, dy = pos[a.id].y-pos[b.id].y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist < MIN_SPACING) {
+        const safeDist = Math.max(dist, 0.01);
+        const push = (MIN_SPACING - safeDist) / 2;
+        const ux = dist > 0.01 ? dx/safeDist : 1, uy = dist > 0.01 ? dy/safeDist : 0;
+        pos[a.id].x += ux*push; pos[a.id].y += uy*push;
+        pos[b.id].x -= ux*push; pos[b.id].y -= uy*push;
+      }
+    }
+  }
+
+  // Re-measure the actual bounding box after relaxation (nodes may have
+  // been pushed outside the original W/H guess) and normalize to
+  // positive coordinates with a comfortable margin for label text.
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  nodes.forEach(nd => {
+    minX=Math.min(minX,pos[nd.id].x); maxX=Math.max(maxX,pos[nd.id].x);
+    minY=Math.min(minY,pos[nd.id].y); maxY=Math.max(maxY,pos[nd.id].y);
+  });
+  const margin = 55;
+  nodes.forEach(nd => { pos[nd.id].x += margin - minX; pos[nd.id].y += margin - minY; });
+  return { pos, width: (maxX-minX) + margin*2, height: (maxY-minY) + margin*2 };
+}
+
+// Lays out every connected component in its own cell instead of running
+// one shared physics simulation where every component's gravity pulls
+// toward the same center point. With several separate project clusters
+// that's exactly what was making them collide and overlap into each
+// other as shown in the screenshots — this gives each its own space,
+// sized to what forceLayout says that component actually needs, flowing
+// left-to-right and wrapping rows to fit within maxRowWidth.
+function clusteredLayout(nodes, edges, maxRowWidth) {
+  const components = connectedComponents(nodes, edges)
+    .sort((a, b) => b.length - a.length);
+  if (!components.length) return { pos: {}, width: maxRowWidth, height: 500 };
+
+  const PAD = 28;
+  const pos = {};
+  let cursorX = PAD, cursorY = PAD, rowHeight = 0, totalHeight = PAD, totalWidth = maxRowWidth;
+
+  components.forEach(comp => {
+    const compEdges = edges.filter(e =>
+      comp.find(n => n.id === e.from) && comp.find(n => n.id === e.to));
+    const { pos: localPos, width: cw, height: ch } = forceLayout(comp, compEdges);
+
+    if (cursorX + cw > maxRowWidth - PAD && cursorX > PAD) {
+      // Wrap to a new row
+      cursorX = PAD;
+      cursorY += rowHeight + PAD;
+      totalHeight = cursorY;
+      rowHeight = 0;
+    }
+
+    comp.forEach(n => {
+      const p = localPos[n.id];
+      pos[n.id] = { x: cursorX + (p?.x ?? cw / 2), y: cursorY + (p?.y ?? ch / 2) };
+    });
+
+    cursorX += cw + PAD;
+    totalWidth = Math.max(totalWidth, cursorX);
+    rowHeight = Math.max(rowHeight, ch);
+    totalHeight = Math.max(totalHeight, cursorY + rowHeight + PAD);
+  });
+
+  return { pos, width: totalWidth, height: Math.max(500, totalHeight) };
 }
 
 function StatCard({ icon, label, value, color, onClick }) {
@@ -272,8 +338,9 @@ export default function KnowledgeGraph() {
   const [selected, setSelected] = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [view,     setView]     = useState("graph"); // "graph" | "cards"
+  const [canvasW,  setCanvasW]  = useState(900);
   const [canvasH,  setCanvasH]  = useState(500);
-  const W = 900;
+  const TARGET_ROW_WIDTH = 900; // preferred width before wrapping to a new row of clusters
 
   useEffect(()=>{
     const wsId = activeWorkspace?.id;
@@ -304,7 +371,9 @@ export default function KnowledgeGraph() {
       // why. The canvas grows to fit however many rows of clusters that
       // takes; the panel scrolls internally (see the graph <div> below)
       // so growth doesn't also expand the page itself indefinitely.
-      const { pos: clusteredPos, height: dynamicH } = clusteredLayout(connectedNodes, g.edges, W);
+      const { pos: clusteredPos, width: dynamicW, height: dynamicH } =
+        clusteredLayout(connectedNodes, g.edges, TARGET_ROW_WIDTH);
+      setCanvasW(dynamicW);
       setCanvasH(dynamicH);
       setPos(clusteredPos);
     }).catch(()=>{}).finally(()=>setLoading(false));
@@ -408,12 +477,19 @@ export default function KnowledgeGraph() {
       {/* Graph view */}
       {view==="graph" && (
         <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 320px":"1fr", gap:"12px", alignItems:"start" }}>
-          {/* SVG graph — scrolls internally once the canvas grows past a
-              comfortable height (see canvasH), rather than the whole page
-              stretching to fit an ever-taller graph as data grows. */}
+          {/* SVG graph — a real scrollable canvas (both directions),
+              like a workflow/diagram tool (n8n, Miro, etc.), rather than
+              shrinking everything to fit the panel. Rendering the SVG at
+              its actual pixel size (width/height, not width="100%" +
+              viewBox — that combination scales content DOWN to fit the
+              container, which is what was cramming nodes and labels
+              together as the graph grew rather than actually giving them
+              room) keeps nodes and labels at one fixed, readable size no
+              matter how large the graph gets; the surrounding panel
+              scrolls to reveal more of it instead. */}
           <div style={{ background:"var(--surface-1)", border:"1px solid var(--border)", borderRadius:"16px", overflow:"hidden", boxShadow:"var(--elevation-1)" }}>
-            <div style={{ maxHeight:"70vh", overflowY:"auto" }}>
-            <svg width="100%" viewBox={`0 0 ${W} ${canvasH}`} style={{ display:"block" }}>
+            <div style={{ maxHeight:"70vh", maxWidth:"100%", overflow:"auto" }}>
+            <svg width={canvasW} height={canvasH} viewBox={`0 0 ${canvasW} ${canvasH}`} style={{ display:"block" }}>
               <defs>
                 {Object.entries(EDGE_COLORS).map(([type,color])=>(
                   <marker key={type} id={`arrow-${type}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
