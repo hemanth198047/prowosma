@@ -675,6 +675,9 @@ export default function Automations() {
   const [versionHistory, setVersionHistory] = useState([]);
   const [versionTarget,  setVersionTarget]  = useState(null);
   const [testing, setTesting]         = useState(null);
+  const [search, setSearch]           = useState("");
+  const [filterTrigger, setFilterTrigger] = useState("");
+  const [filterStatus, setFilterStatus]   = useState("");
   const { show: showToast } = useToast();
   const confirm = useConfirm();
 
@@ -724,6 +727,14 @@ export default function Automations() {
   const enabled  = automations.filter(a => a.enabled);
   const disabled = automations.filter(a => !a.enabled);
 
+  const filteredAutomations = automations.filter(a => {
+    if (search && !a.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterTrigger && a.triggerType !== filterTrigger) return false;
+    if (filterStatus === "active" && !a.enabled) return false;
+    if (filterStatus === "disabled" && a.enabled) return false;
+    return true;
+  });
+
   return (
     <div>
       <PageHeader
@@ -765,13 +776,31 @@ export default function Automations() {
 
       {/* ── Automations tab ── */}
       {activeTab === "automations" && (
+        <>
+        {automations.length > 0 && (
+          <div className="filter-bar">
+            <input style={{ width:"200px" }} value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search automations..." />
+            <select value={filterTrigger} onChange={e=>setFilterTrigger(e.target.value)}>
+              <option value="">All Triggers</option>
+              {TRIGGER_META.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+            </select>
+            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </div>
+        )}
         <div className="auto-list">
           {automations.length === 0 && (
             <div className="empty-state">
               No automations yet. Click <strong>+ New Automation</strong> or pick a template to get started.
             </div>
           )}
-          {automations.map(a => {
+          {automations.length > 0 && filteredAutomations.length === 0 && (
+            <div className="empty-state">No automations match your filters.</div>
+          )}
+          {filteredAutomations.map(a => {
             const triggerMeta = TRIGGER_META.find(t => t.value === a.triggerType);
             return (
               <div key={a.id} className={`auto-card${!a.enabled ? " auto-card-disabled" : ""}`}>
@@ -812,6 +841,7 @@ export default function Automations() {
             );
           })}
         </div>
+        </>
       )}
 
       {/* ── Approvals tab ── */}

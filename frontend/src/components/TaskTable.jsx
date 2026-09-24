@@ -28,11 +28,57 @@ const priorityColor = { LOW: "var(--viz-done)", MEDIUM: "var(--viz-progress)", H
  *   onOpenDrawer — (task) => void — opens the quick-view drawer
  *   highlightId  — task id to visually highlight (e.g. from a notification link)
  */
+// Workflow/urgency order, not alphabetical — alphabetically DONE comes
+// before IN_PROGRESS comes before TODO, which is backwards from how
+// anyone actually thinks about task progress or priority.
+const STATUS_ORDER   = { TODO: 0, IN_PROGRESS: 1, DONE: 2 };
+const PRIORITY_ORDER = { LOW: 0, MEDIUM: 1, HIGH: 2 };
+
 export default function TaskTable({
   tasks, projects, teamMembers, selectedIds, toggleSelect, onSelectAll,
   onUpdate, onDelete, onOpenDrawer, highlightId,
 }) {
   const allSelected = tasks.length > 0 && tasks.every((t) => selectedIds.has(t.id));
+
+  // null = unsorted (server/original order). Clicking a header cycles
+  // asc -> desc -> unsorted for that column; clicking a different header
+  // starts that one fresh at asc.
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState("asc");
+
+  const onSortClick = (key) => {
+    if (sortKey !== key) { setSortKey(key); setSortDir("asc"); return; }
+    if (sortDir === "asc") { setSortDir("desc"); return; }
+    setSortKey(null); setSortDir("asc");
+  };
+
+  const projectName = (id) => projects.find(p => p.id === id)?.name || "";
+  const assigneeLabel = (t) => {
+    const names = (t.assigneeIds || []).map(id => teamMembers.find(m => m.id === id)?.name).filter(Boolean);
+    return names.sort().join(", ");
+  };
+
+  const sortedTasks = !sortKey ? tasks : [...tasks].sort((a, b) => {
+    let av, bv;
+    switch (sortKey) {
+      case "title":    av = a.title?.toLowerCase() || "";        bv = b.title?.toLowerCase() || "";        break;
+      case "status":   av = STATUS_ORDER[a.status] ?? 99;        bv = STATUS_ORDER[b.status] ?? 99;        break;
+      case "priority": av = PRIORITY_ORDER[a.priority] ?? 99;    bv = PRIORITY_ORDER[b.priority] ?? 99;    break;
+      case "project":  av = projectName(a.projectId).toLowerCase(); bv = projectName(b.projectId).toLowerCase(); break;
+      case "assignee": av = assigneeLabel(a).toLowerCase();      bv = assigneeLabel(b).toLowerCase();      break;
+      case "dueDate":
+        // No due date sorts to the end regardless of direction — an
+        // undated task isn't "earliest", it's just not scheduled, and
+        // burying it at the top of an ascending sort would be misleading.
+        av = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        bv = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        break;
+      default: av = 0; bv = 0;
+    }
+    if (av < bv) return sortDir === "asc" ? -1 : 1;
+    if (av > bv) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div style={{ overflowX: "auto", border: "1px solid var(--card-border)", borderRadius: "var(--radius-lg)", background: "var(--surface-1)", boxShadow: "var(--elevation-1)" }}>
@@ -42,18 +88,18 @@ export default function TaskTable({
             <Th style={{ width: 32 }}>
               <input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
-            <Th style={{ minWidth: 220 }}>Title</Th>
-            <Th style={{ width: 130 }}>Status</Th>
-            <Th style={{ width: 100 }}>Priority</Th>
-            <Th style={{ width: 160 }}>Project</Th>
-            <Th style={{ width: 150 }}>Assignees</Th>
-            <Th style={{ width: 140 }}>Due Date</Th>
+            <Th style={{ minWidth: 220 }} sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Title</Th>
+            <Th style={{ width: 130 }}    sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
+            <Th style={{ width: 100 }}    sortKey="priority" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Priority</Th>
+            <Th style={{ width: 160 }}    sortKey="project"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Project</Th>
+            <Th style={{ width: 150 }}    sortKey="assignee" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Assignees</Th>
+            <Th style={{ width: 140 }}    sortKey="dueDate"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Due Date</Th>
             <Th style={{ width: 180 }}>Tags</Th>
             <Th style={{ width: 70 }}></Th>
           </tr>
         </thead>
         <tbody>
-          {tasks.map((t) => (
+          {sortedTasks.map((t) => (
             <TaskTableRow
               key={t.id}
               task={t}
@@ -76,10 +122,31 @@ export default function TaskTable({
   );
 }
 
-function Th({ children, style }) {
+// sortKey/activeSort/sortDir/onSort are optional — a header with no
+// sortKey (Tags, the checkbox/action columns) just renders as a plain,
+// unclickable label, since sorting by a free-text tag list or a column
+// of action buttons isn't a meaningful operation.
+function Th({ children, style, sortKey, activeSort, sortDir, onSort }) {
+  const sortable = !!sortKey;
+  const isActive = sortable && activeSort === sortKey;
   return (
-    <th style={{ textAlign: "left", padding: "10px 10px", fontSize: 11, fontWeight: 700, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: 0.4, ...style }}>
+    <th
+      onClick={sortable ? () => onSort(sortKey) : undefined}
+      style={{
+        textAlign: "left", padding: "10px 10px", fontSize: 11, fontWeight: 700,
+        color: isActive ? "var(--brand-600)" : "var(--gray-400)",
+        textTransform: "uppercase", letterSpacing: 0.4,
+        cursor: sortable ? "pointer" : "default",
+        userSelect: "none",
+        ...style,
+      }}
+    >
       {children}
+      {sortable && (
+        <span style={{ marginLeft: 4, opacity: isActive ? 1 : 0.3, fontSize: 10 }}>
+          {isActive ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      )}
     </th>
   );
 }
