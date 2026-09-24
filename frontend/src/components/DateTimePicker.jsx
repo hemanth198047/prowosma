@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useToast } from "./ToastContext";
 
 /**
  * DateTimePicker — replaces datetime-local input
@@ -13,13 +14,35 @@ import { useState, useEffect } from "react";
  * value: ISO string (UTC) or ""
  * onChange: called with ISO string or ""
  */
-export default function DateTimePicker({ value, onChange, disabled = false, placeholder = "Select date" }) {
-  // Parse current value into date + time parts
-  const getDatePart = () => value ? value.slice(0, 10) : "";
+// allowPastDates: every current caller (task/project due dates, a goal's
+// target date) is a forward-looking deadline, where a past date doesn't
+// make sense — defaults to blocking them. Set true for any future caller
+// that genuinely needs a historical date (e.g. "started on").
+export default function DateTimePicker({ value, onChange, disabled = false, placeholder = "Select date", allowPastDates = false }) {
+  const { show: showToast } = useToast();
+  // Parse current value into date + time parts. `value` is a real UTC
+  // instant (what buildValue below sends: a local date+time, converted
+  // to its correct UTC equivalent via .toISOString() at save time) — so
+  // reading it back has to go through the same local-time conversion in
+  // reverse (new Date(value).getDate() etc., which JS automatically
+  // reports in the browser's local timezone) rather than slicing the
+  // ISO string's characters directly. Slicing reads the *UTC* date/time,
+  // which is a different calendar day from what was actually picked
+  // whenever the local timezone crosses midnight relative to UTC (e.g.
+  // picking any early-morning time in IST, UTC+5:30, converts to the
+  // previous UTC day — re-opening the task to edit it then showed that
+  // earlier day instead of the one originally selected).
+  const getDatePart = () => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
   const getTimePart = () => {
     if (!value) return { hour: "12", minute: "00", period: "AM" };
-    const timePart = value.slice(11, 16) || "00:00";
-    let [h, m] = timePart.split(":").map(Number);
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return { hour: "12", minute: "00", period: "AM" };
+    let h = d.getHours(); const m = d.getMinutes();
     const period = h >= 12 ? "PM" : "AM";
     h = h % 12 || 12;
     return { hour: String(h).padStart(2, "0"), minute: String(m).padStart(2, "0"), period };
@@ -54,6 +77,17 @@ export default function DateTimePicker({ value, onChange, disabled = false, plac
 
   const onDateChange = (e) => {
     const newDate = e.target.value;
+    // Belt-and-suspenders alongside the input's min= attribute below —
+    // that stops the calendar picker, this catches a manually-typed
+    // past date in browsers that don't enforce min= on typed input.
+    if (newDate && !allowPastDates) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      if (newDate < todayStr) {
+        showToast("This date can't be in the past", "error");
+        return;
+      }
+    }
     onChange(buildValue(newDate, hour, minute, period));
   };
 
@@ -95,7 +129,13 @@ export default function DateTimePicker({ value, onChange, disabled = false, plac
   // today rather than silently discarding the time they just entered (the
   // old buildValue(date, ...) with date="" returning "" meant typing a time
   // with no date selected did nothing at all).
-  const todayIso = () => new Date().toISOString().slice(0, 10);
+  // Local date, not new Date().toISOString().slice(0,10) — that reads
+  // today's date in UTC, which is already tomorrow (or still yesterday)
+  // for part of the day in any timezone that isn't UTC itself.
+  const todayIso = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
 
   const onPeriodChange = (per) => {
     onChange(buildValue(datePart || todayIso(), hour, minute, per));
@@ -114,6 +154,7 @@ export default function DateTimePicker({ value, onChange, disabled = false, plac
         onChange={onDateChange}
         disabled={disabled}
         placeholder={placeholder}
+        min={allowPastDates ? undefined : todayIso()}
         style={{ flex: 1, opacity: disabled ? 0.4 : 1 }}
       />
 

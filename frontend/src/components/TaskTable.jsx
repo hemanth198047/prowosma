@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useToast } from "./ToastContext";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
@@ -84,6 +85,7 @@ function Th({ children, style }) {
 }
 
 function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onToggleSelect, onUpdate, onDelete, onOpenDrawer }) {
+  const { show: showToast } = useToast();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [editingTags, setEditingTags] = useState(false);
@@ -215,7 +217,35 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
         <input
           type="date"
           value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
-          onChange={(e) => save({ dueDate: e.target.value ? new Date(e.target.value + "T00:00:00").toISOString() : null })}
+          // "YYYY-MM-DDT00:00:00" with no timezone suffix is parsed as
+          // LOCAL midnight, per the JS spec — .toISOString() then
+          // converts that back to UTC, which shifts the calendar date
+          // backward a day in any timezone ahead of UTC (e.g. picking
+          // the 28th in IST becomes 2026-09-27T18:30:00.000Z, whose date
+          // portion reads back as the 27th everywhere the date is later
+          // displayed). A due date is a calendar day, not a specific
+          // moment in time, so it's pinned to UTC midnight explicitly
+          // (the "Z" suffix) instead — the selected day is then the
+          // selected day, in every timezone, full stop.
+          onChange={(e) => {
+            const val = e.target.value;
+            // The browser's own date picker respects min= below, but
+            // manually typing a date into the field bypasses that in
+            // some browsers — checked here too so it can't slip through
+            // either way, with an actual explanation instead of the
+            // change just silently not happening.
+            if (val) {
+              const todayStr = new Date().toISOString().slice(0, 10);
+              if (val < todayStr) {
+                showToast("Due date can't be in the past", "error");
+                return;
+              }
+            }
+            save({ dueDate: val ? new Date(val + "T00:00:00.000Z").toISOString() : null });
+          }}
+          // Due dates are for work still ahead — a date input with no
+          // floor let any past date through with nothing stopping it.
+          min={new Date().toISOString().slice(0, 10)}
           style={{ ...inputStyle, cursor: "pointer" }}
         />
       </td>
