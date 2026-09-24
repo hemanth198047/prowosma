@@ -102,7 +102,11 @@ function connectedComponents(nodes, edges) {
 // nodes' labels, no gap at all). Layout is now sized the other way
 // around: figure out how much room this many nodes need at a safe
 // minimum spacing, THEN size the box to that — never the reverse.
-const MIN_SPACING = 95;
+// Raised from 95: labels went from an 18-char to a 30-char truncation
+// limit (see the node render below), so they're visually wider now —
+// spacing needs to keep pace or longer labels start crowding each other
+// again even though the nodes themselves aren't actually overlapping.
+const MIN_SPACING = 140;
 
 // Lays out one connected component's nodes and returns not just their
 // positions but the {width, height} box they actually ended up needing
@@ -316,8 +320,8 @@ function EntityCard({ node, graph, onClick, isSelected }) {
           <div style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-400)", marginBottom:"5px", textTransform:"uppercase", letterSpacing:".05em" }}>Connected to</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px" }}>
             {connectedTo.slice(0,4).map((c,i) => (
-              <span key={i} style={{ fontSize:"10px", padding:"2px 7px", borderRadius:"var(--radius-full)", background:META[c.type]?.color+"18", color:META[c.type]?.color, fontWeight:600 }}>
-                {META[c.type]?.icon} {c.label.slice(0,14)}
+              <span key={i} title={c.label} style={{ fontSize:"10px", padding:"2px 7px", borderRadius:"var(--radius-full)", background:META[c.type]?.color+"18", color:META[c.type]?.color, fontWeight:600 }}>
+                {META[c.type]?.icon} {c.label.length > 22 ? c.label.slice(0,22)+"…" : c.label}
               </span>
             ))}
             {connectedTo.length > 4 && <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>+{connectedTo.length-4} more</span>}
@@ -517,15 +521,27 @@ export default function KnowledgeGraph() {
                 const m=META[n.type]||META.doc;
                 const isSel=selected?.id===n.id;
                 const r=m.radius+(isSel?5:0);
+                // 18 characters was cutting labels off right before the
+                // part that actually told tasks apart — task titles here
+                // commonly start with their project's name ("Personal
+                // Project 2 Task 1", "Personal Project 2 Task 2", …), so
+                // truncating at 18 left every task under the same project
+                // showing the identical "Personal Project 2" with no way
+                // to tell them apart. Longer limit, an ellipsis so it's
+                // obvious text was cut, and a native hover tooltip (title)
+                // with the full name either way.
+                const fullLabel = n.label;
+                const truncated = fullLabel.length > 30 ? fullLabel.slice(0, 30) + "…" : fullLabel;
                 return (
                   <g key={n.id} style={{cursor:"pointer"}} onClick={()=>setSelected(isSel?null:n)}>
+                    <title>{fullLabel}</title>
                     {isSel && <circle cx={p.x} cy={p.y} r={r+6} fill={m.color+"22"} />}
                     <circle cx={p.x} cy={p.y} r={r} fill={m.color} opacity={isSel?1:0.88} stroke={isSel?"#fff":"rgba(255,255,255,0.4)"} strokeWidth={isSel?3:1.5} />
                     <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize={r>14?11:9} fill="#fff" fontWeight={800}>
                       {m.icon}
                     </text>
                     <text x={p.x} y={p.y+r+13} textAnchor="middle" fontSize={10} fill={isSel?m.color:"var(--gray-700)"} fontWeight={isSel?800:600}>
-                      {n.label.slice(0,18)}
+                      {truncated}
                     </text>
                   </g>
                 );
