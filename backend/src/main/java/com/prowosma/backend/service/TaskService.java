@@ -7,11 +7,13 @@ import com.prowosma.backend.model.Task;
 import com.prowosma.backend.model.TimeLog;
 import com.prowosma.backend.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskService {
@@ -41,12 +43,34 @@ public class TaskService {
         task.setUpdatedAt(LocalDateTime.now());
         task.setOrganizationId(workspaceContext.getWorkspaceId());
         Task saved = taskRepository.save(task);
+
+        // Everything below is a side effect of a task that's already
+        // successfully saved above — logging it, syncing a linked goal's
+        // progress, notifying, broadcasting over the websocket. None of
+        // these failing should turn this request into an error response:
+        // the task genuinely was created, so telling the client otherwise
+        // is actively misleading and (worse) invites a confused retry —
+        // clicking Save again on a form that "failed" — which creates a
+        // second, duplicate task, since the first one silently succeeded
+        // despite the error shown. activityLogService.logFull and
+        // realtimeService.broadcast already guard their own internals this
+        // way; syncGoalProgress and notificationService.create did not.
         activityLogService.logFull("TASK", saved.getId(), saved.getTitle(),
                 "TASK_CREATED", null, saved.getTitle(), null,
                 saved.getProjectId(), saved.getId(), null);
-        if (saved.getProjectId() != null) projectService.syncGoalProgress(saved.getProjectId());
-        notificationService.create("Task Created", "New task: " + saved.getTitle(),
-                "SUCCESS", "TASK", saved.getId());
+        if (saved.getProjectId() != null) {
+            try {
+                projectService.syncGoalProgress(saved.getProjectId());
+            } catch (Exception e) {
+                log.warn("syncGoalProgress failed after creating task {}: {}", saved.getId(), e.getMessage());
+            }
+        }
+        try {
+            notificationService.create("Task Created", "New task: " + saved.getTitle(),
+                    "SUCCESS", "TASK", saved.getId());
+        } catch (Exception e) {
+            log.warn("notificationService.create failed after creating task {}: {}", saved.getId(), e.getMessage());
+        }
         realtimeService.broadcast(workspaceContext.getWorkspaceId(), "TASK_CREATED",
                 "TASK", saved.getId(), saved.getTitle(), null,
                 "New task created: " + saved.getTitle());
@@ -68,6 +92,11 @@ public class TaskService {
         existing.setUpdatedAt(LocalDateTime.now());
         Task saved = taskRepository.save(existing);
 
+        // Same reasoning as create() above: the task is already saved by
+        // this point, so nothing from here down should be able to turn a
+        // successful update into an error response — that's what was
+        // letting a confused retry create a duplicate task after a
+        // "failed" save that had actually already gone through.
         String eventType; String message;
         if (!oldStatus.equals(saved.getStatus())) {
             eventType = "DONE".equals(saved.getStatus()) ? "TASK_COMPLETED" : "TASK_STATUS_CHANGED";
@@ -75,7 +104,11 @@ public class TaskService {
             activityLogService.logFull("TASK", saved.getId(), saved.getTitle(),
                     eventType, oldStatus, saved.getStatus(), null,
                     saved.getProjectId(), saved.getId(), null);
-            notificationService.create("Task Status Changed", saved.getTitle() + " → " + saved.getStatus(), "INFO", "TASK", saved.getId());
+            try {
+                notificationService.create("Task Status Changed", saved.getTitle() + " → " + saved.getStatus(), "INFO", "TASK", saved.getId());
+            } catch (Exception e) {
+                log.warn("notificationService.create failed after updating task {}: {}", saved.getId(), e.getMessage());
+            }
         } else if (!oldPriority.equals(saved.getPriority())) {
             eventType = "TASK_PRIORITY_CHANGED";
             message   = "Priority of \"" + saved.getTitle() + "\" changed to " + saved.getPriority();
@@ -92,7 +125,13 @@ public class TaskService {
         realtimeService.broadcast(workspaceContext.getWorkspaceId(), eventType,
                 "TASK", saved.getId(), saved.getTitle(), null, message);
 
-        if (saved.getProjectId() != null) projectService.syncGoalProgress(saved.getProjectId());
+        if (saved.getProjectId() != null) {
+            try {
+                projectService.syncGoalProgress(saved.getProjectId());
+            } catch (Exception e) {
+                log.warn("syncGoalProgress failed after updating task {}: {}", saved.getId(), e.getMessage());
+            }
+        }
         return saved;
     }
 
