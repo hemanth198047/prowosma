@@ -598,11 +598,28 @@ export default function Tasks() {
             .filter(Boolean)
         : [],
     };
-    if (editing) await updateTask(editing.id, payload);
-    else await createTask(payload);
-    setShowForm(false);
-    setEditing(null);
-    load();
+    // Previously had no try/catch at all: if createTask/updateTask rejected
+    // for any reason, the error vanished silently — nothing shown to the
+    // user, and since setShowForm(false) only ran on the line *after* a
+    // successful save, the modal just sat there looking frozen with no
+    // indication anything had gone wrong. Now the failure is visible, and
+    // the form stays open (with whatever was typed still in it) so the
+    // person can fix it and retry instead of having to start over.
+    try {
+      if (editing) await updateTask(editing.id, payload);
+      else await createTask(payload);
+      setShowForm(false);
+      setEditing(null);
+      load();
+    } catch (err) {
+      // Not re-thrown: TaskForm's click handler only has try/finally (no
+      // catch) around this call, so letting the error keep propagating
+      // would just become an unhandled promise rejection in the console
+      // with nothing left to actually handle it. The toast above is the
+      // full handling; TaskForm's own finally still resets its saving
+      // spinner regardless of whether this throws or returns normally.
+      showToast(err.response?.data?.message || "Failed to save task", "error");
+    }
   };
 
   const handleDelete = async (id) => {
