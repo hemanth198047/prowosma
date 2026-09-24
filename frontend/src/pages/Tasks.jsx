@@ -60,6 +60,7 @@ function LinkedDocsPanel({ taskId, allDocs }) {
 }
 
 function TaskForm({ initial, projects, onSave, onCancel }) {
+  const confirm = useConfirm();
   const [formSaving, setFormSaving] = useState(false);
   const [form, setForm] = useState(
     initial || {
@@ -223,6 +224,21 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
             disabled={formSaving || !form.title.trim()}
             onClick={async () => {
               if (formSaving || !form.title.trim()) return;
+              // Only for brand-new tasks (not edits — marking an existing
+              // task Done is the normal, expected way to complete it).
+              // Creating one already-Done isn't blocked outright, since
+              // retroactively logging finished work is a legitimate,
+              // common use case — just double-checked, since it's also an
+              // easy status to pick by habit/muscle-memory without
+              // noticing, right after opening a brand new task form.
+              if (!initial && form.status === "DONE") {
+                const ok = await confirm({
+                  title: "Create this task as already Done?",
+                  message: "This will create a brand-new task with its status set to Done. If that's not intentional, go back and pick a different status.",
+                  confirmText: "Create as Done",
+                });
+                if (!ok) return;
+              }
               setFormSaving(true);
               try { await onSave(form); } finally { setFormSaving(false); }
             }}>
