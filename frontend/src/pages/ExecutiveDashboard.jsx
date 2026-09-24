@@ -13,7 +13,9 @@ import "../styles/pages/analytics.css";
 const getAISummary = () => client.get("/ai/executive-summary");
 const getRisks     = () => client.get("/ai/risks");
 
-function StatCard({ icon, label, value, sub, color="var(--brand-500)", trend }) {
+// color is literal hex, not var(--token): concatenated with an alpha
+// suffix below (`${color}18`), which only works with a real hex string.
+function StatCard({ icon, label, value, sub, color="#5B5FEE", trend }) {
   return (
     <div className="exec-stat-card">
       <div className="exec-stat-icon" style={{ background:`${color}18`, color }}>{icon}</div>
@@ -127,17 +129,17 @@ export default function ExecutiveDashboard() {
 
       {/* KPI row */}
       <div className="exec-stat-row">
-        <StatCard icon="📁" label="Active Projects"  value={activeProjects}  color="var(--brand-500)"
+        <StatCard icon="📁" label="Active Projects"  value={activeProjects}  color="#5B5FEE"
           sub={atRiskProjects > 0 ? `${atRiskProjects} at risk` : "All healthy"} />
-        <StatCard icon="🎯" label="Goals On Track"   value={goalOnTrack}     color="var(--success)"
+        <StatCard icon="🎯" label="Goals On Track"   value={goalOnTrack}     color="#1E8E5A"
           sub={goalAtRisk > 0 ? `${goalAtRisk} at risk` : "All on track"} />
         <StatCard icon="📊" label="Portfolio Health"
           value={avgHealth !== null ? `${avgHealth}%` : "—"}
-          color={avgHealth === null ? "var(--gray-500)" : avgHealth >= 70 ? "var(--success)" : avgHealth >= 50 ? "var(--warning)" : "var(--danger)"}
+          color={avgHealth === null ? "#64748b" : avgHealth >= 70 ? "#1E8E5A" : avgHealth >= 50 ? "#C17D22" : "#D64545"}
           sub={avgHealth === null ? "No projects yet" : undefined} />
-        <StatCard icon="⚠️" label="KPI Alerts"       value={kpiAlerts}       color="var(--danger)"
+        <StatCard icon="⚠️" label="KPI Alerts"       value={kpiAlerts}       color="#D64545"
           sub={kpiAlerts === 0 ? "All clear" : "Threshold breached"} />
-        <StatCard icon="✅" label="Total Goals"       value={goals.length}    color="var(--purple)"
+        <StatCard icon="✅" label="Total Goals"       value={goals.length}    color="#7C5CBF"
           sub={`${goals.filter(g=>g.status==="ACHIEVED").length} achieved`} />
       </div>
 

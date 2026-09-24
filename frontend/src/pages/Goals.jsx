@@ -47,16 +47,16 @@ const CONFIDENCE_COLOR = (v) =>
   v >= 70 ? "var(--success)" : v >= 40 ? "var(--warning)" : "var(--danger)";
 
 const KR_STATUS_META = {
-  ON_TRACK: { label:"On Track", color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
-  AT_RISK:  { label:"At Risk",  color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
-  BEHIND:   { label:"Behind",   color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
-  ACHIEVED: { label:"Achieved", color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
+  ON_TRACK: { label:"On Track", color:"#1E8E5A", bg:"rgba(5,150,105,0.12)" },
+  AT_RISK:  { label:"At Risk",  color:"#C17D22", bg:"rgba(217,119,6,0.12)" },
+  BEHIND:   { label:"Behind",   color:"#D64545", bg:"rgba(239,68,68,0.12)" },
+  ACHIEVED: { label:"Achieved", color:"#5B5FEE", bg:"rgba(99,102,241,0.12)" },
 };
 
 const LEVEL_META = {
-  COMPANY:    { icon:"🏢", label:"Company",    color:"var(--brand-500)" },
+  COMPANY:    { icon:"🏢", label:"Company",    color:"#5B5FEE" },
   TEAM:       { icon:"👥", label:"Team",       color:"#06b6d4" },
-  INDIVIDUAL: { icon:"👤", label:"Individual", color:"var(--success)" },
+  INDIVIDUAL: { icon:"👤", label:"Individual", color:"#1E8E5A" },
 };
 
 function GoalForm({ initial, allGoals, onSave, onCancel }) {
@@ -128,7 +128,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
 
         {/* B-1: Parent goal for cascading */}
         <div className="form-group">
-          <label htmlFor={"goals-parent-goal"}>Parent Goal <span style={{color:"var(--gray-400)",fontSize:"11px"}}>(makes this a child goal)</span></label>
+          <label htmlFor={"goals-parent-goal"}>Parent Goal <span style={{color:"#94a3b8",fontSize:"11px"}}>(makes this a child goal)</span></label>
           <select value={form.parentGoalId || ""} onChange={(e) => set("parentGoalId", e.target.value || null)} id={"goals-parent-goal"}>
             <option value="">— Root goal (no parent) —</option>
             {parentCandidates.map(g => (
@@ -343,23 +343,23 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
             title="Comments">
             💬 {commentCount > 0
               ? <span className="step-tool-count">{commentCount}</span>
-              : <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>comment</span>}
+              : <span style={{ fontSize:"10px", color:"#94a3b8" }}>comment</span>}
           </button>
           <button className={`step-tool-btn ${showFiles ? "active" : ""}`}
             onClick={() => { setShowFiles(v => !v); setShowComments(false); setShowDeps(false); }}
             title="File attachments">
             📎 {fileCount > 0
               ? <span className="step-tool-count">{fileCount}</span>
-              : <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>files</span>}
+              : <span style={{ fontSize:"10px", color:"#94a3b8" }}>files</span>}
           </button>
           <button className={`step-tool-btn ${showDeps ? "active" : ""}`}
             onClick={() => { setShowDeps(v => !v); setShowComments(false); setShowFiles(false); }}
             title="Manage step dependencies — set which steps must finish before this one">
             🔗 {depCount > 0
-              ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"var(--danger)" }}>
+              ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"#D64545" }}>
                   {depCount} blocked
                 </span>
-              : <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>deps</span>}
+              : <span style={{ fontSize:"10px", color:"#94a3b8" }}>deps</span>}
           </button>
           <button className="btn-icon" style={{ fontSize:"12px" }} onClick={onDelete}>🗑️</button>
         </div>
@@ -419,7 +419,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
       {/* Dependencies panel */}
       {showDeps && (
         <div className="step-panel">
-          <div style={{ fontSize:"12px", color:"var(--gray-500)", marginBottom:"10px", lineHeight:"1.5" }}>
+          <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"10px", lineHeight:"1.5" }}>
             <strong>Step dependencies</strong> — mark which steps must be completed <em>before</em> this one can start.
           </div>
 
@@ -693,8 +693,8 @@ function ConfidenceMeter({ goal, onUpdate }) {
     const last  = spark[spark.length-1]?.value || 50;
     const prev  = spark[spark.length-3]?.value || 50;
     const delta = last - prev;
-    if (delta <= -15) return { label:"⚠️ Drifting", color:"var(--danger)", delta };
-    if (delta >= 15)  return { label:"📈 Improving", color:"var(--success)", delta };
+    if (delta <= -15) return { label:"⚠️ Drifting", color:"#D64545", delta };
+    if (delta >= 15)  return { label:"📈 Improving", color:"#1E8E5A", delta };
     return null;
   })();
 
@@ -958,7 +958,7 @@ function KeyResultsPanel({ goal, onUpdate }) {
             </div>
             <div className="goal-kr-values">
               <span>{kr.startValue}{kr.unit}</span>
-              <span style={{ color:"var(--gray-400)" }}>→</span>
+              <span style={{ color:"#94a3b8" }}>→</span>
               {isEditing ? (
                 <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
                   <input type="number" className="goal-kr-value-input"
@@ -976,7 +976,7 @@ function KeyResultsPanel({ goal, onUpdate }) {
                   {kr.currentValue}{kr.unit} <span className="goal-kr-edit-hint">✎</span>
                 </span>
               )}
-              <span style={{ color:"var(--gray-400)" }}>/ {kr.targetValue}{kr.unit}</span>
+              <span style={{ color:"#94a3b8" }}>/ {kr.targetValue}{kr.unit}</span>
               {kr.metric && <span className="goal-kr-metric">({kr.metric})</span>}
             </div>
           </div>
@@ -1017,7 +1017,7 @@ function GoalContributionPanel({ goal, onUpdate }) {
 
   return (
     <div style={{padding:"12px 0"}}>
-      <div style={{fontWeight:800,fontSize:"13px",marginBottom:"10px",color:"var(--gray-800)"}}>
+      <div style={{fontWeight:800,fontSize:"13px",marginBottom:"10px",color:"#1e293b"}}>
         📈 Task Contribution to Goal
       </div>
 
@@ -1026,13 +1026,13 @@ function GoalContributionPanel({ goal, onUpdate }) {
         <div style={{background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.2)",
           borderRadius:"var(--radius-md)",padding:"10px",marginBottom:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:"12px",marginBottom:"5px"}}>
-            <span style={{fontWeight:700,color:"var(--brand-500)"}}>Auto-calculated progress</span>
-            <span style={{fontWeight:800,color:"var(--brand-500)"}}>{calculatedProgress}%</span>
+            <span style={{fontWeight:700,color:"#5B5FEE"}}>Auto-calculated progress</span>
+            <span style={{fontWeight:800,color:"#5B5FEE"}}>{calculatedProgress}%</span>
           </div>
           <div className="kpi-progress-bar">
             <div className="kpi-progress-fill" style={{width:calculatedProgress+"%",background:"var(--brand-500)"}}/>
           </div>
-          <div style={{fontSize:"11px",color:"var(--gray-400)",marginTop:"5px"}}>
+          <div style={{fontSize:"11px",color:"#94a3b8",marginTop:"5px"}}>
             Based on {tasks.filter(t=>t.status==="DONE").length}/{tasks.length} linked tasks completed
           </div>
           <button className="btn-primary" style={{fontSize:"11px",marginTop:"8px"}} onClick={async()=>{
@@ -1049,15 +1049,15 @@ function GoalContributionPanel({ goal, onUpdate }) {
           <span style={{color:t.status==="DONE"?"var(--success)":"var(--warning)"}}>
             {t.status==="DONE"?"✅":"⬜"}
           </span>
-          <span style={{flex:1,color:"var(--gray-700)"}}>{t.title}</span>
-          <span style={{fontSize:"10px",fontWeight:700,color:"var(--brand-500)"}}>
+          <span style={{flex:1,color:"#334155"}}>{t.title}</span>
+          <span style={{fontSize:"10px",fontWeight:700,color:"#5B5FEE"}}>
             ×{t.goalContributionWeight||1}
           </span>
         </div>
       ))}
 
       {tasks.length===0 && (
-        <div style={{fontSize:"12px",color:"var(--gray-400)",padding:"12px 0"}}>
+        <div style={{fontSize:"12px",color:"#94a3b8",padding:"12px 0"}}>
           No tasks linked to this goal yet. Link tasks by setting their Goal field.
         </div>
       )}
@@ -1183,7 +1183,7 @@ function AlignmentMap({ goals }) {
       <div className="alignment-map-controls">
         <button className="btn-secondary" style={{ fontSize:"11px" }}
           onClick={() => setZoom(z => Math.min(2, z + 0.1))}>+ Zoom</button>
-        <span style={{ fontSize:"11px", color:"var(--gray-400)" }}>{Math.round(zoom*100)}%</span>
+        <span style={{ fontSize:"11px", color:"#94a3b8" }}>{Math.round(zoom*100)}%</span>
         <button className="btn-secondary" style={{ fontSize:"11px" }}
           onClick={() => setZoom(z => Math.max(0.3, z - 0.1))}>− Zoom</button>
         <button className="btn-secondary" style={{ fontSize:"11px" }}
@@ -1232,7 +1232,7 @@ function AlignmentMap({ goals }) {
                   <foreignObject x={n.x+8} y={n.y+6} width={NODE_W-16} height={NODE_H-16}>
                     <div xmlns="http://www.w3.org/1999/xhtml"
                       style={{ fontSize:"11px", fontWeight:700,
-                        color:"var(--gray-700)", lineHeight:1.3,
+                        color:"#334155", lineHeight:1.3,
                         overflow:"hidden", maxHeight:"32px" }}>
                       {n.goal.title}
                     </div>
@@ -1376,19 +1376,19 @@ function ScorecardView({ goals }) {
       {/* Summary row */}
       <div className="scorecard-summary">
         <div className="scorecard-kpi">
-          <div className="scorecard-kpi-num" style={{ color:"var(--brand-500)" }}>{goals.length}</div>
+          <div className="scorecard-kpi-num" style={{ color:"#5B5FEE" }}>{goals.length}</div>
           <div className="scorecard-kpi-label">Total Goals</div>
         </div>
         <div className="scorecard-kpi">
-          <div className="scorecard-kpi-num" style={{ color:"var(--success)" }}>{achieved}</div>
+          <div className="scorecard-kpi-num" style={{ color:"#1E8E5A" }}>{achieved}</div>
           <div className="scorecard-kpi-label">Achieved</div>
         </div>
         <div className="scorecard-kpi">
-          <div className="scorecard-kpi-num" style={{ color:"var(--danger)" }}>{atRisk}</div>
+          <div className="scorecard-kpi-num" style={{ color:"#D64545" }}>{atRisk}</div>
           <div className="scorecard-kpi-label">At Risk</div>
         </div>
         <div className="scorecard-kpi">
-          <div className="scorecard-kpi-num" style={{ color:"var(--brand-500)" }}>{avgProgress}%</div>
+          <div className="scorecard-kpi-num" style={{ color:"#5B5FEE" }}>{avgProgress}%</div>
           <div className="scorecard-kpi-label">Avg Progress</div>
         </div>
         <div className="scorecard-kpi">
@@ -1506,9 +1506,9 @@ function QuarterlyView({ goals, allGoals, onRequestAdd }) {
                 <span className="quarterly-count">{qGoals.length} goal{qGoals.length!==1?"s":""}</span>
               </div>
               <div className="quarterly-meta-row">
-                <span className="quarterly-stat"><span style={{color:"var(--brand-500)",fontWeight:700}}>{avgProgress}%</span> avg</span>
-                <span className="quarterly-stat"><span style={{color:"var(--success)",fontWeight:700}}>{achieved}</span> achieved</span>
-                {atRisk > 0 && <span className="quarterly-stat"><span style={{color:"var(--danger)",fontWeight:700}}>{atRisk}</span> at risk</span>}
+                <span className="quarterly-stat"><span style={{color:"#5B5FEE",fontWeight:700}}>{avgProgress}%</span> avg</span>
+                <span className="quarterly-stat"><span style={{color:"#1E8E5A",fontWeight:700}}>{achieved}</span> achieved</span>
+                {atRisk > 0 && <span className="quarterly-stat"><span style={{color:"#D64545",fontWeight:700}}>{atRisk}</span> at risk</span>}
               </div>
               {/* Quarter progress bar */}
               <div className="quarterly-progress-bar">
@@ -1982,7 +1982,7 @@ export default function Goals() {
           <span
             style={{
               background: "#fff5f5",
-              color: "var(--danger)",
+              color:"#D64545",
               padding: "4px 12px",
               borderRadius: "20px",
               fontSize: "12px",

@@ -19,11 +19,11 @@ const API_ORIGIN = API.replace(/\/api\/?$/, "");
 // es.json. Colors stay here since they're presentation, not translatable
 // content.
 const CHIP_KEYS = [
-  { key: "ai",           color: "var(--brand-500)" },
-  { key: "goals",        color: "var(--purple)" },
+  { key: "ai",           color:"#5B5FEE" },
+  { key: "goals",        color:"#7C5CBF" },
   { key: "boards",       color: "#06b6d4" },
-  { key: "docs",         color: "var(--success)" },
-  { key: "collab",       color: "var(--warning)" },
+  { key: "docs",         color:"#1E8E5A" },
+  { key: "collab",       color:"#C17D22" },
   { key: "reports",      color: "#ec4899" },
   { key: "integrations", color: "#3b82f6" },
   { key: "rbac",         color: "#a855f7" },
@@ -370,7 +370,7 @@ export default function Login() {
           </div>
 
           {error   && <div className="auth-error">{error}</div>}
-          {success && <div className="auth-success" style={{color:"var(--success)",fontSize:"13px",marginBottom:"8px"}}>{success}</div>}
+          {success && <div className="auth-success" style={{color:"#1E8E5A",fontSize:"13px",marginBottom:"8px"}}>{success}</div>}
 
           {mode === "register" && (
             <div className="auth-field">

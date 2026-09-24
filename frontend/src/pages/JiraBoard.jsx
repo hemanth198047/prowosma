@@ -18,24 +18,24 @@ const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
 /* ── Constants ─────────────────────────────────────────────────── */
 const PRIORITY_META = {
-  HIGHEST:{ icon:"🔴", label:"Highest", color:"var(--danger)" },
+  HIGHEST:{ icon:"🔴", label:"Highest", color:"#D64545" },
   HIGH:   { icon:"🟠", label:"High",    color:"#f97316" },
-  MEDIUM: { icon:"🟡", label:"Medium",  color:"var(--warning)" },
-  LOW:    { icon:"🟢", label:"Low",     color:"var(--success)" },
-  LOWEST: { icon:"🔵", label:"Lowest",  color:"var(--brand-500)" },
+  MEDIUM: { icon:"🟡", label:"Medium",  color:"#C17D22" },
+  LOW:    { icon:"🟢", label:"Low",     color:"#1E8E5A" },
+  LOWEST: { icon:"🔵", label:"Lowest",  color:"#5B5FEE" },
 };
 const TYPE_META = {
-  STORY:  { icon:"📗", label:"Story",   color:"var(--success)" },
-  BUG:    { icon:"🐛", label:"Bug",     color:"var(--danger)" },
-  TASK:   { icon:"✅", label:"Task",    color:"var(--brand-500)" },
-  SUBTASK:{ icon:"🔹", label:"Subtask", color:"var(--purple)" },
-  EPIC:   { icon:"⚡", label:"Epic",    color:"var(--warning)" },
+  STORY:  { icon:"📗", label:"Story",   color:"#1E8E5A" },
+  BUG:    { icon:"🐛", label:"Bug",     color:"#D64545" },
+  TASK:   { icon:"✅", label:"Task",    color:"#5B5FEE" },
+  SUBTASK:{ icon:"🔹", label:"Subtask", color:"#7C5CBF" },
+  EPIC:   { icon:"⚡", label:"Epic",    color:"#C17D22" },
 };
 const DEFAULT_COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"var(--gray-500)", bg:"rgba(100,116,139,0.08)", wipLimit:null },
+  { id:"TODO",        label:"To Do",       color:"#64748b", bg:"rgba(100,116,139,0.08)", wipLimit:null },
   { id:"IN_PROGRESS", label:"In Progress", color:"#3b82f6", bg:"rgba(59,130,246,0.08)",  wipLimit:5    },
-  { id:"IN_REVIEW",   label:"In Review",   color:"var(--purple)", bg:"rgba(139,92,246,0.08)",  wipLimit:3    },
-  { id:"DONE",        label:"Done",        color:"var(--success)", bg:"rgba(16,185,129,0.08)",  wipLimit:null },
+  { id:"IN_REVIEW",   label:"In Review",   color:"#7C5CBF", bg:"rgba(139,92,246,0.08)",  wipLimit:3    },
+  { id:"DONE",        label:"Done",        color:"#1E8E5A", bg:"rgba(16,185,129,0.08)",  wipLimit:null },
 ];
 const STORY_POINT_SCALE = {
   fibonacci:  [1,2,3,5,8,13,21,34],
@@ -53,7 +53,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
   const [columns, setColumns] = useState(cfg.columns || DEFAULT_COLUMNS);
   const addColumn = () => setColumns(p=>[...p,{
-    id:"COL_"+Date.now(), label:"New Column", color:"var(--brand-500)",
+    id:"COL_"+Date.now(), label:"New Column", color:"#5B5FEE",
     bg:"rgba(99,102,241,0.08)", wipLimit:null,
   }]);
   const updateCol = (idx, k, v) => setColumns(p=>p.map((c,i)=>i===idx?{...c,[k]:v}:c));
@@ -101,7 +101,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
                     <button onClick={()=>moveCol(idx,-1)} disabled={idx===0} title="Move up">↑</button>
                     <button onClick={()=>moveCol(idx,1)} disabled={idx===columns.length-1} title="Move down">↓</button>
                     <button onClick={()=>removeCol(idx)} disabled={columns.length<=2}
-                      style={{color:"var(--danger)"}} title="Remove">✕</button>
+                      style={{color:"#D64545"}} title="Remove">✕</button>
                   </div>
                 </div>
               ))}
@@ -337,10 +337,10 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
                   background:step>=s?"var(--brand-700)":"var(--gray-100)",
                   color:step>=s?"#fff":"var(--gray-400)",
                 }}>{ s}</span>
-                <span style={{fontSize:11,color:"var(--gray-500)"}}>
+                <span style={{fontSize:11,color:"#64748b"}}>
                   {["Unfinished","Retrospective","Confirm"][s-1]}
                 </span>
-                {s<3 && <span style={{color:"var(--gray-200)"}}>→</span>}
+                {s<3 && <span style={{color:"#e2e8f0"}}>→</span>}
               </span>
             ))}
           </div>
@@ -550,13 +550,13 @@ function VelocityChart({ sprints, tasks, metric }) {
         {data.map((d,i)=>(
           <div key={i} style={{flex:1,display:"flex",flexDirection:"column",
             alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}>
-            <div style={{fontSize:9,color:"var(--gray-400)",fontWeight:700}}>{d.done}</div>
+            <div style={{fontSize:9,color:"#94a3b8",fontWeight:700}}>{d.done}</div>
             <div style={{width:"60%",background:"var(--brand-700)",borderRadius:"3px 3px 0 0",
               height:`${(d.done/max)*100}%`,minHeight:2,transition:"height .3s"}}/>
             <div style={{width:"80%",background:"rgba(99,102,241,0.2)",borderRadius:"3px 3px 0 0",
               height:`${(d.committed/max)*100}%`,minHeight:2,position:"absolute",
               bottom:16,opacity:.6}}/>
-            <div style={{fontSize:8,color:"var(--gray-400)",textAlign:"center",
+            <div style={{fontSize:8,color:"#94a3b8",textAlign:"center",
               overflow:"hidden",width:"100%"}}>
               {d.name.replace("Sprint ","S")}
             </div>
@@ -805,7 +805,7 @@ function IssueModal({ task, projects, epics, sprints, members, spScale, onSave, 
             )}
             {tab==="subtasks" && (
               <div className="jb-modal-section">
-                <div style={{color:"var(--gray-400)",fontSize:13,padding:"16px 0"}}>
+                <div style={{color:"#94a3b8",fontSize:13,padding:"16px 0"}}>
                   Subtask management available via the Tasks page for this issue.
                 </div>
               </div>
@@ -1164,7 +1164,7 @@ export default function JiraBoard() {
               {displayedSprint.status}
             </span>
             {displayedSprint.endDate && (
-              <span style={{fontSize:11,color:"var(--gray-400)"}}>
+              <span style={{fontSize:11,color:"#94a3b8"}}>
                 Ends {new Date(displayedSprint.endDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})}
               </span>
             )}
@@ -1264,7 +1264,7 @@ export default function JiraBoard() {
           {/* Backlog */}
           <div className="jb-backlog-section">
             <div className="jb-backlog-section-header">
-              <span className="jb-sprint-name" style={{color:"var(--gray-600)"}}>Backlog</span>
+              <span className="jb-sprint-name" style={{color:"#475569"}}>Backlog</span>
               <span className="jb-backlog-count">{backlogTasks.length} issues</span>
               <span style={{flex:1}}/>
               <button className="jb-btn-secondary" style={{fontSize:12}}
@@ -1332,7 +1332,7 @@ export default function JiraBoard() {
                 <div key={m.l} style={{padding:"10px 12px",background:"var(--gray-50)",
                   borderRadius:8,textAlign:"center",border:`1px solid ${m.c}22`}}>
                   <div style={{fontSize:22,fontWeight:900,color:m.c}}>{m.v}</div>
-                  <div style={{fontSize:10,color:"var(--gray-500)",marginTop:2}}>{m.l}</div>
+                  <div style={{fontSize:10,color:"#64748b",marginTop:2}}>{m.l}</div>
                 </div>
               ))}
             </div>
@@ -1352,12 +1352,12 @@ export default function JiraBoard() {
                 return (
                   <div key={k} style={{display:"flex",alignItems:"center",gap:8,fontSize:12}}>
                     <span>{v.icon}</span>
-                    <span style={{width:80,color:"var(--gray-600)"}}>{v.label}</span>
+                    <span style={{width:80,color:"#475569"}}>{v.label}</span>
                     <div style={{flex:1,height:6,background:"var(--gray-100)",borderRadius:99}}>
                       <div style={{height:"100%",background:v.color,borderRadius:99,
                         width:`${pct}%`,transition:"width .3s"}}/>
                     </div>
-                    <span style={{fontWeight:700,color:"var(--gray-700)",minWidth:20}}>{count}</span>
+                    <span style={{fontWeight:700,color:"#334155",minWidth:20}}>{count}</span>
                   </div>
                 );
               })}

@@ -10,16 +10,24 @@ const api = {
   projects: () => client.get("/projects"),
 };
 
+// NOTE: color values here are real hex, not var(--token) -- this file
+// builds transparent variants by string-concatenating a 2-digit alpha
+// suffix straight onto the color (e.g. m.color+"22" -> "#3b82f622", a
+// valid 8-digit hex-with-alpha). A CSS var() reference can't support
+// that concatenation ("var(--success)22" isn't a color), so these stay
+// literal hex here even though the same hues are tokens elsewhere.
 const META = {
   project: { color:"#3b82f6", bg:"rgba(59,130,246,0.08)", icon:"📁", label:"Project", radius:18 },
-  goal:    { color:"var(--success)", bg:"rgba(16,185,129,0.08)", icon:"🎯", label:"Goal",    radius:15 },
-  task:    { color:"var(--warning)", bg:"rgba(245,158,11,0.08)",  icon:"✅", label:"Task",    radius:12 },
-  doc:     { color:"var(--brand-500)", bg:"rgba(99,102,241,0.08)",  icon:"📝", label:"Doc",     radius:13 },
+  goal:    { color:"#1E8E5A", bg:"rgba(16,185,129,0.08)", icon:"🎯", label:"Goal",    radius:15 },
+  task:    { color:"#C17D22", bg:"rgba(245,158,11,0.08)",  icon:"✅", label:"Task",    radius:12 },
+  doc:     { color:"#5B5FEE", bg:"rgba(99,102,241,0.08)",  icon:"📝", label:"Doc",     radius:13 },
 };
 
+// Same reasoning as META above -- literal hex, not tokens, because of
+// the +"NN" alpha-suffix concatenation used wherever these render.
 const EDGE_COLORS = {
-  IN_PROJECT:"#3b82f6", LINKED_TO:"var(--success)", CHILD_OF:"var(--brand-500)",
-  BACKLINK:"var(--warning)", RELATED:"var(--gray-400)", DEPENDS_ON:"var(--purple)", CONTRIBUTES_TO:"#0ea5e9",
+  IN_PROJECT:"#3b82f6", LINKED_TO:"#1E8E5A", CHILD_OF:"#5B5FEE",
+  BACKLINK:"#C17D22", RELATED:"#94a3b8", DEPENDS_ON:"#7C5CBF", CONTRIBUTES_TO:"#0ea5e9",
 };
 
 function buildGraph(docs, tasks, goals, projects) {
@@ -243,11 +251,14 @@ export default function KnowledgeGraph() {
 
       {/* Stats row */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
+        {/* StatCard also concatenates its color prop with an alpha suffix
+            internally (see StatCard above) — literal hex here too, same
+            reasoning as META/EDGE_COLORS. */}
         <StatCard icon="📁" label="Projects" value={counts.project} color="#3b82f6" onClick={()=>setFilter(filter==="project"?"all":"project")} />
-        <StatCard icon="🎯" label="Goals" value={counts.goal} color="var(--success)" onClick={()=>setFilter(filter==="goal"?"all":"goal")} />
-        <StatCard icon="✅" label="Tasks" value={counts.task} color="var(--warning)" onClick={()=>setFilter(filter==="task"?"all":"task")} />
-        <StatCard icon="📝" label="Docs" value={counts.doc} color="var(--brand-500)" onClick={()=>setFilter(filter==="doc"?"all":"doc")} />
-        <StatCard icon="🔗" label="Connections" value={totalConns} color="var(--purple)" onClick={()=>{}} />
+        <StatCard icon="🎯" label="Goals" value={counts.goal} color="#1E8E5A" onClick={()=>setFilter(filter==="goal"?"all":"goal")} />
+        <StatCard icon="✅" label="Tasks" value={counts.task} color="#C17D22" onClick={()=>setFilter(filter==="task"?"all":"task")} />
+        <StatCard icon="📝" label="Docs" value={counts.doc} color="#5B5FEE" onClick={()=>setFilter(filter==="doc"?"all":"doc")} />
+        <StatCard icon="🔗" label="Connections" value={totalConns} color="#7C5CBF" onClick={()=>{}} />
       </div>
 
       {/* Controls */}

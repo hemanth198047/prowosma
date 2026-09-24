@@ -14,12 +14,12 @@ const TYPE_ICON  = { INFO:"ℹ️", WARNING:"⚠️", SUCCESS:"✅", ERROR:"❌"
 const ENTITY_ICON= { TASK:"✅", PROJECT:"📁", GOAL:"🎯", SPRINT:"🏃", AUTOMATION:"⚡", APPROVAL:"📋" };
 
 const CATEGORY_META = {
-  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"var(--brand-500)" },
+  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"#5B5FEE" },
   MENTION:    { label:"Mentions",    icon:"@",  color:"#ec4899" },
-  APPROVAL:   { label:"Approvals",   icon:"✅", color:"var(--success)" },
-  GOAL:       { label:"Goals",       icon:"🎯", color:"var(--purple)" },
-  RISK:       { label:"Risks",       icon:"⚠️", color:"var(--warning)" },
-  SYSTEM:     { label:"System",      icon:"🔔", color:"var(--gray-500)" },
+  APPROVAL:   { label:"Approvals",   icon:"✅", color:"#1E8E5A" },
+  GOAL:       { label:"Goals",       icon:"🎯", color:"#7C5CBF" },
+  RISK:       { label:"Risks",       icon:"⚠️", color:"#C17D22" },
+  SYSTEM:     { label:"System",      icon:"🔔", color:"#64748b" },
 };
 
 const SNOOZE_OPTIONS = [
@@ -180,7 +180,7 @@ export default function NotificationBell() {
                 </button>
               )}
               {notifications.length > 0 && (
-                <button className="btn-link" style={{ fontSize:"11px", color:"var(--danger)" }}
+                <button className="btn-link" style={{ fontSize:"11px", color:"#D64545" }}
                   onClick={async () => { if(window.confirm("Clear all?")) { await deleteAllNotifications(); setNotifications([]); setUnreadCount(0); } }}>
                   Clear
                 </button>

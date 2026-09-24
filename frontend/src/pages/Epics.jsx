@@ -14,16 +14,19 @@ const api = {
   delete: (id)  => client.delete(`/epics/${id}`),
 };
 
+// color values are literal hex, not var(--token): concatenated with an
+// alpha suffix below (`${sm.color}18`) and used as an <input type="color">
+// default -- neither works with a CSS custom property reference.
 const STATUS_META = {
   OPEN:        { color:"#3b82f6", label:"Open"        },
-  IN_PROGRESS: { color:"var(--warning)", label:"In Progress" },
-  DONE:        { color:"var(--success)", label:"Done"        },
-  CANCELLED:   { color:"var(--gray-500)", label:"Cancelled"   },
+  IN_PROGRESS: { color:"#C17D22", label:"In Progress" },
+  DONE:        { color:"#1E8E5A", label:"Done"        },
+  CANCELLED:   { color:"#64748b", label:"Cancelled"   },
 };
 
 function EpicForm({ initial, projects, onSave, onClose }) {
   const [form, setForm] = useState(initial || {
-    name:"", description:"", projectId:"", color:"var(--brand-500)",
+    name:"", description:"", projectId:"", color:"#5B5FEE",
     status:"OPEN", priority:"MEDIUM", startDate:"", targetDate:"",
   });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -170,12 +173,12 @@ export default function Epics() {
           const epicTasks = tasks.filter(t=>t.epicId===epic.id || (epic.taskIds||[]).includes(t.id));
           const doneTasks = epicTasks.filter(t=>t.status==="DONE").length;
           return (
-            <div key={epic.id} style={{background:"var(--bg-card)",border:`2px solid ${epic.color||"var(--brand-500)"}22`,
+            <div key={epic.id} style={{background:"var(--bg-card)",border:`2px solid ${epic.color||"#5B5FEE"}22`,
               borderRadius:"var(--radius-lg)",padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
-                    <div style={{width:10,height:10,borderRadius:"50%",background:epic.color||"var(--brand-500)",flexShrink:0}}/>
+                    <div style={{width:10,height:10,borderRadius:"50%",background:epic.color||"#5B5FEE",flexShrink:0}}/>
                     <div style={{fontWeight:800,fontSize:"14px",color:"var(--gray-800)"}}>{epic.name}</div>
                   </div>
                   {epic.description && (
@@ -197,7 +200,7 @@ export default function Epics() {
                 </div>
                 <div className="kpi-progress-bar">
                   <div className="kpi-progress-fill"
-                    style={{width:`${pct}%`,background:epic.color||"var(--brand-500)"}} />
+                    style={{width:`${pct}%`,background:epic.color||"#5B5FEE"}} />
                 </div>
               </div>
 

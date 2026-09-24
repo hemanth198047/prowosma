@@ -5,8 +5,8 @@ import { apiErrorMessage } from "../utils/apiError";
 
 const SECTIONS = [
   { key:"projects", icon:"📁", label:"Projects",  color:"#3b82f6", desc:"Name, status, category, due date, budget, linked goal" },
-  { key:"goals",    icon:"🎯", label:"Goals",     color:"var(--success)", desc:"Title, status, progress, level, owner, quarter, confidence" },
-  { key:"tasks",    icon:"✅", label:"Tasks",     color:"var(--warning)", desc:"Title, status, priority, project link, due date, story points, tags" },
+  { key:"goals",    icon:"🎯", label:"Goals",     color:"#1E8E5A", desc:"Title, status, progress, level, owner, quarter, confidence" },
+  { key:"tasks",    icon:"✅", label:"Tasks",     color:"#C17D22", desc:"Title, status, priority, project link, due date, story points, tags" },
 ];
 
 export default function ImportExport() {
@@ -120,26 +120,26 @@ export default function ImportExport() {
                 {file ? (
                   <div>
                     <div style={{ fontSize:"40px", marginBottom:"10px" }}>✅</div>
-                    <div style={{ fontWeight:800, fontSize:"16px", color:"var(--success)", marginBottom:"4px" }}>
+                    <div style={{ fontWeight:800, fontSize:"16px", color:"#1E8E5A", marginBottom:"4px" }}>
                       {file.name}
                     </div>
-                    <div style={{ fontSize:"12px", color:"var(--gray-500)" }}>
+                    <div style={{ fontSize:"12px", color:"#64748b" }}>
                       {(file.size / 1024).toFixed(1)} KB — ready to import
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); setFile(null); setResult(null); }}
                       style={{ marginTop:"10px", padding:"4px 12px", borderRadius:"6px",
                         border:"1px solid var(--border)", background:"#fff", fontSize:"11px",
-                        cursor:"pointer", color:"var(--gray-500)" }}>
+                        cursor:"pointer", color:"#64748b" }}>
                       ✕ Remove
                     </button>
                   </div>
                 ) : (
                   <div>
                     <div style={{ fontSize:"48px", marginBottom:"12px" }}>📂</div>
-                    <div style={{ fontWeight:700, fontSize:"16px", color:"var(--gray-800)", marginBottom:"6px" }}>
+                    <div style={{ fontWeight:700, fontSize:"16px", color:"#1e293b", marginBottom:"6px" }}>
                       Drop your Excel file here
                     </div>
-                    <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"16px" }}>
+                    <div style={{ fontSize:"13px", color:"#64748b", marginBottom:"16px" }}>
                       or click to browse — .xlsx files only
                     </div>
                     <div style={{ display:"inline-flex", padding:"6px 16px",
@@ -171,7 +171,7 @@ export default function ImportExport() {
                   style={{ padding:"12px 20px", borderRadius:"10px",
                     border:"1.5px solid var(--border)", background:"#fff",
                     fontSize:"13px", fontWeight:700, cursor:"pointer",
-                    color:"var(--gray-700)", display:"flex", alignItems:"center", gap:"6px" }}>
+                    color:"#334155", display:"flex", alignItems:"center", gap:"6px" }}>
                   📥 Get Template
                 </button>
               </div>
@@ -194,15 +194,15 @@ export default function ImportExport() {
                     gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
                     {[
                       { label:"Projects created", value:result.projectsCreated, color:"#3b82f6", icon:"📁" },
-                      { label:"Goals created",    value:result.goalsCreated,    color:"var(--success)", icon:"🎯" },
-                      { label:"Tasks created",    value:result.tasksCreated,    color:"var(--warning)", icon:"✅" },
+                      { label:"Goals created",    value:result.goalsCreated,    color:"#1E8E5A", icon:"🎯" },
+                      { label:"Tasks created",    value:result.tasksCreated,    color:"#C17D22", icon:"✅" },
                     ].map(s => (
                       <div key={s.label} style={{ textAlign:"center", padding:"12px",
                         background:"#fff", borderRadius:"10px",
                         border:`1px solid ${s.color}22` }}>
                         <div style={{ fontSize:"24px", marginBottom:"4px" }}>{s.icon}</div>
                         <div style={{ fontSize:"24px", fontWeight:800, color:s.color }}>{s.value}</div>
-                        <div style={{ fontSize:"11px", color:"var(--gray-500)", fontWeight:600 }}>{s.label}</div>
+                        <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600 }}>{s.label}</div>
                       </div>
                     ))}
                   </div>
@@ -242,11 +242,11 @@ export default function ImportExport() {
                 borderRadius:"16px", padding:"28px", textAlign:"center",
                 marginBottom:"16px" }}>
                 <div style={{ fontSize:"56px", marginBottom:"14px" }}>📊</div>
-                <div style={{ fontWeight:800, fontSize:"18px", color:"var(--gray-800)",
+                <div style={{ fontWeight:800, fontSize:"18px", color:"#1e293b",
                   marginBottom:"8px" }}>
                   Export Your Entire Workspace
                 </div>
-                <div style={{ fontSize:"13px", color:"var(--gray-500)", maxWidth:"400px",
+                <div style={{ fontSize:"13px", color:"#64748b", maxWidth:"400px",
                   margin:"0 auto 24px", lineHeight:1.7 }}>
                   Downloads all your projects, goals and tasks into a single Excel workbook.
                   Perfect for backups, migrations, or sharing with your team.
@@ -268,7 +268,7 @@ export default function ImportExport() {
 
               <div style={{ background:"var(--gray-50)", border:"1px solid var(--border)",
                 borderRadius:"12px", padding:"16px" }}>
-                <div style={{ fontSize:"12px", fontWeight:800, color:"var(--gray-500)",
+                <div style={{ fontSize:"12px", fontWeight:800, color:"#64748b",
                   letterSpacing:".06em", textTransform:"uppercase", marginBottom:"12px" }}>
                   What's included in the export
                 </div>
@@ -276,11 +276,11 @@ export default function ImportExport() {
                   {[
                     { sheet:"Projects", icon:"📁", color:"#3b82f6",
                       fields:"Name, description, status, color, category, linked goal, parent project, due date, budget, currency" },
-                    { sheet:"Goals", icon:"🎯", color:"var(--success)",
+                    { sheet:"Goals", icon:"🎯", color:"#1E8E5A",
                       fields:"Title, description, status, progress, level, owner, quarter, confidence, target date, parent goal" },
-                    { sheet:"Tasks", icon:"✅", color:"var(--warning)",
+                    { sheet:"Tasks", icon:"✅", color:"#C17D22",
                       fields:"Title, description, status, priority, project ID, due date, story points, type, severity, tags" },
-                    { sheet:"Instructions", icon:"📋", color:"var(--brand-500)",
+                    { sheet:"Instructions", icon:"📋", color:"#5B5FEE",
                       fields:"Full column reference guide for re-importing" },
                   ].map(s => (
                     <div key={s.sheet} style={{ display:"flex", gap:"12px",
@@ -292,10 +292,10 @@ export default function ImportExport() {
                         {s.icon}
                       </div>
                       <div>
-                        <div style={{ fontWeight:700, fontSize:"13px", color:"var(--gray-800)" }}>
+                        <div style={{ fontWeight:700, fontSize:"13px", color:"#1e293b" }}>
                           {s.sheet} sheet
                         </div>
-                        <div style={{ fontSize:"11px", color:"var(--gray-400)", marginTop:"2px" }}>
+                        <div style={{ fontSize:"11px", color:"#94a3b8", marginTop:"2px" }}>
                           {s.fields}
                         </div>
                       </div>
@@ -318,7 +318,7 @@ export default function ImportExport() {
         <div style={{ position:"sticky", top:"80px" }}>
           <div style={{ background:"#fff", border:"1px solid var(--border)",
             borderRadius:"14px", padding:"18px", marginBottom:"12px" }}>
-            <div style={{ fontSize:"12px", fontWeight:800, color:"var(--gray-600)",
+            <div style={{ fontSize:"12px", fontWeight:800, color:"#475569",
               letterSpacing:".06em", textTransform:"uppercase", marginBottom:"14px" }}>
               📋 Sheets & Columns
             </div>
@@ -332,7 +332,7 @@ export default function ImportExport() {
                     {sec.label}
                   </span>
                 </div>
-                <div style={{ fontSize:"11px", color:"var(--gray-500)", lineHeight:1.6,
+                <div style={{ fontSize:"11px", color:"#64748b", lineHeight:1.6,
                   paddingLeft:"22px" }}>
                   {sec.desc}
                 </div>
@@ -358,7 +358,7 @@ export default function ImportExport() {
               <div key={i} style={{ display:"flex", gap:"8px", marginBottom:"8px",
                 fontSize:"11px", lineHeight:1.5 }}>
                 <span style={{ color:"#38bdf8", flexShrink:0, marginTop:"1px" }}>→</span>
-                <span style={{ color:"var(--gray-400)" }}>{tip}</span>
+                <span style={{ color:"#94a3b8" }}>{tip}</span>
               </div>
             ))}
           </div>

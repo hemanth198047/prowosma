@@ -8,7 +8,8 @@ const WORKFLOWS = [
     id: "project-manager",
     icon: "🗂",
     label: "Project Manager",
-    color: "var(--brand-500)",
+    // literal hex: concatenated with an alpha suffix below (e.g. `${color}22`)
+    color: "#5B5FEE",
     tagline: "Plan, delegate, and track project delivery",
     steps: [
       {
@@ -98,7 +99,7 @@ const WORKFLOWS = [
     id: "team-lead",
     icon: "👥",
     label: "Team Lead",
-    color: "var(--success)",
+    color: "#1E8E5A",
     tagline: "Align your team and unblock delivery",
     steps: [
       {
@@ -143,7 +144,7 @@ const WORKFLOWS = [
     id: "executive",
     icon: "🏢",
     label: "Executive / Stakeholder",
-    color: "var(--warning)",
+    color: "#C17D22",
     tagline: "Get the full picture without the noise",
     steps: [
       {

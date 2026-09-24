@@ -16,10 +16,10 @@ const addRevenue      = (id, d)     => client.post("/roi", { ...d, projectId: id
 const updateRoiSettings=(id,d)      => client.post("/roi", { ...d, projectId: id });
 
 const HEALTH_META = {
-  EXCELLENT:   { label:"Excellent ROI",   color:"var(--success)", icon:"🚀" },
-  GOOD:        { label:"Good ROI",        color:"var(--brand-500)", icon:"✅" },
-  BREAK_EVEN:  { label:"Break Even",      color:"var(--warning)", icon:"⚖️" },
-  NEGATIVE:    { label:"Negative ROI",    color:"var(--danger)", icon:"⚠️" },
+  EXCELLENT:   { label:"Excellent ROI",   color:"#1E8E5A", icon:"🚀" },
+  GOOD:        { label:"Good ROI",        color:"#5B5FEE", icon:"✅" },
+  BREAK_EVEN:  { label:"Break Even",      color:"#C17D22", icon:"⚖️" },
+  NEGATIVE:    { label:"Negative ROI",    color:"#D64545", icon:"⚠️" },
 };
 
 function ProjectRoiCard({ project, onUpdate }) {
@@ -61,7 +61,7 @@ function ProjectRoiCard({ project, onUpdate }) {
   if (!roi) return (
     <div className="roi-card">
       <div className="roi-card-name">{project.name}</div>
-      <div style={{fontSize:"12px",color:"var(--gray-400)"}}>Loading ROI data…</div>
+      <div style={{fontSize:"12px",color:"#94a3b8"}}>Loading ROI data…</div>
     </div>
   );
 
@@ -92,7 +92,7 @@ function ProjectRoiCard({ project, onUpdate }) {
           <div className="roi-metric-label">Investment</div>
         </div>
         <div className="roi-metric">
-          <div className="roi-metric-num" style={{color:"var(--success)"}}>
+          <div className="roi-metric-num" style={{color:"#1E8E5A"}}>
             ${(roi.actualRevenue||0).toLocaleString()}
           </div>
           <div className="roi-metric-label">Revenue</div>
@@ -108,7 +108,7 @@ function ProjectRoiCard({ project, onUpdate }) {
       {/* Progress to target */}
       {roi.expectedRevenue > 0 && (
         <div style={{marginBottom:"10px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"var(--gray-400)",marginBottom:"4px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#94a3b8",marginBottom:"4px"}}>
             <span>vs target ${(roi.expectedRevenue||0).toLocaleString()}</span>
             <span>{Math.round((roi.actualRevenue/roi.expectedRevenue)*100)}%</span>
           </div>
@@ -236,13 +236,13 @@ export default function RoiEngine() {
             <div className="roi-portfolio-label">Total Investment</div>
           </div>
           <div className="roi-portfolio-stat">
-            <div className="roi-portfolio-num" style={{color:"var(--success)"}}>
+            <div className="roi-portfolio-num" style={{color:"#1E8E5A"}}>
               ${(portfolio.totalRevenue||0).toLocaleString()}
             </div>
             <div className="roi-portfolio-label">Total Revenue</div>
           </div>
           <div className="roi-portfolio-stat">
-            <div className="roi-portfolio-num" style={{color:"var(--brand-500)"}}>
+            <div className="roi-portfolio-num" style={{color:"#5B5FEE"}}>
               {(portfolio.positiveRoiProjects ?? '0')}/{portfolio.totalProjects ?? '0'}
             </div>
             <div className="roi-portfolio-label">Positive ROI</div>

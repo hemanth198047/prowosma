@@ -31,9 +31,9 @@ function KpiCard({ icon, label, value, sub, color, suffix = "" }) {
 // ── Health badge ──────────────────────────────────────────────
 function HealthBadge({ health }) {
   const map = {
-    HEALTHY:  { label: "Healthy",  color: "var(--success)", bg: "rgba(5,150,105,0.12)" },
-    AT_RISK:  { label: "At Risk",  color: "var(--warning)", bg: "rgba(217,119,6,0.12)" },
-    CRITICAL: { label: "Critical", color: "var(--danger)", bg: "rgba(239,68,68,0.12)" },
+    HEALTHY:  { label: "Healthy",  color:"#1E8E5A", bg: "rgba(5,150,105,0.12)" },
+    AT_RISK:  { label: "At Risk",  color:"#C17D22", bg: "rgba(217,119,6,0.12)" },
+    CRITICAL: { label: "Critical", color:"#D64545", bg: "rgba(239,68,68,0.12)" },
   };
   const s = map[health] || map.AT_RISK;
   return (
@@ -70,9 +70,9 @@ function WorkloadView() {
   }, []);
 
   const LOAD_META = {
-    HIGH:   { label: "High Load",   color: "var(--danger)", bg: "rgba(239,68,68,0.12)" },
-    MEDIUM: { label: "Medium Load", color: "var(--warning)", bg: "rgba(217,119,6,0.12)" },
-    LOW:    { label: "Available",   color: "var(--success)", bg: "rgba(5,150,105,0.12)" },
+    HIGH:   { label: "High Load",   color:"#D64545", bg: "rgba(239,68,68,0.12)" },
+    MEDIUM: { label: "Medium Load", color:"#C17D22", bg: "rgba(217,119,6,0.12)" },
+    LOW:    { label: "Available",   color:"#1E8E5A", bg: "rgba(5,150,105,0.12)" },
   };
 
   if (loading) return <div className="analytics-loading"><div className="analytics-spinner" /></div>;
@@ -117,10 +117,10 @@ function WorkloadView() {
 
               <div className="workload-stats">
                 {[
-                  { num: m.total,  label: "Total",  color: "var(--brand-500)" },
-                  { num: m.active, label: "Active",  color: "var(--warning)" },
-                  { num: m.done,   label: "Done",    color: "var(--success)" },
-                  { num: m.overdue,label: "Overdue", color: "var(--danger)" },
+                  { num: m.total,  label: "Total",  color:"#5B5FEE" },
+                  { num: m.active, label: "Active",  color:"#C17D22" },
+                  { num: m.done,   label: "Done",    color:"#1E8E5A" },
+                  { num: m.overdue,label: "Overdue", color:"#D64545" },
                 ].map(s => (
                   <div key={s.label} className="workload-stat">
                     <span className="workload-stat-num" style={{ color: s.color }}>{s.num}</span>
@@ -131,9 +131,9 @@ function WorkloadView() {
 
               <div className="workload-completion">
                 <div style={{ display: "flex", justifyContent: "space-between",
-                  fontSize: "11px", color: "var(--gray-400)", marginBottom: "4px" }}>
+                  fontSize: "11px", color:"#94a3b8", marginBottom: "4px" }}>
                   <span>Completion rate</span>
-                  <span style={{ fontWeight: 700, color: "var(--gray-600)" }}>{m.completionRate}%</span>
+                  <span style={{ fontWeight: 700, color:"#475569" }}>{m.completionRate}%</span>
                 </div>
                 <div className="workload-completion-bar">
                   <div style={{
@@ -145,7 +145,7 @@ function WorkloadView() {
 
               {m.weekly?.length > 0 && (
                 <div className="workload-sparkline">
-                  <div style={{ fontSize: "10px", color: "var(--gray-400)", marginBottom: "4px" }}>
+                  <div style={{ fontSize: "10px", color:"#94a3b8", marginBottom: "4px" }}>
                     Weekly completions (last 6 weeks)
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "32px" }}>

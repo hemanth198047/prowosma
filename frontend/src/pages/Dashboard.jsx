@@ -127,12 +127,12 @@ function StatusStrip({ summary }) {
       position:"relative", overflow:"hidden",
       borderLeft:"3px solid var(--brand-500)", flexShrink:0,
     }}>
-      <alert.Icon size={15} style={{ flexShrink:0, color:"var(--brand-500)" }} />
-      <span style={{ fontWeight:600, fontSize:"var(--text-sm)", color:"var(--gray-800)", whiteSpace:"nowrap" }}>
+      <alert.Icon size={15} style={{ flexShrink:0, color:"#5B5FEE" }} />
+      <span style={{ fontWeight:600, fontSize:"var(--text-sm)", color:"#1e293b", whiteSpace:"nowrap" }}>
         {alert.text}
       </span>
       {alert.cta && (
-        <a href={alert.href} style={{ ...linkStyle, color:"var(--brand-500)", borderColor:"var(--brand-200)", background:"var(--brand-50)" }}
+        <a href={alert.href} style={{ ...linkStyle, color:"#5B5FEE", borderColor:"var(--brand-200)", background:"var(--brand-50)" }}
            onMouseEnter={e=>e.currentTarget.style.opacity=1}
            onMouseLeave={e=>e.currentTarget.style.opacity=0.85}>
           {alert.cta} →
@@ -211,7 +211,7 @@ function ProjCard({ p, navigate, depth = 0 }) {
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <span className="cc3-item-pct" style={{ color }}>{pct}%</span>
-        {pct > 0 && <span style={{ fontSize:9, color:"var(--gray-400)" }}>complete</span>}
+        {pct > 0 && <span style={{ fontSize:9, color:"#94a3b8" }}>complete</span>}
       </div>
     </div>
   );
@@ -820,7 +820,7 @@ export default function Dashboard() {
           <div className="db-compact-list">
             {teamTiles.map(t=><div key={t.to} className="db-compact-item" onClick={() => navigate(t.to)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate(t.to))?.(e); } }}><span className="db-compact-icon"><t.Icon size={15} /></span><span className="db-compact-name">{t.label}</span><span className="db-compact-sub">{t.sub}</span></div>)}
           </div>
-          <div className="db-online-row"><span className="db-live-dot" /><span style={{fontSize:"var(--text-xs)",color:"var(--success)",fontWeight:600}}>Team active</span><button className="db-link" style={{marginLeft:"auto"}} onClick={() => navigate("/team")}>See all →</button></div>
+          <div className="db-online-row"><span className="db-live-dot" /><span style={{fontSize:"var(--text-xs)",color:"#1E8E5A",fontWeight:600}}>Team active</span><button className="db-link" style={{marginLeft:"auto"}} onClick={() => navigate("/team")}>See all →</button></div>
         </div>
         <div className="db-card">
           <div className="db-card-header"><span className="db-card-title"><Settings size={13} /> CONFIGURE</span></div>

@@ -92,7 +92,7 @@ function MemberAvatar({ member, size = 36 }) {
 
 function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
   const [form, setForm] = useState(
-    initial || { name: "", email: "", role: "MEMBER", color: "var(--brand-500)" },
+    initial || { name: "", email: "", role: "MEMBER", color:"#5B5FEE" },
   );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   // Only the workspace Manager can grant/keep the Admin role — see
@@ -144,7 +144,7 @@ function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
             ))}
           </select>
           {!isOwner && (
-            <span style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "4px", display: "block" }}>
+            <span style={{ fontSize: "11px", color:"#64748b", marginTop: "4px", display: "block" }}>
               Only the workspace Manager can grant the Admin role.
             </span>
           )}
@@ -532,7 +532,7 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color: "var(--warning)" }}
+                      style={{ color:"#C17D22" }}
                     >
                       {inProgressTasks}
                     </span>
@@ -541,7 +541,7 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color: "var(--success)" }}
+                      style={{ color:"#1E8E5A" }}
                     >
                       {doneTasks}
                     </span>
@@ -582,7 +582,7 @@ export default function Team() {
                   </span>
                   <span
                     className="task-status-badge"
-                    style={{ background: "#f0f0ff", color: "var(--brand-500)" }}
+                    style={{ background: "#f0f0ff", color:"#5B5FEE" }}
                   >
                     {memberTasks.length} tasks
                   </span>
@@ -753,7 +753,7 @@ export default function Team() {
                   </button>
                   <button
                     className="btn-icon"
-                    style={{ color: "var(--danger)" }}
+                    style={{ color:"#D64545" }}
                     disabled={!!inviteRowBusy[inv.id]}
                     onClick={() => handleCancelInvite(inv)}
                     title="Cancel invitation"
@@ -836,7 +836,7 @@ export default function Team() {
                 </option>
               </select>
               {!isOwner && (
-                <span style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "4px", display: "block" }}>
+                <span style={{ fontSize: "11px", color:"#64748b", marginTop: "4px", display: "block" }}>
                   Only the workspace Manager can invite someone as Admin.
                 </span>
               )}
@@ -978,7 +978,7 @@ function ExpertiseProfileModal({ member, onSave, onClose }) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="team-skills-input">Skills <span style={{color:"var(--gray-500)",fontWeight:400,fontSize:"11px"}}>(press Enter or comma to add)</span></label>
+          <label htmlFor="team-skills-input">Skills <span style={{color:"#64748b",fontWeight:400,fontSize:"11px"}}>(press Enter or comma to add)</span></label>
           <TagInput id="team-skills-input" value={form.skills} onChange={v=>set("skills",v)} placeholder="React, Python, ML…" color="var(--brand-500)" />
         </div>
         <div className="form-group">
@@ -1111,7 +1111,7 @@ function ExpertFinder() {
                       <span className="exp-avail-dot" style={{background:avColor}} />
                       <span style={{color:avColor,fontSize:"11px",fontWeight:700}}>{m.availability}</span>
                       {m.capacityPercent < 100 && (
-                        <span style={{fontSize:"10px",color:"var(--gray-500)",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
+                        <span style={{fontSize:"10px",color:"#64748b",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
                       )}
                     </div>
                   </div>
@@ -1162,11 +1162,11 @@ function SkillMapTab() {
         <div>
           <div className="exp-stat-row">
             <div className="exp-stat-card">
-              <div className="exp-stat-num" style={{color:"var(--brand-500)"}}>{skillData.totalUniqueSkills}</div>
+              <div className="exp-stat-num" style={{color:"#5B5FEE"}}>{skillData.totalUniqueSkills}</div>
               <div className="exp-stat-label">Unique Skills</div>
             </div>
             <div className="exp-stat-card">
-              <div className="exp-stat-num" style={{color:"var(--success)"}}>{skillData.totalMembers}</div>
+              <div className="exp-stat-num" style={{color:"#1E8E5A"}}>{skillData.totalMembers}</div>
               <div className="exp-stat-label">Team Members</div>
             </div>
           </div>
@@ -1212,7 +1212,7 @@ function SkillMapTab() {
               {gapData.mentorableSkills.map((m,i) => (
                 <div key={i} className="exp-gap-row">
                   <div className="exp-gap-skill">{m.learner}</div>
-                  <div style={{fontSize:"12px",color:"var(--gray-500)"}}>wants to learn {m.skill}</div>
+                  <div style={{fontSize:"12px",color:"#64748b"}}>wants to learn {m.skill}</div>
                   <span className="exp-badge exp-badge-mentor">{m.availableMentors} mentor{m.availableMentors!==1?"s":""} available</span>
                 </div>
               ))}
@@ -1272,7 +1272,7 @@ function MentorMatchTab() {
               )}
             </div>
             <div className="exp-mentor-badge">
-              <div className="exp-score-num" style={{color:"var(--success)"}}>{m.mentorFor.length}</div>
+              <div className="exp-score-num" style={{color:"#1E8E5A"}}>{m.mentorFor.length}</div>
               <div className="exp-score-label">topics</div>
             </div>
           </div>
@@ -1292,9 +1292,9 @@ function TribalKnowledgeTab() {
   }, []);
 
   const RISK_META = {
-    HIGH:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
-    MEDIUM: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
-    LOW:    { color:"var(--success)", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
+    HIGH:   { color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
+    MEDIUM: { color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
+    LOW:    { color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
   };
 
   if (loading) return <div className="exp-empty">Analysing tribal knowledge risks…</div>;
@@ -1391,7 +1391,7 @@ function ExpertiseGraphTab() {
           <button key={v} className={`sprint-filter-btn${filter===v?" active":""}`}
             onClick={()=>setFilter(v)}>{l}</button>
         ))}
-        <span style={{fontSize:"11px",color:"var(--gray-500)",marginLeft:"8px"}}>
+        <span style={{fontSize:"11px",color:"#64748b",marginLeft:"8px"}}>
           {people.length} people · {skills.length} skill nodes · {graph.edges.length} connections
         </span>
       </div>
@@ -1450,10 +1450,10 @@ function ExpertiseGraphTab() {
 
         {/* Legend */}
         <div className="exp-graph-legend">
-          <span>⬤ <span style={{color:"var(--brand-500)"}}>Person</span></span>
-          <span>⬤ <span style={{color:"var(--success)"}}>Skill</span></span>
-          <span>── <span style={{color:"var(--brand-500)"}}>Shared skill</span></span>
-          <span>── <span style={{color:"var(--success)"}}>Mentor link</span></span>
+          <span>⬤ <span style={{color:"#5B5FEE"}}>Person</span></span>
+          <span>⬤ <span style={{color:"#1E8E5A"}}>Skill</span></span>
+          <span>── <span style={{color:"#5B5FEE"}}>Shared skill</span></span>
+          <span>── <span style={{color:"#1E8E5A"}}>Mentor link</span></span>
         </div>
       </div>
     </div>
@@ -1486,7 +1486,7 @@ function MemberExpertiseCard({ member, onEditProfile }) {
           </div>
         )}
         {(member.skills || []).length === 0 && (
-          <div style={{fontSize:"11px",color:"var(--gray-400)"}}>No skills declared yet</div>
+          <div style={{fontSize:"11px",color:"#94a3b8"}}>No skills declared yet</div>
         )}
 
         {(member.mentorFor || []).length > 0 && (
@@ -1501,7 +1501,7 @@ function MemberExpertiseCard({ member, onEditProfile }) {
             ● {member.availability || "FULL"}
           </span>
           {member.capacityPercent < 100 && (
-            <span style={{fontSize:"10px",color:"var(--gray-500)"}}>{member.capacityPercent}% capacity</span>
+            <span style={{fontSize:"10px",color:"#64748b"}}>{member.capacityPercent}% capacity</span>
           )}
         </div>
       </div>

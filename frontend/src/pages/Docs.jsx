@@ -322,10 +322,10 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
 // DECISION BLOCK — inline decision card inside a doc
 // ═══════════════════════════════════════════════════════
 const DEC_STATUS_META = {
-  PROPOSED:   { label:"Proposed",   color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
-  DECIDED:    { label:"Decided",    color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
-  SUPERSEDED: { label:"Superseded", color:"var(--warning)", bg:"rgba(217,119,6,0.12)" },
-  REVERSED:   { label:"Reversed",   color:"var(--danger)", bg:"rgba(239,68,68,0.12)" },
+  PROPOSED:   { label:"Proposed",   color:"#5B5FEE", bg:"rgba(99,102,241,0.12)" },
+  DECIDED:    { label:"Decided",    color:"#1E8E5A", bg:"rgba(5,150,105,0.12)" },
+  SUPERSEDED: { label:"Superseded", color:"#C17D22", bg:"rgba(217,119,6,0.12)" },
+  REVERSED:   { label:"Reversed",   color:"#D64545", bg:"rgba(239,68,68,0.12)" },
 };
 
 function DecisionInlineForm({ docId, wsId, initial, onSave, onCancel }) {
@@ -938,7 +938,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
                 </tr>
               ))}
               {dbRows.length===0&&<tr><td colSpan={dbCols.length||1}
-                style={{textAlign:"center",padding:"12px",color:"var(--gray-400)",fontSize:"12px"}}>
+                style={{textAlign:"center",padding:"12px",color:"#94a3b8",fontSize:"12px"}}>
                 + Row to add data
               </td></tr>}
             </tbody>
@@ -2391,7 +2391,7 @@ export default function Docs() {
                           </div>
                         </>
                       ) : (
-                        <span className="doc-publish-link-label" style={{color:"var(--gray-400)"}}>Generating link…</span>
+                        <span className="doc-publish-link-label" style={{color:"#94a3b8"}}>Generating link…</span>
                       )}
                     </div>
                   )}
@@ -2431,7 +2431,7 @@ export default function Docs() {
                 </div>
                 <div style={{flex:1,padding:"12px",display:"flex",flexDirection:"column",gap:"10px"}}>
                   {(activeDoc.inlineComments||[]).length === 0 && (
-                    <div style={{fontSize:"13px",color:"var(--gray-400)",textAlign:"center",padding:"24px 0"}}>
+                    <div style={{fontSize:"13px",color:"#94a3b8",textAlign:"center",padding:"24px 0"}}>
                       No inline comments yet. Select text in the document to add a comment.
                     </div>
                   )}
@@ -2440,32 +2440,32 @@ export default function Docs() {
                       border:`1px solid ${c.resolved?"var(--border)":"rgba(99,102,241,.2)"}`,
                       borderRadius:"var(--radius-md)",padding:"10px"}}>
                       {c.selectedText && (
-                        <div style={{fontSize:"11px",color:"var(--gray-400)",
+                        <div style={{fontSize:"11px",color:"#94a3b8",
                           borderLeft:"3px solid var(--brand-500)",paddingLeft:"8px",marginBottom:"6px",
                           fontStyle:"italic"}}>
                           "{c.selectedText.slice(0,80)}{c.selectedText.length>80?"…":""}"
                         </div>
                       )}
-                      <div style={{fontSize:"13px",color:"var(--gray-700)",marginBottom:"6px"}}>
+                      <div style={{fontSize:"13px",color:"#334155",marginBottom:"6px"}}>
                         {c.comment}
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",
-                        fontSize:"10px",color:"var(--gray-400)"}}>
+                        fontSize:"10px",color:"#94a3b8"}}>
                         <span>💬 {c.authorEmail}</span>
                         {!c.resolved && (
                           <button style={{fontSize:"10px",background:"none",border:"1px solid var(--border)",
-                            borderRadius:"4px",cursor:"pointer",padding:"1px 7px",color:"var(--success)"}}
+                            borderRadius:"4px",cursor:"pointer",padding:"1px 7px",color:"#1E8E5A"}}
                             onClick={async()=>{
                               await client.patch(`/docs/${activeDoc.id}/comments/${c.id}/resolve`);
                               // Reload doc to refresh inline comments
                               window.location.reload();
                             }}>Resolve</button>
                         )}
-                        {c.resolved && <span style={{color:"var(--success)",fontWeight:700}}>✓ Resolved</span>}
+                        {c.resolved && <span style={{color:"#1E8E5A",fontWeight:700}}>✓ Resolved</span>}
                       </div>
                       {(c.replies||[]).map(r=>(
                         <div key={r.id} style={{marginTop:"8px",paddingTop:"8px",
-                          borderTop:"1px solid var(--border)",fontSize:"12px",color:"var(--gray-600)"}}>
+                          borderTop:"1px solid var(--border)",fontSize:"12px",color:"#475569"}}>
                           ↩ <strong>{r.authorEmail}:</strong> {r.comment}
                         </div>
                       ))}
