@@ -57,6 +57,82 @@ function buildGraph(docs, tasks, goals, projects) {
 
 }
 
+// Splits nodes into their connected components (groups reachable from
+// each other via edges — undirected for this purpose). A workspace
+// with many separate projects, each with their own tasks and nobody
+// cross-linked, is many small components, not one big graph.
+function connectedComponents(nodes, edges) {
+  const adj = new Map();
+  nodes.forEach(n => adj.set(n.id, []));
+  edges.forEach(e => {
+    if (adj.has(e.from) && adj.has(e.to)) {
+      adj.get(e.from).push(e.to);
+      adj.get(e.to).push(e.from);
+    }
+  });
+  const visited = new Set(), components = [];
+  nodes.forEach(n => {
+    if (visited.has(n.id)) return;
+    const ids = [], stack = [n.id];
+    visited.add(n.id);
+    while (stack.length) {
+      const cur = stack.pop();
+      ids.push(cur);
+      (adj.get(cur) || []).forEach(nb => {
+        if (!visited.has(nb)) { visited.add(nb); stack.push(nb); }
+      });
+    }
+    components.push(nodes.filter(nd => ids.includes(nd.id)));
+  });
+  return components;
+}
+
+// Lays out every connected component in its own cell instead of running
+// one shared physics simulation where every component's gravity pulls
+// toward the same center point. With several separate project clusters
+// that's exactly what was making them collide and overlap into each
+// other as shown in the screenshots — this gives each its own space,
+// flowing left-to-right and wrapping rows, sized to how many nodes it
+// actually has (a lone pair doesn't take as much room as a 12-node hub).
+function clusteredLayout(nodes, edges, W) {
+  const components = connectedComponents(nodes, edges)
+    .sort((a, b) => b.length - a.length);
+  if (!components.length) return { pos: {}, height: 500 };
+
+  const PAD = 16;
+  const pos = {};
+  let cursorX = PAD, cursorY = PAD, rowHeight = 0, totalHeight = PAD;
+
+  components.forEach(comp => {
+    // Cell size scales with node count — small clusters stay compact,
+    // large ones get proportionally more room to spread out in.
+    const side = Math.max(160, Math.min(500, 90 + comp.length * 45));
+    const cellW = side, cellH = side * 0.75;
+
+    if (cursorX + cellW > W - PAD && cursorX > PAD) {
+      // Wrap to a new row
+      cursorX = PAD;
+      cursorY += rowHeight + PAD;
+      totalHeight = cursorY;
+      rowHeight = 0;
+    }
+
+    const compEdges = edges.filter(e =>
+      comp.find(n => n.id === e.from) && comp.find(n => n.id === e.to));
+    const localPos = forceLayout(comp, compEdges, cellW, cellH);
+    comp.forEach(n => {
+      const p = localPos[n.id];
+      pos[n.id] = { x: cursorX + (p?.x ?? cellW / 2), y: cursorY + (p?.y ?? cellH / 2) };
+    });
+
+    cursorX += cellW + PAD;
+    rowHeight = Math.max(rowHeight, cellH);
+    totalHeight = Math.max(totalHeight, cursorY + rowHeight + PAD);
+  });
+
+  return { pos, height: Math.max(500, totalHeight) };
+}
+
 function forceLayout(nodes, edges, W, H) {
   if (!nodes.length) return {};
   const pos = {}, n = nodes.length;
@@ -196,7 +272,8 @@ export default function KnowledgeGraph() {
   const [selected, setSelected] = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [view,     setView]     = useState("graph"); // "graph" | "cards"
-  const W = 900, H = 500;
+  const [canvasH,  setCanvasH]  = useState(500);
+  const W = 900;
 
   useEffect(()=>{
     const wsId = activeWorkspace?.id;
@@ -208,7 +285,28 @@ export default function KnowledgeGraph() {
     ]).then(([dr,tr,gr,pr])=>{
       const g = buildGraph(unwrapList(dr), unwrapList(tr), unwrapList(gr), unwrapList(pr));
       setGraph(g);
-      setPos(forceLayout(g.nodes, g.edges, W, H));
+      // Lay out only nodes that actually have a relationship to show — a
+      // node with zero edges has nothing to visualize in a *relationship*
+      // graph, and previously still took part in the physics simulation
+      // anyway: repelled by every other node, pulled only weakly toward
+      // center, with nothing pulling it anywhere in particular. That's
+      // exactly what was scattering isolated tasks/goals into empty
+      // corners — worse the more of them there were. They're still fully
+      // visible, just in Cards view (a plain grid, no physics, no
+      // scattering) instead of as directionless dots here. See the
+      // isolated-items note rendered near the graph controls below.
+      const connectedIds = new Set();
+      g.edges.forEach(e => { connectedIds.add(e.from); connectedIds.add(e.to); });
+      const connectedNodes = g.nodes.filter(n => connectedIds.has(n.id));
+      // Each connected component (e.g. one project and its tasks) gets
+      // its own cell rather than every component's layout competing for
+      // the same shared center — see clusteredLayout's own comment for
+      // why. The canvas grows to fit however many rows of clusters that
+      // takes; the panel scrolls internally (see the graph <div> below)
+      // so growth doesn't also expand the page itself indefinitely.
+      const { pos: clusteredPos, height: dynamicH } = clusteredLayout(connectedNodes, g.edges, W);
+      setCanvasH(dynamicH);
+      setPos(clusteredPos);
     }).catch(()=>{}).finally(()=>setLoading(false));
   },[activeWorkspace?.id]);
 
@@ -242,8 +340,16 @@ export default function KnowledgeGraph() {
     </div>
   );
 
-  const visNodes = filter==="all" ? graph.nodes : graph.nodes.filter(n=>n.type===filter);
-  const visEdges = graph.edges.filter(e=>visNodes.find(n=>n.id===e.from)&&visNodes.find(n=>n.id===e.to));
+  // filteredNodes: everything matching the type filter, isolated items
+  // included — this is what Cards view shows (a plain grid has no
+  // scattering problem, so there's no reason to hide anything there).
+  // graphNodes/graphEdges: the connected-only subset the SVG graph
+  // actually renders (see the layout comment in the data-loading effect
+  // above for why isolated nodes are excluded there specifically).
+  const filteredNodes = filter==="all" ? graph.nodes : graph.nodes.filter(n=>n.type===filter);
+  const isolatedCount = graph.nodes.length - Object.keys(pos).length;
+  const graphNodes = filteredNodes.filter(n => pos[n.id]);
+  const graphEdges = graph.edges.filter(e=>graphNodes.find(n=>n.id===e.from)&&graphNodes.find(n=>n.id===e.to));
 
   return (
     <div>
@@ -279,16 +385,35 @@ export default function KnowledgeGraph() {
           ))}
         </div>
         <div style={{ marginLeft:"auto", fontSize:"11px", color:"var(--gray-400)", background:"var(--gray-50)", padding:"5px 12px", borderRadius:"8px", border:"1px solid var(--border)" }}>
-          <b style={{ color:"var(--gray-700)" }}>{visNodes.length}</b> nodes · <b style={{ color:"var(--gray-700)" }}>{visEdges.length}</b> connections
+          {view==="graph"
+            ? <><b style={{ color:"var(--gray-700)" }}>{graphNodes.length}</b> nodes · <b style={{ color:"var(--gray-700)" }}>{graphEdges.length}</b> connections</>
+            : <><b style={{ color:"var(--gray-700)" }}>{filteredNodes.length}</b> items</>}
         </div>
       </div>
+
+      {/* Items with no relationships yet aren't shown as scattered,
+          unanchored dots in the graph below — nothing pulls them toward
+          any particular place there, which is exactly what was littering
+          the corners. They're still fully visible in Cards view (a plain
+          grid, not a physics simulation), one click away. */}
+      {view==="graph" && isolatedCount > 0 && (
+        <div style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"11px", color:"var(--gray-400)", marginBottom:"10px" }}>
+          <span>{isolatedCount} item{isolatedCount===1?"":"s"} with no connections yet aren't shown here.</span>
+          <button onClick={()=>setView("cards")} style={{ background:"none", border:"none", color:"var(--brand-500)", fontWeight:700, cursor:"pointer", fontSize:"11px", padding:0 }}>
+            View in Cards →
+          </button>
+        </div>
+      )}
 
       {/* Graph view */}
       {view==="graph" && (
         <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 320px":"1fr", gap:"12px", alignItems:"start" }}>
-          {/* SVG graph */}
+          {/* SVG graph — scrolls internally once the canvas grows past a
+              comfortable height (see canvasH), rather than the whole page
+              stretching to fit an ever-taller graph as data grows. */}
           <div style={{ background:"var(--surface-1)", border:"1px solid var(--border)", borderRadius:"16px", overflow:"hidden", boxShadow:"var(--elevation-1)" }}>
-            <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:"block" }}>
+            <div style={{ maxHeight:"70vh", overflowY:"auto" }}>
+            <svg width="100%" viewBox={`0 0 ${W} ${canvasH}`} style={{ display:"block" }}>
               <defs>
                 {Object.entries(EDGE_COLORS).map(([type,color])=>(
                   <marker key={type} id={`arrow-${type}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -297,7 +422,7 @@ export default function KnowledgeGraph() {
                 ))}
               </defs>
               {/* Edges */}
-              {visEdges.map((e,i)=>{
+              {graphEdges.map((e,i)=>{
                 const fp=pos[e.from],tp=pos[e.to];
                 if(!fp||!tp) return null;
                 const color=EDGE_COLORS[e.type]||"var(--gray-400)";
@@ -310,7 +435,7 @@ export default function KnowledgeGraph() {
                 );
               })}
               {/* Nodes */}
-              {visNodes.map(n=>{
+              {graphNodes.map(n=>{
                 const p=pos[n.id];
                 if(!p) return null;
                 const m=META[n.type]||META.doc;
@@ -330,7 +455,10 @@ export default function KnowledgeGraph() {
                 );
               })}
             </svg>
-            {/* Legend */}
+            </div>
+            {/* Legend — deliberately outside the scrollable area above, so
+                it stays put as a fixed reference while a tall graph
+                scrolls underneath it. */}
             <div style={{ display:"flex", gap:"16px", padding:"10px 16px", borderTop:"1px solid var(--gray-100)", background:"var(--gray-50)", flexWrap:"wrap", alignItems:"center" }}>
               {Object.entries(META).map(([type,m])=>(
                 <span key={type} style={{ display:"flex", alignItems:"center", gap:"5px", fontSize:"11px", color:"var(--gray-600)" }}>
@@ -406,7 +534,7 @@ export default function KnowledgeGraph() {
       {view==="cards" && (
         <div>
           {["project","goal","task","doc"].map(type=>{
-            const typeNodes=visNodes.filter(n=>n.type===type);
+            const typeNodes=filteredNodes.filter(n=>n.type===type);
             if(!typeNodes.length) return null;
             const m=META[type];
             return (
