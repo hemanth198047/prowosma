@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Prowosma",
+    "slug": "prowosma-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "prowosma",
+    "backgroundColor": "#F8FAFC",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.prowosma.mobile"
+    },
+    "android": {
+      "package": "com.prowosma.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#5B5FEE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1be7730f-900f-422f-8b10-8a35a43eb2f4"
+      }
+    }
+  }
+}
