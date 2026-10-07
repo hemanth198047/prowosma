@@ -307,6 +307,18 @@ const TIERS = [
         fields:[{key:"webhookUrl",label:"Incoming Webhook URL",type:"text",placeholder:"https://outlook.office.com/webhook/..."},{key:"channel",label:"Channel (reference)",type:"text",placeholder:"#general"}],
         capabilities:["Channel notifications","Adaptive card summaries","Meeting task creation","Teams bot (coming soon)"],
         docsUrl:"https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook", docsLabel:"Setup Guide →" },
+      { key:"GOOGLE_MEET", name:"Google Meet", icon:"🟢", color:"#00897B",
+        tagline:"Meeting Assistant — register meetings and import transcripts for notes and tasks",
+        status:"available", effort:"oauth", route:"/integrations/meeting-platforms",
+        fields:[],
+        capabilities:["Register meetings by link","Import the transcript after the meeting","Upload or paste a transcript","Live joining not available"],
+        docsUrl:"https://developers.google.com/workspace/meet/api/guides/overview", docsLabel:"Meet API Overview →" },
+      { key:"MS_TEAMS_MEETINGS", name:"Microsoft Teams Meetings", icon:"🟪", color:"#464EB8",
+        tagline:"Meeting Assistant — register Teams meetings and add transcripts for notes and tasks",
+        status:"available", effort:"oauth", route:"/integrations/meeting-platforms",
+        fields:[],
+        capabilities:["Register meetings by link","Upload or paste a transcript","Automatic transcript import coming later","Live joining not available"],
+        docsUrl:"https://learn.microsoft.com/en-us/graph/api/resources/calltranscript", docsLabel:"Transcript API →" },
       { key:"ZOOM",       name:"Zoom",            icon:"📹", color:"#2D8CFF", tagline:"Meeting transcripts → tasks automatically",
         status:"available", effort:"oauth",
         fields:[{key:"accountId",label:"Account ID",type:"text",placeholder:"Zoom Account ID"},{key:"clientId",label:"Client ID",type:"text",placeholder:"Zoom OAuth client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Zoom OAuth client secret"}],
@@ -841,6 +853,7 @@ export default function Integrations() {
   const [search,          setSearch]          = useState("");
 
   const navigate = useNavigate();
+  const openConfigure = (i) => (i.route ? navigate(i.route) : setConfiguringIntg(i));
 
   useEffect(() => {
     getIntegrations()
@@ -897,13 +910,6 @@ export default function Integrations() {
       {/* Unified Layer Banner */}
       <UnifiedLayerBanner navigate={navigate} />
 
-      {/* Meeting Assistant — Google Meet / Microsoft Teams */}
-      <button type="button" onClick={() => navigate("/integrations/meeting-platforms")}
-        style={{ display:"block", width:"100%", textAlign:"left", marginBottom:"20px", padding:"12px 16px",
-          background:"var(--surface-1)", border:"1.5px solid var(--border)", borderRadius:"12px",
-          cursor:"pointer", fontSize:"14px", fontWeight:700, color:"inherit" }}>
-        🎙 Meeting Platforms — set up the Meeting Assistant for Google Meet and Microsoft Teams →
-      </button>
 
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px",
@@ -982,7 +988,7 @@ export default function Integrations() {
                 {tFiltered.map(intg => (
                   <IntegrationCard key={intg.key} intg={intg}
                     savedConfig={savedConfigs[intg.key]}
-                    onConfigure={setConfiguringIntg}
+                    onConfigure={openConfigure}
                     onToggle={handleToggle} />
                 ))}
               </div>
@@ -994,7 +1000,7 @@ export default function Integrations() {
           {filtered.map(intg => (
             <IntegrationCard key={intg.key} intg={intg}
               savedConfig={savedConfigs[intg.key]}
-              onConfigure={setConfiguringIntg}
+              onConfigure={openConfigure}
               onToggle={handleToggle} />
           ))}
         </div>

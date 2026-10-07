@@ -3,6 +3,7 @@
 export const STATUS_META = {
   SCHEDULED:             { label: "Scheduled",             tone: "info",     icon: "🗓" },
   AWAITING_TRANSCRIPT:   { label: "Waiting for transcript", tone: "info",     icon: "⏳" },
+  TRANSCRIPT_RECEIVED:   { label: "Transcript received", tone: "success",  icon: "📄" },
   CONNECTING:            { label: "Connecting",            tone: "progress", icon: "🔌" },
   WAITING_FOR_ADMISSION: { label: "Waiting for admission", tone: "progress", icon: "🚪" },
   LISTENING:             { label: "Listening",             tone: "progress", icon: "🎧" },
@@ -44,3 +45,18 @@ export function localInputValue(date = new Date()) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+/** Statuses in which a transcript may be added or replaced (mirrors the server's rule). */
+export const ACCEPTS_TRANSCRIPT = ["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED"];
+export const WAITING_FOR_TRANSCRIPT = ["SCHEDULED", "AWAITING_TRANSCRIPT"];
+
+/** 83000 -> "01:23"; 3723000 -> "1:02:03". Null/undefined -> "". */
+export function formatClock(ms) {
+  if (ms === null || ms === undefined || Number.isNaN(Number(ms))) return "";
+  const total = Math.max(0, Math.floor(Number(ms) / 1000));
+  const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+export const MAX_UPLOAD_BYTES = 5_000_000;

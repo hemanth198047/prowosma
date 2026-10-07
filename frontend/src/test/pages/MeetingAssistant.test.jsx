@@ -11,6 +11,10 @@ vi.mock("../../api/meetingAssistant", () => ({
   retryMeetingSession: vi.fn(),
   updateMeetingAccess: vi.fn(),
   devAdvanceMeetingSession: vi.fn(),
+  addMeetingTranscript: vi.fn(),
+  getMeetingTranscript: vi.fn(),
+  deleteMeetingTranscript: vi.fn(),
+  fetchMeetingTranscriptNow: vi.fn(),
 }));
 vi.mock("../../api/projects", () => ({ getProjects: vi.fn() }));
 vi.mock("../../api/team", () => ({ getTeamMembers: vi.fn() }));
@@ -22,9 +26,10 @@ import MeetingAssistant from "../../pages/MeetingAssistant";
 
 const CAPS = {
   assistantName: "Prowosma Meeting Assistant",
-  platforms: [{ provider: "GOOGLE_MEET", enabled: true, liveJoin: false }],
+  platforms: [{ provider: "GOOGLE_MEET", enabled: true, liveJoin: false, automaticTranscript: false, manualTranscriptUpload: true, connectedForMe: false }],
+  googleConfigured: false,
   devFixturesEnabled: false,
-  note: "Meetings can be registered, but no transcript source is connected yet, so nothing is collected automatically.",
+  note: "Transcripts can be added by upload or paste. Automatic import isn't set up. The assistant can't join meetings live.",
 };
 const SESSION = {
   id: "s1", provider: "GOOGLE_MEET", title: "Weekly sync", status: "AWAITING_TRANSCRIPT",
@@ -39,6 +44,7 @@ beforeEach(() => {
   api.listMeetingSessions.mockResolvedValue({ data: [] });
   getProjects.mockResolvedValue({ data: [{ id: "p1", name: "Apollo" }] });
   getTeamMembers.mockResolvedValue({ data: [] });
+  api.getMeetingTranscript.mockResolvedValue({ data: { segments: [], total: 0, nextAfter: null } });
 });
 afterEach(cleanup);
 
@@ -119,6 +125,126 @@ describe("MeetingAssistant page", () => {
     fireEvent.keyDown(screen.getByRole("tab", { name: "Summary" }), { key: "ArrowRight" });
     expect(screen.getByRole("tab", { name: "MOM" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("No transcript has been collected");
+  });
+
+  // ── Transcripts ──────────────────────────────────────────────────────────
+  const openSession = async (session) => {
+    api.listMeetingSessions.mockResolvedValue({ data: [session] });
+    render(<MeetingAssistant />);
+    fireEvent.click(await screen.findByText(session.title));
+  };
+
+  it("adds a pasted transcript, auto-detecting the format, and tells the person what happened", async () => {
+    api.addMeetingTranscript.mockResolvedValue({ data: { ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 2, warnings: ["No speaker names were found; speakers are shown as unknown."] } });
+    await openSession(SESSION);
+    const send = await screen.findByRole("button", { name: "Add transcript" });
+    expect(send).toBeDisabled();                                             // nothing to send yet
+    fireEvent.change(screen.getByLabelText("Or paste the transcript"), { target: { value: "hello team\nsecond line" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add transcript" }));
+    await waitFor(() => expect(api.addMeetingTranscript).toHaveBeenCalledWith("s1", { content: "hello team\nsecond line", format: null }));
+    expect(await screen.findByRole("status")).toHaveTextContent("speakers are shown as unknown");
+  });
+
+  it("reads a chosen .vtt file into the box without sending it yet", async () => {
+    await openSession(SESSION);
+    const file = new File(["WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi"], "meeting.vtt", { type: "text/vtt" });
+    fireEvent.change(await screen.findByLabelText("Transcript file"), { target: { files: [file] } });
+    await waitFor(() => expect(screen.getByLabelText("Or paste the transcript")).toHaveValue("WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi"));
+    expect(api.addMeetingTranscript).not.toHaveBeenCalled();
+  });
+
+  it("refuses an oversized file up front with a plain message", async () => {
+    await openSession(SESSION);
+    const big = new File(["x"], "huge.txt", { type: "text/plain" });
+    Object.defineProperty(big, "size", { value: 6_000_000 });
+    fireEvent.change(await screen.findByLabelText("Transcript file"), { target: { files: [big] } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("larger than 5 MB");
+    expect(screen.getByLabelText("Or paste the transcript")).toHaveValue("");
+  });
+
+  it("shows the server's reason when a transcript is rejected", async () => {
+    api.addMeetingTranscript.mockRejectedValue({ response: { status: 400, data: { error: "NO_SEGMENTS", message: "No spoken text could be found in that file." } } });
+    await openSession(SESSION);
+    fireEvent.change(await screen.findByLabelText("Or paste the transcript"), { target: { value: "WEBVTT" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add transcript" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("No spoken text");
+  });
+
+  it("does not offer to add a transcript to a finished meeting, or to someone else's meeting", async () => {
+    await openSession({ ...SESSION, status: "COMPLETED" });
+    await screen.findByRole("tablist", { name: "Meeting results" });
+    expect(screen.queryByRole("form", { name: /transcript/i })).toBeNull();
+    cleanup();
+    await openSession({ ...SESSION, canManage: false });
+    await screen.findByRole("tablist", { name: "Meeting results" });
+    expect(screen.queryByRole("form", { name: /transcript/i })).toBeNull();
+  });
+
+  it("the Transcript tab shows each line with its speaker, and unknown speakers as unknown", async () => {
+    api.getMeetingTranscript.mockResolvedValue({ data: { total: 2, nextAfter: null, captureStatus: "UPLOADED",
+      note: "Uploaded by me@x.com. Whether it covers the whole meeting can't be verified.",
+      segments: [{ seq: 1, startMs: 83000, speaker: "Priya Nair", text: "I will send the budget." }, { seq: 2, startMs: null, speaker: null, text: "Sounds good." }] } });
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 2 });
+    fireEvent.click(await screen.findByRole("tab", { name: "Transcript" }));
+    expect(await screen.findByText("Priya Nair")).toBeInTheDocument();
+    expect(screen.getByText("01:23")).toBeInTheDocument();
+    expect(screen.getByText("Unknown speaker")).toBeInTheDocument();
+    expect(screen.getByText(/can't be verified/)).toBeInTheDocument();
+  });
+
+  it("flags a partial import clearly", async () => {
+    api.getMeetingTranscript.mockResolvedValue({ data: { total: 1, nextAfter: null, captureStatus: "PARTIAL",
+      note: "Transcription covered about 58% of the meeting. It started 25 min after the meeting began.",
+      segments: [{ seq: 1, startMs: 1000, speaker: "Tom", text: "hi" }] } });
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 1 });
+    fireEvent.click(await screen.findByRole("tab", { name: "Transcript" }));
+    expect(await screen.findByText(/may be incomplete/)).toBeInTheDocument();
+    expect(screen.getByText(/58%/)).toBeInTheDocument();
+  });
+
+  it("loads more lines when the transcript is long", async () => {
+    api.getMeetingTranscript
+      .mockResolvedValueOnce({ data: { total: 2, nextAfter: 1, captureStatus: "UPLOADED", note: "n", segments: [{ seq: 1, startMs: 0, speaker: "A", text: "first" }] } })
+      .mockResolvedValueOnce({ data: { total: 2, nextAfter: null, captureStatus: "UPLOADED", note: "n", segments: [{ seq: 2, startMs: 1000, speaker: "A", text: "second" }] } });
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 2 });
+    fireEvent.click(await screen.findByRole("tab", { name: "Transcript" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Load more" }));
+    expect(await screen.findByText("second")).toBeInTheDocument();
+    expect(screen.getByText("first")).toBeInTheDocument();
+    expect(api.getMeetingTranscript.mock.calls[1][1]).toMatchObject({ after: 1 });
+  });
+
+  it("other tabs say, truthfully, that summaries aren't generated yet when a transcript exists", async () => {
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 3 });
+    fireEvent.click(await screen.findByRole("tab", { name: "MOM" }));
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("isn't generated yet");
+  });
+
+  // ── Google ───────────────────────────────────────────────────────────────
+  it("prompts people to connect Google only when it is set up, enabled, and they haven't connected", async () => {
+    api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, googleConfigured: true } });
+    render(<MeetingAssistant />);
+    expect(await screen.findByText(/Connect your Google account to import/)).toBeInTheDocument();
+    cleanup();
+    api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, googleConfigured: true,
+      platforms: [{ ...CAPS.platforms[0], connectedForMe: true }] } });
+    render(<MeetingAssistant />);
+    await screen.findByRole("button", { name: "Register meeting" });
+    expect(screen.queryByText(/Connect your Google account to import/)).toBeNull();
+  });
+
+  it("'Check Google Meet now' appears only for a connected person on a waiting Google meeting", async () => {
+    api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, googleConfigured: true,
+      platforms: [{ ...CAPS.platforms[0], connectedForMe: true }] } });
+    api.fetchMeetingTranscriptNow.mockResolvedValue({ data: SESSION });
+    await openSession(SESSION);
+    fireEvent.click(await screen.findByRole("button", { name: "Check Google Meet now" }));
+    await waitFor(() => expect(api.fetchMeetingTranscriptNow).toHaveBeenCalledWith("s1"));
+    cleanup();
+    api.getAssistantCapabilities.mockResolvedValue({ data: CAPS });          // not connected
+    await openSession(SESSION);
+    await screen.findByRole("tablist", { name: "Meeting results" });
+    expect(screen.queryByRole("button", { name: "Check Google Meet now" })).toBeNull();
   });
 
   it("has no automatically detectable accessibility violations", async () => {

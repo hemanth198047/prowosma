@@ -65,3 +65,16 @@
 .ma-checks label { display: inline-flex; gap: 6px; align-items: center; }
 .ma-caps { font-size: 13px; margin: 8px 0 0; padding-left: 18px; }
 .ma-switch { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; font-size: 13px; }
+
+/* Transcript */
+.ma-transcript { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.ma-line { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.45; }
+.ma-time { color: var(--gray-500, #64748b); font-variant-numeric: tabular-nums; }
+.ma-speaker { font-weight: 700; margin-right: 6px; }
+.ma-speaker.unknown { font-style: italic; font-weight: 600; color: var(--gray-500, #64748b); }
+.ma-note { font-size: 13px; padding: 8px 12px; border-radius: 10px; margin: 0 0 10px; border: 1px solid var(--border); background: var(--gray-100); }
+.ma-note.warn { border-color: var(--warning); background: rgba(217,119,6,0.10); }
+.ma-note.ok { border-color: var(--success); background: rgba(5,150,105,0.08); }
+.ma-field textarea { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; width: 100%;
+  box-sizing: border-box; min-height: 120px; font-family: inherit; background: var(--surface-1); color: inherit; resize: vertical; }
+.ma-field textarea:focus-visible, .ma-field input[type="file"]:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }

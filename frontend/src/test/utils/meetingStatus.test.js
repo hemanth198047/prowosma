@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   statusMeta, isActiveStatus, canCancelSession, canRetrySession, submitLabel, providerName, ALL_STATUSES, localInputValue,
+  formatClock, ACCEPTS_TRANSCRIPT, WAITING_FOR_TRANSCRIPT,
 } from "../../utils/meetingStatus";
 
 describe("meetingStatus", () => {
   it("knows every lifecycle state the backend defines", () => {
     expect(ALL_STATUSES).toEqual(expect.arrayContaining([
-      "SCHEDULED", "AWAITING_TRANSCRIPT", "CONNECTING", "WAITING_FOR_ADMISSION", "LISTENING",
+      "SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "CONNECTING", "WAITING_FOR_ADMISSION", "LISTENING",
       "RECONNECTING", "PROCESSING", "READY_FOR_REVIEW", "COMPLETED", "FAILED", "CANCELLED",
     ]));
     expect(statusMeta("NOPE").label).toBe("NOPE");
@@ -35,5 +36,19 @@ describe("meetingStatus", () => {
     expect(providerName("GOOGLE_MEET")).toBe("Google Meet");
     expect(providerName("ZOOM")).toBe("ZOOM");
     expect(localInputValue(new Date(2026, 0, 5, 9, 7))).toBe("2026-01-05T09:07");
+  });
+
+  it("formats transcript timestamps", () => {
+    expect(formatClock(83000)).toBe("01:23");
+    expect(formatClock(3723000)).toBe("1:02:03");
+    expect(formatClock(0)).toBe("00:00");
+    expect(formatClock(null)).toBe("");
+    expect(formatClock(undefined)).toBe("");
+  });
+
+  it("mirrors the server's rule for when a transcript may be added", () => {
+    expect(ACCEPTS_TRANSCRIPT).toEqual(expect.arrayContaining(["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED"]));
+    for (const s of ["PROCESSING", "COMPLETED", "CANCELLED"]) expect(ACCEPTS_TRANSCRIPT).not.toContain(s);
+    expect(WAITING_FOR_TRANSCRIPT).toEqual(["SCHEDULED", "AWAITING_TRANSCRIPT"]);
   });
 });

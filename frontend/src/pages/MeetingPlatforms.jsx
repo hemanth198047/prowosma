@@ -7,7 +7,8 @@ import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getMeetingPlatforms, setMeetingPlatformEnabled, testMeetingPlatform, disconnectMeetingPlatform,
-  getAssistantSettings, updateAssistantSettings,
+  getAssistantSettings, updateAssistantSettings, getAssistantCapabilities,
+  getGoogleConnection, startGoogleConnect, disconnectGoogle,
 } from "../api/meetingAssistant";
 import { PROVIDER_META } from "../utils/meetingStatus";
 import "../styles/pages/meeting-assistant.css";
@@ -16,6 +17,7 @@ const GOOD_TO_KNOW = {
   GOOGLE_MEET: [
     "Transcripts exist only if transcription was turned on during the meeting.",
     "Google's live-audio interface is still a limited developer preview, so live joining isn't offered.",
+    "Google only allows each person to sign in for themselves, so imports use the access of the person who registered the meeting.",
   ],
   MS_TEAMS: [
     "Transcripts exist only if transcription was started during the meeting, and a Microsoft 365 admin can switch off transcript access for apps.",
@@ -29,13 +31,22 @@ const CONNECTION = {
   NEEDS_ATTENTION: { label: "Needs attention", tone: "danger" },
 };
 
-function PlatformCard({ p, onChanged }) {
+function PlatformCard({ p, caps, google, onChanged }) {
   const { show: toast } = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const meta = PROVIDER_META[p.provider] || { name: p.provider, icon: "•" };
   const conn = CONNECTION[p.connectionStatus] || CONNECTION.NOT_CONNECTED;
+  const isGoogle = p.provider === "GOOGLE_MEET";
+  const cap = caps?.platforms?.find((x) => x.provider === p.provider);
+  const autoText = !isGoogle
+    ? "Automatic transcript import: not available yet"
+    : !caps?.googleConfigured
+      ? "Automatic transcript import: needs server setup (Google sign-in credentials and encryption)"
+      : google?.connected
+        ? `Automatic transcript import: on for your account${google.account ? ` (${google.account})` : ""}`
+        : "Automatic transcript import: available once you connect your Google account";
 
   const run = async (fn, ok) => {
     setBusy(true);
@@ -47,6 +58,21 @@ function PlatformCard({ p, onChanged }) {
   const test = async () => {
     const r = await run(() => testMeetingPlatform(p.provider));
     if (r) setResult(r.data);
+  };
+  const connectGoogle = async () => {
+    setBusy(true);
+    try {
+      const r = await startGoogleConnect();
+      window.location.assign(r.data.url);
+    } catch (e) {
+      toast(apiErrorMessage(e, "Couldn't start the Google sign-in."), "error");
+      setBusy(false);
+    }
+  };
+  const removeGoogle = async () => {
+    const ok = await confirm({ title: "Disconnect your Google account?",
+      message: "Prowosma will stop importing transcripts with your access, and the saved sign-in is deleted.", danger: true });
+    if (ok) { await run(() => disconnectGoogle(), "Google account disconnected"); }
   };
   const disconnect = async () => {
     const ok = await confirm({
@@ -76,8 +102,8 @@ function PlatformCard({ p, onChanged }) {
       <strong style={{ fontSize: 13 }}>What works today</strong>
       <ul className="ma-caps">
         <li>Live joining: not available</li>
-        <li>Automatic transcript after the meeting: not connected yet</li>
-        <li>Manual transcript upload: not available yet</li>
+        <li>{autoText}</li>
+        <li>Upload or paste a transcript: {cap?.manualTranscriptUpload === false ? "not available" : "available"}</li>
       </ul>
       <strong style={{ fontSize: 13, display: "block", marginTop: 10 }}>Good to know</strong>
       <ul className="ma-caps">{GOOD_TO_KNOW[p.provider]?.map((t) => <li key={t}>{t}</li>)}</ul>
@@ -85,12 +111,23 @@ function PlatformCard({ p, onChanged }) {
       <strong style={{ fontSize: 13, display: "block", marginTop: 10 }}>Setup steps</strong>
       <ol className="ma-caps">
         <li>Turn the switch above on so people can register meetings.</li>
-        <li>Sign-in: you'll approve read access to meeting transcripts with an admin account. This step isn't available yet.</li>
+        {isGoogle ? (
+          <li>Each person who registers Google Meet meetings connects their own Google account once. Prowosma can then read only the meetings that account can access.</li>
+        ) : (
+          <li>Automatic import for Microsoft Teams isn't available yet. People add the transcript by upload or paste.</li>
+        )}
         <li>Use Test connection to confirm everything is healthy.</li>
       </ol>
 
       <div className="ma-actions">
-        <button className="ma-btn primary" disabled title="Sign-in setup isn't available yet">Connect</button>
+        {isGoogle ? (
+          google?.connected
+            ? <button className="ma-btn" disabled={busy} onClick={removeGoogle}>Disconnect my Google account</button>
+            : <button className="ma-btn primary" disabled={busy || !caps?.googleConfigured} onClick={connectGoogle}
+                title={caps?.googleConfigured ? "" : "Google sign-in isn't set up on the server yet"}>Connect my Google account</button>
+        ) : (
+          <button className="ma-btn primary" disabled title="Not available yet">Connect</button>
+        )}
         <button className="ma-btn" disabled={busy} onClick={test}>Test connection</button>
         <button className="ma-btn danger" disabled={busy} onClick={disconnect}>Disconnect</button>
       </div>
@@ -208,10 +245,15 @@ export default function MeetingPlatforms() {
   const navigate = useNavigate();
   const [platforms, setPlatforms] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [caps, setCaps] = useState(null);
+  const [google, setGoogle] = useState(null);
 
   const load = useCallback(async () => {
     try { setPlatforms((await getMeetingPlatforms()).data); }
     catch (e) { toast(apiErrorMessage(e, "Couldn't load meeting platforms."), "error"); }
+    const [c, g] = await Promise.allSettled([getAssistantCapabilities(), getGoogleConnection()]);
+    if (c.status === "fulfilled") setCaps(c.value.data);
+    if (g.status === "fulfilled") setGoogle(g.value.data);
   }, [toast]);
 
   useEffect(() => {
@@ -242,7 +284,7 @@ export default function MeetingPlatforms() {
         description="Choose which meeting platforms your team can use with the Meeting Assistant."
         action={<button className="ma-btn" onClick={() => navigate("/meeting-assistant")}>Open Meeting Assistant</button>} />
       <div className="ma-platforms">
-        {platforms.map((p) => <PlatformCard key={p.provider} p={p} onChanged={load} />)}
+        {platforms.map((p) => <PlatformCard key={p.provider} p={p} caps={caps} google={google} onChanged={load} />)}
       </div>
       {settings && <SettingsForm initial={settings} onSaved={setSettings} />}
     </div>

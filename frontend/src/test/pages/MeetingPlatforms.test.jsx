@@ -6,6 +6,7 @@ import { axe } from "vitest-axe";
 vi.mock("../../api/meetingAssistant", () => ({
   getMeetingPlatforms: vi.fn(), setMeetingPlatformEnabled: vi.fn(), testMeetingPlatform: vi.fn(),
   disconnectMeetingPlatform: vi.fn(), getAssistantSettings: vi.fn(), updateAssistantSettings: vi.fn(),
+  getAssistantCapabilities: vi.fn(), getGoogleConnection: vi.fn(), startGoogleConnect: vi.fn(), disconnectGoogle: vi.fn(),
 }));
 
 import * as api from "../../api/meetingAssistant";
@@ -20,6 +21,9 @@ const SETTINGS = {
   assistantName: "Prowosma Meeting Assistant", sendRoles: ["OWNER", "ADMIN", "MEMBER"], defaultVisibility: "PRIVATE",
   transcriptRetentionDays: 90, generatedContentRetentionDays: 365, retainRawAudio: false, rawAudioRetentionDays: 0, outputLanguage: "en",
 };
+const CAPS_OFF = { googleConfigured: false, platforms: [
+  { provider: "GOOGLE_MEET", manualTranscriptUpload: true }, { provider: "MS_TEAMS", manualTranscriptUpload: true }] };
+const CAPS_ON = { ...CAPS_OFF, googleConfigured: true };
 const renderAs = (role) => render(
   <MemoryRouter><RoleContext.Provider value={role}><MeetingPlatforms /></RoleContext.Provider></MemoryRouter>);
 
@@ -27,6 +31,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   api.getMeetingPlatforms.mockResolvedValue({ data: PLATFORMS });
   api.getAssistantSettings.mockResolvedValue({ data: SETTINGS });
+  api.getAssistantCapabilities.mockResolvedValue({ data: CAPS_OFF });
+  api.getGoogleConnection.mockResolvedValue({ data: { configured: false, connected: false, status: "NOT_CONNECTED" } });
 });
 afterEach(cleanup);
 
@@ -46,12 +52,43 @@ describe("MeetingPlatforms page", () => {
     await waitFor(() => expect(api.setMeetingPlatformEnabled).toHaveBeenCalledWith("GOOGLE_MEET", true));
   });
 
-  it("does not pretend a connection exists: Connect is disabled, limits are listed, and Test says so", async () => {
+  it("Google sign-in is disabled with an explanation until the server is set up; Teams never offers a connect", async () => {
+    renderAs({ isOwner: true });
+    const google = await screen.findByRole("button", { name: "Connect my Google account" });
+    expect(google).toBeDisabled();
+    expect(screen.getByText(/needs server setup/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect" })).toBeDisabled();       // Teams
+  });
+
+  it("starts Google sign-in and sends the browser to Google", async () => {
+    api.getAssistantCapabilities.mockResolvedValue({ data: CAPS_ON });
+    api.startGoogleConnect.mockResolvedValue({ data: { url: "https://accounts.google.com/o/oauth2/v2/auth?state=s" } });
+    const assign = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", { configurable: true, value: { assign } });
+    try {
+      renderAs({ isAdmin: true });
+      const btn = await screen.findByRole("button", { name: "Connect my Google account" });
+      await waitFor(() => expect(btn).toBeEnabled());
+      fireEvent.click(btn);
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/v2/auth?state=s"));
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
+  });
+
+  it("shows which Google account is connected and lets the person disconnect it", async () => {
+    api.getAssistantCapabilities.mockResolvedValue({ data: CAPS_ON });
+    api.getGoogleConnection.mockResolvedValue({ data: { configured: true, connected: true, account: "me@corp.com", status: "ACTIVE" } });
+    renderAs({ isAdmin: true });
+    expect(await screen.findByRole("button", { name: "Disconnect my Google account" })).toBeInTheDocument();
+    expect(screen.getByText(/on for your account \(me@corp.com\)/)).toBeInTheDocument();
+  });
+
+  it("does not pretend a connection exists: Test says what is actually wrong", async () => {
     api.testMeetingPlatform.mockResolvedValue({ data: { healthy: false, message: "Platform sign-in isn't set up yet, so transcripts can't be fetched automatically." } });
     renderAs({ isOwner: true });
-    const connect = (await screen.findAllByRole("button", { name: "Connect" }))[0];
-    expect(connect).toBeDisabled();
-    expect(screen.getAllByText(/Live joining: not available/).length).toBe(2);
+    expect((await screen.findAllByText(/Live joining: not available/)).length).toBe(2);
     fireEvent.click(screen.getAllByRole("button", { name: "Test connection" })[0]);
     expect(await screen.findByText(/sign-in isn't set up yet/)).toBeInTheDocument();
   });

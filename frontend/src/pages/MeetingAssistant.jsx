@@ -2,16 +2,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../components/ToastContext";
 import { useRole } from "../hooks/useRole";
+import { useConfirm } from "../hooks/useConfirm";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getAssistantCapabilities, validateMeetingUrl, listMeetingSessions, createMeetingSession,
   cancelMeetingSession, retryMeetingSession, updateMeetingAccess, devAdvanceMeetingSession,
+  addMeetingTranscript, getMeetingTranscript, deleteMeetingTranscript, fetchMeetingTranscriptNow,
 } from "../api/meetingAssistant";
 import { getProjects } from "../api/projects";
 import { getTeamMembers } from "../api/team";
 import {
   ALL_STATUSES, statusMeta, providerName, isActiveStatus, canCancelSession, canRetrySession,
-  submitLabel, localInputValue,
+  submitLabel, localInputValue, formatClock, ACCEPTS_TRANSCRIPT, WAITING_FOR_TRANSCRIPT, MAX_UPLOAD_BYTES,
 } from "../utils/meetingStatus";
 import "../styles/pages/meeting-assistant.css";
 
@@ -27,9 +29,85 @@ function StatusChip({ status }) {
   return <span className={`ma-chip ${m.tone}`}><span aria-hidden="true">{m.icon}</span>{m.label}</span>;
 }
 
-/* ── Results area. Tabs are present now so the layout is stable; each shows an honest empty state
-      until a transcript has actually been collected and processed. ── */
-function ResultTabs({ session }) {
+/* ── Transcript viewer. Shows exactly what was stored: speakers as the source named them (unknown stays
+      unknown), and a plain note about how complete the capture is. ── */
+function TranscriptPanel({ session, onChanged }) {
+  const { show: toast } = useToast();
+  const confirm = useConfirm();
+  const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const count = session.segmentCount || 0;
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      if (!count) return;
+      try {
+        const res = await getMeetingTranscript(session.id, { after: 0, limit: 200 });
+        if (live) { setData(res.data); setLoadError(""); }
+      } catch (e) { if (live) setLoadError(apiErrorMessage(e, "Couldn't load the transcript.")); }
+    })();
+    return () => { live = false; };
+  }, [session.id, count, session.transcriptReceivedAt]);
+
+  const shown = count ? data : null;
+
+  const loadMore = async () => {
+    setBusy(true);
+    try {
+      const res = await getMeetingTranscript(session.id, { after: shown.nextAfter, limit: 200 });
+      setData((d) => ({ ...res.data, segments: [...d.segments, ...res.data.segments] }));
+    } catch (e) { toast(apiErrorMessage(e, "Couldn't load more."), "error"); }
+    finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    const ok = await confirm({ title: "Delete this transcript?",
+      message: "The text is removed. The meeting stays, and you can add a transcript again.", danger: true });
+    if (!ok) return;
+    setBusy(true);
+    try { await deleteMeetingTranscript(session.id); toast("Transcript deleted", "success"); await onChanged(); }
+    catch (e) { toast(apiErrorMessage(e, "Couldn't delete the transcript."), "error"); }
+    finally { setBusy(false); }
+  };
+
+  if (session.transcriptRemovedByRetention) {
+    return <div className="ma-empty">{session.transcriptNote || "The transcript text was removed under your retention policy."}</div>;
+  }
+  if (!count) return <div className="ma-empty">No transcript has been collected for this meeting, so there is nothing to show here yet.</div>;
+  if (loadError) return <p className="ma-error" role="alert">{loadError}</p>;
+  if (!shown) return <p className="ma-hint">Loading the transcript…</p>;
+
+  const tone = shown.captureStatus === "PARTIAL" ? "warn" : shown.captureStatus === "FULL" ? "ok" : "";
+  return (
+    <div>
+      <p className={`ma-note ${tone}`}>
+        {shown.captureStatus === "PARTIAL" && <strong>This transcript may be incomplete. </strong>}
+        {shown.captureStatus === "FULL" && "Imported from Google Meet. "}
+        {shown.note}
+      </p>
+      <p className="ma-hint">{shown.total} lines. Speakers are shown as the source named them; unlabeled speech is marked unknown.</p>
+      <ol className="ma-transcript" aria-label="Transcript">
+        {shown.segments.map((seg) => (
+          <li key={seg.seq} className="ma-line">
+            <span className="ma-time">{formatClock(seg.startMs)}</span>
+            <span>
+              <span className={seg.speaker ? "ma-speaker" : "ma-speaker unknown"}>{seg.speaker || "Unknown speaker"}</span>
+              {seg.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="ma-actions">
+        {shown.nextAfter != null && <button className="ma-btn" disabled={busy} onClick={loadMore}>Load more</button>}
+        {session.canManage && <button className="ma-btn danger" disabled={busy} onClick={remove}>Delete transcript</button>}
+      </div>
+    </div>
+  );
+}
+
+function ResultTabs({ session, onChanged }) {
   const [tab, setTab] = useState(TABS[0]);
   const onKey = (e) => {
     const i = TABS.indexOf(tab);
@@ -41,7 +119,7 @@ function ResultTabs({ session }) {
     setTab(next);
     document.getElementById(`ma-tab-${next}`)?.focus();
   };
-  const hasTranscript = session.captureStatus !== "NONE";
+  const hasTranscript = (session.segmentCount || 0) > 0;
   return (
     <>
       <div className="ma-tabs" role="tablist" aria-label="Meeting results">
@@ -51,17 +129,83 @@ function ResultTabs({ session }) {
         ))}
       </div>
       <div id="ma-panel" role="tabpanel" aria-labelledby={`ma-tab-${tab}`}>
-        <div className="ma-empty">
-          {hasTranscript
-            ? `The ${tab} view isn't available for this meeting yet.`
-            : "No transcript has been collected for this meeting, so there is nothing to show here yet."}
-        </div>
+        {tab === "Transcript" ? <TranscriptPanel session={session} onChanged={onChanged} /> : (
+          <div className="ma-empty">
+            {hasTranscript
+              ? `The ${tab} isn't generated yet. Summaries, minutes and actions will be created from the transcript in an upcoming update.`
+              : "No transcript has been collected for this meeting, so there is nothing to show here yet."}
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-function SessionDetail({ session, members, isAdmin, devEnabled, onChanged, onClose }) {
+/* ── Add or replace a transcript: paste text or choose a .vtt / .srt / .txt file. ── */
+function AddTranscript({ session, onChanged }) {
+  const { show: toast } = useToast();
+  const [text, setText] = useState("");
+  const [format, setFormat] = useState("AUTO");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [warnings, setWarnings] = useState([]);
+  const replacing = (session.segmentCount || 0) > 0;
+
+  const onFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    if (file.size > MAX_UPLOAD_BYTES) { setError("That file is larger than 5 MB. Split it into parts and add them one at a time."); return; }
+    const reader = new FileReader();
+    reader.onload = () => setText(String(reader.result || ""));
+    reader.onerror = () => setError("Couldn't read that file.");
+    reader.readAsText(file);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true); setError(""); setWarnings([]);
+    try {
+      const { data } = await addMeetingTranscript(session.id, { content: text, format: format === "AUTO" ? null : format });
+      setWarnings(data.warnings || []);
+      setText("");
+      toast(replacing ? "Transcript replaced" : "Transcript added", "success");
+      await onChanged();
+    } catch (err) { setError(apiErrorMessage(err, "Couldn't add the transcript.")); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <form className="ma-card" onSubmit={submit} aria-label={replacing ? "Replace transcript" : "Add transcript"}>
+      <strong>{replacing ? "Replace the transcript" : "Add a transcript"}</strong>
+      <p className="ma-hint">Paste the text or choose a .vtt, .srt or .txt file. Nothing is changed until you press the button.</p>
+      <div className="ma-field">
+        <label htmlFor="ma-tr-file">Transcript file</label>
+        <input id="ma-tr-file" type="file" accept=".vtt,.srt,.txt,text/plain,text/vtt" onChange={onFile} />
+      </div>
+      <div className="ma-field">
+        <label htmlFor="ma-tr-text">Or paste the transcript</label>
+        <textarea id="ma-tr-text" value={text} onChange={(e) => setText(e.target.value)} />
+      </div>
+      <div className="ma-field">
+        <label htmlFor="ma-tr-format">Format</label>
+        <select id="ma-tr-format" value={format} onChange={(e) => setFormat(e.target.value)}>
+          <option value="AUTO">Detect automatically</option>
+          <option value="VTT">WebVTT (.vtt)</option>
+          <option value="SRT">SubRip (.srt)</option>
+          <option value="TEXT">Plain text</option>
+        </select>
+      </div>
+      {error && <p className="ma-error" role="alert">{error}</p>}
+      {warnings.length > 0 && <p className="ma-warn" role="status">{warnings.join(" ")}</p>}
+      <button type="submit" className="ma-btn primary" disabled={busy || !text.trim()}>
+        {busy ? "Adding…" : replacing ? "Replace transcript" : "Add transcript"}
+      </button>
+    </form>
+  );
+}
+
+function SessionDetail({ session, members, isAdmin, devEnabled, googleConnected, onChanged, onClose }) {
   const { show: toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [devStatus, setDevStatus] = useState("PROCESSING");
@@ -102,7 +246,14 @@ function SessionDetail({ session, members, isAdmin, devEnabled, onChanged, onClo
         {canRetrySession(session) && (
           <button className="ma-btn primary" disabled={busy}
             onClick={() => run(() => retryMeetingSession(session.id), "Retrying")}>Retry</button>)}
+        {session.canManage && googleConnected && session.provider === "GOOGLE_MEET" && WAITING_FOR_TRANSCRIPT.includes(session.status) && (
+          <button className="ma-btn" disabled={busy}
+            onClick={() => run(() => fetchMeetingTranscriptNow(session.id), "Checking Google Meet")}>Check Google Meet now</button>)}
       </div>
+
+      {session.canManage && !session.simulated && ACCEPTS_TRANSCRIPT.includes(session.status) && (
+        <div style={{ marginTop: 12 }}><AddTranscript session={session} onChanged={onChanged} /></div>
+      )}
 
       <h3 style={{ fontSize: 13, margin: "16px 0 4px" }}>History</h3>
       <ol className="ma-timeline">
@@ -150,7 +301,7 @@ function SessionDetail({ session, members, isAdmin, devEnabled, onChanged, onClo
         </div>
       )}
 
-      <ResultTabs session={session} />
+      <ResultTabs session={session} onChanged={onChanged} />
     </section>
   );
 }
@@ -258,6 +409,9 @@ export default function MeetingAssistant() {
   const selected = sessions.find((s) => s.id === selectedId);
   const label = submitLabel(caps);
   const live = caps?.platforms?.some((p) => p.liveJoin);
+  const googlePlatform = caps?.platforms?.find((p) => p.provider === "GOOGLE_MEET");
+  const googleEnabled = !!googlePlatform?.enabled;
+  const googleConnected = !!googlePlatform?.connectedForMe;
 
   return (
     <div>
@@ -267,7 +421,14 @@ export default function MeetingAssistant() {
       {caps && !live && (
         <div className="ma-banner" role="note">
           <span aria-hidden="true">ℹ️</span>
-          <span>{caps.note} The assistant can't join meetings live with the current setup.</span>
+          <span>{caps.note}</span>
+        </div>
+      )}
+      {caps?.googleConfigured && googleEnabled && !googleConnected && (
+        <div className="ma-banner" role="note">
+          <span aria-hidden="true">🔗</span>
+          <span>Connect your Google account to import Google Meet transcripts automatically.{" "}
+            <a href="/integrations/meeting-platforms">Connect Google</a></span>
         </div>
       )}
 
@@ -331,7 +492,8 @@ export default function MeetingAssistant() {
         <div>
           {selected && (
             <SessionDetail session={selected} members={members} isAdmin={admin}
-              devEnabled={!!caps?.devFixturesEnabled} onChanged={refresh} onClose={() => setSelectedId(null)} />
+              devEnabled={!!caps?.devFixturesEnabled} googleConnected={googleConnected}
+              onChanged={refresh} onClose={() => setSelectedId(null)} />
           )}
           <section className="ma-card" aria-label="Your meetings" style={selected ? { marginTop: 16 } : undefined}>
             <h2>Meetings</h2>

@@ -57,6 +57,7 @@ const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
 const MeetingPlatforms = lazy(() => import("./pages/MeetingPlatforms"));
+const GoogleMeetCallback = lazy(() => import("./pages/GoogleMeetCallback"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const AISettings = lazy(() => import("./pages/AISettings"));
 // ThemeSwitcher (named color themes), FontSwitcher, and DesignSwitcher (50
@@ -584,6 +585,7 @@ function AppShell() {
                   <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
                   <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
+                  <Route path="/integrations/meeting-platforms/google-callback" element={<ProtectedRoute><GoogleMeetCallback /></ProtectedRoute>} />
                   <Route path="/sops"      element={<ProtectedRoute><Sops      /></ProtectedRoute>} />
                   <Route
                     path="/"
