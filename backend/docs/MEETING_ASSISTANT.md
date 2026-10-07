@@ -1,8 +1,9 @@
 # Meeting Assistant
 
-Status: **Phase 2 — transcripts in, nothing generated yet.** Meetings can be registered, transcripts can be uploaded/pasted
-(any platform) or imported automatically from Google Meet. Summaries, minutes, action extraction and task creation come in
-later phases. The assistant **cannot join meetings live** (see "Why no live joining").
+Status: **Phase 4 — structured actions with people, project and deadline resolution, ready for review.** Meetings can be registered, transcripts can be
+uploaded/pasted (any platform) or imported automatically from Google Meet, and an AI model turns a transcript into three
+editable, versioned documents whose statements link back to transcript lines. Structured
+actions are then extracted and resolved for review; creating tasks and projects in Prowosma comes in the next phase. The assistant **cannot join meetings live** (see "Why no live joining").
 
 ## What works today
 | Capability | Google Meet | Microsoft Teams |
@@ -12,6 +13,83 @@ later phases. The assistant **cannot join meetings live** (see "Why no live join
 | Automatic transcript import after the meeting | ✅ implemented, **not yet verified against a real meeting** | ❌ not yet |
 | Live joining / live audio | ❌ | ❌ |
 | Speaker identity | Google's display name only | Only what the file states |
+| Summary, MOM and Notes from the transcript (English) | ✅ implemented, **not yet verified with a real model** | ✅ same |
+
+## Summary, Minutes of Meeting and Notes
+**Which AI?** The provider an administrator configured in **AI Settings** (Anthropic, OpenAI, Gemini, or a custom OpenAI-compatible
+endpoint). This feature uses its own *strict* client, not the general `AIService`: if AI is off, the key is missing, the feature is
+switched off, or the model name doesn't match the provider, nothing is generated and the page says exactly why — it never
+produces placeholder text. Transcript text is sent to that provider, so check it fits your privacy commitments.
+
+**What is produced** (three documents, English; the output-language setting is passed to the model but only English is tested):
+- **Summary** — purpose, main topics, outcomes, key decisions, next steps.
+- **Minutes of Meeting** — date/time/timezone/duration, participants *as named in the transcript* (attendance isn't verified),
+  agenda (what was *stated* vs topics *inferred*), discussion by topic, decisions, action items **as discussed** (owner and
+  deadline exactly as spoken, labelled agreed / suggested / unresolved), risks, blockers, dependencies, open questions,
+  corrected/withdrawn items, and a follow-up meeting only if one was actually discussed.
+- **Notes** — detailed notes by topic, plus open questions and risks.
+
+**Trust rules built in**
+- Every statement must cite transcript line numbers (`[#12]`, `[#9-11]`). The server checks the citations against the real
+  transcript and **removes any statement without valid evidence** (the meeting's status line says how many).
+- Transcript text is treated as untrusted data: it is fenced in the prompt, forged fence tags are neutralised, the model has no
+  tools, and its reply is parsed and validated, never executed. Words like "assign this to X" inside a meeting can't change owners,
+  access or settings.
+- "We could do X" stays *suggested*; unknown kinds default to *unresolved*; corrections and withdrawals are listed.
+- Owners and deadlines are shown exactly as spoken — matching to people and dates is a later phase and never guessed.
+- Long meetings are split into parts (every line goes to exactly one part, line numbers stay global) and merged; if merging
+  fails the parts are joined without dropping anything; an answer cut off at the model's limit is redone on smaller pieces.
+
+**Review & versions**
+- First generation becomes the current version. **Regenerating never replaces what you have**: the new version waits as
+  *pending*; compare it, then "Use new version" or "Keep mine". Edits and restores always create a new version — nothing is deleted
+  until retention removes it. Saving an edit needs the version you were looking at (otherwise: "someone else changed this").
+- If the transcript is replaced after documents exist, they're marked *out of date* (old text stays for comparison).
+- Who may do what: readers (including shared people) can read; the requester or an admin can generate, edit, accept and restore.
+
+**Operations & cost**
+- Runs as a background job (same MongoDB queue): lease-protected, bounded retries, and a finished request can't run twice.
+  Failures end as **Failed** with a reason and "Retry" (which regenerates — it doesn't re-fetch the transcript).
+- Settings: **Meeting Platforms → Summaries, minutes and notes**: automatic generation on/off (default on, only if AI is ready).
+  Limits: `app.meeting-assistant.ai-max-generations-per-hour` (20), `ai-single-pass-chars` (90 000), `ai-chunk-chars` (60 000),
+  `ai-max-output-tokens` (8 000).
+- **Usage** is recorded per run in tokens (`GET /api/admin/meeting-assistant/usage`, shown on the settings page). Money isn't
+  computed because it depends on your model's prices. *Planning estimate (not measured):* about 150 spoken words/min ≈ 9 000 words
+  ≈ 12 000 tokens per meeting-hour, so one single-pass run is roughly 13 000 input + 3 000–6 000 output tokens. At about 2 meeting-hours
+  a day that is on the order of 0.8 M input and 0.3 M output tokens per month; long meetings add a merge step, edits/regeneration add more.
+  Multiply by your model's per-token prices.
+- Retention: generated documents and run records are removed after "Keep summaries and minutes for (days)".
+- Finding: `ai_settings.apiKey` is stored in plain text by the existing AI Settings feature (outside this feature). Consider
+  encrypting it; the new client already decrypts values written with `FieldEncryptionService`.
+
+## Actions, people and projects (review before anything is created)
+After the documents are ready (or on demand with **Extract actions**), a second AI pass lists the action items. The model is asked
+only for what was **said** — title, owner and deadline *as spoken*, whether it was agreed, the cited transcript lines. Everything
+that decides a person, a project or a date is then done **in code**, so it is predictable and testable:
+
+- **Owners** are matched to your directory only on an **exact, unique full name** (or exact email). A first name or partial name is
+  only a *suggestion* to confirm; two people with the same name are *ambiguous*; outsiders, read-only members and groups ("the team")
+  stay **unassigned**, with a plain reason and a picker. "I will handle it" uses only the label the *source* gave that speaker
+  (Google's display name) — never a guess from a voice. Nobody is ever created from a name. The directory is **never sent to the model**.
+- **Projects**: the project you selected is the default; a project the discussion clearly named (it must be an exact existing name)
+  wins but is flagged to confirm; otherwise the action stays unresolved. A **new project** is only *proposed* when the discussion
+  supports a distinct initiative, and never if a project with that name exists.
+- **Deadlines** are resolved against the meeting's date and timezone: "by Friday", "tomorrow", "in two weeks", "12 October" resolve;
+  "end of week" is *approximate*, "next Friday" / "12/10" / "next week" are *ambiguous* and must be chosen by a person; "ASAP" has no date.
+- **Priority** is kept only if the discussion stated it (with cited lines); otherwise the application default (Medium) is used and labelled "default".
+- **Agreed vs suggested** — "we could…" is *suggested*, not a commitment; withdrawn or corrected actions are marked *withdrawn*;
+  near-duplicates are flagged (merge, or "keep both"); each action has evidence links, a confidence level and plain review reasons.
+- **Review**: edit anything, approve, reject, restore, merge, approve selected, or **Approve all valid**. *Valid* = agreed, not withdrawn,
+  not a suspected duplicate, attached to a project (existing, or a new one that has been approved), and with a reliable-or-absent deadline.
+  An unassigned owner is allowed. Editing an approved action sends it back for approval. The **Projects and Tasks** tab previews exactly
+  what would be created. **Nothing is created in Prowosma yet** — approving only marks items ready.
+- **Re-running** never overwrites reviewed work: it waits as "N new, M still present, K no longer found" for you to apply or discard;
+  items no longer found are flagged, never deleted.
+- **Required fields** (decision): a task needs a title and a project; a new project needs a name **and a description** (the app itself
+  only requires a name). Assignees are workspace members (team-member ids) who are not read-only.
+- **Cost**: extraction is one more pass over the transcript — roughly the same input tokens as the documents again (long meetings are
+  split, with earlier action titles passed forward). Switch: **Meeting Platforms → Summaries, minutes and notes → extract action items automatically**.
+- **Failure** of extraction never fails the meeting; the Actions tab shows the reason and a retry.
 
 ## Why no live joining
 Google's live-audio API (Meet Media API) is a limited developer preview that requires every participant to be enrolled;
@@ -19,20 +97,12 @@ Microsoft Teams live audio requires a separate Windows-hosted media bot service.
 UI never offers a "send assistant into the call" action unless a platform truly reports that capability.
 
 ## Administrator setup — Google Meet automatic import (optional)
-Without this, everything still works with manual upload/paste.
-
-1. **Google Cloud project**: create/choose one and enable the **Google Meet REST API**.
-2. **OAuth consent screen**: add the scopes `openid`, `email` and `https://www.googleapis.com/auth/meetings.space.readonly`.
-   Google classifies `meetings.space.readonly` as a *sensitive* scope; apps used outside your own Google Workspace
-   organization need Google's OAuth verification — check Google's current rules for your situation.
-3. **OAuth client** (type: Web application). Authorized redirect URI:
-   `<FRONTEND_URL>/integrations/meeting-platforms/google-callback` (e.g. `https://app.example.com/integrations/meeting-platforms/google-callback`).
-4. **Server configuration** (see `.env.example`):
-   - `GOOGLE_MEET_OAUTH_CLIENT_ID`, `GOOGLE_MEET_OAUTH_CLIENT_SECRET`
-   - `GOOGLE_MEET_OAUTH_REDIRECT_URI` (optional; defaults to `FRONTEND_URL` + the path above)
-   - `ENCRYPTION_KEY` — **required**. Saved Google sign-ins are only stored encrypted; with no key the app refuses to save them.
-5. Restart the backend, then in the app: **Integrations → Communication → Google Meet** → enable the platform →
-   **Connect my Google account** → **Test connection**.
+Without this, everything still works with manual upload/paste. **Follow the step-by-step guide: [`GOOGLE_MEET_SETUP.md`](./GOOGLE_MEET_SETUP.md).**
+In short: (1) create a Google Cloud project and enable the *Google Meet REST API*, (2) in *Google Auth Platform* add the scopes
+`openid`, `email`, `meetings.space.readonly`, (3) create a *Web application* OAuth client whose redirect URI is
+`<FRONTEND_URL>/integrations/meeting-platforms/google-callback`, (4) set `GOOGLE_MEET_OAUTH_CLIENT_ID`, `GOOGLE_MEET_OAUTH_CLIENT_SECRET`
+and `ENCRYPTION_KEY` (never change an existing key), restart, then each person clicks **Connect my Google account**.
+Note: an *External* app in Google's *Testing* mode may make sign-ins expire after about 7 days (people reconnect).
 
 Why each person connects their own account: Google's Meet REST API supports user sign-in only. An import runs with the access of
 the person who registered the meeting, so it can read only meetings that account can already access. There is no
@@ -78,6 +148,13 @@ organization-wide blanket access.
 | "Google didn't grant lasting access" | Remove Prowosma from your Google account's third-party access, then connect again. |
 | Meeting fails: *No transcript* | Transcription wasn't on during the meeting (Google only creates one then). Upload the transcript. |
 | Meeting fails: *access denied* | The connected account didn't organize/attend the meeting, or your Google admin blocks it. Connect the organizer's account or upload. |
+| Summary not generated: "AI isn't turned on / no key / model doesn't match" | Fix it under **AI Settings** (the message names the problem); the Meeting Assistant page shows the same reason. |
+| Meeting failed with "AI service didn't respond" | Provider outage or rate limit after several tries. Press **Retry**. |
+| Meeting failed with "reply wasn't in the expected format" | The model didn't return usable output twice. Retry; if it persists choose a more capable model in AI Settings. |
+| Some statements missing from the minutes | They didn't cite real transcript lines and were removed on purpose (the status line says how many). |
+| Actions tab: "AI isn't ready" / extraction failed | Same causes as summaries: fix **AI Settings**, then **Try again**. The meeting itself is unaffected. |
+| An owner shows "Unassigned" although the name was said | Only an exact, unique full name is assigned. Pick the person (suggestions are shown). The directory name must match the spoken name. |
+| "This can't be approved yet" | The card lists what's missing — usually a project, or an ambiguous deadline. Choose it, then approve. |
 | Meeting fails: *reconnect* | Google revoked/expired the sign-in. Reconnect, then **Retry**. |
 | Transcript flagged *partial* | Transcription started late or was stopped. The note says how much was covered. |
 | "Already assigned to this meeting occurrence" | The same meeting (same time/occurrence) is already registered; open it from the list. |
@@ -94,5 +171,6 @@ organization-wide blanket access.
 ## Known limitations
 - Google auto-import needs a standard `meet.google.com/abc-defg-hij` link (not `lookup/…` links) and transcription turned on in the meeting.
 - Speakers from Google are display names only; matching to Prowosma users is a later phase and never automatic from names alone.
-- A meeting stays "Transcript received" until later phases process it; delete or replace the transcript, or cancel the meeting.
+- After review a meeting stays in "Ready for review" until later phases (task creation) complete it; you can cancel it, regenerate, or replace the transcript.
+- English only for now. Action items appear in the minutes as discussed; structured actions, owner matching, project matching and task creation are later phases.
 - Upload limits: 5 MB per upload, 50,000 lines per transcript.

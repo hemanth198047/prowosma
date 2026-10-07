@@ -9,6 +9,30 @@ export const getMeetingSession        = (id)        => client.get(`/meeting-assi
 export const cancelMeetingSession     = (id)        => client.post(`/meeting-assistant/sessions/${id}/cancel`);
 export const retryMeetingSession      = (id)        => client.post(`/meeting-assistant/sessions/${id}/retry`);
 export const updateMeetingAccess      = (id, data)  => client.put(`/meeting-assistant/sessions/${id}/access`, data);
+// Summary, minutes and notes
+export const generateMeetingOutputs   = (id)             => client.post(`/meeting-assistant/sessions/${id}/generate`, {});
+export const getMeetingArtifacts      = (id)             => client.get(`/meeting-assistant/sessions/${id}/artifacts`);
+export const getArtifactVersions      = (id, type)       => client.get(`/meeting-assistant/sessions/${id}/artifacts/${type}/versions`);
+export const getArtifactVersion       = (id, type, n)    => client.get(`/meeting-assistant/sessions/${id}/artifacts/${type}/versions/${n}`);
+export const getArtifactDiff          = (id, type, from, to) => client.get(`/meeting-assistant/sessions/${id}/artifacts/${type}/diff`, { params: { from, to } });
+export const saveArtifact             = (id, type, baseVersion, markdown) => client.put(`/meeting-assistant/sessions/${id}/artifacts/${type}`, { baseVersion, markdown });
+export const restoreArtifact          = (id, type, version) => client.post(`/meeting-assistant/sessions/${id}/artifacts/${type}/restore`, { version });
+export const acceptPendingArtifact    = (id, type)       => client.post(`/meeting-assistant/sessions/${id}/artifacts/${type}/accept`, {});
+export const dismissPendingArtifact   = (id, type)       => client.post(`/meeting-assistant/sessions/${id}/artifacts/${type}/dismiss`, {});
+export const getAiUsage               = (days = 30)      => client.get("/admin/meeting-assistant/usage", { params: { days } });
+
+// Structured actions: extract, review, preview
+export const extractMeetingActions     = (id)            => client.post(`/meeting-assistant/sessions/${id}/actions/extract`, {});
+export const getMeetingActions         = (id)            => client.get(`/meeting-assistant/sessions/${id}/actions`);
+export const getMeetingActionsPreview  = (id)            => client.get(`/meeting-assistant/sessions/${id}/actions/preview`);
+export const patchMeetingAction        = (id, aid, data) => client.patch(`/meeting-assistant/sessions/${id}/actions/${aid}`, data);
+export const decideMeetingAction       = (id, aid, decision) => client.post(`/meeting-assistant/sessions/${id}/actions/${aid}/decision`, { decision });
+export const mergeMeetingAction        = (id, aid, intoId) => client.post(`/meeting-assistant/sessions/${id}/actions/${aid}/merge`, { intoId });
+export const approveValidMeetingActions = (id)           => client.post(`/meeting-assistant/sessions/${id}/actions/approve-valid`, {});
+export const resolveMeetingActionsDiff = (id, apply)     => client.post(`/meeting-assistant/sessions/${id}/actions/diff`, { apply });
+export const patchProposedProject      = (id, pid, data) => client.patch(`/meeting-assistant/sessions/${id}/proposed-projects/${pid}`, data);
+export const decideProposedProject     = (id, pid, decision) => client.post(`/meeting-assistant/sessions/${id}/proposed-projects/${pid}/decision`, { decision });
+
 // Transcripts
 export const addMeetingTranscript     = (id, data)   => client.post(`/meeting-assistant/sessions/${id}/transcript`, data);
 export const getMeetingTranscript     = (id, params) => client.get(`/meeting-assistant/sessions/${id}/transcript`, { params });

@@ -16,6 +16,7 @@ public class MeetingGeneration {
     @Id private String id;
     private String organizationId;
     private String sessionId;
+    private String kind = "OUTPUTS";    // OUTPUTS | ACTIONS
     private String requestId;            // idempotency token for the job request
     private int transcriptGeneration;
     private String status;               // SUCCEEDED | FAILED

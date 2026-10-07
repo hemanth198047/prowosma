@@ -18,6 +18,7 @@ public class GenerateOutputsHandler implements MeetingJobHandler {
     private final MeetingOutputService outputs;
     private final LlmClient llm;
     private final MeetingJobService jobs;
+    private final MeetingActionService actions;
 
     @Override
     public String type() { return MeetingOutputService.JOB_TYPE; }
@@ -36,7 +37,8 @@ public class GenerateOutputsHandler implements MeetingJobHandler {
         StringBuilder detail = new StringBuilder("Summary, minutes and notes are ready for review.");
         if (o.dropped() > 0) detail.append(' ').append(o.dropped()).append(" statement(s) were removed because they didn't point to the transcript.");
         for (String w : o.warnings()) if (!w.contains("removed because")) detail.append(' ').append(w);
-        store.transition(s, SessionStatus.READY_FOR_REVIEW, "system", "Outputs generated", detail.toString(), null, null);
+        MeetingSession ready = store.transition(s, SessionStatus.READY_FOR_REVIEW, "system", "Outputs generated", detail.toString(), null, null);
+        actions.startIfEnabled(ready, "system");      // structured actions follow the documents (same switch and limits)
         return JobOutcome.done();
     }
 }

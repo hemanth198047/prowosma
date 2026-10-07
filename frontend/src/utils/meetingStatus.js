@@ -47,7 +47,7 @@ export function localInputValue(date = new Date()) {
 }
 
 /** Statuses in which a transcript may be added or replaced (mirrors the server's rule). */
-export const ACCEPTS_TRANSCRIPT = ["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED"];
+export const ACCEPTS_TRANSCRIPT = ["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED", "READY_FOR_REVIEW"];
 export const WAITING_FOR_TRANSCRIPT = ["SCHEDULED", "AWAITING_TRANSCRIPT"];
 
 /** 83000 -> "01:23"; 3723000 -> "1:02:03". Null/undefined -> "". */

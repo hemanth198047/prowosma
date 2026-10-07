@@ -50,6 +50,25 @@ public class MeetingAssistantIndexConfig {
             mongoTemplate.indexOps("meeting_audit_events").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC)
                             .on("at", Sort.Direction.DESC).named("audit_by_session"));
+            mongoTemplate.indexOps("meeting_artifacts").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC)
+                            .on("type", Sort.Direction.ASC).on("version", Sort.Direction.ASC).unique().named("uniq_artifact_version"));
+            mongoTemplate.indexOps("meeting_artifact_heads").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC)
+                            .on("type", Sort.Direction.ASC).unique().named("uniq_artifact_head"));
+            mongoTemplate.indexOps("meeting_generations").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("requestId", Sort.Direction.ASC)
+                            .on("status", Sort.Direction.ASC).unique().sparse().named("uniq_generation_request"));
+            mongoTemplate.indexOps("meeting_generations").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("createdAt", Sort.Direction.DESC).named("generation_by_time"));
+            mongoTemplate.indexOps("meeting_actions").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).on("createdAt", Sort.Direction.ASC).named("action_by_session"));
+            mongoTemplate.indexOps("meeting_actions").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("stableId", Sort.Direction.ASC).unique().named("uniq_action_stable_id"));
+            mongoTemplate.indexOps("meeting_proposed_projects").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).named("proposed_project_by_session"));
+            mongoTemplate.indexOps("meeting_extractions").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).on("status", Sort.Direction.ASC).named("extraction_by_session"));
             mongoTemplate.indexOps("meeting_integrations").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("provider", Sort.Direction.ASC)
                             .unique().named("uniq_org_provider"));

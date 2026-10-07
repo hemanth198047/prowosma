@@ -3,6 +3,7 @@ package com.prowosma.backend.service;
 import com.prowosma.backend.config.WorkspaceContext;
 import com.prowosma.backend.integration.GoogleApiException;
 import com.prowosma.backend.integration.GoogleMeetApi;
+import com.prowosma.backend.integration.LlmClient;
 import com.prowosma.backend.meetingassistant.MeetingUrlParser;
 import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.meetingassistant.TranscriptParser;
@@ -51,6 +52,9 @@ public class MeetingAssistantService {
     private final MeetingJobService jobs;
     private final GoogleOAuthService google;
     private final GoogleMeetApi googleApi;
+    private final MeetingOutputService outputs;
+    private final LlmClient llm;
+    private final MeetingActionService actionService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
     private boolean devFixtures;
@@ -130,6 +134,10 @@ public class MeetingAssistantService {
                 throw err(HttpStatus.BAD_REQUEST, "INVALID_VISIBILITY", "Visibility must be PRIVATE or WORKSPACE.");
             s.setDefaultVisibility(v);
         }
+        if (patch.containsKey("autoExtractActions"))
+            s.setAutoExtractActions(Boolean.parseBoolean(String.valueOf(patch.get("autoExtractActions"))));
+        if (patch.containsKey("autoGenerateOutputs"))
+            s.setAutoGenerateOutputs(Boolean.parseBoolean(String.valueOf(patch.get("autoGenerateOutputs"))));
         for (String f : List.of("autoCreateTasks", "autoCreateProjects")) {
             if (patch.containsKey(f)) {
                 boolean on = Boolean.parseBoolean(String.valueOf(patch.get(f)));
@@ -330,6 +338,11 @@ public class MeetingAssistantService {
         out.put("assistantName", st.getAssistantName());
         out.put("platforms", platforms);
         out.put("googleConfigured", googleReady);
+        String aiReason = llm.notReadyReason(org);
+        out.put("aiReady", aiReason == null);
+        out.put("aiReason", aiReason);
+        out.put("autoGenerate", st.isAutoGenerateOutputs());
+        out.put("autoExtract", st.isAutoExtractActions());
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
                 ? "Transcripts can be imported automatically from Google Meet (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
@@ -536,6 +549,9 @@ public class MeetingAssistantService {
         MeetingSession s = loadManageable(id, email, role);
         if (!SessionStatus.valueOf(s.getStatus()).equals(SessionStatus.FAILED))
             throw err(HttpStatus.CONFLICT, "INVALID_STATE", "Only a failed meeting can be retried.");
+        if (s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null && !s.isSimulated()) {
+            return view(startGeneration(s, email, role), true);       // it has its transcript; what failed was the generation
+        }
         s.setActiveKey(MeetingSessionStore.activeKeyOf(s.getOrganizationId(), s.getProvider(), s.getMeetingKey(), s.getScheduledFor()));
         s.setRetryCount(s.getRetryCount() + 1);
         MeetingSession saved;
@@ -619,9 +635,10 @@ public class MeetingAssistantService {
 
         TranscriptParser.Parsed parsed = transcripts.parse(req.content(), req.format());
         List<TranscriptSegment> segments = MeetingTranscriptService.fromParsed(parsed, "UPLOAD_" + parsed.format());
-        String detail = "Transcript received (" + segments.size() + " lines). Summaries and minutes aren't generated yet.";
+        String detail = outputs.receivedDetail(s.getOrganizationId(), segments.size());
         MeetingSession saved = transcripts.receive(s, segments, "UPLOAD", "UPLOADED",
                 "Uploaded by " + email + ". Whether it covers the whole meeting can't be verified.", email, detail);
+        saved = outputs.startIfEnabled(saved, email);
         jobs.cancelForSession(saved.getOrganizationId(), saved.getId());   // a transcript is here; stop looking for one
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "TRANSCRIPT_ADDED", null, segments.size() + " lines", email);
         Map<String, Object> out = view(saved, true);
@@ -674,6 +691,147 @@ public class MeetingAssistantService {
         enqueueFetch(s, email, true);
         store.audit(s.getOrganizationId(), s.getId(), email, "FETCH_REQUESTED", null);
         return view(s, true);
+    }
+
+    // ── summary, minutes, notes ──────────────────────────────────────────────
+
+    public Map<String, Object> generateOutputs(String id, String email) {
+        String role = roleOf(email);
+        MeetingSession s = loadManageable(id, email, role);
+        return view(startGeneration(s, email, role), true);
+    }
+
+    private MeetingSession startGeneration(MeetingSession s, String email, String role) {
+        final String org = s.getOrganizationId();
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings have no transcript to summarise.");
+        if (s.getSegmentCount() <= 0 || s.getTranscriptPurgedAt() != null)
+            throw err(HttpStatus.CONFLICT, "NO_TRANSCRIPT", "There is no transcript to summarise yet. Add one first.");
+        SessionStatus st = SessionStatus.valueOf(s.getStatus());
+        if (st != SessionStatus.TRANSCRIPT_RECEIVED && st != SessionStatus.READY_FOR_REVIEW && st != SessionStatus.FAILED)
+            throw err(HttpStatus.CONFLICT, "INVALID_STATE", st == SessionStatus.PROCESSING
+                    ? "The summary is already being generated." : "This meeting can't be summarised right now.");
+        String reason = llm.notReadyReason(org);
+        if (reason != null) throw err(HttpStatus.CONFLICT, "AI_NOT_CONFIGURED", reason);
+        if (outputs.rateLimited(org))
+            throw err(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "Too many summaries were requested in the last hour. Please try again a little later.");
+        MeetingSession saved;
+        try {
+            saved = outputs.start(s, email);
+        } catch (DuplicateKeyException dup) {
+            throw duplicateError(s.getActiveKey(), email, role);
+        }
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "GENERATION_REQUESTED", s.getStatus(), "PROCESSING", email);
+        return saved;
+    }
+
+    public Map<String, Object> artifacts(String id, String email) {
+        return outputs.artifacts(load(id, email, roleOf(email)));
+    }
+
+    public List<Map<String, Object>> artifactVersions(String id, String type, String email) {
+        return outputs.versions(load(id, email, roleOf(email)), type);
+    }
+
+    public Map<String, Object> artifactVersion(String id, String type, int version, String email) {
+        return outputs.version(load(id, email, roleOf(email)), type, version);
+    }
+
+    public List<Map<String, Object>> artifactDiff(String id, String type, int from, int to, String email) {
+        return outputs.diff(load(id, email, roleOf(email)), type, from, to);
+    }
+
+    public Map<String, Object> editArtifact(String id, String type, int baseVersion, String markdown, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        Map<String, Object> out = outputs.edit(s, type, baseVersion, markdown, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "DOCUMENT_EDITED", null, type, email);
+        return out;
+    }
+
+    public Map<String, Object> restoreArtifact(String id, String type, int fromVersion, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        Map<String, Object> out = outputs.restore(s, type, fromVersion, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "DOCUMENT_RESTORED", null, type, email);
+        return out;
+    }
+
+    public Map<String, Object> acceptPending(String id, String type, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        outputs.acceptPending(s, type, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "PENDING_ACCEPTED", null, type, email);
+        return outputs.artifacts(s);
+    }
+
+    public Map<String, Object> dismissPending(String id, String type, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        outputs.dismissPending(s, type, email);
+        return outputs.artifacts(s);
+    }
+
+    // ── structured actions & review ──────────────────────────────────────────
+
+    public Map<String, Object> extractActions(String id, String email) {
+        String role = roleOf(email);
+        MeetingSession s = loadManageable(id, email, role);
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings have no transcript to analyse.");
+        if (s.getSegmentCount() <= 0 || s.getTranscriptPurgedAt() != null)
+            throw err(HttpStatus.CONFLICT, "NO_TRANSCRIPT", "There is no transcript to analyse yet. Add one first.");
+        String reason = llm.notReadyReason(s.getOrganizationId());
+        if (reason != null) throw err(HttpStatus.CONFLICT, "AI_NOT_CONFIGURED", reason);
+        if ("RUNNING".equals(s.getActionsStatus()) && jobs.find(s.getOrganizationId(), s.getId(), MeetingActionService.JOB_TYPE)
+                .filter(j -> "QUEUED".equals(j.getStatus()) || "RUNNING".equals(j.getStatus())).isPresent())
+            throw err(HttpStatus.CONFLICT, "ALREADY_RUNNING", "Actions are already being extracted.");
+        if (outputs.rateLimited(s.getOrganizationId()))
+            throw err(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "Too many AI requests in the last hour. Please try again a little later.");
+        actionService.enqueue(s, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "ACTIONS_REQUESTED", null, null, email);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    public Map<String, Object> actions(String id, String email) {
+        return actionService.list(load(id, email, roleOf(email)));
+    }
+
+    public Map<String, Object> patchAction(String id, String actionId, Map<String, Object> patch, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        Map<String, Object> out = actionService.patch(s, actionId, patch, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "ACTION_EDITED", null, actionId, email);
+        return out;
+    }
+
+    public Map<String, Object> decideAction(String id, String actionId, String decision, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        Map<String, Object> out = actionService.decide(s, actionId, decision, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "ACTION_" + String.valueOf(decision).toUpperCase(Locale.ROOT), null, actionId, email);
+        return out;
+    }
+
+    public Map<String, Object> mergeAction(String id, String actionId, String intoId, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        return actionService.merge(s, actionId, intoId, email);
+    }
+
+    public Map<String, Object> approveValidActions(String id, String email) {
+        return actionService.approveValid(loadManageable(id, email, roleOf(email)), email);
+    }
+
+    public Map<String, Object> resolveActionsDiff(String id, boolean apply, String email) {
+        return actionService.resolveDiff(loadManageable(id, email, roleOf(email)), apply, email);
+    }
+
+    public Map<String, Object> actionsPreview(String id, String email) {
+        return actionService.preview(load(id, email, roleOf(email)));
+    }
+
+    public Map<String, Object> patchProposedProject(String id, String projectId, Map<String, Object> patch, String email) {
+        return actionService.patchProject(loadManageable(id, email, roleOf(email)), projectId, patch, email);
+    }
+
+    public Map<String, Object> decideProposedProject(String id, String projectId, String decision, String email) {
+        return actionService.decideProject(loadManageable(id, email, roleOf(email)), projectId, decision, email);
+    }
+
+    public Map<String, Object> aiUsage(int days) {
+        return outputs.usage(orgId(), days);
     }
 
     // ── Google account connection (per person) ────────────────────────────────
@@ -738,6 +896,16 @@ public class MeetingAssistantService {
         m.put("transcriptNote", s.getTranscriptNote());
         m.put("transcriptReceivedAt", s.getTranscriptReceivedAt() == null ? null : s.getTranscriptReceivedAt().toString());
         m.put("transcriptRemovedByRetention", s.getTranscriptPurgedAt() != null);
+        m.put("outputsGeneratedAt", s.getOutputsGeneratedAt() == null ? null : s.getOutputsGeneratedAt().toString());
+        m.put("actionsStatus", s.getActionsStatus());
+        m.put("actionsMessage", s.getActionsMessage());
+        m.put("actionsExtractedAt", s.getActionsExtractedAt() == null ? null : s.getActionsExtractedAt().toString());
+        m.put("actionsPendingDiff", s.isActionsPendingDiff());
+        m.put("canExtract", canManage && !s.isSimulated() && s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null
+                && !"RUNNING".equals(s.getActionsStatus()));
+        SessionStatus vs = SessionStatus.valueOf(s.getStatus());
+        m.put("canGenerate", canManage && !s.isSimulated() && s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null
+                && (vs == SessionStatus.TRANSCRIPT_RECEIVED || vs == SessionStatus.READY_FOR_REVIEW || vs == SessionStatus.FAILED));
         m.put("visibility", s.getVisibility());
         m.put("sharedWith", s.getSharedWith());
         m.put("simulated", s.isSimulated());

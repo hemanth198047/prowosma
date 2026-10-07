@@ -3,11 +3,13 @@ import PageHeader from "../components/PageHeader";
 import { useToast } from "../components/ToastContext";
 import { useRole } from "../hooks/useRole";
 import { useConfirm } from "../hooks/useConfirm";
+import MeetingArtifactPanel from "../components/MeetingArtifactPanel";
+import { MeetingActionsPanel, MeetingProjectsTasksPanel } from "../components/MeetingActionsPanel";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getAssistantCapabilities, validateMeetingUrl, listMeetingSessions, createMeetingSession,
   cancelMeetingSession, retryMeetingSession, updateMeetingAccess, devAdvanceMeetingSession,
-  addMeetingTranscript, getMeetingTranscript, deleteMeetingTranscript, fetchMeetingTranscriptNow,
+  addMeetingTranscript, getMeetingTranscript, deleteMeetingTranscript, fetchMeetingTranscriptNow, generateMeetingOutputs,
 } from "../api/meetingAssistant";
 import { getProjects } from "../api/projects";
 import { getTeamMembers } from "../api/team";
@@ -18,6 +20,7 @@ import {
 import "../styles/pages/meeting-assistant.css";
 
 const TABS = ["Summary", "MOM", "Notes", "Transcript", "Actions", "Projects and Tasks"];
+const DOC_TYPE = { Summary: "SUMMARY", MOM: "MOM", Notes: "NOTES" };
 const toList = (res) => {
   const d = res?.data;
   return Array.isArray(d) ? d : d?.content || d?.items || [];
@@ -107,7 +110,7 @@ function TranscriptPanel({ session, onChanged }) {
   );
 }
 
-function ResultTabs({ session, onChanged }) {
+function ResultTabs({ session, members, projects, aiReady, aiReason, onChanged }) {
   const [tab, setTab] = useState(TABS[0]);
   const onKey = (e) => {
     const i = TABS.indexOf(tab);
@@ -129,13 +132,11 @@ function ResultTabs({ session, onChanged }) {
         ))}
       </div>
       <div id="ma-panel" role="tabpanel" aria-labelledby={`ma-tab-${tab}`}>
-        {tab === "Transcript" ? <TranscriptPanel session={session} onChanged={onChanged} /> : (
-          <div className="ma-empty">
-            {hasTranscript
-              ? `The ${tab} isn't generated yet. Summaries, minutes and actions will be created from the transcript in an upcoming update.`
-              : "No transcript has been collected for this meeting, so there is nothing to show here yet."}
-          </div>
-        )}
+        {tab === "Transcript" ? <TranscriptPanel session={session} onChanged={onChanged} />
+          : DOC_TYPE[tab] ? <MeetingArtifactPanel session={session} type={DOC_TYPE[tab]} aiReady={aiReady} aiReason={aiReason} onChanged={onChanged} />
+          : !hasTranscript ? <div className="ma-empty">No transcript has been collected for this meeting, so there is nothing to show here yet.</div>
+          : tab === "Actions" ? <MeetingActionsPanel session={session} members={members} projects={projects} aiReady={aiReady} aiReason={aiReason} onChanged={onChanged} />
+          : <MeetingProjectsTasksPanel session={session} onChanged={onChanged} />}
       </div>
     </>
   );
@@ -178,7 +179,8 @@ function AddTranscript({ session, onChanged }) {
   return (
     <form className="ma-card" onSubmit={submit} aria-label={replacing ? "Replace transcript" : "Add transcript"}>
       <strong>{replacing ? "Replace the transcript" : "Add a transcript"}</strong>
-      <p className="ma-hint">Paste the text or choose a .vtt, .srt or .txt file. Nothing is changed until you press the button.</p>
+      <p className="ma-hint">Paste the text or choose a .vtt, .srt or .txt file. Nothing is changed until you press the button.
+        {session.status === "READY_FOR_REVIEW" && " Replacing the transcript marks the summary, minutes and notes as out of date; they are kept until you generate new ones."}</p>
       <div className="ma-field">
         <label htmlFor="ma-tr-file">Transcript file</label>
         <input id="ma-tr-file" type="file" accept=".vtt,.srt,.txt,text/plain,text/vtt" onChange={onFile} />
@@ -205,7 +207,7 @@ function AddTranscript({ session, onChanged }) {
   );
 }
 
-function SessionDetail({ session, members, isAdmin, devEnabled, googleConnected, onChanged, onClose }) {
+function SessionDetail({ session, members, projects, isAdmin, devEnabled, googleConnected, aiReady, aiReason, onChanged, onClose }) {
   const { show: toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [devStatus, setDevStatus] = useState("PROCESSING");
@@ -246,6 +248,9 @@ function SessionDetail({ session, members, isAdmin, devEnabled, googleConnected,
         {canRetrySession(session) && (
           <button className="ma-btn primary" disabled={busy}
             onClick={() => run(() => retryMeetingSession(session.id), "Retrying")}>Retry</button>)}
+        {session.canGenerate && aiReady && session.status === "READY_FOR_REVIEW" && (
+          <button className="ma-btn" disabled={busy}
+            onClick={() => run(() => generateMeetingOutputs(session.id), "Generating a new version")}>Regenerate</button>)}
         {session.canManage && googleConnected && session.provider === "GOOGLE_MEET" && WAITING_FOR_TRANSCRIPT.includes(session.status) && (
           <button className="ma-btn" disabled={busy}
             onClick={() => run(() => fetchMeetingTranscriptNow(session.id), "Checking Google Meet")}>Check Google Meet now</button>)}
@@ -301,7 +306,7 @@ function SessionDetail({ session, members, isAdmin, devEnabled, googleConnected,
         </div>
       )}
 
-      <ResultTabs session={session} onChanged={onChanged} />
+      <ResultTabs session={session} members={members} projects={projects} aiReady={aiReady} aiReason={aiReason} onChanged={onChanged} />
     </section>
   );
 }
@@ -352,7 +357,7 @@ export default function MeetingAssistant() {
   // Keep statuses fresh while anything is still in flight.
   useEffect(() => {
     if (!sessions.some((s) => isActiveStatus(s.status))) return undefined;
-    const t = setInterval(refresh, 15000);
+    const t = setInterval(refresh, sessions.some((s) => s.status === "PROCESSING" || s.actionsStatus === "RUNNING") ? 4000 : 15000);
     return () => clearInterval(t);
   }, [sessions, refresh]);
 
@@ -491,8 +496,9 @@ export default function MeetingAssistant() {
 
         <div>
           {selected && (
-            <SessionDetail session={selected} members={members} isAdmin={admin}
+            <SessionDetail session={selected} members={members} projects={projects} isAdmin={admin}
               devEnabled={!!caps?.devFixturesEnabled} googleConnected={googleConnected}
+              aiReady={!!caps?.aiReady} aiReason={caps?.aiReason}
               onChanged={refresh} onClose={() => setSelectedId(null)} />
           )}
           <section className="ma-card" aria-label="Your meetings" style={selected ? { marginTop: 16 } : undefined}>

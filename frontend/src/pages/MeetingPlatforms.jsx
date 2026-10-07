@@ -8,7 +8,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import {
   getMeetingPlatforms, setMeetingPlatformEnabled, testMeetingPlatform, disconnectMeetingPlatform,
   getAssistantSettings, updateAssistantSettings, getAssistantCapabilities,
-  getGoogleConnection, startGoogleConnect, disconnectGoogle,
+  getGoogleConnection, startGoogleConnect, disconnectGoogle, getAiUsage,
 } from "../api/meetingAssistant";
 import { PROVIDER_META } from "../utils/meetingStatus";
 import "../styles/pages/meeting-assistant.css";
@@ -140,7 +140,7 @@ function PlatformCard({ p, caps, google, onChanged }) {
   );
 }
 
-function SettingsForm({ initial, onSaved }) {
+function SettingsForm({ initial, caps, usage, onSaved }) {
   const { show: toast } = useToast();
   const [f, setF] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -156,6 +156,8 @@ function SettingsForm({ initial, onSaved }) {
         assistantName: f.assistantName,
         sendRoles: f.sendRoles,
         defaultVisibility: f.defaultVisibility,
+        autoGenerateOutputs: !!f.autoGenerateOutputs,
+        autoExtractActions: !!f.autoExtractActions,
         transcriptRetentionDays: Number(f.transcriptRetentionDays),
         generatedContentRetentionDays: Number(f.generatedContentRetentionDays),
         retainRawAudio: !!f.retainRawAudio,
@@ -223,6 +225,28 @@ function SettingsForm({ initial, onSaved }) {
       </div>
 
       <fieldset style={{ border: 0, padding: 0 }}>
+        <legend className="ma-legend">Summaries, minutes and notes</legend>
+        <p className="ma-hint" role="status">
+          {caps?.aiReady
+            ? "AI is ready. Documents are written by the AI provider configured in AI Settings."
+            : <>AI isn't ready: {caps?.aiReason || "check AI Settings"} <a href="/ai-settings">AI Settings</a></>}
+        </p>
+        <label className="ma-switch">
+          <input type="checkbox" checked={!!f.autoGenerateOutputs} onChange={(e) => set("autoGenerateOutputs", e.target.checked)} />
+          Create them automatically when a transcript arrives
+        </label>
+        <label className="ma-switch">
+          <input type="checkbox" checked={!!f.autoExtractActions} onChange={(e) => set("autoExtractActions", e.target.checked)} />
+          Also extract action items (owners, projects, deadlines) automatically
+        </label>
+        <p className="ma-hint">Extraction is one more AI pass over the transcript, so it adds to your token usage. When off, people press Extract actions.</p>
+        <p className="ma-hint">When off, people press Generate on each meeting. Transcript text is sent to your configured AI provider, so make sure that fits your privacy commitments.</p>
+        {usage && (
+          <p className="ma-hint">Last {usage.days} days: {usage.runs} runs ({usage.failed} failed), {usage.modelCalls} model calls,{" "}
+            {usage.inputTokens.toLocaleString()} input and {usage.outputTokens.toLocaleString()} output tokens. Tokens, not money — cost depends on the model you chose.</p>)}
+      </fieldset>
+
+      <fieldset style={{ border: 0, padding: 0 }}>
         <legend className="ma-legend">Creating tasks and projects</legend>
         <div className="ma-checks">
           <label><input type="radio" checked readOnly /> Review before creating (default)</label>
@@ -247,6 +271,7 @@ export default function MeetingPlatforms() {
   const [settings, setSettings] = useState(null);
   const [caps, setCaps] = useState(null);
   const [google, setGoogle] = useState(null);
+  const [usage, setUsage] = useState(null);
 
   const load = useCallback(async () => {
     try { setPlatforms((await getMeetingPlatforms()).data); }
@@ -254,6 +279,7 @@ export default function MeetingPlatforms() {
     const [c, g] = await Promise.allSettled([getAssistantCapabilities(), getGoogleConnection()]);
     if (c.status === "fulfilled") setCaps(c.value.data);
     if (g.status === "fulfilled") setGoogle(g.value.data);
+    try { setUsage((await getAiUsage(30)).data); } catch { /* usage is informational */ }
   }, [toast]);
 
   useEffect(() => {
@@ -286,7 +312,7 @@ export default function MeetingPlatforms() {
       <div className="ma-platforms">
         {platforms.map((p) => <PlatformCard key={p.provider} p={p} caps={caps} google={google} onChanged={load} />)}
       </div>
-      {settings && <SettingsForm initial={settings} onSaved={setSettings} />}
+      {settings && <SettingsForm initial={settings} caps={caps} usage={usage} onSaved={setSettings} />}
     </div>
   );
 }

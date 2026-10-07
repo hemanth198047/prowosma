@@ -22,6 +22,12 @@ public class MeetingAssistantSettings {
     /** Default visibility of a new session: PRIVATE (requester + admins) or WORKSPACE. */
     private String defaultVisibility = "PRIVATE";
 
+    /** Generate summary, minutes and notes automatically when a transcript arrives (only if AI is configured). */
+    private boolean autoGenerateOutputs = true;
+
+    /** After the documents are ready, also extract structured actions (one more model pass). Needs AI to be ready. */
+    private boolean autoExtractActions = true;
+
     private boolean autoCreateTasks = false;
     private boolean autoCreateProjects = false;
 

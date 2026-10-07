@@ -61,6 +61,11 @@ public class MeetingSession {
     private String transcriptReceivedBy;
     private String transcriptNote;          // completeness / provenance, plain language
     private Instant transcriptPurgedAt;     // set when retention removed the text
+    private String actionsStatus = "NONE";   // NONE | RUNNING | READY | FAILED  (action extraction; independent of the meeting status)
+    private String actionsMessage;
+    private Instant actionsExtractedAt;
+    private boolean actionsPendingDiff;     // a re-run found differences waiting for review
+    private Instant outputsGeneratedAt;    // last time summary/minutes/notes were produced
     private String conferenceRecord;        // Google conferenceRecords/{id} this session was matched to
 
     private boolean simulated;          // development fixture — never a real meeting

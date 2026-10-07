@@ -1,6 +1,7 @@
 package com.prowosma.backend.service;
 
 import com.prowosma.backend.integration.GoogleApiException;
+import com.prowosma.backend.integration.LlmException;
 import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.model.MeetingJob;
 import com.prowosma.backend.model.MeetingSession;
@@ -32,12 +33,18 @@ public class MeetingJobRunner {
     static final int MAX_ERROR_STREAK = 8;
     private static final int MAX_JOBS_PER_TICK = 10;
     private static final Duration PURGE_EVERY = Duration.ofHours(6);
-    /** Statuses in which a failed import may still fail the meeting; once a transcript exists the meeting is left alone. */
-    private static final Set<SessionStatus> FAILABLE = EnumSet.of(SessionStatus.SCHEDULED, SessionStatus.AWAITING_TRANSCRIPT);
+    /** A failed IMPORT may only fail a meeting that is still waiting; a failed GENERATION may only fail one that is processing. */
+    private static Set<SessionStatus> failable(MeetingJob job) {
+        return MeetingOutputService.JOB_TYPE.equals(job.getType())
+                ? EnumSet.of(SessionStatus.PROCESSING)
+                : EnumSet.of(SessionStatus.SCHEDULED, SessionStatus.AWAITING_TRANSCRIPT);
+    }
 
     private final MeetingJobService jobs;
     private final MeetingSessionStore store;
     private final MeetingTranscriptService transcripts;
+    private final MeetingOutputService outputs;
+    private final MeetingActionService actionService;
     private final MeetingAssistantSettingsRepository settingsRepo;
     private final Map<String, MeetingJobHandler> handlers = new HashMap<>();
     private final String workerId = UUID.randomUUID().toString();
@@ -47,10 +54,13 @@ public class MeetingJobRunner {
     private boolean enabled;
 
     public MeetingJobRunner(MeetingJobService jobs, MeetingSessionStore store, MeetingTranscriptService transcripts,
-                            MeetingAssistantSettingsRepository settingsRepo, List<MeetingJobHandler> handlerList) {
+                            MeetingOutputService outputs, MeetingActionService actionService, MeetingAssistantSettingsRepository settingsRepo,
+                            List<MeetingJobHandler> handlerList) {
         this.jobs = jobs;
         this.store = store;
         this.transcripts = transcripts;
+        this.outputs = outputs;
+        this.actionService = actionService;
         this.settingsRepo = settingsRepo;
         for (MeetingJobHandler h : handlerList) handlers.put(h.type(), h);
     }
@@ -64,7 +74,8 @@ public class MeetingJobRunner {
             if (Instant.now().isAfter(lastPurge.plus(PURGE_EVERY))) {
                 lastPurge = Instant.now();
                 int n = transcripts.purgeExpired(this::retentionDays);
-                if (n > 0) log.info("Meeting transcript retention removed {} transcript(s)", n);
+                int g = outputs.purgeExpired(this::generatedRetentionDays);
+                if (n > 0 || g > 0) log.info("Meeting retention removed {} transcript(s) and {} generated document version(s)", n, g);
             }
         } catch (RuntimeException e) {
             log.error("Meeting job tick failed: {}", e.getClass().getSimpleName());
@@ -76,6 +87,14 @@ public class MeetingJobRunner {
             return settingsRepo.findByOrganizationId(org).map(s -> s.getTranscriptRetentionDays()).orElse(90);
         } catch (RuntimeException e) {
             return 90;
+        }
+    }
+
+    private int generatedRetentionDays(String org) {
+        try {
+            return settingsRepo.findByOrganizationId(org).map(s -> s.getGeneratedContentRetentionDays()).orElse(365);
+        } catch (RuntimeException e) {
+            return 365;
         }
     }
 
@@ -106,6 +125,8 @@ public class MeetingJobRunner {
                     : JobOutcome.fail(e.getCode(), e.getMessage(), recoveryFor(e.getCode()));
         } catch (GoogleApiException e) {
             o = fromGoogle(e);
+        } catch (LlmException e) {
+            o = fromLlm(e);
         } catch (RuntimeException e) {
             log.warn("Meeting job {} ({}) crashed: {}", job.getId(), job.getType(), e.getClass().getSimpleName());
             o = JobOutcome.retryError(Instant.now().plusSeconds(60), "UNEXPECTED");
@@ -129,6 +150,19 @@ public class MeetingJobRunner {
         };
     }
 
+    private static JobOutcome fromLlm(LlmException e) {
+        return switch (e.getKind()) {
+            case NOT_CONFIGURED -> JobOutcome.fail("AI_NOT_CONFIGURED", e.getMessage(), "Ask an admin to finish AI Settings, then press Generate again.");
+            case AUTH -> JobOutcome.fail("AI_AUTH", "The AI provider rejected the saved API key.",
+                    "An admin should check the key in AI Settings, then press Generate again.");
+            case BAD_RESPONSE -> JobOutcome.fail("AI_BAD_OUTPUT", e.getMessage(),
+                    "Press Generate again. If it keeps happening, an admin can try a different model in AI Settings.");
+            case INPUT_TOO_LARGE -> JobOutcome.fail("AI_INPUT_TOO_LARGE", "The configured AI model couldn't take this much text.",
+                    "An admin can choose a model with a larger context window in AI Settings.");
+            default -> JobOutcome.retryError(Instant.now().plusSeconds(90), e.getKind().name());   // rate limit, outage, network
+        };
+    }
+
     private static String recoveryFor(String code) {
         return switch (code) {
             case "GOOGLE_NOT_CONNECTED", "GOOGLE_REAUTH_REQUIRED" -> "Connect your Google account in Meeting Platforms, then retry. Or upload the transcript.";
@@ -147,8 +181,11 @@ public class MeetingJobRunner {
             case RETRY -> {
                 int streak = o.isError() ? job.getErrorStreak() + 1 : 0;
                 boolean pastDeadline = job.getDeadline() != null && Instant.now().isAfter(job.getDeadline());
-                if (streak >= MAX_ERROR_STREAK) {
-                    failSession(job, "TEMPORARY_PROBLEM", "Prowosma couldn't reach Google after several tries.",
+                boolean generation = MeetingOutputService.JOB_TYPE.equals(job.getType()) || MeetingActionService.JOB_TYPE.equals(job.getType());
+                if (streak >= MAX_ERROR_STREAK || (generation && job.getAttempts() >= job.getMaxAttempts())) {
+                    if (generation) failSession(job, "AI_UNAVAILABLE", "The AI service didn't respond after several tries.",
+                            "Try again in a few minutes by pressing Generate again.");
+                    else failSession(job, "TEMPORARY_PROBLEM", "Prowosma couldn't reach Google after several tries.",
                             "Retry in a little while, or upload the transcript.");
                     jobs.failJob(job, "TOO_MANY_ERRORS");
                 } else if (pastDeadline || job.getAttempts() >= job.getMaxAttempts()) {
@@ -164,10 +201,14 @@ public class MeetingJobRunner {
     }
 
     private void failSession(MeetingJob job, String code, String message, String recovery) {
+        if (MeetingActionService.JOB_TYPE.equals(job.getType())) {          // action extraction failing never fails the meeting itself
+            actionService.markFailed(job, code, message, recovery);
+            return;
+        }
         try {
             store.find(job.getOrganizationId(), job.getSessionId()).ifPresent((MeetingSession s) -> {
-                if (FAILABLE.contains(SessionStatus.valueOf(s.getStatus()))) {
-                    store.transition(s, SessionStatus.FAILED, "system", "Transcript import failed (" + code + ")", message, code, recovery);
+                if (failable(job).contains(SessionStatus.valueOf(s.getStatus()))) {
+                    store.transition(s, SessionStatus.FAILED, "system", (MeetingOutputService.JOB_TYPE.equals(job.getType()) ? "Generation failed (" : "Transcript import failed (") + code + ")", message, code, recovery);
                 }
             });
         } catch (MeetingAssistantException e) {

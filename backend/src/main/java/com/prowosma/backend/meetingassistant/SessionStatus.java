@@ -24,9 +24,9 @@ public enum SessionStatus {
             entry(LISTENING,             EnumSet.of(RECONNECTING, PROCESSING, FAILED, CANCELLED)),
             entry(RECONNECTING,          EnumSet.of(LISTENING, PROCESSING, FAILED, CANCELLED)),
             entry(PROCESSING,            EnumSet.of(READY_FOR_REVIEW, COMPLETED, FAILED, CANCELLED)),
-            entry(READY_FOR_REVIEW,      EnumSet.of(COMPLETED, PROCESSING)),
-            // A failed meeting can be retried, or rescued by supplying a transcript by hand.
-            entry(FAILED,                EnumSet.of(SCHEDULED, TRANSCRIPT_RECEIVED)),
+            entry(READY_FOR_REVIEW,      EnumSet.of(COMPLETED, PROCESSING, TRANSCRIPT_RECEIVED)),   // regenerate, or a new transcript arrived
+            // A failed meeting can be retried, rescued by supplying a transcript by hand, or (if it has a transcript) regenerated.
+            entry(FAILED,                EnumSet.of(SCHEDULED, TRANSCRIPT_RECEIVED, PROCESSING)),
             entry(COMPLETED,             EnumSet.noneOf(SessionStatus.class))
     );
 

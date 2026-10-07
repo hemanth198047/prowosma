@@ -15,6 +15,25 @@ vi.mock("../../api/meetingAssistant", () => ({
   getMeetingTranscript: vi.fn(),
   deleteMeetingTranscript: vi.fn(),
   fetchMeetingTranscriptNow: vi.fn(),
+  generateMeetingOutputs: vi.fn(),
+  getMeetingArtifacts: vi.fn(),
+  getArtifactVersions: vi.fn(),
+  getArtifactVersion: vi.fn(),
+  getArtifactDiff: vi.fn(),
+  saveArtifact: vi.fn(),
+  restoreArtifact: vi.fn(),
+  acceptPendingArtifact: vi.fn(),
+  dismissPendingArtifact: vi.fn(),
+  extractMeetingActions: vi.fn(),
+  getMeetingActions: vi.fn(),
+  getMeetingActionsPreview: vi.fn(),
+  patchMeetingAction: vi.fn(),
+  decideMeetingAction: vi.fn(),
+  mergeMeetingAction: vi.fn(),
+  approveValidMeetingActions: vi.fn(),
+  resolveMeetingActionsDiff: vi.fn(),
+  patchProposedProject: vi.fn(),
+  decideProposedProject: vi.fn(),
 }));
 vi.mock("../../api/projects", () => ({ getProjects: vi.fn() }));
 vi.mock("../../api/team", () => ({ getTeamMembers: vi.fn() }));
@@ -28,6 +47,8 @@ const CAPS = {
   assistantName: "Prowosma Meeting Assistant",
   platforms: [{ provider: "GOOGLE_MEET", enabled: true, liveJoin: false, automaticTranscript: false, manualTranscriptUpload: true, connectedForMe: false }],
   googleConfigured: false,
+  aiReady: true,
+  aiReason: null,
   devFixturesEnabled: false,
   note: "Transcripts can be added by upload or paste. Automatic import isn't set up. The assistant can't join meetings live.",
 };
@@ -45,6 +66,9 @@ beforeEach(() => {
   getProjects.mockResolvedValue({ data: [{ id: "p1", name: "Apollo" }] });
   getTeamMembers.mockResolvedValue({ data: [] });
   api.getMeetingTranscript.mockResolvedValue({ data: { segments: [], total: 0, nextAfter: null } });
+  api.getMeetingArtifacts.mockResolvedValue({ data: { SUMMARY: null, MOM: null, NOTES: null } });
+  api.getMeetingActions.mockResolvedValue({ data: { status: "NONE", message: null, pendingDiff: null, actions: [], proposedProjects: [] } });
+  api.getMeetingActionsPreview.mockResolvedValue({ data: { tasks: [], projects: [], waitingForReview: 0 } });
 });
 afterEach(cleanup);
 
@@ -54,7 +78,7 @@ describe("MeetingAssistant page", () => {
   it("is honest: tells people live joining isn't available and labels the button 'Register meeting'", async () => {
     render(<MeetingAssistant />);
     expect(await screen.findByRole("button", { name: "Register meeting" })).toBeDisabled();
-    expect(screen.getByRole("note")).toHaveTextContent("can't join meetings live");
+    expect(await screen.findByRole("note")).toHaveTextContent("can't join meetings live");     // appears once the capabilities have loaded
     expect(screen.queryByRole("button", { name: "Send Meeting Assistant" })).toBeNull();
   });
 
@@ -124,7 +148,7 @@ describe("MeetingAssistant page", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(6);
     fireEvent.keyDown(screen.getByRole("tab", { name: "Summary" }), { key: "ArrowRight" });
     expect(screen.getByRole("tab", { name: "MOM" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("No transcript has been collected");
+    await waitFor(() => expect(screen.getByRole("tabpanel")).toHaveTextContent("No transcript has been collected"));
   });
 
   // ── Transcripts ──────────────────────────────────────────────────────────
@@ -214,10 +238,44 @@ describe("MeetingAssistant page", () => {
     expect(api.getMeetingTranscript.mock.calls[1][1]).toMatchObject({ after: 1 });
   });
 
-  it("other tabs say, truthfully, that summaries aren't generated yet when a transcript exists", async () => {
-    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 3 });
+  it("a meeting with a transcript offers to generate the documents when AI is ready", async () => {
+    api.generateMeetingOutputs.mockResolvedValue({ data: SESSION });
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 3, canGenerate: true });
     fireEvent.click(await screen.findByRole("tab", { name: "MOM" }));
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("isn't generated yet");
+    fireEvent.click(await screen.findByRole("button", { name: "Generate summary, minutes and notes" }));
+    await waitFor(() => expect(api.generateMeetingOutputs).toHaveBeenCalledWith("s1"));
+  });
+
+  it("explains why nothing is generated when AI isn't ready, instead of offering a button that can't work", async () => {
+    api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, aiReady: false, aiReason: "AI isn't turned on. An admin can enable it under AI Settings." } });
+    await openSession({ ...SESSION, status: "TRANSCRIPT_RECEIVED", segmentCount: 3, canGenerate: true });
+    fireEvent.click(await screen.findByRole("tab", { name: "Summary" }));
+    expect(await screen.findByText(/isn't turned on/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate summary, minutes and notes" })).toBeNull();
+  });
+
+  it("shows progress while the documents are being generated", async () => {
+    await openSession({ ...SESSION, status: "PROCESSING", segmentCount: 3 });
+    fireEvent.click(await screen.findByRole("tab", { name: "Summary" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/Generating/);
+  });
+
+  it("offers Regenerate once documents exist, and warns that replacing the transcript makes them stale", async () => {
+    api.generateMeetingOutputs.mockResolvedValue({ data: SESSION });
+    await openSession({ ...SESSION, status: "READY_FOR_REVIEW", segmentCount: 3, canGenerate: true });
+    fireEvent.click(await screen.findByRole("button", { name: "Regenerate" }));
+    await waitFor(() => expect(api.generateMeetingOutputs).toHaveBeenCalledWith("s1"));
+    expect(screen.getByText(/out of date/)).toBeInTheDocument();
+  });
+
+  it("the Actions tab offers to extract actions, and the Projects and Tasks tab says nothing is created yet", async () => {
+    api.extractMeetingActions.mockResolvedValue({ data: SESSION });
+    await openSession({ ...SESSION, status: "READY_FOR_REVIEW", segmentCount: 3, canExtract: true, canManage: true });
+    fireEvent.click(await screen.findByRole("tab", { name: "Actions" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Extract actions" }));
+    await waitFor(() => expect(api.extractMeetingActions).toHaveBeenCalledWith("s1"));
+    fireEvent.click(screen.getByRole("tab", { name: "Projects and Tasks" }));
+    expect(await screen.findByText(/Nothing below exists in Prowosma yet/)).toBeInTheDocument();
   });
 
   // ── Google ───────────────────────────────────────────────────────────────

@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/easycode.ignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-    </list>
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Implemented Team meeting changes Further" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -59,6 +51,65 @@
     <commands />
     <urls />
   </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0181989622885697" />
+      <entry key="MS500" value="1.4487550253336308" />
+      <entry key="S2" value="1.818469181590804" />
+      <entry key="S5" value="1.9229983666666957" />
+      <entry key="S10" value="1.960728039908639" />
+      <entry key="S30" value="1.9867341418317477" />
+      <entry key="S60" value="1.993344925910304" />
+      <entry key="M2" value="1.9966669098262613" />
+      <entry key="M5" value="1.9996449752392569" />
+      <entry key="M10" value="2.0821382505478856" />
+      <entry key="M15" value="2.3629726695640745" />
+      <entry key="M30" value="3.5947453115879684" />
+      <entry key="H1" value="5.341261684845412" />
+      <entry key="H2" value="6.836224938276918" />
+      <entry key="H4" value="7.818388091272653" />
+      <entry key="D1" value="8.787588889110543" />
+      <entry key="W1" value="8.96925337355524" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.93081168245637" />
+      <entry key="MS500" value="1.424716477553164" />
+      <entry key="S2" value="1.8111421710096267" />
+      <entry key="S5" value="1.9199191460272875" />
+      <entry key="S10" value="1.9591616592416712" />
+      <entry key="S30" value="1.9862058654977799" />
+      <entry key="S60" value="1.9930800062204261" />
+      <entry key="M2" value="1.9965342536253141" />
+      <entry key="M5" value="1.9995918233300958" />
+      <entry key="M10" value="2.0821099013068802" />
+      <entry key="M15" value="2.362949728638905" />
+      <entry key="M30" value="3.5947249694008443" />
+      <entry key="H1" value="5.341245220962415" />
+      <entry key="H2" value="6.8362140124275195" />
+      <entry key="H4" value="7.818381743308641" />
+      <entry key="D1" value="8.787587685544905" />
+      <entry key="W1" value="8.969253197719183" />
+    </decayedShown>
+  </component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 6,
   "fromUser": false
@@ -79,6 +130,10 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm"
   }
 }]]></component>
@@ -111,5 +166,25 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="dependencySupport" implementationName="java:org.springframework.security:spring-security-core" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-core" />
+    <option featureType="dependencySupport" implementationName="java:jakarta.validation:jakarta.validation-api" />
+    <option featureType="dependencySupport" implementationName="java:io.projectreactor:reactor-core" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.data:spring-data-commons" />
+    <option featureType="dependencySupport" implementationName="executable:kubectl" />
+    <option featureType="dependencySupport" implementationName="java:org.hibernate.validator:hibernate-validator" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-webmvc" />
+    <option featureType="dependencySupport" implementationName="java:org.projectlombok:lombok" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-websocket" />
+    <option featureType="dependencySupport" implementationName="executable:docker" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-messaging" />
+    <option featureType="dependencySupport" implementationName="java:org.springframework.boot:spring-boot" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Implemented Team meeting changes" />
+    <MESSAGE value="Implemented Team meeting changes Further" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented Team meeting changes Further" />
   </component>
 </project>

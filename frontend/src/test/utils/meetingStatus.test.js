@@ -47,7 +47,7 @@ describe("meetingStatus", () => {
   });
 
   it("mirrors the server's rule for when a transcript may be added", () => {
-    expect(ACCEPTS_TRANSCRIPT).toEqual(expect.arrayContaining(["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED"]));
+    expect(ACCEPTS_TRANSCRIPT).toEqual(expect.arrayContaining(["SCHEDULED", "AWAITING_TRANSCRIPT", "TRANSCRIPT_RECEIVED", "FAILED", "READY_FOR_REVIEW"]));
     for (const s of ["PROCESSING", "COMPLETED", "CANCELLED"]) expect(ACCEPTS_TRANSCRIPT).not.toContain(s);
     expect(WAITING_FOR_TRANSCRIPT).toEqual(["SCHEDULED", "AWAITING_TRANSCRIPT"]);
   });

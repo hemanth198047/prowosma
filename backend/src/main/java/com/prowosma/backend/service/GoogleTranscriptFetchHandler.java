@@ -38,6 +38,7 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
     private final GoogleOAuthService oauth;
     private final GoogleMeetApi api;
     private final MeetingTranscriptService transcripts;
+    private final MeetingOutputService outputs;
     private final MongoTemplate mongo;
 
     @Override
@@ -120,8 +121,9 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
         s.setStartedAt(conf.start());
         String detail = "Transcript imported from Google Meet (" + segments.size() + " lines)."
                 + (cov.partial() ? " It may be incomplete. " + cov.note() : "")
-                + " Summaries and minutes aren't generated yet.";
-        transcripts.receive(s, segments, "GOOGLE_MEET", cov.partial() ? "PARTIAL" : "FULL", cov.note(), "system", detail);
+                + " " + outputs.hint(org);
+        MeetingSession saved = transcripts.receive(s, segments, "GOOGLE_MEET", cov.partial() ? "PARTIAL" : "FULL", cov.note(), "system", detail);
+        outputs.startIfEnabled(saved, "system");      // generates the documents straight away when the organization allows it and AI is ready
         return JobOutcome.done();
     }
 

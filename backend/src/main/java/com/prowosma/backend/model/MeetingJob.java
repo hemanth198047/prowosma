@@ -24,6 +24,7 @@ public class MeetingJob {
     private int attempts;                // every run, including after a crash
     private int maxAttempts = 400;
     private int errorStreak;             // consecutive error retries (polling does not count)
+    private String payload;              // small job-specific token, e.g. a generation request id (never content)
     private String lastCode;
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();

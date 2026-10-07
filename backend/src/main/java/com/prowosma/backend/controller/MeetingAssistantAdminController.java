@@ -36,6 +36,12 @@ public class MeetingAssistantAdminController {
         return service.updateSettings(patch, auth.getName());
     }
 
+    /** AI usage in tokens (not money — prices depend on the model you chose in AI Settings). */
+    @GetMapping("/usage")
+    public Map<String, Object> usage(@RequestParam(defaultValue = "30") int days) {
+        return service.aiUsage(days);
+    }
+
     @GetMapping("/platforms")
     public List<MeetingIntegration> platforms() {
         return service.listIntegrations();

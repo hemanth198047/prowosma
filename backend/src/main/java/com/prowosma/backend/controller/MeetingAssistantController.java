@@ -97,6 +97,115 @@ public class MeetingAssistantController {
         return service.fetchNow(id, auth.getName());
     }
 
+    // ── summary, minutes and notes ───────────────────────────────────────────
+
+    @PostMapping("/sessions/{id}/generate")
+    public Map<String, Object> generate(@PathVariable String id, Authentication auth) {
+        return service.generateOutputs(id, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/artifacts")
+    public Map<String, Object> artifacts(@PathVariable String id, Authentication auth) {
+        return service.artifacts(id, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/artifacts/{type}/versions")
+    public List<Map<String, Object>> versions(@PathVariable String id, @PathVariable String type, Authentication auth) {
+        return service.artifactVersions(id, type, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/artifacts/{type}/versions/{n}")
+    public Map<String, Object> version(@PathVariable String id, @PathVariable String type, @PathVariable int n, Authentication auth) {
+        return service.artifactVersion(id, type, n, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/artifacts/{type}/diff")
+    public List<Map<String, Object>> diff(@PathVariable String id, @PathVariable String type,
+                                          @RequestParam int from, @RequestParam int to, Authentication auth) {
+        return service.artifactDiff(id, type, from, to, auth.getName());
+    }
+
+    /** Saves an edit as a NEW version. {@code baseVersion} must be the version the person was looking at. */
+    @PutMapping("/sessions/{id}/artifacts/{type}")
+    public Map<String, Object> edit(@PathVariable String id, @PathVariable String type,
+                                    @RequestBody Map<String, Object> body, Authentication auth) {
+        Object base = body.get("baseVersion");
+        if (!(base instanceof Number n)) throw new MeetingAssistantException(org.springframework.http.HttpStatus.BAD_REQUEST, "BASE_VERSION_REQUIRED", "baseVersion is required.");
+        Object md = body.get("markdown");
+        return service.editArtifact(id, type, n.intValue(), md == null ? null : String.valueOf(md), auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/artifacts/{type}/restore")
+    public Map<String, Object> restore(@PathVariable String id, @PathVariable String type,
+                                       @RequestBody Map<String, Object> body, Authentication auth) {
+        Object v = body.get("version");
+        if (!(v instanceof Number n)) throw new MeetingAssistantException(org.springframework.http.HttpStatus.BAD_REQUEST, "VERSION_REQUIRED", "version is required.");
+        return service.restoreArtifact(id, type, n.intValue(), auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/artifacts/{type}/accept")
+    public Map<String, Object> accept(@PathVariable String id, @PathVariable String type, Authentication auth) {
+        return service.acceptPending(id, type, auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/artifacts/{type}/dismiss")
+    public Map<String, Object> dismiss(@PathVariable String id, @PathVariable String type, Authentication auth) {
+        return service.dismissPending(id, type, auth.getName());
+    }
+
+    // ── structured actions: extract, review, preview ─────────────────────────
+
+    @PostMapping("/sessions/{id}/actions/extract")
+    public Map<String, Object> extractActions(@PathVariable String id, Authentication auth) {
+        return service.extractActions(id, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/actions")
+    public Map<String, Object> actions(@PathVariable String id, Authentication auth) {
+        return service.actions(id, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/actions/preview")
+    public Map<String, Object> preview(@PathVariable String id, Authentication auth) {
+        return service.actionsPreview(id, auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/actions/approve-valid")
+    public Map<String, Object> approveValid(@PathVariable String id, Authentication auth) {
+        return service.approveValidActions(id, auth.getName());
+    }
+
+    /** Body {"apply": true|false}: apply or discard the changes a re-run found. */
+    @PostMapping("/sessions/{id}/actions/diff")
+    public Map<String, Object> resolveDiff(@PathVariable String id, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.resolveActionsDiff(id, Boolean.TRUE.equals(body.get("apply")), auth.getName());
+    }
+
+    @PatchMapping("/sessions/{id}/actions/{actionId}")
+    public Map<String, Object> patchAction(@PathVariable String id, @PathVariable String actionId, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.patchAction(id, actionId, body, auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/actions/{actionId}/decision")
+    public Map<String, Object> decideAction(@PathVariable String id, @PathVariable String actionId, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.decideAction(id, actionId, String.valueOf(body.get("decision")), auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/actions/{actionId}/merge")
+    public Map<String, Object> mergeAction(@PathVariable String id, @PathVariable String actionId, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.mergeAction(id, actionId, String.valueOf(body.get("intoId")), auth.getName());
+    }
+
+    @PatchMapping("/sessions/{id}/proposed-projects/{projectId}")
+    public Map<String, Object> patchProject(@PathVariable String id, @PathVariable String projectId, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.patchProposedProject(id, projectId, body, auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/proposed-projects/{projectId}/decision")
+    public Map<String, Object> decideProject(@PathVariable String id, @PathVariable String projectId, @RequestBody Map<String, Object> body, Authentication auth) {
+        return service.decideProposedProject(id, projectId, String.valueOf(body.get("decision")), auth.getName());
+    }
+
     // ── each person's own Google connection ─────────────────────────────────
 
     @GetMapping("/google/connection")

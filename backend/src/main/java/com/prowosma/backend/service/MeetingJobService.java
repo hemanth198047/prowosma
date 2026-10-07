@@ -31,8 +31,13 @@ public class MeetingJobService {
 
     public static String keyOf(String type, String sessionId) { return type + ":" + sessionId; }
 
-    /** Idempotent: an already queued/running job is returned untouched; a finished one is re-armed. */
     public MeetingJob enqueue(String org, String sessionId, String type, String requestedBy, Instant runAfter, Instant deadline) {
+        return enqueue(org, sessionId, type, requestedBy, runAfter, deadline, null, 400);
+    }
+
+    /** Idempotent: an already queued/running job is returned untouched; a finished one is re-armed. */
+    public MeetingJob enqueue(String org, String sessionId, String type, String requestedBy, Instant runAfter, Instant deadline,
+                              String payload, int maxAttempts) {
         String key = keyOf(type, sessionId);
         for (int attempt = 0; attempt < 2; attempt++) {
             MeetingJob existing = mongo.findOne(new Query(Criteria.where("jobKey").is(key)), MeetingJob.class);
@@ -49,6 +54,8 @@ public class MeetingJobService {
                 existing.setRequestedBy(requestedBy);
                 existing.setRunAfter(runAfter);
                 existing.setDeadline(deadline);
+                existing.setPayload(payload);
+                existing.setMaxAttempts(maxAttempts);
                 existing.setAttempts(0);
                 existing.setErrorStreak(0);
                 existing.setLastCode(null);
@@ -65,6 +72,8 @@ public class MeetingJobService {
             j.setRequestedBy(requestedBy);
             j.setRunAfter(runAfter);
             j.setDeadline(deadline);
+            j.setPayload(payload);
+            j.setMaxAttempts(maxAttempts);
             try {
                 return mongo.insert(j);
             } catch (DuplicateKeyException race) {
@@ -89,6 +98,12 @@ public class MeetingJobService {
     public Optional<MeetingJob> find(String org, String sessionId, String type) {
         return Optional.ofNullable(mongo.findOne(new Query(Criteria.where("organizationId").is(org)
                 .and("jobKey").is(keyOf(type, sessionId))), MeetingJob.class));
+    }
+
+    /** Long jobs (several model calls) call this between steps so another worker doesn't take over a healthy run. */
+    public void extendLease(MeetingJob j) {
+        mongo.updateFirst(new Query(Criteria.where("id").is(j.getId()).and("status").is("RUNNING")),
+                new Update().set("leaseUntil", Instant.now().plus(LEASE)).set("updatedAt", Instant.now()), MeetingJob.class);
     }
 
     public void succeed(MeetingJob j) { finish(j, "SUCCEEDED", null); }

@@ -29,7 +29,8 @@ import java.util.*;
 public class MeetingTranscriptService {
 
     private static final Set<SessionStatus> ACCEPTS_TRANSCRIPT = EnumSet.of(
-            SessionStatus.SCHEDULED, SessionStatus.AWAITING_TRANSCRIPT, SessionStatus.TRANSCRIPT_RECEIVED, SessionStatus.FAILED);
+            SessionStatus.SCHEDULED, SessionStatus.AWAITING_TRANSCRIPT, SessionStatus.TRANSCRIPT_RECEIVED, SessionStatus.FAILED,
+            SessionStatus.READY_FOR_REVIEW);
     private static final int WRITE_BATCH = 1000;
 
     private final MongoTemplate mongo;
