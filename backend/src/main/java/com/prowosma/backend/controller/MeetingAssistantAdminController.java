@@ -3,7 +3,7 @@ package com.prowosma.backend.controller;
 import com.prowosma.backend.model.MeetingAssistantSettings;
 import com.prowosma.backend.model.MeetingIntegration;
 import com.prowosma.backend.service.MeetingAssistantService;
-import com.prowosma.backend.service.MeetingAssistantService.MeetingAssistantException;
+import com.prowosma.backend.service.MeetingAssistantException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

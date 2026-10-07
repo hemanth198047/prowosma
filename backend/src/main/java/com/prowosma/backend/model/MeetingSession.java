@@ -47,11 +47,21 @@ public class MeetingSession {
     private Instant endedAt;
 
     private String activeKey;           // null once terminal
-    private String captureStatus = "NONE";          // NONE | PARTIAL | FULL
+    private String captureStatus = "NONE";          // NONE | PARTIAL | FULL | UPLOADED (completeness unverifiable)
     private String consentStatus = "NOT_APPLICABLE";// no audio is captured in transcript-only mode
 
     private String visibility = "PRIVATE";          // PRIVATE | WORKSPACE
     private List<String> sharedWith = new ArrayList<>();
+
+    // Transcript bookkeeping (the text itself lives in transcript_segments)
+    private String transcriptSource;        // UPLOAD | GOOGLE_MEET
+    private int transcriptGeneration;       // 0 = none; bumped on every replacement
+    private int segmentCount;
+    private Instant transcriptReceivedAt;
+    private String transcriptReceivedBy;
+    private String transcriptNote;          // completeness / provenance, plain language
+    private Instant transcriptPurgedAt;     // set when retention removed the text
+    private String conferenceRecord;        // Google conferenceRecords/{id} this session was matched to
 
     private boolean simulated;          // development fixture — never a real meeting
     private int retryCount;

@@ -2,7 +2,8 @@ package com.prowosma.backend.controller;
 
 import com.prowosma.backend.service.MeetingAssistantService;
 import com.prowosma.backend.service.MeetingAssistantService.CreateRequest;
-import com.prowosma.backend.service.MeetingAssistantService.MeetingAssistantException;
+import com.prowosma.backend.service.MeetingAssistantException;
+import com.prowosma.backend.service.MeetingAssistantService.TranscriptUpload;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,8 +28,8 @@ public class MeetingAssistantController {
     private final MeetingAssistantService service;
 
     @GetMapping("/capabilities")
-    public Map<String, Object> capabilities() {
-        return service.capabilities();
+    public Map<String, Object> capabilities(Authentication auth) {
+        return service.capabilities(auth.getName());
     }
 
     @PostMapping("/validate-url")
@@ -68,6 +69,55 @@ public class MeetingAssistantController {
                 ? l.stream().map(String::valueOf).toList() : null;
         String visibility = body.get("visibility") == null ? null : String.valueOf(body.get("visibility"));
         return service.updateAccess(id, visibility, shared, auth.getName());
+    }
+
+    // ── transcripts ──────────────────────────────────────────────────────────
+
+    /** Paste or upload: the browser sends the file's text. Requester or admin only. */
+    @PostMapping("/sessions/{id}/transcript")
+    public Map<String, Object> addTranscript(@PathVariable String id, @RequestBody TranscriptUpload body, Authentication auth) {
+        return service.uploadTranscript(id, body, auth.getName());
+    }
+
+    @GetMapping("/sessions/{id}/transcript")
+    public Map<String, Object> transcript(@PathVariable String id,
+                                          @RequestParam(defaultValue = "0") int after,
+                                          @RequestParam(defaultValue = "200") int limit, Authentication auth) {
+        return service.getTranscript(id, after, limit, auth.getName());
+    }
+
+    @DeleteMapping("/sessions/{id}/transcript")
+    public Map<String, Object> deleteTranscript(@PathVariable String id, Authentication auth) {
+        return service.deleteTranscript(id, auth.getName());
+    }
+
+    /** "Check now" — imports from Google Meet immediately using the caller's own Google access. */
+    @PostMapping("/sessions/{id}/fetch")
+    public Map<String, Object> fetchNow(@PathVariable String id, Authentication auth) {
+        return service.fetchNow(id, auth.getName());
+    }
+
+    // ── each person's own Google connection ─────────────────────────────────
+
+    @GetMapping("/google/connection")
+    public Map<String, Object> googleConnection(Authentication auth) {
+        return service.googleConnection(auth.getName());
+    }
+
+    @PostMapping("/google/authorize")
+    public Map<String, Object> googleAuthorize(Authentication auth) {
+        return service.googleAuthorize(auth.getName());
+    }
+
+    /** Called by the app's own callback page (an authenticated request), so no public endpoint is needed. */
+    @PostMapping("/google/connect")
+    public Map<String, Object> googleConnect(@RequestBody Map<String, String> body, Authentication auth) {
+        return service.googleComplete(body.get("code"), body.get("state"), auth.getName());
+    }
+
+    @DeleteMapping("/google/connection")
+    public Map<String, Object> googleDisconnect(Authentication auth) {
+        return service.googleDisconnect(auth.getName());
     }
 
     /** Development fixture. Returns 404 unless app.meeting-assistant.dev-fixtures-enabled=true. */

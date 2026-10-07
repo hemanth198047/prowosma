@@ -1,14 +1,16 @@
 package com.prowosma.backend.service;
 
 import com.prowosma.backend.config.WorkspaceContext;
+import com.prowosma.backend.integration.GoogleApiException;
+import com.prowosma.backend.integration.GoogleMeetApi;
 import com.prowosma.backend.meetingassistant.MeetingUrlParser;
 import com.prowosma.backend.meetingassistant.SessionStatus;
+import com.prowosma.backend.meetingassistant.TranscriptParser;
 import com.prowosma.backend.model.*;
 import com.prowosma.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,31 +46,19 @@ public class MeetingAssistantService {
     private final TeamMemberRepository teamMemberRepository;
     private final ProjectRepository projectRepository;
     private final ActivityLogService activityLog;
+    private final MeetingSessionStore store;
+    private final MeetingTranscriptService transcripts;
+    private final MeetingJobService jobs;
+    private final GoogleOAuthService google;
+    private final GoogleMeetApi googleApi;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
     private boolean devFixtures;
 
-    // ── errors ────────────────────────────────────────────────────────────────
+    public static final int MAX_UPLOAD_CHARS = 5_000_000;
 
-    public static class MeetingAssistantException extends RuntimeException {
-        private final HttpStatus status;
-        private final String code;
-        private final Map<String, Object> extras;
-
-        public MeetingAssistantException(HttpStatus status, String code, String message) {
-            this(status, code, message, Map.of());
-        }
-        public MeetingAssistantException(HttpStatus status, String code, String message, Map<String, Object> extras) {
-            super(message);
-            this.status = status; this.code = code; this.extras = extras;
-        }
-        public HttpStatus getStatus() { return status; }
-        public String getCode() { return code; }
-        public Map<String, Object> getExtras() { return extras; }
-    }
-
-    private static MeetingAssistantException err(HttpStatus s, String code, String msg) {
-        return new MeetingAssistantException(s, code, msg);
+    private static MeetingAssistantException err(HttpStatus st, String code, String msg) {
+        return new MeetingAssistantException(st, code, msg);
     }
 
     // ── identity / access helpers ─────────────────────────────────────────────
@@ -212,10 +202,20 @@ public class MeetingAssistantService {
     }
 
     public List<MeetingIntegration> listIntegrations() {
+        String org = orgId();
         Map<String, MeetingIntegration> byProvider = new HashMap<>();
-        for (MeetingIntegration i : integrations.findByOrganizationId(orgId())) byProvider.put(i.getProvider(), i);
+        for (MeetingIntegration i : integrations.findByOrganizationId(org)) byProvider.put(i.getProvider(), i);
         List<MeetingIntegration> out = new ArrayList<>();
-        for (String p : PROVIDERS) out.add(byProvider.getOrDefault(p, defaultIntegration(p)));
+        for (String p : PROVIDERS) {
+            MeetingIntegration i = byProvider.getOrDefault(p, defaultIntegration(p));
+            if ("GOOGLE_MEET".equals(p)) {          // derived live, never persisted from here
+                long n = google.activeCount(org);
+                i.setConnectionStatus(n > 0 ? "CONNECTED" : "NOT_CONNECTED");
+                i.setStatusMessage(!google.isConfigured() ? "Google sign-in isn't set up on the server yet."
+                        : n > 0 ? n + " Google account(s) connected." : "No one has connected a Google account yet.");
+            }
+            out.add(i);
+        }
         return out;
     }
 
@@ -241,24 +241,51 @@ public class MeetingAssistantService {
     }
 
     /**
-     * Honest health check. No platform sign-in exists yet, so this reports exactly that
-     * rather than pretending to probe a connection.
+     * Honest health check. For Google Meet it makes one real, read-only API call with the calling admin's own
+     * connection. For Teams (no sign-in exists) it says so.
      */
     public Map<String, Object> testConnection(String providerRaw, String email) {
         String provider = normalizeProvider(providerRaw);
+        String org = orgId();
         MeetingIntegration i = getOrCreateIntegration(provider);
+        boolean healthy = false;
+        String message;
+        if ("GOOGLE_MEET".equals(provider)) {
+            if (!google.isConfigured()) {
+                message = "Google sign-in isn't set up on the server. Add the Google OAuth client ID and secret (see docs/MEETING_ASSISTANT.md).";
+            } else if (!google.canStoreTokens()) {
+                message = "Encryption isn't configured on the server (ENCRYPTION_KEY), so Google sign-ins can't be saved.";
+            } else if (!google.hasActiveConnection(org, email)) {
+                message = "Your own Google account isn't connected yet. Connect it from this page, then test again.";
+            } else {
+                try {
+                    googleApi.healthCheck(google.accessToken(org, email));
+                    healthy = true;
+                    message = "Google Meet access works for the account you connected.";
+                } catch (MeetingAssistantException e) {
+                    message = e.getMessage();
+                } catch (GoogleApiException e) {
+                    message = switch (e.getKind()) {
+                        case UNAUTHORIZED -> "Google rejected the saved sign-in. Reconnect your Google account.";
+                        case FORBIDDEN -> "Google denied access. Check that the Meet API is enabled for your Google Cloud project.";
+                        default -> "Couldn't reach Google just now. Try again in a minute.";
+                    };
+                }
+            }
+        } else {
+            message = "Platform sign-in isn't set up yet, so transcripts can't be fetched automatically. Transcripts can be uploaded or pasted.";
+        }
         i.setLastCheckedAt(Instant.now());
         i.setUpdatedBy(email);
         i.setUpdatedAt(Instant.now());
-        boolean connected = "CONNECTED".equals(i.getConnectionStatus());
-        i.setStatusMessage(connected ? i.getStatusMessage()
-                : "Platform sign-in isn't set up yet, so transcripts can't be fetched automatically.");
+        i.setStatusMessage(message);
         integrations.save(i);
+        MeetingIntegration live = listIntegrations().stream().filter(x -> provider.equals(x.getProvider())).findFirst().orElse(i);
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("provider", provider);
-        out.put("healthy", false);
-        out.put("connectionStatus", i.getConnectionStatus());
-        out.put("message", i.getStatusMessage());
+        out.put("healthy", healthy);
+        out.put("connectionStatus", live.getConnectionStatus());
+        out.put("message", message);
         out.put("checkedAt", i.getLastCheckedAt().toString());
         return out;
     }
@@ -280,24 +307,33 @@ public class MeetingAssistantService {
     }
 
     /** What the assistant can truly do right now — the UI derives its wording from this, nothing is assumed. */
-    public Map<String, Object> capabilities() {
+    public Map<String, Object> capabilities(String email) {
+        String org = orgId();
         MeetingAssistantSettings st = getSettings();
+        boolean googleReady = google.isConfigured() && google.canStoreTokens();
         List<Map<String, Object>> platforms = new ArrayList<>();
+        boolean anyAuto = false;
         for (MeetingIntegration i : listIntegrations()) {
+            boolean isGoogle = "GOOGLE_MEET".equals(i.getProvider());
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("provider", i.getProvider());
             m.put("enabled", i.isEnabled());
             m.put("connectionStatus", i.getConnectionStatus());
             m.put("liveJoin", false);
-            m.put("automaticTranscript", false);
-            m.put("manualTranscriptUpload", false);
+            m.put("automaticTranscript", isGoogle && googleReady);
+            m.put("manualTranscriptUpload", true);
+            m.put("connectedForMe", isGoogle && google.hasActiveConnection(org, email));
             platforms.add(m);
+            anyAuto |= isGoogle && googleReady;
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("assistantName", st.getAssistantName());
         out.put("platforms", platforms);
+        out.put("googleConfigured", googleReady);
         out.put("devFixturesEnabled", devFixtures);
-        out.put("note", "Meetings can be registered, but no transcript source is connected yet, so nothing is collected automatically.");
+        out.put("note", anyAuto
+                ? "Transcripts can be imported automatically from Google Meet (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
+                : "Transcripts can be added by upload or paste. Automatic import isn't set up. The assistant can't join meetings live.");
         return out;
     }
 
@@ -321,14 +357,6 @@ public class MeetingAssistantService {
             out.put("message", r.message());
         }
         return out;
-    }
-
-    private static String occurrenceToken(Instant scheduledFor) {
-        return scheduledFor == null ? "NOW" : scheduledFor.truncatedTo(ChronoUnit.MINUTES).toString();
-    }
-
-    private static String activeKeyOf(String org, String provider, String meetingKey, Instant scheduledFor) {
-        return org + "|" + provider + "|" + meetingKey + "|" + occurrenceToken(scheduledFor);
     }
 
     public MeetingSession createSession(CreateRequest req, String email) {
@@ -403,11 +431,12 @@ public class MeetingAssistantService {
         s.setTimezone(tz);
         s.setVisibility(st.getDefaultVisibility());
         s.setSimulated(simulated);
-        s.setActiveKey(activeKeyOf(org, provider, parsed.meetingKey(), scheduledFor));
+        s.setActiveKey(MeetingSessionStore.activeKeyOf(org, provider, parsed.meetingKey(), scheduledFor));
         SessionStatus initial = scheduledFor != null ? SessionStatus.SCHEDULED : SessionStatus.AWAITING_TRANSCRIPT;
+        boolean auto = !simulated && autoFetchPossible(provider, org, email, parsed.meetingKey());
         s.setStatus(initial.name());
-        s.setStatusDetail(detailFor(initial));
-        addHistory(s, null, initial.name(), email, "Requested");
+        s.setStatusDetail(waitingDetail(provider, initial, auto, google.isConfigured()));
+        MeetingSessionStore.addHistory(s, null, initial.name(), email, "Requested");
 
         MeetingSession saved;
         try {
@@ -415,8 +444,41 @@ public class MeetingAssistantService {
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
         }
+        store.audit(org, saved.getId(), email, "CREATED", provider + ", " + saved.getStatus());
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CREATED", null, saved.getStatus(), email);
+        if (auto) enqueueFetch(saved, email, false);
         return saved;
+    }
+
+    // ── automatic transcript import (Google Meet) ─────────────────────────────
+
+    private boolean autoFetchPossible(String provider, String org, String email, String meetingKey) {
+        return "GOOGLE_MEET".equals(provider) && meetingKey != null && !meetingKey.startsWith("lookup:")
+                && google.isConfigured() && google.canStoreTokens() && google.hasActiveConnection(org, email);
+    }
+
+    private static String waitingDetail(String provider, SessionStatus st, boolean auto, boolean googleConfigured) {
+        if (auto) {
+            return st == SessionStatus.SCHEDULED
+                    ? "Scheduled. Prowosma will look for the transcript on Google Meet after the meeting."
+                    : "Waiting for the meeting to finish. Prowosma will import the transcript from Google Meet if transcription was turned on.";
+        }
+        if ("GOOGLE_MEET".equals(provider)) {
+            return googleConfigured
+                    ? "Waiting for a transcript. Upload or paste one, or connect your Google account to import it automatically."
+                    : "Waiting for a transcript. Upload or paste one.";
+        }
+        return "Waiting for a transcript. Upload or paste one — automatic import isn't available for Microsoft Teams yet.";
+    }
+
+    private void enqueueFetch(MeetingSession s, String email, boolean now) {
+        Instant t = Instant.now();
+        Instant anchor = s.getScheduledFor() != null ? s.getScheduledFor() : s.getCreatedAt();
+        Instant runAfter;
+        if (now) runAfter = t;
+        else if (s.getScheduledFor() != null) runAfter = s.getScheduledFor().plus(5, ChronoUnit.MINUTES).isAfter(t) ? s.getScheduledFor().plus(5, ChronoUnit.MINUTES) : t;
+        else runAfter = t.plus(2, ChronoUnit.MINUTES);
+        jobs.enqueue(s.getOrganizationId(), s.getId(), GoogleTranscriptFetchHandler.TYPE, email, runAfter, anchor.plus(24, ChronoUnit.HOURS));
     }
 
     private MeetingAssistantException duplicateError(String activeKey, String email, String role) {
@@ -426,19 +488,6 @@ public class MeetingAssistantService {
                 .ifPresent(x -> extras.put("existingSessionId", x.getId()));
         return new MeetingAssistantException(HttpStatus.CONFLICT, "DUPLICATE_SESSION",
                 "The assistant is already assigned to this meeting occurrence.", extras);
-    }
-
-    private static String detailFor(SessionStatus st) {
-        return switch (st) {
-            case SCHEDULED -> "Registered. Live joining isn't available, and transcript collection isn't connected yet.";
-            case AWAITING_TRANSCRIPT -> "Meeting registered. Transcript collection isn't connected yet, so no transcript will be collected automatically.";
-            case PROCESSING -> "Processing the transcript.";
-            case READY_FOR_REVIEW -> "Ready for your review.";
-            case COMPLETED -> "Completed.";
-            case CANCELLED -> "Cancelled.";
-            case FAILED -> "Something went wrong.";
-            default -> st.name();
-        };
     }
 
     public List<Map<String, Object>> list(String email) {
@@ -476,7 +525,10 @@ public class MeetingAssistantService {
     public Map<String, Object> cancel(String id, String email) {
         String role = roleOf(email);
         MeetingSession s = loadManageable(id, email, role);
-        return view(transition(s, SessionStatus.CANCELLED, email, "Cancelled by user", null, null, null), true);
+        MeetingSession saved = store.transition(s, SessionStatus.CANCELLED, email, "Cancelled by user", null, null, null);
+        jobs.cancelForSession(saved.getOrganizationId(), saved.getId());
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CANCELLED", s.getStatus(), "CANCELLED", email);
+        return view(saved, true);
     }
 
     public Map<String, Object> retry(String id, String email) {
@@ -484,13 +536,20 @@ public class MeetingAssistantService {
         MeetingSession s = loadManageable(id, email, role);
         if (!SessionStatus.valueOf(s.getStatus()).equals(SessionStatus.FAILED))
             throw err(HttpStatus.CONFLICT, "INVALID_STATE", "Only a failed meeting can be retried.");
-        s.setActiveKey(activeKeyOf(s.getOrganizationId(), s.getProvider(), s.getMeetingKey(), s.getScheduledFor()));
+        s.setActiveKey(MeetingSessionStore.activeKeyOf(s.getOrganizationId(), s.getProvider(), s.getMeetingKey(), s.getScheduledFor()));
         s.setRetryCount(s.getRetryCount() + 1);
+        MeetingSession saved;
         try {
-            return view(transition(s, SessionStatus.SCHEDULED, email, "Retried by user", null, null, null), true);
+            saved = store.transition(s, SessionStatus.SCHEDULED, email, "Retried by user",
+                    "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured()), null, null);
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
         }
+        if (!saved.isSimulated() && autoFetchPossible(saved.getProvider(), saved.getOrganizationId(), email, saved.getMeetingKey())) {
+            enqueueFetch(saved, email, true);
+        }
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "RETRIED", "FAILED", "SCHEDULED", email);
+        return view(saved, true);
     }
 
     /** Update who may open this meeting's results. Only existing workspace members can be added. */
@@ -517,7 +576,8 @@ public class MeetingAssistantService {
             s.setSharedWith(clean);
         }
         s.setUpdatedAt(Instant.now());
-        MeetingSession saved = saveSession(s);
+        MeetingSession saved = store.save(s);
+        store.audit(saved.getOrganizationId(), saved.getId(), email, "ACCESS_CHANGED", saved.getVisibility());
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "ACCESS_CHANGED", null, saved.getVisibility(), email);
         return view(saved, true);
     }
@@ -539,45 +599,120 @@ public class MeetingAssistantService {
             failureMsg = "Simulated failure for demonstration.";
             recovery = "Use Retry to try again.";
         }
-        return view(transition(s, to, email, "SIMULATED transition", failureCode, failureMsg, recovery), true);
+        return view(store.transition(s, to, email, "SIMULATED transition", failureMsg, failureCode, recovery), true);
+    }
+
+    // ── transcripts ───────────────────────────────────────────────────────────
+
+    public record TranscriptUpload(String content, String format, String filename) {}
+
+    /** Adds (or replaces) a transcript from pasted/uploaded text. Only the requester or an admin may do this. */
+    public Map<String, Object> uploadTranscript(String id, TranscriptUpload req, String email) {
+        String role = roleOf(email);
+        MeetingSession s = loadManageable(id, email, role);
+        if (req == null || req.content() == null || req.content().isBlank())
+            throw err(HttpStatus.BAD_REQUEST, "EMPTY_TRANSCRIPT", "The transcript is empty.");
+        if (req.content().length() > MAX_UPLOAD_CHARS)
+            throw err(HttpStatus.PAYLOAD_TOO_LARGE, "TRANSCRIPT_TOO_LARGE",
+                    "That transcript is larger than 5 MB. Split it into parts and upload them one at a time.");
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings can't receive a transcript.");
+
+        TranscriptParser.Parsed parsed = transcripts.parse(req.content(), req.format());
+        List<TranscriptSegment> segments = MeetingTranscriptService.fromParsed(parsed, "UPLOAD_" + parsed.format());
+        String detail = "Transcript received (" + segments.size() + " lines). Summaries and minutes aren't generated yet.";
+        MeetingSession saved = transcripts.receive(s, segments, "UPLOAD", "UPLOADED",
+                "Uploaded by " + email + ". Whether it covers the whole meeting can't be verified.", email, detail);
+        jobs.cancelForSession(saved.getOrganizationId(), saved.getId());   // a transcript is here; stop looking for one
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "TRANSCRIPT_ADDED", null, segments.size() + " lines", email);
+        Map<String, Object> out = view(saved, true);
+        out.put("warnings", parsed.warnings());
+        return out;
+    }
+
+    public Map<String, Object> getTranscript(String id, int afterSeq, int limit, String email) {
+        MeetingSession s = load(id, email, roleOf(email));
+        List<Map<String, Object>> segs = transcripts.page(s, afterSeq, limit);
+        int last = segs.isEmpty() ? 0 : (Integer) segs.get(segs.size() - 1).get("seq");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("sessionId", s.getId());
+        out.put("source", s.getTranscriptSource());
+        out.put("captureStatus", s.getCaptureStatus());
+        out.put("note", s.getTranscriptNote());
+        out.put("total", s.getSegmentCount());
+        out.put("removedByRetention", s.getTranscriptPurgedAt() != null);
+        out.put("segments", segs);
+        out.put("nextAfter", (!segs.isEmpty() && last < s.getSegmentCount()) ? last : null);
+        return out;
+    }
+
+    public Map<String, Object> deleteTranscript(String id, String email) {
+        String role = roleOf(email);
+        MeetingSession s = loadManageable(id, email, role);
+        SessionStatus st = SessionStatus.valueOf(s.getStatus());
+        if (s.getTranscriptGeneration() <= 0 || s.getSegmentCount() == 0)
+            throw err(HttpStatus.CONFLICT, "NO_TRANSCRIPT", "This meeting has no transcript to delete.");
+        if (st != SessionStatus.TRANSCRIPT_RECEIVED && st != SessionStatus.FAILED && st != SessionStatus.CANCELLED && st != SessionStatus.COMPLETED)
+            throw err(HttpStatus.CONFLICT, "TRANSCRIPT_LOCKED", "The transcript can't be deleted while the meeting is being processed.");
+        MeetingSession saved = transcripts.delete(s, email);
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "TRANSCRIPT_DELETED", null, null, email);
+        return view(saved, true);
+    }
+
+    /** "Check now": runs the Google import immediately with the caller's own Google access. */
+    public Map<String, Object> fetchNow(String id, String email) {
+        String role = roleOf(email);
+        MeetingSession s = loadManageable(id, email, role);
+        if (!"GOOGLE_MEET".equals(s.getProvider()))
+            throw err(HttpStatus.CONFLICT, "NOT_SUPPORTED", "Automatic import isn't available for this platform yet. Upload or paste the transcript.");
+        SessionStatus st = SessionStatus.valueOf(s.getStatus());
+        if (st != SessionStatus.SCHEDULED && st != SessionStatus.AWAITING_TRANSCRIPT)
+            throw err(HttpStatus.CONFLICT, "INVALID_STATE", "This meeting isn't waiting for a transcript.");
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings never contact Google.");
+        if (!autoFetchPossible(s.getProvider(), s.getOrganizationId(), email, s.getMeetingKey()))
+            throw err(HttpStatus.CONFLICT, "GOOGLE_NOT_CONNECTED",
+                    "Connect your Google account first (and make sure Google sign-in is set up on the server). This link type must also be a standard meet.google.com code.");
+        enqueueFetch(s, email, true);
+        store.audit(s.getOrganizationId(), s.getId(), email, "FETCH_REQUESTED", null);
+        return view(s, true);
+    }
+
+    // ── Google account connection (per person) ────────────────────────────────
+
+    public Map<String, Object> googleConnection(String email) {
+        String org = orgId();
+        Optional<MeetingUserConnection> c = google.connection(org, email);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("configured", google.isConfigured());
+        out.put("canStoreTokens", google.canStoreTokens());
+        out.put("connected", c.filter(x -> "ACTIVE".equals(x.getStatus())).isPresent());
+        out.put("status", c.map(MeetingUserConnection::getStatus).orElse("NOT_CONNECTED"));
+        out.put("account", c.map(MeetingUserConnection::getAccount).orElse(null));
+        return out;
+    }
+
+    public Map<String, Object> googleAuthorize(String email) {
+        String role = roleOf(email);
+        if ("NONE".equals(role) || "VIEWER".equals(role))
+            throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't connect a Google account.");
+        return Map.of("url", google.authorizeUrl(orgId(), email));
+    }
+
+    public Map<String, Object> googleComplete(String code, String state, String email) {
+        String role = roleOf(email);
+        if ("NONE".equals(role) || "VIEWER".equals(role))
+            throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't connect a Google account.");
+        google.complete(orgId(), email, code, state);
+        activityLog.log("MEETING_PLATFORM", "GOOGLE_MEET", "GOOGLE_MEET", "ACCOUNT_CONNECTED", null, null, email);
+        return googleConnection(email);
+    }
+
+    public Map<String, Object> googleDisconnect(String email) {
+        google.disconnect(orgId(), email);
+        activityLog.log("MEETING_PLATFORM", "GOOGLE_MEET", "GOOGLE_MEET", "ACCOUNT_DISCONNECTED", null, null, email);
+        return googleConnection(email);
     }
 
     // ── internals ─────────────────────────────────────────────────────────────
-
-    /** The only place a session's status changes. Enforces the state machine and frees the active key when terminal. */
-    private MeetingSession transition(MeetingSession s, SessionStatus to, String by, String note,
-                                      String failureCode, String failureMsg, String recovery) {
-        SessionStatus from = SessionStatus.valueOf(s.getStatus());
-        if (!from.canTransitionTo(to))
-            throw err(HttpStatus.CONFLICT, "INVALID_STATE", "This meeting can't change from " + from + " to " + to + ".");
-        s.setStatus(to.name());
-        s.setStatusDetail(failureMsg != null ? failureMsg : detailFor(to));
-        s.setFailureCode(to == SessionStatus.FAILED ? failureCode : null);
-        s.setRecoveryAction(to == SessionStatus.FAILED ? recovery : null);
-        if (to.isTerminal()) {
-            s.setActiveKey(null);
-            s.setEndedAt(Instant.now());
-        }
-        s.setUpdatedAt(Instant.now());
-        addHistory(s, from.name(), to.name(), by, note);
-        MeetingSession saved = saveSession(s);
-        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "STATUS_CHANGED", from.name(), to.name(), by);
-        return saved;
-    }
-
-    private MeetingSession saveSession(MeetingSession s) {
-        try {
-            return sessions.save(s);
-        } catch (OptimisticLockingFailureException e) {
-            throw err(HttpStatus.CONFLICT, "CONFLICT", "This meeting was just updated by someone else. Refresh and try again.");
-        }
-    }
-
-    private static void addHistory(MeetingSession s, String from, String to, String by, String note) {
-        MeetingSession.StatusEvent e = new MeetingSession.StatusEvent();
-        e.setFrom(from); e.setTo(to); e.setBy(by); e.setNote(note);
-        s.getHistory().add(e);
-    }
 
     /** API shape. Deliberately omits internal fields (activeKey, version). */
     private Map<String, Object> view(MeetingSession s, boolean canManage) {
@@ -598,6 +733,11 @@ public class MeetingAssistantService {
         m.put("requestedBy", s.getRequestedBy());
         m.put("captureStatus", s.getCaptureStatus());
         m.put("consentStatus", s.getConsentStatus());
+        m.put("transcriptSource", s.getTranscriptSource());
+        m.put("segmentCount", s.getSegmentCount());
+        m.put("transcriptNote", s.getTranscriptNote());
+        m.put("transcriptReceivedAt", s.getTranscriptReceivedAt() == null ? null : s.getTranscriptReceivedAt().toString());
+        m.put("transcriptRemovedByRetention", s.getTranscriptPurgedAt() != null);
         m.put("visibility", s.getVisibility());
         m.put("sharedWith", s.getSharedWith());
         m.put("simulated", s.isSimulated());
