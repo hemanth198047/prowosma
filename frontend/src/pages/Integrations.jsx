@@ -897,6 +897,14 @@ export default function Integrations() {
       {/* Unified Layer Banner */}
       <UnifiedLayerBanner navigate={navigate} />
 
+      {/* Meeting Assistant — Google Meet / Microsoft Teams */}
+      <button type="button" onClick={() => navigate("/integrations/meeting-platforms")}
+        style={{ display:"block", width:"100%", textAlign:"left", marginBottom:"20px", padding:"12px 16px",
+          background:"var(--surface-1)", border:"1.5px solid var(--border)", borderRadius:"12px",
+          cursor:"pointer", fontSize:"14px", fontWeight:700, color:"inherit" }}>
+        🎙 Meeting Platforms — set up the Meeting Assistant for Google Meet and Microsoft Teams →
+      </button>
+
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px",
         marginBottom:"20px" }}>

@@ -1,0 +1,67 @@
+/* Meeting Assistant + Meeting Platforms. Uses the app's design tokens only. */
+.ma-grid { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .ma-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.ma-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md, 12px);
+  padding: 16px; box-shadow: var(--elevation-1); }
+.ma-card + .ma-card { margin-top: 16px; }
+.ma-card h2 { font-size: 15px; margin: 0 0 12px; }
+
+.ma-banner { display: flex; gap: 10px; padding: 10px 14px; border-radius: var(--radius-md, 12px); font-size: 13px;
+  background: rgba(217,119,6,0.10); border: 1px solid var(--warning); margin-bottom: 16px; }
+
+.ma-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.ma-field label, .ma-legend { font-size: 12px; font-weight: 700; color: var(--gray-500, #64748b); }
+.ma-field input[type="text"], .ma-field input[type="url"], .ma-field input[type="number"],
+.ma-field input[type="datetime-local"], .ma-field select {
+  padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px;
+  background: var(--surface-1); color: inherit; width: 100%; box-sizing: border-box; }
+.ma-field input:focus-visible, .ma-field select:focus-visible, .ma-btn:focus-visible, .ma-tab:focus-visible {
+  outline: 2px solid var(--brand-500); outline-offset: 2px; }
+.ma-hint { font-size: 12px; color: var(--gray-500, #64748b); }
+.ma-error { font-size: 13px; color: #b91c1c; }
+.ma-ok { font-size: 13px; color: var(--success); }
+.ma-warn { font-size: 13px; color: #92400e; }
+
+.ma-radio { display: flex; gap: 16px; margin-bottom: 8px; font-size: 14px; }
+.ma-radio label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+.ma-btn { padding: 9px 16px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-1);
+  color: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
+.ma-btn.primary { background: var(--brand-500); border-color: var(--brand-500); color: #fff; }
+.ma-btn.danger { color: #b91c1c; border-color: #fca5a5; }
+.ma-btn:disabled { opacity: .55; cursor: not-allowed; }
+.ma-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+.ma-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.ma-chip.info { background: rgba(14,165,233,.12); color: #0369a1; }
+.ma-chip.progress { background: rgba(217,119,6,.12); color: #92400e; }
+.ma-chip.success { background: rgba(5,150,105,.12); color: #047857; }
+.ma-chip.danger { background: rgba(220,38,38,.12); color: #b91c1c; }
+.ma-chip.neutral { background: var(--gray-100); color: var(--gray-500, #64748b); }
+.ma-sim { background: #fef3c7; color: #92400e; border: 1px dashed #d97706; }
+
+.ma-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ma-row { border: 1.5px solid var(--border); border-radius: var(--radius-md, 12px); padding: 12px 14px; background: var(--surface-1); }
+.ma-row[aria-current="true"] { border-color: var(--brand-500); }
+.ma-row-top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ma-row-title { font-weight: 700; font-size: 14px; background: none; border: 0; padding: 0; cursor: pointer; color: inherit; text-align: left; }
+.ma-meta { font-size: 12px; color: var(--gray-500, #64748b); margin-top: 2px; }
+
+.ma-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 16px 0 12px; }
+.ma-tab { padding: 8px 12px; border: 0; background: none; font-weight: 700; font-size: 13px; cursor: pointer;
+  color: var(--gray-500, #64748b); border-bottom: 2px solid transparent; white-space: nowrap; }
+.ma-tab[aria-selected="true"] { color: var(--brand-500); border-bottom-color: var(--brand-500); }
+.ma-empty { padding: 18px; text-align: center; color: var(--gray-500, #64748b); font-size: 13px;
+  border: 1.5px dashed var(--border); border-radius: 10px; }
+
+.ma-timeline { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+.ma-timeline li { padding: 4px 0; border-left: 2px solid var(--border); padding-left: 10px; }
+
+.ma-failure { border: 1.5px solid #fca5a5; background: rgba(220,38,38,.06); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 10px; }
+
+.ma-platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.ma-checks { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; }
+.ma-checks label { display: inline-flex; gap: 6px; align-items: center; }
+.ma-caps { font-size: 13px; margin: 8px 0 0; padding-left: 18px; }
+.ma-switch { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; font-size: 13px; }

@@ -55,6 +55,8 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { getDashboardSummary } from "./api/dashboard";
 const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
+const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
+const MeetingPlatforms = lazy(() => import("./pages/MeetingPlatforms"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const AISettings = lazy(() => import("./pages/AISettings"));
 // ThemeSwitcher (named color themes), FontSwitcher, and DesignSwitcher (50
@@ -281,6 +283,7 @@ function SidebarNav({ onNav, badges }) {
       <SidebarGroup label="Knowledge" icon="📚" defaultOpen={false}>
         <NavLink to="/docs"      onClick={onNav}>📄 Docs</NavLink>
         <NavLink to="/meetings"  onClick={onNav}>🎙 Meetings</NavLink>
+        <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>
         <NavLink to="/sops"      onClick={onNav}>📖 SOPs</NavLink>
       </SidebarGroup>
 
@@ -448,6 +451,8 @@ function AppShell() {
       "/decisions":        "Decision Records",
       "/change-requests":  "Change Requests",
       "/meetings":          "Meeting Notes",
+      "/meeting-assistant": "Meeting Assistant",
+      "/integrations/meeting-platforms": "Meeting Platforms",
       "/sops":              "SOPs",
       "/":                  "Dashboard",
       "/tasks":             "Tasks",
@@ -577,6 +582,8 @@ function AppShell() {
               <Routes>
                   <Route path="/docs" element={<ProtectedRoute><Docs /></ProtectedRoute>} />
                   <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
+                  <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
                   <Route path="/sops"      element={<ProtectedRoute><Sops      /></ProtectedRoute>} />
                   <Route
                     path="/"
