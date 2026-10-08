@@ -508,6 +508,9 @@ export default function Login() {
 
         <div className="auth-right-footer">
           {t("login.footer", { year: new Date().getFullYear(), appName: t("common.appName") })}
+          <div style={{ marginTop: 6 }}>
+            <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a>
+          </div>
         </div>
       </div>
 

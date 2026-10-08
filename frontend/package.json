@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:e2e": "playwright test --config=e2e/playwright.config.js"
+    "test:e2e": "playwright test --config=e2e/playwright.config.js",
+    "check:legal": "node scripts/check-legal-placeholders.mjs"
   },
   "overrides": {
     "postcss": "^8.5.26"
