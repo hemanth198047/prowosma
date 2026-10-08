@@ -3,6 +3,7 @@ package com.prowosma.backend.service;
 import com.prowosma.backend.config.WorkspaceContext;
 import com.prowosma.backend.integration.GoogleApiException;
 import com.prowosma.backend.integration.GoogleMeetApi;
+import com.prowosma.backend.integration.GraphApiException;
 import com.prowosma.backend.integration.LlmClient;
 import com.prowosma.backend.meetingassistant.MeetingUrlParser;
 import com.prowosma.backend.meetingassistant.SessionStatus;
@@ -54,6 +55,9 @@ public class MeetingAssistantService {
     private final LlmClient llm;
     private final MeetingActionService actionService;
     private final MeetingCreationService creationService;
+    private final TeamsAuthService teamsAuth;
+    private final MeetingMetrics metrics;
+    private final MeetingHealthService healthService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
     private boolean devFixtures;
@@ -218,6 +222,13 @@ public class MeetingAssistantService {
                 i.setStatusMessage(!google.isConfigured() ? "Google sign-in isn't set up on the server yet."
                         : n > 0 ? n + " Google account(s) connected." : "No one has connected a Google account yet.");
             }
+            if ("MS_TEAMS".equals(p)) {
+                boolean ready = teamsReady(org);
+                i.setConnectionStatus(ready ? "CONNECTED" : "NOT_CONNECTED");
+                i.setStatusMessage(!teamsAuth.isConfigured() ? "Microsoft sign-in isn't set up on the server yet."
+                        : i.getTenantId() == null ? "Enter your Microsoft tenant id to connect."
+                        : ready ? "Connected to your Microsoft 365 tenant." : "Run \"Test connection\" after an admin grants consent.");
+            }
             out.add(i);
         }
         return out;
@@ -277,7 +288,25 @@ public class MeetingAssistantService {
                 }
             }
         } else {
-            message = "Platform sign-in isn't set up yet, so transcripts can't be fetched automatically. Transcripts can be uploaded or pasted.";
+            if (!teamsAuth.isConfigured()) {
+                message = "Microsoft sign-in isn't set up on the server (TEAMS_GRAPH_CLIENT_ID / TEAMS_GRAPH_CLIENT_SECRET). See docs/TEAMS_SETUP.md.";
+            } else if (i.getTenantId() == null) {
+                message = "Enter your Microsoft tenant id first.";
+            } else {
+                try {
+                    teamsAuth.forget(i.getTenantId());
+                    TeamsAuthService.Token t = teamsAuth.token(i.getTenantId());
+                    healthy = t.roles().contains(TeamsAuthService.TRANSCRIPT_ROLE);
+                    message = healthy
+                            ? "The app can sign in and has transcript permission. (Only a real meeting can confirm your organization's application access policy.)"
+                            : "The app signed in, but admin consent for \"" + TeamsAuthService.TRANSCRIPT_ROLE + "\" hasn't been granted yet.";
+                } catch (GraphApiException e) {
+                    message = e.getCode().equals("CONSENT_MISSING") || e.getCode().equals("BAD_SECRET") || e.getCode().equals("TENANT_NOT_FOUND")
+                            || e.getCode().equals("REJECTED") || e.getCode().equals("NOT_CONFIGURED") ? e.getMessage()
+                            : e.isTransient() ? "Couldn't reach Microsoft just now. Try again in a minute." : "Microsoft didn't accept the sign-in.";
+                }
+            }
+            i.setLastTestHealthy(healthy);
         }
         i.setLastCheckedAt(Instant.now());
         i.setUpdatedBy(email);
@@ -294,9 +323,34 @@ public class MeetingAssistantService {
         return out;
     }
 
+    /** Administrator saves the Microsoft tenant id for Teams. It must be a GUID; the connection counts as healthy only after a successful test. */
+    public MeetingIntegration setTeamsTenant(String tenantRaw, String email) {
+        String t = tenantRaw == null ? "" : tenantRaw.trim().toLowerCase(Locale.ROOT);
+        if (!TeamsAuthService.validTenantId(t))
+            throw err(HttpStatus.BAD_REQUEST, "INVALID_TENANT", "A Microsoft tenant id looks like 11111111-2222-3333-4444-555555555555 (Entra admin center → Overview → Tenant ID).");
+        MeetingIntegration i = getOrCreateIntegration("MS_TEAMS");
+        teamsAuth.forget(i.getTenantId());
+        i.setTenantId(t);
+        i.setLastTestHealthy(false);
+        i.setStatusMessage("Run \"Test connection\" after an admin grants consent.");
+        i.setUpdatedBy(email);
+        i.setUpdatedAt(Instant.now());
+        MeetingIntegration saved = integrations.save(i);
+        activityLog.log("MEETING_PLATFORM", saved.getId(), "MS_TEAMS", "TENANT_SET", null, null, email);
+        return saved;
+    }
+
+    public Map<String, Object> teamsConsentUrl() {
+        MeetingIntegration i = getOrCreateIntegration("MS_TEAMS");
+        String url = teamsAuth.consentUrl(i.getTenantId());
+        if (url == null) throw err(HttpStatus.CONFLICT, "NOT_READY", "Save a valid tenant id first, and make sure Microsoft sign-in is set up on the server.");
+        return Map.of("url", url);
+    }
+
     public MeetingIntegration disconnect(String providerRaw, String email) {
         String provider = normalizeProvider(providerRaw);
         MeetingIntegration i = getOrCreateIntegration(provider);
+        if ("MS_TEAMS".equals(provider)) { teamsAuth.forget(i.getTenantId()); i.setTenantId(null); i.setLastTestHealthy(false); }
         // No tokens exist yet. Once OAuth lands this is also where tokens are revoked and wiped.
         i.setEnabled(false);
         i.setConnectionStatus("NOT_CONNECTED");
@@ -327,8 +381,11 @@ public class MeetingAssistantService {
             m.put("automaticTranscript", isGoogle && googleReady);
             m.put("manualTranscriptUpload", true);
             m.put("connectedForMe", isGoogle && google.hasActiveConnection(org, email));
+            boolean isTeams = "MS_TEAMS".equals(i.getProvider());
+            boolean teamsOk = isTeams && teamsReady(org);
+            if (isTeams) { m.put("automaticTranscript", teamsOk); m.put("orgConnected", teamsOk); }
             platforms.add(m);
-            anyAuto |= isGoogle && googleReady;
+            anyAuto |= (isGoogle && googleReady) || teamsOk;
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("assistantName", st.getAssistantName());
@@ -343,7 +400,7 @@ public class MeetingAssistantService {
         out.put("autoCreateProjects", st.isAutoCreateProjects());
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
-                ? "Transcripts can be imported automatically from Google Meet (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
+                ? "Transcripts can be imported automatically (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
                 : "Transcripts can be added by upload or paste. Automatic import isn't set up. The assistant can't join meetings live.");
         return out;
     }
@@ -444,9 +501,16 @@ public class MeetingAssistantService {
         s.setSimulated(simulated);
         s.setActiveKey(MeetingSessionStore.activeKeyOf(org, provider, parsed.meetingKey(), scheduledFor));
         SessionStatus initial = scheduledFor != null ? SessionStatus.SCHEDULED : SessionStatus.AWAITING_TRANSCRIPT;
-        boolean auto = !simulated && autoFetchPossible(provider, org, email, parsed.meetingKey());
+        s.setOrganizerId(parsed.organizerId());
+        s.setTenantHint(parsed.tenantId());
+        boolean auto = !simulated && autoFetchPossible(s, email);
         s.setStatus(initial.name());
-        s.setStatusDetail(waitingDetail(provider, initial, auto, google.isConfigured()));
+        s.setStatusDetail(waitingDetail(provider, initial, auto, google.isConfigured(), teamsReady(org)));
+        if ("MS_TEAMS".equals(provider) && parsed.tenantId() != null) {          // a link from someone else's Microsoft organization is never imported with ours
+            MeetingIntegration connected = integrations.findByOrganizationIdAndProvider(org, "MS_TEAMS").orElse(null);
+            if (connected != null && connected.getTenantId() != null && !parsed.tenantId().equalsIgnoreCase(connected.getTenantId()))
+                s.setStatusDetail("This meeting belongs to a different Microsoft organization than the one connected, so its transcript can't be imported automatically. Upload or paste it.");
+        }
         MeetingSessionStore.addHistory(s, null, initial.name(), email, "Requested");
 
         MeetingSession saved;
@@ -455,6 +519,7 @@ public class MeetingAssistantService {
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
         }
+        metrics.sessionCreated(provider);
         store.audit(org, saved.getId(), email, "CREATED", provider + ", " + saved.getStatus());
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CREATED", null, saved.getStatus(), email);
         if (auto) enqueueFetch(saved, email, false);
@@ -463,23 +528,41 @@ public class MeetingAssistantService {
 
     // ── automatic transcript import (Google Meet) ─────────────────────────────
 
-    private boolean autoFetchPossible(String provider, String org, String email, String meetingKey) {
-        return "GOOGLE_MEET".equals(provider) && meetingKey != null && !meetingKey.startsWith("lookup:")
-                && google.isConfigured() && google.canStoreTokens() && google.hasActiveConnection(org, email);
+    private boolean autoFetchPossible(MeetingSession s, String email) {
+        String key = s.getMeetingKey();
+        String org = s.getOrganizationId();
+        if ("GOOGLE_MEET".equals(s.getProvider()))
+            return key != null && !key.startsWith("lookup:") && google.isConfigured() && google.canStoreTokens() && google.hasActiveConnection(org, email);
+        if ("MS_TEAMS".equals(s.getProvider())) {
+            MeetingIntegration integ = integrations.findByOrganizationIdAndProvider(org, "MS_TEAMS").orElse(null);
+            return teamsReady(org) && key != null && key.startsWith("19:meeting_") && s.getOrganizerId() != null
+                    && (s.getTenantHint() == null || (integ != null && s.getTenantHint().equalsIgnoreCase(integ.getTenantId())));
+        }
+        return false;
     }
 
-    private static String waitingDetail(String provider, SessionStatus st, boolean auto, boolean googleConfigured) {
+    /** Teams automatic import is available when the server has the app registration and an admin connected AND successfully tested this workspace's tenant. */
+    private boolean teamsReady(String org) {
+        if (!teamsAuth.isConfigured()) return false;
+        MeetingIntegration i = integrations.findByOrganizationIdAndProvider(org, "MS_TEAMS").orElse(null);
+        return i != null && i.isEnabled() && i.getTenantId() != null && i.isLastTestHealthy();
+    }
+
+    private static String waitingDetail(String provider, SessionStatus st, boolean auto, boolean googleConfigured, boolean teamsReady) {
         if (auto) {
+            String where = "MS_TEAMS".equals(provider) ? "Microsoft Teams" : "Google Meet";
             return st == SessionStatus.SCHEDULED
-                    ? "Scheduled. Prowosma will look for the transcript on Google Meet after the meeting."
-                    : "Waiting for the meeting to finish. Prowosma will import the transcript from Google Meet if transcription was turned on.";
+                    ? "Scheduled. Prowosma will look for the transcript on " + where + " after the meeting."
+                    : "Waiting for the meeting to finish. Prowosma will import the transcript from " + where + " if transcription was turned on.";
         }
         if ("GOOGLE_MEET".equals(provider)) {
             return googleConfigured
                     ? "Waiting for a transcript. Upload or paste one, or connect your Google account to import it automatically."
                     : "Waiting for a transcript. Upload or paste one.";
         }
-        return "Waiting for a transcript. Upload or paste one — automatic import isn't available for Microsoft Teams yet.";
+        return teamsReady
+                ? "Waiting for a transcript. Upload or paste one. Automatic import for Microsoft Teams needs the link from the meeting invitation (it identifies the organizer)."
+                : "Waiting for a transcript. Upload or paste one. Automatic import for Microsoft Teams isn't set up.";
     }
 
     private void enqueueFetch(MeetingSession s, String email, boolean now) {
@@ -489,7 +572,8 @@ public class MeetingAssistantService {
         if (now) runAfter = t;
         else if (s.getScheduledFor() != null) runAfter = s.getScheduledFor().plus(5, ChronoUnit.MINUTES).isAfter(t) ? s.getScheduledFor().plus(5, ChronoUnit.MINUTES) : t;
         else runAfter = t.plus(2, ChronoUnit.MINUTES);
-        jobs.enqueue(s.getOrganizationId(), s.getId(), GoogleTranscriptFetchHandler.TYPE, email, runAfter, anchor.plus(24, ChronoUnit.HOURS));
+        String type = "MS_TEAMS".equals(s.getProvider()) ? TeamsTranscriptFetchHandler.TYPE : GoogleTranscriptFetchHandler.TYPE;
+        jobs.enqueue(s.getOrganizationId(), s.getId(), type, email, runAfter, anchor.plus(24, ChronoUnit.HOURS));
     }
 
     private MeetingAssistantException duplicateError(String activeKey, String email, String role) {
@@ -555,11 +639,11 @@ public class MeetingAssistantService {
         MeetingSession saved;
         try {
             saved = store.transition(s, SessionStatus.SCHEDULED, email, "Retried by user",
-                    "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured()), null, null);
+                    "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured(), teamsReady(s.getOrganizationId())), null, null);
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
         }
-        if (!saved.isSimulated() && autoFetchPossible(saved.getProvider(), saved.getOrganizationId(), email, saved.getMeetingKey())) {
+        if (!saved.isSimulated() && autoFetchPossible(saved, email)) {
             enqueueFetch(saved, email, true);
         }
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "RETRIED", "FAILED", "SCHEDULED", email);
@@ -673,19 +757,21 @@ public class MeetingAssistantService {
         return view(saved, true);
     }
 
-    /** "Check now": runs the Google import immediately with the caller's own Google access. */
+    /** "Check now": runs the automatic import immediately (Google: with the caller's own Google access; Teams: with the organization's connection). */
     public Map<String, Object> fetchNow(String id, String email) {
         String role = roleOf(email);
         MeetingSession s = loadManageable(id, email, role);
-        if (!"GOOGLE_MEET".equals(s.getProvider()))
-            throw err(HttpStatus.CONFLICT, "NOT_SUPPORTED", "Automatic import isn't available for this platform yet. Upload or paste the transcript.");
         SessionStatus st = SessionStatus.valueOf(s.getStatus());
         if (st != SessionStatus.SCHEDULED && st != SessionStatus.AWAITING_TRANSCRIPT)
             throw err(HttpStatus.CONFLICT, "INVALID_STATE", "This meeting isn't waiting for a transcript.");
-        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings never contact Google.");
-        if (!autoFetchPossible(s.getProvider(), s.getOrganizationId(), email, s.getMeetingKey()))
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings never contact Google or Microsoft.");
+        if (!autoFetchPossible(s, email)) {
+            if ("MS_TEAMS".equals(s.getProvider()))
+                throw err(HttpStatus.CONFLICT, "TEAMS_NOT_READY", "Automatic import isn't ready for this Teams meeting. An admin must connect and test Microsoft Teams, and the link must be the "
+                        + "\"Join the meeting\" link from the invitation (it identifies the organizer). You can upload or paste the transcript instead.");
             throw err(HttpStatus.CONFLICT, "GOOGLE_NOT_CONNECTED",
                     "Connect your Google account first (and make sure Google sign-in is set up on the server). This link type must also be a standard meet.google.com code.");
+        }
         enqueueFetch(s, email, true);
         store.audit(s.getOrganizationId(), s.getId(), email, "FETCH_REQUESTED", null);
         return view(s, true);
@@ -835,6 +921,10 @@ public class MeetingAssistantService {
 
     public Map<String, Object> decideProposedProject(String id, String projectId, String decision, String email) {
         return actionService.decideProject(loadManageable(id, email, roleOf(email)), projectId, decision, email);
+    }
+
+    public Map<String, Object> health() {
+        return healthService.summary(orgId());
     }
 
     public Map<String, Object> aiUsage(int days) {

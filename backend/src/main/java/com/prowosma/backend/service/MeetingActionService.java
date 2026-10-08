@@ -65,6 +65,7 @@ public class MeetingActionService {
     private final LlmClient llm;
     private final MeetingOutputService outputs;
     private final MeetingAssistantSettingsRepository settingsRepo;
+    private final MeetingMetrics metrics;
     private final ObjectMapper om = new ObjectMapper();
 
     @Value("${app.meeting-assistant.ai-single-pass-chars:90000}") private int singlePassChars;
@@ -253,6 +254,8 @@ public class MeetingActionService {
         g.setDropped(dropped);
         g.setWarnings(new ArrayList<>(warnings));
         g.setRequestedBy(by);
+        metrics.tokens("ACTIONS", u.in, u.out);
+        metrics.generation("ACTIONS", status, g.getDurationMs());
         try {
             mongo.insert(g);
         } catch (DuplicateKeyException ignored) { /* a retry of the same request already recorded it */ }

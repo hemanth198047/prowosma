@@ -1,6 +1,7 @@
 package com.prowosma.backend.service;
 
 import com.prowosma.backend.integration.GoogleApiException;
+import com.prowosma.backend.integration.GraphApiException;
 import com.prowosma.backend.integration.LlmException;
 import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.model.MeetingJob;
@@ -45,22 +46,28 @@ public class MeetingJobRunner {
     private final MeetingTranscriptService transcripts;
     private final MeetingOutputService outputs;
     private final MeetingActionService actionService;
+    private final MeetingMetrics metrics;
+    private final MeetingRecoveryService recovery;
     private final MeetingAssistantSettingsRepository settingsRepo;
     private final Map<String, MeetingJobHandler> handlers = new HashMap<>();
     private final String workerId = UUID.randomUUID().toString();
     private volatile Instant lastPurge = Instant.EPOCH;
+    private volatile Instant lastSweep = Instant.EPOCH;
 
     @Value("${app.meeting-assistant.jobs-enabled:true}")
     private boolean enabled;
 
     public MeetingJobRunner(MeetingJobService jobs, MeetingSessionStore store, MeetingTranscriptService transcripts,
-                            MeetingOutputService outputs, MeetingActionService actionService, MeetingAssistantSettingsRepository settingsRepo,
+                            MeetingOutputService outputs, MeetingActionService actionService, MeetingMetrics metrics, MeetingRecoveryService recovery,
+                            MeetingAssistantSettingsRepository settingsRepo,
                             List<MeetingJobHandler> handlerList) {
         this.jobs = jobs;
         this.store = store;
         this.transcripts = transcripts;
         this.outputs = outputs;
         this.actionService = actionService;
+        this.metrics = metrics;
+        this.recovery = recovery;
         this.settingsRepo = settingsRepo;
         for (MeetingJobHandler h : handlerList) handlers.put(h.type(), h);
     }
@@ -71,10 +78,15 @@ public class MeetingJobRunner {
         if (!enabled) return;
         try {
             runOnce();
+            if (Instant.now().isAfter(lastSweep.plus(Duration.ofMinutes(5)))) {
+                lastSweep = Instant.now();
+                recovery.sweepStuck();
+            }
             if (Instant.now().isAfter(lastPurge.plus(PURGE_EVERY))) {
                 lastPurge = Instant.now();
                 int n = transcripts.purgeExpired(this::retentionDays);
                 int g = outputs.purgeExpired(this::generatedRetentionDays);
+                recovery.purgeOperational(this::generatedRetentionDays);
                 if (n > 0 || g > 0) log.info("Meeting retention removed {} transcript(s) and {} generated document version(s)", n, g);
             }
         } catch (RuntimeException e) {
@@ -117,6 +129,7 @@ public class MeetingJobRunner {
             return;
         }
         JobOutcome o;
+        long t0 = System.currentTimeMillis();
         try {
             o = handler.handle(job);
         } catch (MeetingAssistantException e) {
@@ -125,6 +138,8 @@ public class MeetingJobRunner {
                     : JobOutcome.fail(e.getCode(), e.getMessage(), recoveryFor(e.getCode()));
         } catch (GoogleApiException e) {
             o = fromGoogle(e);
+        } catch (GraphApiException e) {
+            o = fromGraph(e);
         } catch (LlmException e) {
             o = fromLlm(e);
         } catch (RuntimeException e) {
@@ -132,6 +147,7 @@ public class MeetingJobRunner {
             o = JobOutcome.retryError(Instant.now().plusSeconds(60), "UNEXPECTED");
         }
         apply(job, o);
+        metrics.job(job.getType(), o.kind().name().toLowerCase(java.util.Locale.ROOT), System.currentTimeMillis() - t0);
     }
 
     private static JobOutcome fromGoogle(GoogleApiException e) {
@@ -147,6 +163,27 @@ public class MeetingJobRunner {
             case BAD_RESPONSE -> JobOutcome.retryError(Instant.now().plusSeconds(120), "BAD_RESPONSE");
             case NOT_FOUND -> JobOutcome.poll(Instant.now().plus(Duration.ofMinutes(5)), "NOT_FOUND_YET");
             default -> JobOutcome.retryError(Instant.now().plusSeconds(60), e.getKind().name());   // RATE_LIMITED, SERVER, NETWORK
+        };
+    }
+
+    private static JobOutcome fromGraph(GraphApiException e) {
+        return switch (e.getKind()) {
+            case UNAUTHORIZED -> switch (e.getCode()) {
+                case "CONSENT_MISSING" -> JobOutcome.fail("TEAMS_CONSENT_MISSING", e.getMessage(), "Ask your Microsoft 365 admin to grant admin consent to the app, then Retry. Or upload the transcript.");
+                case "BAD_SECRET" -> JobOutcome.fail("TEAMS_BAD_SECRET", e.getMessage(), "Ask an admin to update the app's client secret on the server, then Retry. Or upload the transcript.");
+                case "NOT_CONFIGURED" -> JobOutcome.fail("TEAMS_NOT_CONFIGURED", e.getMessage(), "Ask an admin to finish the Microsoft setup, or upload the transcript.");
+                case "TENANT_NOT_FOUND" -> JobOutcome.fail("TEAMS_TENANT_NOT_FOUND", e.getMessage(), "Ask an admin to correct the Microsoft tenant id, or upload the transcript.");
+                default -> JobOutcome.fail("TEAMS_AUTH", "Microsoft didn't accept the app's sign-in.", "Ask an admin to check the Microsoft setup, then Retry. Or upload the transcript.");
+            };
+            case FORBIDDEN -> JobOutcome.fail("TEAMS_ACCESS_DENIED",
+                    "Microsoft didn't allow the app to read this organizer's transcripts. An administrator must create an application access policy for the app and grant it to the meeting organizer (it can take a while to apply).",
+                    "Fix the policy and Retry, or upload the transcript.");
+            case TRANSCRIPTS_DISABLED -> JobOutcome.fail("TEAMS_TRANSCRIPTS_DISABLED",
+                    "Your Microsoft 365 administrator has disabled Graph API access to meeting transcripts.", "Ask them to allow it, or upload the transcript.");
+            case TOO_LARGE -> JobOutcome.fail("TRANSCRIPT_TOO_LONG", "This meeting's transcript is too large to import automatically.", "Upload the transcript in parts instead.");
+            case NOT_FOUND -> JobOutcome.poll(Instant.now().plus(Duration.ofMinutes(5)), "NOT_FOUND_YET");
+            case BAD_RESPONSE -> JobOutcome.retryError(Instant.now().plusSeconds(120), "BAD_RESPONSE");
+            default -> JobOutcome.retryError(Instant.now().plusSeconds(60), e.getKind().name());                  // rate limit, outage, network
         };
     }
 
@@ -185,12 +222,12 @@ public class MeetingJobRunner {
                 if (streak >= MAX_ERROR_STREAK || (generation && job.getAttempts() >= job.getMaxAttempts())) {
                     if (generation) failSession(job, "AI_UNAVAILABLE", "The AI service didn't respond after several tries.",
                             "Try again in a few minutes by pressing Generate again.");
-                    else failSession(job, "TEMPORARY_PROBLEM", "Prowosma couldn't reach Google after several tries.",
+                    else failSession(job, "TEMPORARY_PROBLEM", "Prowosma couldn't reach the meeting platform after several tries.",
                             "Retry in a little while, or upload the transcript.");
                     jobs.failJob(job, "TOO_MANY_ERRORS");
                 } else if (pastDeadline || job.getAttempts() >= job.getMaxAttempts()) {
                     failSession(job, "TRANSCRIPT_TIMEOUT",
-                            "No transcript appeared in time. Google Meet only produces one if transcription was turned on during the meeting.",
+                            "No transcript appeared in time. A transcript only exists if transcription was turned on during the meeting.",
                             "Upload or paste the transcript instead.");
                     jobs.failJob(job, "TIMEOUT");
                 } else {

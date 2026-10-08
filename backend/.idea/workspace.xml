@@ -4,8 +4,43 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Extended meeting feature">
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Introduced env file 1">
+      <change afterPath="$PROJECT_DIR$/docs/MEETING_ASSISTANT_OPERATIONS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/TEAMS_SETUP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/load-tests/meeting-assistant-load-test.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/GraphApiException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/GraphHttp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/JdkGraphHttp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/TeamsGraphApi.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingHealthService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingMetrics.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingRecoveryService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsAuthService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsTranscriptFetchHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FakeGraphHttp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleMeetImportTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsAndOperationsTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsGraphClientTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GOOGLE_MEET_SETUP.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/GOOGLE_MEET_SETUP.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/MEETING_ASSISTANT.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/MEETING_ASSISTANT.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/observability/alert-rules.yml" beforeDir="false" afterPath="$PROJECT_DIR$/observability/alert-rules.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/MeetingUrlParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/MeetingUrlParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingIntegration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingIntegration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingActionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingActionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingOutputService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingOutputService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingTranscriptService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingTranscriptService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/MeetingUrlParserTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/MeetingUrlParserTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,23 +90,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0093542756101312" />
-      <entry key="MS500" value="1.630413952092011" />
-      <entry key="S2" value="3.629217121507734" />
-      <entry key="S5" value="6.35059197881983" />
-      <entry key="S10" value="8.20882282881137" />
-      <entry key="S30" value="9.938758363947779" />
-      <entry key="S60" value="10.450946492104752" />
-      <entry key="M2" value="10.720692533947156" />
-      <entry key="M5" value="10.888070619709573" />
-      <entry key="M10" value="11.025495251582287" />
-      <entry key="M15" value="11.323657454712988" />
-      <entry key="M30" value="12.571749155136967" />
-      <entry key="H1" value="14.327404465415443" />
-      <entry key="H2" value="15.828287126130727" />
-      <entry key="H4" value="16.814087695364336" />
-      <entry key="D1" value="17.78681763748746" />
-      <entry key="W1" value="17.96914173489862" />
+      <entry key="MS100" value="1.7583326325700408" />
+      <entry key="MS500" value="2.48309612028627" />
+      <entry key="S2" value="3.6657925043507116" />
+      <entry key="S5" value="4.338876500842996" />
+      <entry key="S10" value="4.642813612978745" />
+      <entry key="S30" value="4.874405293754" />
+      <entry key="S60" value="4.936344332658808" />
+      <entry key="M2" value="4.969482459388398" />
+      <entry key="M5" value="5.302300598265364" />
+      <entry key="M10" value="6.869397519699825" />
+      <entry key="M15" value="8.472547922115123" />
+      <entry key="M30" value="11.964036147200092" />
+      <entry key="H1" value="15.664080608878018" />
+      <entry key="H2" value="18.65578476047484" />
+      <entry key="H4" value="20.617652426039513" />
+      <entry key="D1" value="22.569340712551927" />
+      <entry key="W1" value="22.937589548233635" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -93,23 +128,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9609643303143864" />
-      <entry key="MS500" value="1.4863231946923325" />
-      <entry key="S2" value="3.488351447594831" />
-      <entry key="S5" value="6.269602712262868" />
-      <entry key="S10" value="8.161891555592698" />
-      <entry key="S30" value="9.921305179808057" />
-      <entry key="S60" value="10.44196340587893" />
-      <entry key="M2" value="10.71613428592753" />
-      <entry key="M5" value="10.886230925019674" />
-      <entry key="M10" value="11.024570897867779" />
-      <entry key="M15" value="11.323036583332817" />
-      <entry key="M30" value="12.571429557694321" />
-      <entry key="H1" value="14.327238297830002" />
-      <entry key="H2" value="15.828201326974327" />
-      <entry key="H4" value="16.8140439047716" />
-      <entry key="D1" value="17.78681019257896" />
-      <entry key="W1" value="17.969140667418827" />
+      <entry key="MS100" value="1.4645758793091548" />
+      <entry key="MS500" value="2.4114400458633973" />
+      <entry key="S2" value="3.6446513625785935" />
+      <entry key="S5" value="4.329717554429824" />
+      <entry key="S10" value="4.638076686775995" />
+      <entry key="S30" value="4.87278643839773" />
+      <entry key="S60" value="4.935529578944479" />
+      <entry key="M2" value="4.9690730743375315" />
+      <entry key="M5" value="5.302083521872072" />
+      <entry key="M10" value="6.8691582861213005" />
+      <entry key="M15" value="8.472302631112232" />
+      <entry key="M30" value="11.963831719032905" />
+      <entry key="H1" value="15.66394324676639" />
+      <entry key="H2" value="18.655703899900804" />
+      <entry key="H4" value="20.617608333236902" />
+      <entry key="D1" value="22.569332789055082" />
+      <entry key="W1" value="22.93758840125647" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -189,6 +224,8 @@
     <MESSAGE value="Implemented Team meeting changes" />
     <MESSAGE value="Implemented Team meeting changes Further" />
     <MESSAGE value="Extended meeting feature" />
-    <option name="LAST_COMMIT_MESSAGE" value="Extended meeting feature" />
+    <MESSAGE value="Introduced env file" />
+    <MESSAGE value="Introduced env file 1" />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduced env file 1" />
   </component>
 </project>

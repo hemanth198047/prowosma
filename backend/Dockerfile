@@ -40,9 +40,8 @@ USER prowosma
 
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Matches server.port=9090 in application.properties — if that's ever
-# changed, this must change with it (not derived automatically, since
-# Docker EXPOSE can't read a Spring property file).
+# The app listens on $PORT when the host provides one (e.g. Render), otherwise 9090
+# (server.port=${PORT:9090} in application.properties). EXPOSE is documentation only.
 EXPOSE 9090
 
 # Container-aware JVM defaults: respect the container's memory limit
@@ -57,6 +56,6 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
 # than just checking the process is alive. A running-but-DB-disconnected
 # instance should be reported unhealthy, not "fine".
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:9090/api/health/ready || exit 1
+  CMD curl -f http://localhost:${PORT:-9090}/api/health/ready || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

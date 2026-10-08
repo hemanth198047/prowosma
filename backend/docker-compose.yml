@@ -246,6 +246,9 @@ services:
       GOOGLE_MEET_OAUTH_CLIENT_SECRET: ${GOOGLE_MEET_OAUTH_CLIENT_SECRET:-}
       GOOGLE_MEET_OAUTH_REDIRECT_URI: ${GOOGLE_MEET_OAUTH_REDIRECT_URI:-}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # Microsoft Teams transcript import (optional) — see docs/TEAMS_SETUP.md
+      TEAMS_GRAPH_CLIENT_ID: ${TEAMS_GRAPH_CLIENT_ID:-}
+      TEAMS_GRAPH_CLIENT_SECRET: ${TEAMS_GRAPH_CLIENT_SECRET:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/api/health/ready"]
       interval: 15s

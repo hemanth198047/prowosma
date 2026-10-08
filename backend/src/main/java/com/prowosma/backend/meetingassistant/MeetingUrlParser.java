@@ -23,14 +23,16 @@ public final class MeetingUrlParser {
      * @param meetingKey stable identifier of the meeting (same for every occurrence
      *                   of a recurring meeting that reuses the link)
      * @param warning    non-blocking limitation to show the user, or null
+     * @param organizerId Microsoft Entra object id of the organizer (Teams "meetup-join" links carry it), or null
+     * @param tenantId    Microsoft tenant id the meeting belongs to (same source), or null
      */
     public record Result(boolean valid, Platform platform, String canonicalUrl, String meetingKey,
-                         String errorCode, String message, String warning) {
+                         String errorCode, String message, String warning, String organizerId, String tenantId) {
         static Result ok(Platform p, String url, String key, String warning) {
-            return new Result(true, p, url, key, null, null, warning);
+            return new Result(true, p, url, key, null, null, warning, null, null);
         }
         static Result fail(String code, String msg) {
-            return new Result(false, null, null, null, code, msg, null);
+            return new Result(false, null, null, null, code, msg, null, null, null);
         }
     }
 
@@ -39,6 +41,9 @@ public final class MeetingUrlParser {
     private static final Pattern MEET_LOOKUP = Pattern.compile("^/lookup/([A-Za-z0-9_-]{4,64})/?$");
     private static final Pattern TEAMS_THREAD = Pattern.compile("^19:meeting_[A-Za-z0-9_-]+@thread\\.(v2|skype)$");
     private static final Pattern TEAMS_MEET_ID = Pattern.compile("^/meet/(\\d{9,15})/?$");
+    private static final Pattern GUID = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    private static final Pattern CTX_OID = Pattern.compile("\"Oid\"\\s*:\\s*\"([^\"]{1,64})\"");
+    private static final Pattern CTX_TID = Pattern.compile("\"Tid\"\\s*:\\s*\"([^\"]{1,64})\"");
     private static final Pattern CONTROL_OR_SPACE = Pattern.compile("[\\p{Cntrl}\\s]");
 
     public static Result parse(String raw) {
@@ -91,6 +96,29 @@ public final class MeetingUrlParser {
         }
     }
 
+    private static String rawQueryParam(String rawQuery, String name) {
+        if (rawQuery == null) return null;
+        for (String kv : rawQuery.split("&")) {
+            int i = kv.indexOf('=');
+            if (i > 0 && kv.substring(0, i).equals(name)) {
+                String v = kv.substring(i + 1);
+                return v.length() <= 600 && v.matches("[A-Za-z0-9%._~\\-]*") ? v : null;       // only characters that can't change the URL's meaning
+            }
+        }
+        return null;
+    }
+
+    private static String guidFrom(String rawContext, Pattern field) {
+        if (rawContext == null) return null;
+        try {
+            var m = field.matcher(URLDecoder.decode(rawContext, StandardCharsets.UTF_8));
+            if (m.find() && GUID.matcher(m.group(1)).matches()) return m.group(1).toLowerCase(Locale.ROOT);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        return null;
+    }
+
     private static Result parseMeet(String path) {
         var code = MEET_CODE.matcher(path);
         if (code.matches()) {
@@ -126,7 +154,11 @@ public final class MeetingUrlParser {
                     return Result.fail("INVALID_TEAMS_LINK", "That Teams link couldn't be read. Copy it again from the invitation.");
                 }
                 if (TEAMS_THREAD.matcher(thread).matches()) {
-                    return Result.ok(Platform.MS_TEAMS, "https://" + host + "/l/meetup-join/" + seg[3], thread, warning);
+                    // The organizer and tenant ids Teams embeds in the link are used to find the transcript later. They are accepted
+                    // ONLY if they are well-formed GUIDs; nothing else from the query string is kept (no URL, no passcode).
+                    String ctx = rawQueryParam(rawQuery, "context");
+                    return new Result(true, Platform.MS_TEAMS, "https://" + host + "/l/meetup-join/" + seg[3], thread, null, null, warning,
+                            guidFrom(ctx, CTX_OID), guidFrom(ctx, CTX_TID));
                 }
             }
         }

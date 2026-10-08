@@ -36,6 +36,12 @@ public class MeetingAssistantAdminController {
         return service.updateSettings(patch, auth.getName());
     }
 
+    /** Operational picture: queue, failures by reason, AI usage, connection health. */
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        return service.health();
+    }
+
     /** AI usage in tokens (not money — prices depend on the model you chose in AI Settings). */
     @GetMapping("/usage")
     public Map<String, Object> usage(@RequestParam(defaultValue = "30") int days) {
@@ -50,6 +56,17 @@ public class MeetingAssistantAdminController {
     @PutMapping("/platforms/{provider}/enabled")
     public MeetingIntegration setEnabled(@PathVariable String provider, @RequestBody Map<String, Object> body, Authentication auth) {
         return service.setEnabled(provider, Boolean.parseBoolean(String.valueOf(body.get("enabled"))), auth.getName());
+    }
+
+    /** Teams: the administrator saves their Microsoft tenant id (the app registration itself lives in the server settings). */
+    @PutMapping("/platforms/MS_TEAMS/tenant")
+    public MeetingIntegration setTeamsTenant(@RequestBody Map<String, Object> body, Authentication auth) {
+        return service.setTeamsTenant(body.get("tenantId") == null ? null : String.valueOf(body.get("tenantId")), auth.getName());
+    }
+
+    @GetMapping("/platforms/MS_TEAMS/consent-url")
+    public Map<String, Object> teamsConsentUrl() {
+        return service.teamsConsentUrl();
     }
 
     @PostMapping("/platforms/{provider}/test")

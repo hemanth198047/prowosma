@@ -35,6 +35,7 @@ public class MeetingTranscriptService {
 
     private final MongoTemplate mongo;
     private final MeetingSessionStore store;
+    private final MeetingMetrics metrics;
 
     public TranscriptParser.Parsed parse(String content, String format) {
         try {
@@ -106,6 +107,7 @@ public class MeetingTranscriptService {
                 store.audit(org, s.getId(), by, "TRANSCRIPT_RECEIVED", source + ", " + segments.size() + " lines");
             }
             removeGenerations(org, s.getId(), generation, true);
+            metrics.transcriptReceived(source);
             return saved;
         } catch (DuplicateKeyException dup) {
             removeGenerations(org, s.getId(), generation, false);

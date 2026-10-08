@@ -81,3 +81,58 @@ groups:
         annotations:
           summary: "JVM heap usage above 90% for 10 minutes — risk of OOM/GC thrashing"
           runbook: "docs/RUNBOOKS.md#memory-pressure"
+
+  # ── Meeting Assistant ───────────────────────────────────────────────────────
+  # Metric names come from MeetingMetrics (Micrometer → Prometheus). Runbooks: docs/MEETING_ASSISTANT_OPERATIONS.md
+  - name: meeting-assistant
+    rules:
+      - alert: MeetingJobBacklog
+        expr: |
+          max(prowosma_meeting_queue_due) > 20
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Meeting background jobs are piling up (more than 20 due for 15 minutes) — workers may be stopped or too slow"
+          runbook: "docs/MEETING_ASSISTANT_OPERATIONS.md#job-backlog-or-stalled-queue"
+
+      - alert: MeetingJobStalled
+        expr: |
+          max(prowosma_meeting_queue_oldest_due_seconds) > 900
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The longest-waiting meeting job has been due for over 15 minutes — nothing is processing the queue"
+          runbook: "docs/MEETING_ASSISTANT_OPERATIONS.md#job-backlog-or-stalled-queue"
+
+      - alert: MeetingWorkerLeasesExpired
+        expr: |
+          max(prowosma_meeting_queue_expired_leases) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Meeting jobs are marked running but their worker stopped renewing them — a worker likely crashed (they are re-claimed automatically)"
+          runbook: "docs/MEETING_ASSISTANT_OPERATIONS.md#job-backlog-or-stalled-queue"
+
+      - alert: MeetingJobFailureRate
+        expr: |
+          sum(rate(prowosma_meeting_jobs_total{outcome="fail"}[30m]))
+            / clamp_min(sum(rate(prowosma_meeting_jobs_total[30m])), 0.001) > 0.3
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 30% of meeting jobs are ending in failure — check the AI provider key/limits and the Google/Microsoft connections"
+          runbook: "docs/MEETING_ASSISTANT_OPERATIONS.md#high-failure-rate"
+
+      - alert: MeetingAiTokenSpike
+        expr: |
+          sum(increase(prowosma_meeting_llm_tokens_total[1h])) > 3000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusually high AI token use for meetings in the last hour (over 3M) — runaway regeneration or an unexpectedly long meeting"
+          runbook: "docs/MEETING_ASSISTANT_OPERATIONS.md#ai-cost-spike"

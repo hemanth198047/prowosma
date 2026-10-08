@@ -1,16 +1,16 @@
 # Meeting Assistant
 
-Status: **Phase 4 — structured actions with people, project and deadline resolution, ready for review.** Meetings can be registered, transcripts can be
+Status: **Phase 6 — Google Meet and Microsoft Teams import, operational hardening** (deployment, monitoring and troubleshooting: `MEETING_ASSISTANT_OPERATIONS.md`). Approved actions become real tasks and projects (review mode and optional automatic mode). Meetings can be registered, transcripts can be
 uploaded/pasted (any platform) or imported automatically from Google Meet, and an AI model turns a transcript into three
 editable, versioned documents whose statements link back to transcript lines. Structured
-actions are then extracted and resolved for review; creating tasks and projects in Prowosma comes in the next phase. The assistant **cannot join meetings live** (see "Why no live joining").
+actions are then extracted and resolved for review, and approved items are created as real tasks and projects. The assistant **cannot join meetings live** (see "Why no live joining").
 
 ## What works today
 | Capability | Google Meet | Microsoft Teams |
 |---|---|---|
 | Register a meeting by link (validated, duplicate-safe, recurring-aware) | ✅ | ✅ |
 | Upload or paste a transcript (`.vtt`, `.srt`, plain text; up to 5 MB) | ✅ | ✅ |
-| Automatic transcript import after the meeting | ✅ implemented, **not yet verified against a real meeting** | ❌ not yet |
+| Automatic transcript import after the meeting | ✅ implemented, **not yet verified against a real meeting** (each person connects their own Google account) | ✅ implemented, **not yet verified against a real tenant** (organization-wide app + admin consent + access policy — `TEAMS_SETUP.md`) |
 | Live joining / live audio | ❌ | ❌ |
 | Speaker identity | Google's display name only | Only what the file states |
 | Summary, MOM and Notes from the transcript (English) | ✅ implemented, **not yet verified with a real model** | ✅ same |
@@ -82,7 +82,7 @@ that decides a person, a project or a date is then done **in code**, so it is pr
 - **Review**: edit anything, approve, reject, restore, merge, approve selected, or **Approve all valid**. *Valid* = agreed, not withdrawn,
   not a suspected duplicate, attached to a project (existing, or a new one that has been approved), and with a reliable-or-absent deadline.
   An unassigned owner is allowed. Editing an approved action sends it back for approval. The **Projects and Tasks** tab previews exactly
-  what would be created. **Nothing is created in Prowosma yet** — approving only marks items ready.
+  what would be created and holds the **Create approved items** button (next section).
 - **Re-running** never overwrites reviewed work: it waits as "N new, M still present, K no longer found" for you to apply or discard;
   items no longer found are flagged, never deleted.
 - **Required fields** (decision): a task needs a title and a project; a new project needs a name **and a description** (the app itself
@@ -90,6 +90,41 @@ that decides a person, a project or a date is then done **in code**, so it is pr
 - **Cost**: extraction is one more pass over the transcript — roughly the same input tokens as the documents again (long meetings are
   split, with earlier action titles passed forward). Switch: **Meeting Platforms → Summaries, minutes and notes → extract action items automatically**.
 - **Failure** of extraction never fails the meeting; the Actions tab shows the reason and a retry.
+
+## Creating tasks and projects
+**Review mode (default).** On **Projects and Tasks**, **Create approved items** creates *every* approved project and task at once, **as the
+person who pressed it** (they are the creator). It uses the application's existing task and project services, so the activity log, live
+updates and the standard "Task Created" notification behave like for any other task. Only the requester or an admin can press it.
+- **What is created:** title; description (+ what it depends on); project (an approved *new* project is created first, then its tasks attach
+  to it); assignee (only the resolved owner, re-checked at that moment — someone who became read-only is not assigned); due date (the
+  resolved calendar date); priority; type; tag `meeting`; acceptance criteria as the task's checklist.
+- **Linked back, three ways:** structured fields on the task/project (`sourceMeetingId`, `sourceMeetingTitle`, `sourceActionKey`/`sourceProposalKey`,
+  `sourceEvidence`), a footer in the description — *"Created from meeting “…”. Evidence: transcript lines [#1] [#3-4]. Open: /meeting-assistant?session=<id>"* —
+  and that link opens the meeting. The meeting shows each created item and who created it.
+- **Duplicate-proof:** each item is *claimed* atomically before anything is created, every created record carries the id of the item it
+  came from, and a unique database index backs this up. Pressing Create twice, two people pressing it together, a retry, or a crash half-way
+  can never produce the same task twice (a crash leftover is reused, not duplicated).
+- **Partial success is explicit:** each item succeeds or fails on its own; failures keep a plain reason; **Create** again retries only what is
+  not created yet. Items that are no longer true (e.g. their project was deleted after approval) go **back to review** instead of being created.
+- **A created item is final in the meeting:** it can't be edited, re-decided or merged there (edit the task itself). Changing the meeting later
+  never rewrites or deletes created records, and deleting a created task doesn't reopen the action.
+- **Notifications:** Prowosma has no per-user notification system — notifications are workspace-wide records with a category. Each created task
+  gets the standard "Task Created" notification (from the task service), and each *assigned* task also gets a **"Task assigned"** notification in the
+  inbox's existing **ASSIGNMENT** category naming the assignee. These are visible to the workspace, not private to the assignee.
+
+**Automatic mode (optional, admin).** *Meeting Platforms → Creating tasks and projects* has two separate switches. When on, after extraction
+and a short wait (`app.meeting-assistant.auto-create-delay-minutes`, default 10) so corrections count, a background job creates items — **as the dedicated
+Meeting Assistant system actor** (`meeting-assistant@system.prowosma`: a reserved identity with no login and no user record, bound to this one
+workspace while it works, with the tenant guard still enforcing isolation) and records show it as the creator.
+- It only creates items that pass strict rules: an **agreed** commitment with cited evidence, a **named owner who matches your directory**, a project
+  (existing, or a new project that is itself automatic-eligible and ready), a reliable-or-absent deadline, not a suspected duplicate, not withdrawn,
+  not missing from the latest analysis. Suggestions, unassigned/ambiguous items and anything a person **rejected** stay in review untouched.
+- It **stands down** if changes from a re-run are waiting for review, if the requester can no longer act (e.g. now read-only), or if the switch was
+  turned off after it was queued — each is recorded in the audit trail. Tasks and projects have independent switches (tasks on / projects off means
+  tasks needing a new project wait for a person).
+
+**Deletion:** deleting a transcript or generated documents never deletes tasks or projects created from them (they are independent records that keep
+their link and evidence text). There is no "delete meeting" action yet.
 
 ## Why no live joining
 Google's live-audio API (Meet Media API) is a limited developer preview that requires every participant to be enrolled;
@@ -165,6 +200,8 @@ organization-wide blanket access.
 | Link parsing, transcript parsing, state machine, conference matching, coverage | Unit-tested and run |
 | Google request building, token handling, import logic, retries, recovery | Integration tests against a **scripted fake of Google** (`FakeGoogleHttp`) — proves our logic, **not** Google's real responses |
 | Backend Java | Syntax-parsed; Spring tests are written but must be run with `./gradlew test` (not executable in the authoring sandbox) |
+| **Teams import (Graph)** | Written from Microsoft's published docs; integration tests use a **scripted Microsoft**. **Not yet verified against a real Microsoft 365 tenant** — run the Teams checklist in the operations guide. |
+| **Operational hardening** (metrics, health, recovery, retention, route authentication, no secret in any response) | Integration tests written (not run here). |
 | **Real Google Meet import** | **Not yet verified.** Needs an authorized Google account and a real meeting with transcription on. Field names in `GoogleMeetApi` follow Google's reference and must be confirmed in that run. |
 | Teams | No integration yet (upload/paste only) |
 
@@ -172,5 +209,7 @@ organization-wide blanket access.
 - Google auto-import needs a standard `meet.google.com/abc-defg-hij` link (not `lookup/…` links) and transcription turned on in the meeting.
 - Speakers from Google are display names only; matching to Prowosma users is a later phase and never automatic from names alone.
 - After review a meeting stays in "Ready for review" until later phases (task creation) complete it; you can cancel it, regenerate, or replace the transcript.
-- English only for now. Action items appear in the minutes as discussed; structured actions, owner matching, project matching and task creation are later phases.
+- English only for now.
+- Created tasks/projects are independent copies: later edits in the meeting don't sync to them. Links open the Tasks / Projects lists (the app has no per-task page to deep-link to). Due dates are stored as the start of the resolved calendar day.
+- Existing Task and Project records gained a few optional fields (listed above) and two partial unique indexes; nothing existing is changed.
 - Upload limits: 5 MB per upload, 50,000 lines per transcript.

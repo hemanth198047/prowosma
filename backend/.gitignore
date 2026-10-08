@@ -1,2 +1,7 @@
 /build/
 /.gradle/
+
+# Real settings files hold passwords and secrets - never commit them. Only the template is committed.
+.env
+.env.*
+!.env.example

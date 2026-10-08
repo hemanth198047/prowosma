@@ -66,7 +66,9 @@ public class MeetingSession {
     private Instant actionsExtractedAt;
     private boolean actionsPendingDiff;     // a re-run found differences waiting for review
     private Instant outputsGeneratedAt;    // last time summary/minutes/notes were produced
-    private String conferenceRecord;        // Google conferenceRecords/{id} this session was matched to
+    private String conferenceRecord;        // the platform transcript/record this session was matched to (Google conference record, or Teams transcript id)
+    private String organizerId;             // Microsoft Entra object id of the Teams organizer (from the invitation link), if present
+    private String tenantHint;              // Microsoft tenant id found in the Teams link, if present
 
     private boolean simulated;          // development fixture — never a real meeting
     private int retryCount;

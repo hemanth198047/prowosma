@@ -24,6 +24,8 @@ public class MeetingIntegration {
     private String statusMessage;
     private String connectedAccount;
     private List<String> grantedScopes = new ArrayList<>();
+    private String tenantId;                       // Microsoft tenant id (Teams) the administrator entered
+    private boolean lastTestHealthy;               // result of the last "Test connection"
     private Instant lastCheckedAt;
     private String updatedBy;
     private Instant updatedAt;
