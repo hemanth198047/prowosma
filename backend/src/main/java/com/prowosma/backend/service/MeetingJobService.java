@@ -84,6 +84,15 @@ public class MeetingJobService {
     }
 
     /** Atomically claims the next due job (or one whose lease expired), or returns null. */
+    /** Claims THIS meeting's job right now — whether or not it is due — unless another worker already holds it. Used by "Check now". */
+    public MeetingJob claimFor(String org, String type, String sessionId, String workerId) {
+        Instant now = Instant.now();
+        Criteria mine = Criteria.where("organizationId").is(org).and("jobKey").is(keyOf(type, sessionId));
+        Criteria free = new Criteria().orOperator(Criteria.where("status").is("QUEUED"), Criteria.where("status").is("RUNNING").and("leaseUntil").lt(now));
+        Update u = new Update().set("status", "RUNNING").set("lockedBy", workerId).set("leaseUntil", now.plus(LEASE)).set("updatedAt", now).inc("attempts", 1);
+        return mongo.findAndModify(new Query(new Criteria().andOperator(mine, free)), u, FindAndModifyOptions.options().returnNew(true), MeetingJob.class);
+    }
+
     public MeetingJob claimNext(String workerId) {
         Instant now = Instant.now();
         Criteria due = new Criteria().orOperator(

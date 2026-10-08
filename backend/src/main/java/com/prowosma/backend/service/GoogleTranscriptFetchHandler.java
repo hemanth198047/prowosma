@@ -1,9 +1,11 @@
 package com.prowosma.backend.service;
 
+import com.prowosma.backend.integration.GoogleApiException;
 import com.prowosma.backend.integration.GoogleMeetApi;
 import com.prowosma.backend.integration.GoogleMeetApi.Entry;
 import com.prowosma.backend.integration.GoogleMeetApi.TranscriptInfo;
 import com.prowosma.backend.meetingassistant.ConferenceSelector;
+import com.prowosma.backend.meetingassistant.GoogleCheckReport;
 import com.prowosma.backend.meetingassistant.ConferenceSelector.Conference;
 import com.prowosma.backend.meetingassistant.ConferenceSelector.Coverage;
 import com.prowosma.backend.meetingassistant.ConferenceSelector.Span;
@@ -11,6 +13,7 @@ import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.meetingassistant.TranscriptParser;
 import com.prowosma.backend.model.MeetingJob;
 import com.prowosma.backend.model.MeetingSession;
+import com.prowosma.backend.model.MeetingUserConnection;
 import com.prowosma.backend.model.TranscriptSegment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -33,6 +36,8 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
 
     public static final String TYPE = "FETCH_GOOGLE_TRANSCRIPT";
     static final Duration TRANSCRIPT_GRACE = Duration.ofMinutes(30);
+    /** Google's state ENDED means "the session ended but the transcript FILE hasn't been generated yet". We wait for FILE_GENERATED; if a file never appears we try anyway after this long. */
+    static final Duration ENDED_PATIENCE = Duration.ofMinutes(10);
 
     private final MeetingSessionStore store;
     private final GoogleOAuthService oauth;
@@ -61,6 +66,21 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
                     "Upload or paste the transcript instead.");
         }
 
+        final String account = oauth.connection(org, job.getRequestedBy()).map(MeetingUserConnection::getAccount).orElse(null);
+        try {
+            return check(job, s, code, account);
+        } catch (GoogleApiException e) {
+            store.recordCheck(org, s.getId(), GoogleCheckReport.googleProblem(e.getKind().name(), account));
+            throw e;
+        } catch (MeetingAssistantException e) {
+            store.recordCheck(org, s.getId(), "GOOGLE_REAUTH_REQUIRED".equals(e.getCode()) ? GoogleCheckReport.googleProblem("UNAUTHORIZED", account) : GoogleCheckReport.notConnected(account));
+            throw e;
+        }
+    }
+
+    /** One look at Google. Every outcome — including "nothing yet" — is written down so the page can tell the person what Google said. */
+    private JobOutcome check(MeetingJob job, MeetingSession s, String code, String account) {
+        final String org = job.getOrganizationId();
         String token = oauth.accessToken(org, job.getRequestedBy());   // throws a user-facing error if not connected / expired
         Instant now = Instant.now();
         boolean registeredAfterStart = s.getScheduledFor() == null;
@@ -69,18 +89,32 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
         List<Conference> records = api.listConferenceRecords(token, code);
         Optional<Conference> pick = ConferenceSelector.select(records, anchor, registeredAfterStart,
                 name -> claimedByAnother(org, s.getId(), name));
-        if (pick.isEmpty()) return JobOutcome.poll(now.plus(Duration.ofMinutes(5)), "NO_CONFERENCE_YET");
+        if (pick.isEmpty()) {
+            store.recordCheck(org, s.getId(), GoogleCheckReport.noConference(
+                    ConferenceSelector.diagnose(records, anchor, registeredAfterStart, name -> claimedByAnother(org, s.getId(), name)), account, now));
+            return JobOutcome.poll(now.plus(Duration.ofMinutes(5)), "NO_CONFERENCE_YET");
+        }
         Conference conf = pick.get();
-        if (conf.end() == null) return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "MEETING_IN_PROGRESS");
+        if (conf.end() == null) {
+            store.recordCheck(org, s.getId(), GoogleCheckReport.inProgress(conf, account, now));
+            return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "MEETING_IN_PROGRESS");
+        }
 
         List<TranscriptInfo> all = api.listTranscripts(token, conf.name());
         List<TranscriptInfo> ready = all.stream()
-                .filter(t -> "ENDED".equals(t.state()) || "FILE_GENERATED".equals(t.state()))
+                .filter(t -> "FILE_GENERATED".equals(t.state())
+                        || ("ENDED".equals(t.state()) && t.end() != null && t.end().isBefore(now.minus(ENDED_PATIENCE))))
                 .sorted(Comparator.comparing(t -> t.start() == null ? Instant.MAX : t.start()))
                 .toList();
-        if (ready.size() < all.size()) return JobOutcome.poll(now.plus(Duration.ofMinutes(2)), "TRANSCRIPT_NOT_READY");
+        if (ready.size() < all.size()) {
+            store.recordCheck(org, s.getId(), GoogleCheckReport.transcriptNotReady(conf,
+                    all.stream().map(t -> new GoogleCheckReport.TranscriptFact(t.state(), t.start(), t.end())).toList(), account, now));
+            return JobOutcome.poll(now.plus(Duration.ofMinutes(2)), "TRANSCRIPT_NOT_READY");
+        }
         if (ready.isEmpty()) {
-            if (now.isBefore(conf.end().plus(TRANSCRIPT_GRACE))) return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "NO_TRANSCRIPT_YET");
+            Instant giveUpAt = conf.end().plus(TRANSCRIPT_GRACE);
+            store.recordCheck(org, s.getId(), GoogleCheckReport.noTranscript(conf, now, giveUpAt, account));
+            if (now.isBefore(giveUpAt)) return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "NO_TRANSCRIPT_YET");
             return JobOutcome.fail("NO_TRANSCRIPT",
                     "Google Meet has no transcript for this meeting. Transcription has to be turned on during the meeting.",
                     "Upload or paste the transcript instead.");
@@ -123,6 +157,7 @@ public class GoogleTranscriptFetchHandler implements MeetingJobHandler {
                 + (cov.partial() ? " It may be incomplete. " + cov.note() : "")
                 + " " + outputs.hint(org);
         MeetingSession saved = transcripts.receive(s, segments, "GOOGLE_MEET", cov.partial() ? "PARTIAL" : "FULL", cov.note(), "system", detail);
+        store.recordCheck(org, s.getId(), GoogleCheckReport.imported(segments.size(), account));
         outputs.startIfEnabled(saved, "system");      // generates the documents straight away when the organization allows it and AI is ready
         return JobOutcome.done();
     }

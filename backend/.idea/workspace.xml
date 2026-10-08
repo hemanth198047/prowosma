@@ -4,8 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Introduced env file 3">
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" afterDir="false" />
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Checking Meeting Status">
+      <change afterPath="$PROJECT_DIR$/docs/GOOGLE_MEET_TRANSCRIPTS_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/GoogleCheckReport.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleCheckReportTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceSelector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceSelector.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/GoogleTranscriptFetchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/GoogleTranscriptFetchHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingSessionStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingSessionStore.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsTranscriptFetchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsTranscriptFetchHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleMeetImportTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleMeetImportTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsAndOperationsTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsAndOperationsTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,23 +67,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.2002674693974056" />
-      <entry key="MS500" value="1.724973416439426" />
-      <entry key="S2" value="1.9227424926537982" />
-      <entry key="S5" value="1.9683496684664687" />
-      <entry key="S10" value="1.9840475946144418" />
-      <entry key="S30" value="1.9946540027808546" />
-      <entry key="S60" value="1.9973234193484353" />
-      <entry key="M2" value="1.9986608149943632" />
-      <entry key="M5" value="2.00039528816583" />
-      <entry key="M10" value="2.090765868991056" />
-      <entry key="M15" value="2.4742856391107253" />
-      <entry key="M30" value="4.831123185819642" />
-      <entry key="H1" value="9.619908220172203" />
-      <entry key="H2" value="15.011772621476979" />
-      <entry key="H4" value="19.21871653759733" />
-      <entry key="D1" value="23.901766436458868" />
-      <entry key="W1" value="24.839414102286906" />
+      <entry key="MS100" value="1.010053866734675" />
+      <entry key="MS500" value="1.796896149689603" />
+      <entry key="S2" value="3.7966838220695354" />
+      <entry key="S5" value="4.914411827246675" />
+      <entry key="S10" value="5.41472246139399" />
+      <entry key="S30" value="5.794502744529638" />
+      <entry key="S60" value="5.895887595713085" />
+      <entry key="M2" value="5.951082261440556" />
+      <entry key="M5" value="6.252059353945437" />
+      <entry key="M10" value="7.158018883925105" />
+      <entry key="M15" value="7.890069466965096" />
+      <entry key="M30" value="9.077381979468244" />
+      <entry key="H1" value="10.063991926603617" />
+      <entry key="H2" value="12.249712526514367" />
+      <entry key="H4" value="17.399427918519745" />
+      <entry key="D1" value="30.99845404559578" />
+      <entry key="W1" value="35.21619194641051" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -93,23 +105,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.392376867058407" />
-      <entry key="MS500" value="1.4439416828629046" />
-      <entry key="S2" value="1.843568189858838" />
-      <entry key="S5" value="1.935894221206581" />
-      <entry key="S10" value="1.967686020429595" />
-      <entry key="S30" value="1.9891701267954258" />
-      <entry key="S60" value="1.9945777119010275" />
-      <entry key="M2" value="1.997287017610867" />
-      <entry key="M5" value="1.9998455044456234" />
-      <entry key="M10" value="2.090487788060205" />
-      <entry key="M15" value="2.4740886206448756" />
-      <entry key="M30" value="4.830983163942449" />
-      <entry key="H1" value="9.619795575281904" />
-      <entry key="H2" value="15.01169331178919" />
-      <entry key="H4" value="19.218668257600232" />
-      <entry key="D1" value="23.901756837967053" />
-      <entry key="W1" value="24.8394126874527" />
+      <entry key="MS100" value="0.9597720006595423" />
+      <entry key="MS500" value="1.654555678072458" />
+      <entry key="S2" value="3.6956345584731554" />
+      <entry key="S5" value="4.863977633696222" />
+      <entry key="S10" value="5.38754067365839" />
+      <entry key="S30" value="5.784973761147394" />
+      <entry key="S60" value="5.891062442848965" />
+      <entry key="M2" value="5.948654143509482" />
+      <entry key="M5" value="6.251077809226025" />
+      <entry key="M10" value="7.157516531175243" />
+      <entry key="M15" value="7.889728480291234" />
+      <entry key="M30" value="9.077206558724262" />
+      <entry key="H1" value="10.063900832985924" />
+      <entry key="H2" value="12.249657667528659" />
+      <entry key="H4" value="17.399388341672328" />
+      <entry key="D1" value="30.998442179976763" />
+      <entry key="W1" value="35.2161900212192" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -193,6 +205,8 @@
     <MESSAGE value="Introduced env file 1" />
     <MESSAGE value="Introduced env file 2" />
     <MESSAGE value="Introduced env file 3" />
-    <option name="LAST_COMMIT_MESSAGE" value="Introduced env file 3" />
+    <MESSAGE value="Introduced AI status" />
+    <MESSAGE value="Checking Meeting Status" />
+    <option name="LAST_COMMIT_MESSAGE" value="Checking Meeting Status" />
   </component>
 </project>

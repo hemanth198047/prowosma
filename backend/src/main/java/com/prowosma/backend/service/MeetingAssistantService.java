@@ -57,6 +57,7 @@ public class MeetingAssistantService {
     private final MeetingCreationService creationService;
     private final TeamsAuthService teamsAuth;
     private final MeetingMetrics metrics;
+    private final MeetingJobRunner jobRunner;
     private final MeetingHealthService healthService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
@@ -774,7 +775,14 @@ public class MeetingAssistantService {
         }
         enqueueFetch(s, email, true);
         store.audit(s.getOrganizationId(), s.getId(), email, "FETCH_REQUESTED", null);
-        return view(s, true);
+        // Look at the platform RIGHT NOW and say what it answered, instead of queueing and hoping the background poller runs soon.
+        String type = "MS_TEAMS".equals(s.getProvider()) ? TeamsTranscriptFetchHandler.TYPE : GoogleTranscriptFetchHandler.TYPE;
+        try {
+            jobRunner.runNow(s.getOrganizationId(), type, s.getId());
+        } catch (RuntimeException e) {
+            // never fail the button: the job stays queued and the background poller tries again
+        }
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
     }
 
     // ── summary, minutes, notes ──────────────────────────────────────────────
@@ -998,6 +1006,20 @@ public class MeetingAssistantService {
         m.put("actionsMessage", s.getActionsMessage());
         m.put("actionsExtractedAt", s.getActionsExtractedAt() == null ? null : s.getActionsExtractedAt().toString());
         m.put("actionsPendingDiff", s.isActionsPendingDiff());
+        if (s.getLastCheckAt() != null) {
+            Map<String, Object> check = new LinkedHashMap<>();
+            check.put("at", s.getLastCheckAt().toString());
+            check.put("code", s.getLastCheckCode());
+            check.put("message", s.getLastCheckMessage());
+            check.put("facts", s.getLastCheckFacts() == null ? Map.of() : s.getLastCheckFacts());
+            m.put("lastCheck", check);
+        }
+        SessionStatus viewStatus = SessionStatus.valueOf(s.getStatus());
+        if (viewStatus == SessionStatus.SCHEDULED || viewStatus == SessionStatus.AWAITING_TRANSCRIPT) {   // when Prowosma will look again by itself
+            String jobType = "MS_TEAMS".equals(s.getProvider()) ? TeamsTranscriptFetchHandler.TYPE : GoogleTranscriptFetchHandler.TYPE;
+            jobs.find(s.getOrganizationId(), s.getId(), jobType).filter(j -> "QUEUED".equals(j.getStatus()) && j.getRunAfter() != null)
+                    .ifPresent(j -> m.put("nextCheckAt", j.getRunAfter().toString()));
+        }
         m.put("canExtract", canManage && !s.isSimulated() && s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null
                 && !"RUNNING".equals(s.getActionsStatus()));
         SessionStatus vs = SessionStatus.valueOf(s.getStatus());

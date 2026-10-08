@@ -7,6 +7,7 @@ import com.prowosma.backend.repository.MeetingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,17 @@ public class MeetingSessionStore {
 
     private final MeetingSessionRepository sessions;
     private final MongoTemplate mongo;
+
+    /** Remembers what the latest check found. A targeted update: it never changes the meeting's status or version. */
+    public void recordCheck(String org, String sessionId, String code, String message, java.util.Map<String, Object> facts) {
+        mongo.updateFirst(new org.springframework.data.mongodb.core.query.Query(Criteria.where("_id").is(sessionId).and("organizationId").is(org)),
+                new org.springframework.data.mongodb.core.query.Update().set("lastCheckAt", java.time.Instant.now()).set("lastCheckCode", code)
+                        .set("lastCheckMessage", message).set("lastCheckFacts", facts == null ? java.util.Map.of() : facts), MeetingSession.class);
+    }
+
+    public void recordCheck(String org, String sessionId, com.prowosma.backend.meetingassistant.GoogleCheckReport.Report r) {
+        recordCheck(org, sessionId, r.code(), r.message(), r.facts());
+    }
 
     public Optional<MeetingSession> find(String org, String id) {
         if (org == null || id == null) return Optional.empty();

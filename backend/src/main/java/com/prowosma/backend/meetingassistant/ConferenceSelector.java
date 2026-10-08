@@ -32,6 +32,30 @@ public final class ConferenceSelector {
                 .min(Comparator.comparing(Conference::start));
     }
 
+    /** Why a lookup found nothing: how many records Google returned, and what happened to each. For plain-language explanations. */
+    public record Diagnosis(int returned, int inWindow, int claimedByOtherMeetings, int outsideWindow, Instant earliestOutsideWindow, Instant latestOutsideWindow) {}
+
+    public static Diagnosis diagnose(List<Conference> records, Instant anchor, boolean registeredAfterStart, Predicate<String> claimed) {
+        Instant from = anchor.minus(registeredAfterStart ? Duration.ofHours(3) : Duration.ofMinutes(60));
+        Instant to = anchor.plus(Duration.ofHours(12));
+        int in = 0, taken = 0, out = 0;
+        Instant earliest = null, latest = null;
+        for (Conference c : records) {
+            boolean inside = c.start() != null && !c.start().isBefore(from) && !c.start().isAfter(to);
+            if (inside) {
+                in++;
+                if (claimed.test(c.name())) taken++;
+            } else {
+                out++;
+                if (c.start() != null) {
+                    if (earliest == null || c.start().isBefore(earliest)) earliest = c.start();
+                    if (latest == null || c.start().isAfter(latest)) latest = c.start();
+                }
+            }
+        }
+        return new Diagnosis(records.size(), in, taken, out, earliest, latest);
+    }
+
     public static Coverage coverage(Conference c, List<Span> transcripts) {
         if (c.start() == null || c.end() == null || !c.end().isAfter(c.start())) {
             return new Coverage(false, 1.0, null);

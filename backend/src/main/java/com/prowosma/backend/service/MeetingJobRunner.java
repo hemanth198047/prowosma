@@ -111,6 +111,14 @@ public class MeetingJobRunner {
     }
 
     /** Runs due jobs now. Public so tests (and operators via a future admin action) can drive the queue deterministically. */
+    /** Runs one meeting's job immediately (the "Check now" button) instead of waiting for the next poll. False if someone else is already running it. */
+    public boolean runNow(String org, String type, String sessionId) {
+        MeetingJob job = jobs.claimFor(org, type, sessionId, workerId);
+        if (job == null) return false;
+        execute(job);
+        return true;
+    }
+
     public int runOnce() {
         int n = 0;
         for (int i = 0; i < MAX_JOBS_PER_TICK; i++) {

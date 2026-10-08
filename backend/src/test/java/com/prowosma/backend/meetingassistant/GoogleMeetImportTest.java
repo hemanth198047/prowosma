@@ -560,14 +560,183 @@ class GoogleMeetImportTest extends MeetingAssistantTestBase {
         assertThat(statusOf(post(BASE + "/sessions/" + id + "/fetch"), memberToken())).isEqualTo(409);
     }
 
-    @Test
-    @DisplayName("'Check now' brings a waiting meeting's job forward")
-    void fetchNowRunsSoon() throws Exception {
-        connect(memberToken(), "organizer@corp.com");
-        String id = createSessionId(memberToken(), workspaceId, MEET);              // join-now: first check is ~2 minutes away
-        assertThat(job(id).getRunAfter().isAfter(Instant.now().plusSeconds(60))).isTrue();
+    // ── "Check now" and what the page says while waiting ─────────────────────
 
-        assertThat(statusOf(post(BASE + "/sessions/" + id + "/fetch"), memberToken())).isEqualTo(200);
-        assertThat(job(id).getRunAfter().isBefore(Instant.now().plusSeconds(5))).isTrue();
+    private static final String CONFERENCES = "conferenceRecords?pageSize=100&filter";
+
+    private JsonNode checkNow(String id) throws Exception {
+        MvcResult r = mvc.perform(as(post(BASE + "/sessions/" + id + "/fetch"), memberToken(), workspaceId)).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+        return json(r);
+    }
+
+    private JsonNode lastCheck(JsonNode view) {
+        assertThat(view.has("lastCheck")).as("the meeting should say what the last check found: " + view).isTrue();
+        return view.get("lastCheck");
+    }
+
+    @Test
+    @DisplayName("'Check now' looks at Google immediately and says what Google answered — it never just repeats the registration text")
+    void fetchNowLooksImmediatelyAndReports() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);              // join-now: the first automatic look is ~2 minutes away
+        assertThat(job(id).getRunAfter().isAfter(Instant.now().plusSeconds(60))).isTrue();
+        fake.on(CONFERENCES, 200, "{}");                                              // Google has no record of the meeting
+
+        JsonNode view = checkNow(id);
+
+        assertThat(fake.callsTo(CONFERENCES)).isEqualTo(1L);                          // it really asked Google, now
+        JsonNode check = lastCheck(view);
+        assertThat(check.get("code").asText()).isEqualTo("NO_CONFERENCE_YET");
+        assertThat(check.get("message").asText()).contains("no record of this meeting").contains("organizer@corp.com");
+        assertThat(check.get("facts").get("recordsReturned").asInt()).isEqualTo(0);
+        assertThat(check.get("facts").get("connectedAccount").asText()).isEqualTo("organizer@corp.com");
+        assertThat(view.get("status").asText()).isEqualTo("AWAITING_TRANSCRIPT");     // still waiting, honestly
+        assertThat(view.has("nextCheckAt")).isTrue();                                 // and when Prowosma will look again by itself
+        assertThat(job(id).getRunAfter().isAfter(Instant.now().plusSeconds(240))).isTrue();
+    }
+
+    @Test
+    @DisplayName("a personal Gmail account is told plainly that Meet transcripts are a Workspace feature")
+    void personalAccountIsExplained() throws Exception {
+        connect(memberToken(), "someone@gmail.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        fake.on(CONFERENCES, 200, "{}");
+        JsonNode check = lastCheck(checkNow(id));
+        assertThat(check.get("message").asText()).contains("personal Google account (someone@gmail.com)").contains("Google Workspace feature");
+        assertThat(check.get("facts").get("accountType").asText()).isEqualTo("PERSONAL");
+    }
+
+    @Test
+    @DisplayName("a meeting Google still shows as running tells people to make sure everyone has left")
+    void stillRunningIsExplained() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        fake.on(CONFERENCES, 200, conferences(Instant.now().minus(20, ChronoUnit.MINUTES), null));
+        JsonNode check = lastCheck(checkNow(id));
+        assertThat(check.get("code").asText()).isEqualTo("MEETING_IN_PROGRESS");
+        assertThat(check.get("message").asText()).contains("still shows this meeting as running").contains("another tab or device");
+    }
+
+    @Test
+    @DisplayName("ended with no transcript: names the real cause — captions and Gemini notes are not transcripts")
+    void noTranscriptNamesTheRealCause() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        Instant start = Instant.now().minus(40, ChronoUnit.MINUTES);
+        fake.on(CONFERENCES, 200, conferences(start, Instant.now().minus(8, ChronoUnit.MINUTES)));
+        fake.on("/transcripts?pageSize=100", 200, "{}");                              // captions were on, Gemini notes were on — but no transcript session
+
+        JsonNode view = checkNow(id);
+        JsonNode check = lastCheck(view);
+        assertThat(check.get("code").asText()).isEqualTo("NO_TRANSCRIPT_YET");
+        assertThat(check.get("message").asText()).contains("ended 8 minutes ago").contains("Activities → Transcripts → Start transcription")
+                .contains("captions does not save anything").contains("Gemini's meeting notes are a separate thing");
+        assertThat(check.get("facts").get("transcriptSessions").asInt()).isEqualTo(0);
+        assertThat(view.get("status").asText()).isEqualTo("AWAITING_TRANSCRIPT");
+    }
+
+    @Test
+    @DisplayName("transcription still running, versus the file still being prepared, are told apart")
+    void transcriptNotReadyIsExplained() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        Instant start = Instant.now().minus(40, ChronoUnit.MINUTES);
+        fake.on(CONFERENCES, 200, conferences(start, Instant.now().minus(3, ChronoUnit.MINUTES)));
+        fake.on("/transcripts?pageSize=100", 200, om.writeValueAsString(obj("transcripts",
+                List.of(obj("name", "conferenceRecords/c1/transcripts/t1", "state", "STARTED", "startTime", start.toString())))));
+        JsonNode check = lastCheck(checkNow(id));
+        assertThat(check.get("code").asText()).isEqualTo("TRANSCRIPT_NOT_READY");
+        assertThat(check.get("message").asText()).contains("still running").contains("Stop transcription");
+        assertThat(check.get("facts").get("transcriptsStillRunning").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Google's ENDED means 'the transcript file isn't generated yet': Prowosma waits for FILE_GENERATED instead of reading an empty transcript")
+    void waitsForTheFileToBeGenerated() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        Instant start = Instant.now().minus(30, ChronoUnit.MINUTES);
+        fake.on(CONFERENCES, 200, conferences(start, Instant.now().minus(2, ChronoUnit.MINUTES)));
+        fake.on("/transcripts?pageSize=100", 200, om.writeValueAsString(obj("transcripts", List.of(obj("name", "conferenceRecords/c1/transcripts/t1",
+                "state", "ENDED", "startTime", start.toString(), "endTime", Instant.now().minus(2, ChronoUnit.MINUTES).toString())))));
+
+        JsonNode view = checkNow(id);
+        assertThat(lastCheck(view).get("code").asText()).isEqualTo("TRANSCRIPT_NOT_READY");
+        assertThat(lastCheck(view).get("message").asText()).contains("still preparing the transcript file");
+        assertThat(fake.callsTo("/entries")).isEqualTo(0L);                           // it did not read lines from a file that doesn't exist yet
+        assertThat(view.get("status").asText()).isEqualTo("AWAITING_TRANSCRIPT");     // and the meeting was NOT failed
+    }
+
+    @Test
+    @DisplayName("…but if the file never appears, Prowosma tries anyway after a patient wait")
+    void triesAnywayAfterAWhile() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        Instant start = Instant.now().minus(60, ChronoUnit.MINUTES);
+        Instant ended = Instant.now().minus(20, ChronoUnit.MINUTES);
+        scriptFinishedMeeting(1);
+        fake.on("/transcripts?pageSize=100", 200, om.writeValueAsString(obj("transcripts", List.of(obj("name", "conferenceRecords/c1/transcripts/t1",
+                "state", "ENDED", "startTime", start.toString(), "endTime", ended.toString())))));
+        assertThat(checkNow(id).get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
+    }
+
+    @Test
+    @DisplayName("when the transcript is there, Check now imports it on the spot and the meeting says so")
+    void fetchNowImportsWhenAvailable() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        scriptFinishedMeeting(1);
+        JsonNode view = checkNow(id);
+        assertThat(view.get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
+        assertThat(lastCheck(view).get("code").asText()).isEqualTo("IMPORTED");
+        assertThat(view.has("nextCheckAt")).isFalse();                                // nothing left to wait for
+    }
+
+    @Test
+    @DisplayName("a temporary Google problem is shown as temporary, and the meeting keeps waiting")
+    void temporaryProblemIsShown() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        fake.on(CONFERENCES, 503, "{}");
+        JsonNode view = checkNow(id);
+        assertThat(lastCheck(view).get("code").asText()).isEqualTo("GOOGLE_TEMPORARY");
+        assertThat(lastCheck(view).get("message").asText()).contains("temporary problem").contains("try again automatically");
+        assertThat(view.get("status").asText()).isEqualTo("AWAITING_TRANSCRIPT");
+    }
+
+    @Test
+    @DisplayName("the automatic background check records what it found too, and the meeting view shows it")
+    void automaticChecksReportToo() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        fake.on(CONFERENCES, 200, conferences(Instant.now().minus(15, ChronoUnit.MINUTES), null));
+        makeDue(id);
+        runner.runOnce();
+        JsonNode view = json(mvc.perform(as(get(BASE + "/sessions/" + id), memberToken(), workspaceId)).andReturn());
+        assertThat(lastCheck(view).get("code").asText()).isEqualTo("MEETING_IN_PROGRESS");
+        assertThat(view.has("nextCheckAt")).isTrue();
+    }
+
+    @Test
+    @DisplayName("what the page shows contains only counts, states and times — never tokens, meeting names or transcript text")
+    void lastCheckIsSafeToShow() throws Exception {
+        connect(memberToken(), "organizer@corp.com");
+        String id = createSessionId(memberToken(), workspaceId, MEET);
+        Instant start = Instant.now().minus(40, ChronoUnit.MINUTES);
+        fake.on(CONFERENCES, 200, conferences(start, Instant.now().minus(8, ChronoUnit.MINUTES)));
+        fake.on("/transcripts?pageSize=100", 200, "{}");
+        String body = checkNow(id).toString();
+        assertThat(body).doesNotContain("ya29").doesNotContain("1//refresh").doesNotContain("conferenceRecords/").doesNotContain("enc:v1:");
+    }
+
+    @Test
+    @DisplayName("Check now on a meeting that isn't waiting, or without a connected account, is refused clearly")
+    void fetchNowPreconditions() throws Exception {
+        String id = createSessionId(memberToken(), workspaceId, MEET);                // no Google connection
+        MvcResult r = mvc.perform(as(post(BASE + "/sessions/" + id + "/fetch"), memberToken(), workspaceId)).andReturn();
+        assertThat(r.getResponse().getStatus()).isEqualTo(409);
+        assertThat(json(r).get("error").asText()).isEqualTo("GOOGLE_NOT_CONNECTED");
+        assertThat(fake.calls().size()).isEqualTo(0);                                   // and Google was never contacted
     }
 }

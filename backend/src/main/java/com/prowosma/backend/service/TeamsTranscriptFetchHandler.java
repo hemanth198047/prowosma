@@ -68,15 +68,22 @@ public class TeamsTranscriptFetchHandler implements MeetingJobHandler {
         Instant anchor = registeredAfterStart ? s.getCreatedAt() : s.getScheduledFor();
         Instant from = anchor.minus(registeredAfterStart ? Duration.ofHours(3) : Duration.ofMinutes(60));
 
-        List<Transcript> mine = api.listOrganizerTranscripts(token.value(), s.getOrganizerId(), from, anchor.plus(Duration.ofHours(12))).stream()
+        List<Transcript> all = api.listOrganizerTranscripts(token.value(), s.getOrganizerId(), from, anchor.plus(Duration.ofHours(12)));
+        List<Transcript> mine = all.stream()
                 .filter(t -> meetingIdContains(t.meetingId(), thread))
                 .filter(t -> !claimedByAnother(org, s.getId(), t.id()))
                 .sorted(Comparator.comparing(t -> t.createdAt() == null ? Instant.MAX : t.createdAt()))
                 .toList();
-        if (mine.isEmpty()) return JobOutcome.poll(now.plus(Duration.ofMinutes(5)), "NO_TRANSCRIPT_YET");
+        if (mine.isEmpty()) {
+            store.recordCheck(org, s.getId(), "NO_TRANSCRIPT_YET", "Microsoft has no transcript for this meeting yet (it returned " + all.size() + " transcript"
+                    + (all.size() == 1 ? "" : "s") + " for the organizer around this time, none from this meeting). A transcript only exists if transcription was started during the meeting. "
+                    + "Prowosma will keep checking.", java.util.Map.of("transcriptsReturned", all.size(), "fromThisMeeting", 0));
+            return JobOutcome.poll(now.plus(Duration.ofMinutes(5)), "NO_TRANSCRIPT_YET");
+        }
         for (Transcript t : mine)
             if (t.endedAt() == null && t.createdAt() != null && t.createdAt().isAfter(now.minus(IN_PROGRESS_GRACE)))
-                return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "TRANSCRIPT_IN_PROGRESS");          // transcription is (probably) still running
+            { store.recordCheck(org, s.getId(), "TRANSCRIPT_IN_PROGRESS", "Microsoft shows transcription as still running for this meeting. Stop transcription or end the meeting for everyone; Prowosma will import it afterwards.", java.util.Map.of("transcriptsFromThisMeeting", mine.size()));
+                return JobOutcome.poll(now.plus(Duration.ofMinutes(3)), "TRANSCRIPT_IN_PROGRESS"); }          // transcription is (probably) still running
 
         List<TranscriptSegment> segments = new ArrayList<>();
         Instant base = mine.get(0).createdAt();

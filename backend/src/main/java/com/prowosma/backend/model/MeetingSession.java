@@ -67,6 +67,11 @@ public class MeetingSession {
     private boolean actionsPendingDiff;     // a re-run found differences waiting for review
     private Instant outputsGeneratedAt;    // last time summary/minutes/notes were produced
     private String conferenceRecord;        // the platform transcript/record this session was matched to (Google conference record, or Teams transcript id)
+    // What the most recent check of the meeting platform found — shown to the person waiting, so the page never just repeats the registration text.
+    private java.time.Instant lastCheckAt;
+    private String lastCheckCode;
+    private String lastCheckMessage;
+    private java.util.Map<String, Object> lastCheckFacts;
     private String organizerId;             // Microsoft Entra object id of the Teams organizer (from the invitation link), if present
     private String tenantHint;              // Microsoft tenant id found in the Teams link, if present
 

@@ -336,13 +336,21 @@ class TeamsAndOperationsTest extends MeetingAssistantTestBase {
         }
     }
 
-    @Test @DisplayName("'Check now' brings the Teams job forward")
+    @Test @DisplayName("'Check now' looks at Microsoft immediately and says what it found")
     void fetchNowForTeams() throws Exception {
         connectTeams();
         String id = teamsSession(link(OID, TID));
-        assertThat(job(id).getRunAfter()).isAfter(Instant.now().plusSeconds(60));
-        assertThat(send(post(BASE + "/sessions/" + id + "/fetch"), memberToken(), null).getResponse().getStatus()).isEqualTo(200);
-        assertThat(job(id).getRunAfter()).isBefore(Instant.now().plusSeconds(5));
+        assertThat(job(id).getRunAfter()).isAfter(Instant.now().plusSeconds(60));              // registered: the first automatic look is minutes away
+        script();                                                                                // Microsoft returns no transcripts yet
+        MvcResult r = send(post(BASE + "/sessions/" + id + "/fetch"), memberToken(), null);
+        assertThat(r.getResponse().getStatus()).isEqualTo(200);
+        assertThat(ms.callsTo("getAllTranscripts")).isEqualTo(1);                               // it really asked Microsoft, right now
+        JsonNode check = json(r).get("lastCheck");
+        assertThat(check.get("code").asText()).isEqualTo("NO_TRANSCRIPT_YET");
+        assertThat(check.get("message").asText()).contains("no transcript for this meeting yet").contains("started during the meeting");
+        assertThat(session(id).getStatus()).isEqualTo("AWAITING_TRANSCRIPT");                  // nothing was lost; it keeps waiting
+        assertThat(job(id).getRunAfter()).isAfter(Instant.now().plusSeconds(240));             // and the next automatic look is scheduled
+        assertThat(json(r).has("nextCheckAt")).isTrue();
     }
 
     @Test @DisplayName("meetingId matching decodes Teams ids with or without padding, and rejects garbage")
