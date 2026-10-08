@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Implemented Team meeting changes Further" />
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Extended meeting feature">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -53,23 +55,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0181989622885697" />
-      <entry key="MS500" value="1.4487550253336308" />
-      <entry key="S2" value="1.818469181590804" />
-      <entry key="S5" value="1.9229983666666957" />
-      <entry key="S10" value="1.960728039908639" />
-      <entry key="S30" value="1.9867341418317477" />
-      <entry key="S60" value="1.993344925910304" />
-      <entry key="M2" value="1.9966669098262613" />
-      <entry key="M5" value="1.9996449752392569" />
-      <entry key="M10" value="2.0821382505478856" />
-      <entry key="M15" value="2.3629726695640745" />
-      <entry key="M30" value="3.5947453115879684" />
-      <entry key="H1" value="5.341261684845412" />
-      <entry key="H2" value="6.836224938276918" />
-      <entry key="H4" value="7.818388091272653" />
-      <entry key="D1" value="8.787588889110543" />
-      <entry key="W1" value="8.96925337355524" />
+      <entry key="MS100" value="1.0093542756101312" />
+      <entry key="MS500" value="1.630413952092011" />
+      <entry key="S2" value="3.629217121507734" />
+      <entry key="S5" value="6.35059197881983" />
+      <entry key="S10" value="8.20882282881137" />
+      <entry key="S30" value="9.938758363947779" />
+      <entry key="S60" value="10.450946492104752" />
+      <entry key="M2" value="10.720692533947156" />
+      <entry key="M5" value="10.888070619709573" />
+      <entry key="M10" value="11.025495251582287" />
+      <entry key="M15" value="11.323657454712988" />
+      <entry key="M30" value="12.571749155136967" />
+      <entry key="H1" value="14.327404465415443" />
+      <entry key="H2" value="15.828287126130727" />
+      <entry key="H4" value="16.814087695364336" />
+      <entry key="D1" value="17.78681763748746" />
+      <entry key="W1" value="17.96914173489862" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -91,23 +93,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.93081168245637" />
-      <entry key="MS500" value="1.424716477553164" />
-      <entry key="S2" value="1.8111421710096267" />
-      <entry key="S5" value="1.9199191460272875" />
-      <entry key="S10" value="1.9591616592416712" />
-      <entry key="S30" value="1.9862058654977799" />
-      <entry key="S60" value="1.9930800062204261" />
-      <entry key="M2" value="1.9965342536253141" />
-      <entry key="M5" value="1.9995918233300958" />
-      <entry key="M10" value="2.0821099013068802" />
-      <entry key="M15" value="2.362949728638905" />
-      <entry key="M30" value="3.5947249694008443" />
-      <entry key="H1" value="5.341245220962415" />
-      <entry key="H2" value="6.8362140124275195" />
-      <entry key="H4" value="7.818381743308641" />
-      <entry key="D1" value="8.787587685544905" />
-      <entry key="W1" value="8.969253197719183" />
+      <entry key="MS100" value="0.9609643303143864" />
+      <entry key="MS500" value="1.4863231946923325" />
+      <entry key="S2" value="3.488351447594831" />
+      <entry key="S5" value="6.269602712262868" />
+      <entry key="S10" value="8.161891555592698" />
+      <entry key="S30" value="9.921305179808057" />
+      <entry key="S60" value="10.44196340587893" />
+      <entry key="M2" value="10.71613428592753" />
+      <entry key="M5" value="10.886230925019674" />
+      <entry key="M10" value="11.024570897867779" />
+      <entry key="M15" value="11.323036583332817" />
+      <entry key="M30" value="12.571429557694321" />
+      <entry key="H1" value="14.327238297830002" />
+      <entry key="H2" value="15.828201326974327" />
+      <entry key="H4" value="16.8140439047716" />
+      <entry key="D1" value="17.78681019257896" />
+      <entry key="W1" value="17.969140667418827" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -121,23 +123,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="ProwosmaBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="prowosma-backend.main" />
@@ -186,6 +188,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Implemented Team meeting changes" />
     <MESSAGE value="Implemented Team meeting changes Further" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented Team meeting changes Further" />
+    <MESSAGE value="Extended meeting feature" />
+    <option name="LAST_COMMIT_MESSAGE" value="Extended meeting feature" />
   </component>
 </project>
