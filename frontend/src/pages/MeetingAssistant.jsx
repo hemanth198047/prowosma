@@ -5,6 +5,8 @@ import { useRole } from "../hooks/useRole";
 import { useConfirm } from "../hooks/useConfirm";
 import MeetingArtifactPanel from "../components/MeetingArtifactPanel";
 import { MeetingActionsPanel, MeetingProjectsTasksPanel } from "../components/MeetingActionsPanel";
+import MeetingCheckStatus from "../components/MeetingCheckStatus";
+import GoogleMeetTranscriptGuide from "../components/GoogleMeetTranscriptGuide";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getAssistantCapabilities, validateMeetingUrl, listMeetingSessions, createMeetingSession,
@@ -234,6 +236,11 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
       <div className="ma-meta">{providerName(session.provider)} · requested by {session.requestedBy}</div>
       <p style={{ margin: "10px 0 4px" }} aria-live="polite"><StatusChip status={session.status} /> {session.statusDetail}</p>
 
+      {WAITING_FOR_TRANSCRIPT.includes(session.status) && !session.simulated && <MeetingCheckStatus session={session} />}
+      {session.provider === "GOOGLE_MEET" && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED") && (
+        <GoogleMeetTranscriptGuide defaultOpen={session.status === "FAILED" || session.lastCheck?.code === "NO_TRANSCRIPT_YET"} />
+      )}
+
       {session.status === "FAILED" && (
         <div className="ma-failure" role="alert">
           <strong>What happened:</strong> {session.statusDetail}
@@ -253,7 +260,7 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
             onClick={() => run(() => generateMeetingOutputs(session.id), "Generating a new version")}>Regenerate</button>)}
         {session.canManage && googleConnected && session.provider === "GOOGLE_MEET" && WAITING_FOR_TRANSCRIPT.includes(session.status) && (
           <button className="ma-btn" disabled={busy}
-            onClick={() => run(() => fetchMeetingTranscriptNow(session.id), "Checking Google Meet")}>Check Google Meet now</button>)}
+            onClick={() => run(() => fetchMeetingTranscriptNow(session.id), "Checked Google Meet")}>{busy ? "Checking Google…" : "Check Google Meet now"}</button>)}
       </div>
 
       {session.canManage && !session.simulated && ACCEPTS_TRANSCRIPT.includes(session.status) && (
@@ -455,6 +462,8 @@ export default function MeetingAssistant() {
               {providerOff && <div className="ma-error">This platform isn't enabled yet. Ask an admin to turn it on under Integrations → Meeting Platforms.</div>}
             </div>
           </div>
+
+          {(check.state === "ok" ? check.data.provider === "GOOGLE_MEET" : !url.trim()) && <GoogleMeetTranscriptGuide title="Before you start your meeting: how to turn on a transcript in Google Meet" />}
 
           <div className="ma-field">
             <label htmlFor="ma-title">Title (optional)</label>

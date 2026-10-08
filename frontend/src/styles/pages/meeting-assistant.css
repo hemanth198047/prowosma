@@ -106,3 +106,29 @@
 .ma-merge { display: inline-flex; gap: 6px; align-items: center; }
 .ma-merge select { padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface-1); color: inherit; max-width: 220px; }
 .ma-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* What the platform said at the last check, and the "how to turn on a transcript" guide */
+.ma-check { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--border); border-left: 4px solid var(--brand-500); border-radius: 10px; background: var(--surface-1); }
+.ma-check.ok { border-left-color: var(--success, #059669); }
+.ma-check.bad { border-left-color: #b91c1c; }
+.ma-check h3 { font-size: 13px; margin: 0 0 6px; }
+.ma-check p { margin: 6px 0; font-size: 14px; line-height: 1.55; }
+.ma-check-facts { margin-top: 6px; font-size: 13px; }
+.ma-check-facts summary { cursor: pointer; color: var(--gray-500, #64748b); }
+.ma-check-facts dl { margin: 6px 0 0; display: grid; gap: 4px; }
+.ma-check-facts dl > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.ma-check-facts dt { color: var(--gray-500, #64748b); min-width: 260px; }
+.ma-check-facts dd { margin: 0; font-weight: 600; }
+
+.ma-guide { margin: 12px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-1); }
+.ma-guide > summary { cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 14px; }
+.ma-guide[open] > summary { border-bottom: 1px solid var(--border); }
+.ma-guide-body { padding: 4px 16px 14px; font-size: 14px; line-height: 1.6; }
+.ma-guide-body h4 { font-size: 14px; margin: 18px 0 4px; }
+.ma-guide-body p, .ma-guide-body li { margin: 6px 0; }
+.ma-guide-key { margin: 10px 0 6px; padding: 10px 12px; border-radius: 8px; border: 1px solid #fcd34d; background: rgba(251, 191, 36, 0.12); }
+.ma-guide-steps { padding-left: 22px; }
+.ma-guide-steps li::marker { font-weight: 700; }
+.ma-guide-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; display: block; overflow-x: auto; }
+.ma-guide-table th, .ma-guide-table td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+.ma-guide-table th { background: var(--surface-2, rgba(127,127,127,.08)); }
