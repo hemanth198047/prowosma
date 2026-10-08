@@ -1724,3 +1724,35 @@
 .cc3-status-dot  { width: 5px; height: 5px; border-radius: 50%;
   background: var(--gray-400); cursor: pointer; transition: all 0.2s; opacity: 0.4; }
 .cc3-status-dot.active { opacity: 1; background: var(--brand-500); }
+
+/* AI status badge in topbar — sits next to the Live pill. The word is always shown, so colour is never the only signal. */
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  flex-shrink: 0;
+  background: transparent;
+  transition: background 0.15s, opacity 0.15s;
+}
+a.ai-status { cursor: pointer; }
+a.ai-status:hover { background: rgba(127, 127, 127, 0.12); }
+a.ai-status:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.ai-status .ai-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.ai-status.ai-on    { color: #059669; }
+.ai-status.ai-off   { color: #64748b; }
+.ai-status.ai-off .ai-dot { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+.ai-status.ai-setup { color: #b45309; }
+.ai-status.ai-setup .ai-dot { animation: ws-pulse 2s ease-in-out infinite; }
+[data-theme="dark"] .ai-status.ai-on    { color: #34d399; }
+[data-theme="dark"] .ai-status.ai-off   { color: #94a3b8; }
+[data-theme="dark"] .ai-status.ai-setup { color: #fbbf24; }
+@media (max-width: 720px) { .ai-status { padding: 0 9px; } }

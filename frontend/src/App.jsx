@@ -47,6 +47,7 @@ import NotificationBell from "./components/NotificationBell";
 import LiveClock from "./components/LiveClock";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import ConnectionStatus from "./components/ConnectionStatus";
+import AIStatus from "./components/AIStatus";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 import OnboardingChecklist from "./components/OnboardingChecklist";
 import CommandPalette from "./components/CommandPalette";
@@ -551,6 +552,7 @@ function AppShell() {
                 <div className="topbar-right-cluster">
                   <LiveClock />
                   <ConnectionStatus />
+                  <AIStatus />
                   <NotificationBell />
                   <HelpGuide />
                   <ThemeToggle />
