@@ -34,6 +34,7 @@ public class MeetingSessionStore {
                         .set("lastCheckMessage", message).set("lastCheckFacts", facts == null ? java.util.Map.of() : facts), MeetingSession.class);
     }
 
+
     public void recordCheck(String org, String sessionId, com.prowosma.backend.meetingassistant.GoogleCheckReport.Report r) {
         recordCheck(org, sessionId, r.code(), r.message(), r.facts());
     }
