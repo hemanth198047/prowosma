@@ -24,6 +24,12 @@ public class MeetingProposedProject {
     private List<String> missingFields = new ArrayList<>();
     private boolean edited;
     private String extractionId;
+    private String creationState;                  // null | CREATING | CREATED | FAILED
+    private Instant creationStartedAt;
+    private String creationError;
+    private String createdProjectId;
+    private String createdBy;
+    private boolean autoCreated;
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
 }

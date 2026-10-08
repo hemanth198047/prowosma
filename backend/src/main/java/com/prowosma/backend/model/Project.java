@@ -80,4 +80,8 @@ public class Project {
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();
     private java.util.Map<String, String> customFieldValues = new java.util.HashMap<>();
+    // Created from a meeting (Meeting Assistant)
+    private String sourceMeetingId;
+    private String sourceMeetingTitle;
+    private String sourceProposalKey;   // stable id of the proposed project — makes creation duplicate-proof
 }

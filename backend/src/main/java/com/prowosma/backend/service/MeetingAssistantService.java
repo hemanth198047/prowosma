@@ -32,8 +32,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class MeetingAssistantService {
 
-    /** Automatic creation is stored as a setting but cannot be switched on until it exists. */
-    public static final boolean AUTO_CREATION_AVAILABLE = false;
     public static final List<String> PROVIDERS = List.of("GOOGLE_MEET", "MS_TEAMS");
     private static final Set<String> ASSIGNABLE_ROLES = Set.of("OWNER", "ADMIN", "MEMBER");
     private static final Pattern LANG = Pattern.compile("^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$");
@@ -55,6 +53,7 @@ public class MeetingAssistantService {
     private final MeetingOutputService outputs;
     private final LlmClient llm;
     private final MeetingActionService actionService;
+    private final MeetingCreationService creationService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
     private boolean devFixtures;
@@ -141,9 +140,6 @@ public class MeetingAssistantService {
         for (String f : List.of("autoCreateTasks", "autoCreateProjects")) {
             if (patch.containsKey(f)) {
                 boolean on = Boolean.parseBoolean(String.valueOf(patch.get(f)));
-                if (on && !AUTO_CREATION_AVAILABLE)
-                    throw err(HttpStatus.CONFLICT, "NOT_AVAILABLE",
-                            "Automatic creation isn't available yet. Generated items will be sent for review.");
                 if (f.equals("autoCreateTasks")) s.setAutoCreateTasks(on); else s.setAutoCreateProjects(on);
             }
         }
@@ -343,6 +339,8 @@ public class MeetingAssistantService {
         out.put("aiReason", aiReason);
         out.put("autoGenerate", st.isAutoGenerateOutputs());
         out.put("autoExtract", st.isAutoExtractActions());
+        out.put("autoCreateTasks", st.isAutoCreateTasks());
+        out.put("autoCreateProjects", st.isAutoCreateProjects());
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
                 ? "Transcripts can be imported automatically from Google Meet (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
@@ -816,6 +814,15 @@ public class MeetingAssistantService {
 
     public Map<String, Object> resolveActionsDiff(String id, boolean apply, String email) {
         return actionService.resolveDiff(loadManageable(id, email, roleOf(email)), apply, email);
+    }
+
+    /** Review mode: creates ALL approved projects and tasks now, as the person pressing the button. */
+    public Map<String, Object> createApproved(String id, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        if (s.isSimulated()) throw err(HttpStatus.BAD_REQUEST, "SIMULATED", "Simulated meetings can't create real records.");
+        Map<String, Object> out = creationService.createApproved(s, email);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "RECORDS_CREATED", null, out.get("created") + " created, " + out.get("failed") + " failed", email);
+        return out;
     }
 
     public Map<String, Object> actionsPreview(String id, String email) {

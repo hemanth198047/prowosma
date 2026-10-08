@@ -26,6 +26,19 @@ public class NotificationService {
         notificationRepository.save(n);
     }
 
+    /** Same as {@link #create} but files the notification under an inbox category (e.g. ASSIGNMENT). */
+    public void createWithCategory(String title, String message, String type, String entityType, String entityId, String category) {
+        Notification n = new Notification();
+        n.setTitle(title);
+        n.setMessage(message);
+        n.setType(type);
+        n.setEntityType(entityType);
+        n.setEntityId(entityId);
+        n.setCategory(category);
+        n.setOrganizationId(workspaceContext.getWorkspaceId());
+        notificationRepository.save(n);
+    }
+
     public List<Notification> getAll() {
         // No workspace selected => no notifications. This used to fall back to a
         // global query, which returned every workspace's notifications to anyone

@@ -205,6 +205,10 @@ public class MeetingJobRunner {
             actionService.markFailed(job, code, message, recovery);
             return;
         }
+        if (MeetingCreationService.JOB_TYPE.equals(job.getType())) {        // automatic creation failing leaves everything in review
+            store.audit(job.getOrganizationId(), job.getSessionId(), "system", "AUTO_CREATE_FAILED", code);
+            return;
+        }
         try {
             store.find(job.getOrganizationId(), job.getSessionId()).ifPresent((MeetingSession s) -> {
                 if (failable(job).contains(SessionStatus.valueOf(s.getStatus()))) {

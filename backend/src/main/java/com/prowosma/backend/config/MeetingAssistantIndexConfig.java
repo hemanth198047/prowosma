@@ -8,6 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.query.Criteria;
 
 /** Indexes for the Meeting Assistant collections. Kept separate from MongoIndexConfig. */
 @Configuration
@@ -69,6 +70,15 @@ public class MeetingAssistantIndexConfig {
                     new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).named("proposed_project_by_session"));
             mongoTemplate.indexOps("meeting_extractions").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).on("status", Sort.Direction.ASC).named("extraction_by_session"));
+            mongoTemplate.indexOps("meeting_creation_batches").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC).on("createdAt", Sort.Direction.DESC).named("creation_batch_by_session"));
+            // Duplicate-proofing at the database: one task per proposed action, one project per proposed project (only records that carry a source key).
+            mongoTemplate.indexOps("tasks").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sourceActionKey", Sort.Direction.ASC).unique()
+                            .partial(org.springframework.data.mongodb.core.index.PartialIndexFilter.of(Criteria.where("sourceActionKey").exists(true))).named("uniq_task_meeting_source"));
+            mongoTemplate.indexOps("projects").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sourceProposalKey", Sort.Direction.ASC).unique()
+                            .partial(org.springframework.data.mongodb.core.index.PartialIndexFilter.of(Criteria.where("sourceProposalKey").exists(true))).named("uniq_project_meeting_source"));
             mongoTemplate.indexOps("meeting_integrations").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("provider", Sort.Direction.ASC)
                             .unique().named("uniq_org_provider"));

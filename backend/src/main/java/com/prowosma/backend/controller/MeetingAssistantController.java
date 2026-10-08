@@ -170,6 +170,12 @@ public class MeetingAssistantController {
         return service.actionsPreview(id, auth.getName());
     }
 
+    /** Review mode: create every approved project and task now. Safe to repeat: only what isn't created yet (or failed) is attempted. */
+    @PostMapping("/sessions/{id}/create")
+    public Map<String, Object> createApproved(@PathVariable String id, Authentication auth) {
+        return service.createApproved(id, auth.getName());
+    }
+
     @PostMapping("/sessions/{id}/actions/approve-valid")
     public Map<String, Object> approveValid(@PathVariable String id, Authentication auth) {
         return service.approveValidActions(id, auth.getName());

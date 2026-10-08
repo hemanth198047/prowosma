@@ -237,6 +237,15 @@ services:
       # collector/vendor instead — see docs/OBSERVABILITY_SETUP.md.
       OTLP_TRACING_ENDPOINT: http://otel-collector:4318/v1/traces
       DEPLOYMENT_ENV: development
+      # ── Meeting Assistant (optional) ─────────────────────────────────────
+      # Values come from a file named ".env" placed NEXT TO this docker-compose.yml
+      # (Compose reads it automatically). Leave blank to keep the feature off.
+      # See docs/GOOGLE_MEET_SETUP.md. ENCRYPTION_KEY is required for Google sign-ins
+      # to be saved; if your deployment already has one, keep it unchanged.
+      GOOGLE_MEET_OAUTH_CLIENT_ID: ${GOOGLE_MEET_OAUTH_CLIENT_ID:-}
+      GOOGLE_MEET_OAUTH_CLIENT_SECRET: ${GOOGLE_MEET_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_MEET_OAUTH_REDIRECT_URI: ${GOOGLE_MEET_OAUTH_REDIRECT_URI:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/api/health/ready"]
       interval: 15s

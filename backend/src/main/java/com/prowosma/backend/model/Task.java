@@ -65,6 +65,12 @@ public class Task {
 
     // ── Epic linkage ────────────────────────────────────────────
     private String  epicId;               // parent epic task id
+    // Created from a meeting (Meeting Assistant): link back to the meeting and its transcript evidence.
+    private String  sourceMeetingId;
+    private String  sourceMeetingTitle;
+    private String  sourceActionKey;     // stable id of the proposed action — makes creation duplicate-proof
+    private java.util.List<Integer> sourceEvidence;
+
 
     @lombok.Data
     public static class ChecklistItem {

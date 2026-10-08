@@ -294,7 +294,7 @@ public class MeetingActionService {
         Instant anchor = s.getStartedAt() != null ? s.getStartedAt() : s.getScheduledFor() != null ? s.getScheduledFor() : s.getCreatedAt();
         c.meetingDate = anchor.atZone(zone).toLocalDate();
         for (Line l : lines) c.speakerBySeq.put(l.seq(), l.speaker());
-        for (MeetingProposedProject p : proposals(c.org, s.getId())) if ("APPROVED".equals(p.getStatus())) c.approvedProposals.add(NameMatcher.norm(p.getName()));
+        for (MeetingProposedProject p : proposals(c.org, s.getId())) if ("APPROVED".equals(p.getStatus()) || "CREATED".equals(p.getStatus())) c.approvedProposals.add(NameMatcher.norm(p.getName()));
         return c;
     }
 
@@ -552,6 +552,13 @@ public class MeetingActionService {
         m.put("reasons", a.getReasons().stream().map(r -> Map.of("code", r.getCode(), "message", r.getMessage(), "blocking", r.isBlocking())).toList());
         m.put("valid", a.isValid());
         m.put("edited", a.isEdited());
+        Map<String, Object> cr = new LinkedHashMap<>();
+        cr.put("state", a.getCreationState());
+        cr.put("error", a.getCreationError());
+        cr.put("taskId", a.getCreatedTaskId());
+        cr.put("by", a.getCreatedBy());
+        cr.put("auto", a.isAutoCreated());
+        m.put("creation", cr);
         return m;
     }
 
@@ -565,6 +572,13 @@ public class MeetingActionService {
         m.put("status", p.getStatus());
         m.put("missingFields", p.getMissingFields());
         m.put("edited", p.isEdited());
+        Map<String, Object> cr = new LinkedHashMap<>();
+        cr.put("state", p.getCreationState());
+        cr.put("error", p.getCreationError());
+        cr.put("projectId", p.getCreatedProjectId());
+        cr.put("by", p.getCreatedBy());
+        cr.put("auto", p.isAutoCreated());
+        m.put("creation", cr);
         return m;
     }
 
@@ -582,7 +596,7 @@ public class MeetingActionService {
 
     private Set<String> approvedProposalNames(String org, String sessionId) {
         Set<String> out = new HashSet<>();
-        for (MeetingProposedProject p : proposals(org, sessionId)) if ("APPROVED".equals(p.getStatus())) out.add(NameMatcher.norm(p.getName()));
+        for (MeetingProposedProject p : proposals(org, sessionId)) if ("APPROVED".equals(p.getStatus()) || "CREATED".equals(p.getStatus())) out.add(NameMatcher.norm(p.getName()));
         return out;
     }
 
@@ -603,6 +617,8 @@ public class MeetingActionService {
         final String org = s.getOrganizationId();
         MeetingAction a = action(org, s.getId(), id);
         if ("MERGED".equals(a.getStatus())) throw err(HttpStatus.CONFLICT, "INVALID_STATE", "A merged action can't be edited. Restore it first.");
+        if ("CREATED".equals(a.getStatus()) || "CREATING".equals(a.getCreationState()))
+            throw err(HttpStatus.CONFLICT, "ALREADY_CREATED", "This task has already been created. Edit the task itself.");
         boolean wasApproved = "APPROVED".equals(a.getStatus());
 
         if (patch.containsKey("title")) {
@@ -684,6 +700,8 @@ public class MeetingActionService {
         final String org = s.getOrganizationId();
         MeetingAction a = action(org, s.getId(), id);
         String decision = decisionRaw == null ? "" : decisionRaw.toUpperCase(Locale.ROOT);
+        if ("CREATED".equals(a.getStatus()) || "CREATING".equals(a.getCreationState()))
+            throw err(HttpStatus.CONFLICT, "ALREADY_CREATED", "This task has already been created. Edit or delete the task itself.");
         switch (decision) {
             case "APPROVE" -> {
                 if (!"PROPOSED".equals(a.getStatus())) throw err(HttpStatus.CONFLICT, "INVALID_STATE", "Only a proposed action can be approved.");
@@ -717,6 +735,8 @@ public class MeetingActionService {
         if (fromId.equals(intoId)) throw err(HttpStatus.BAD_REQUEST, "INVALID_MERGE", "Pick a different action to merge into.");
         MeetingAction from = action(org, s.getId(), fromId), into = action(org, s.getId(), intoId);
         if ("MERGED".equals(from.getStatus()) || "MERGED".equals(into.getStatus())) throw err(HttpStatus.CONFLICT, "INVALID_STATE", "That action is already merged.");
+        if ("CREATED".equals(from.getStatus()) || "CREATED".equals(into.getStatus()))
+            throw err(HttpStatus.CONFLICT, "ALREADY_CREATED", "A task that has been created can't be merged.");
         TreeSet<Integer> ev = new TreeSet<>(into.getEvidence());
         ev.addAll(from.getEvidence());
         into.setEvidence(new ArrayList<>(ev));
@@ -787,7 +807,7 @@ public class MeetingActionService {
             addActions(ctx, s, fresh, fw, ex.getId());
             for (int g : diff.gone()) {                                                     // no longer found: flag it, never delete it
                 MeetingAction gone = current.get(g);
-                if ("REJECTED".equals(gone.getStatus()) || "WITHDRAWN".equals(gone.getStatus())) continue;
+                if ("REJECTED".equals(gone.getStatus()) || "WITHDRAWN".equals(gone.getStatus()) || "CREATED".equals(gone.getStatus())) continue;
                 gone.setMissingFromLatestRun(true);
                 if ("APPROVED".equals(gone.getStatus())) gone.setStatus("PROPOSED");
                 evaluate(gone, ctx.approvedProposals);
@@ -813,11 +833,31 @@ public class MeetingActionService {
         return m;
     }
 
+    /** Re-checks an action against the CURRENT directory, projects and proposals (they may have changed since it was approved). Not saved. */
+    public MeetingAction refresh(MeetingSession s, MeetingAction a) {
+        final String org = s.getOrganizationId();
+        if (a.getProjectId() != null && ("EXISTING".equals(a.getProjectState()) || "MANUAL".equals(a.getProjectState()))
+                && mongo.findOne(new Query(Criteria.where("_id").is(a.getProjectId()).and("organizationId").is(org)), Project.class) == null) {
+            a.setProjectState("UNRESOLVED"); a.setProjectId(null); a.setProjectName(null);        // the project was deleted meanwhile
+        }
+        if (a.getOwnerUserId() != null) {
+            TeamMember m = mongo.findOne(new Query(Criteria.where("_id").is(a.getOwnerUserId()).and("organizationId").is(org)), TeamMember.class);
+            if (m == null || !NameMatcher.eligible(new Person(m.getId(), m.getName(), m.getEmail(), m.getRole()))) {
+                a.setOwnerUserId(null); a.setOwnerName(null); a.setOwnerEmail(null);
+                a.setOwnerState(m == null ? "NOT_IN_DIRECTORY" : "NOT_ELIGIBLE");                    // can no longer be assigned work
+            }
+        }
+        evaluate(a, approvedProposalNames(org, s.getId()));
+        return a;
+    }
+
     // ── proposed projects ────────────────────────────────────────────────────
 
     public Map<String, Object> patchProject(MeetingSession s, String id, Map<String, Object> patch, String by) {
         final String org = s.getOrganizationId();
         MeetingProposedProject p = proposal(org, s.getId(), id);
+        if ("CREATED".equals(p.getStatus()) || "CREATING".equals(p.getCreationState()))
+            throw err(HttpStatus.CONFLICT, "ALREADY_CREATED", "This project has already been created. Edit the project itself.");
         String oldName = p.getName();
         if (patch.containsKey("name")) {
             String n = bounded(patch.get("name"), 100, "name");
@@ -845,6 +885,8 @@ public class MeetingActionService {
         final String org = s.getOrganizationId();
         MeetingProposedProject p = proposal(org, s.getId(), id);
         String decision = decisionRaw == null ? "" : decisionRaw.toUpperCase(Locale.ROOT);
+        if ("CREATED".equals(p.getStatus()) || "CREATING".equals(p.getCreationState()))
+            throw err(HttpStatus.CONFLICT, "ALREADY_CREATED", "This project has already been created.");
         switch (decision) {
             case "APPROVE" -> {
                 p.setMissingFields(missingProjectFields(p));
@@ -910,6 +952,26 @@ public class MeetingActionService {
             projects.add(m);
         }
         long waiting = all.stream().filter(a -> "PROPOSED".equals(a.getStatus())).count();
-        return Map.of("tasks", tasks, "projects", projects, "waitingForReview", waiting);
+        List<Map<String, Object>> created = new ArrayList<>();
+        List<Map<String, Object>> failed = new ArrayList<>();
+        for (MeetingAction a : all) {
+            if ("CREATED".equals(a.getStatus()))
+                created.add(Map.of("kind", "TASK", "actionId", a.getId(), "title", a.getTitle(), "recordId", String.valueOf(a.getCreatedTaskId()), "by", String.valueOf(a.getCreatedBy()), "auto", a.isAutoCreated()));
+            else if ("APPROVED".equals(a.getStatus()) && "FAILED".equals(a.getCreationState()))
+                failed.add(Map.of("kind", "TASK", "id", a.getId(), "title", a.getTitle(), "error", String.valueOf(a.getCreationError())));
+        }
+        for (MeetingProposedProject p : proposals(org, s.getId())) {
+            if ("CREATED".equals(p.getStatus()))
+                created.add(Map.of("kind", "PROJECT", "actionId", p.getId(), "title", p.getName(), "recordId", String.valueOf(p.getCreatedProjectId()), "by", String.valueOf(p.getCreatedBy()), "auto", p.isAutoCreated()));
+            else if ("APPROVED".equals(p.getStatus()) && "FAILED".equals(p.getCreationState()))
+                failed.add(Map.of("kind", "PROJECT", "id", p.getId(), "title", p.getName(), "error", String.valueOf(p.getCreationError())));
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("tasks", tasks);
+        out.put("projects", projects);
+        out.put("waitingForReview", waiting);
+        out.put("created", created);
+        out.put("failed", failed);
+        return out;
     }
 }

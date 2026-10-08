@@ -72,6 +72,15 @@ public class MeetingAction {
     private boolean valid;                         // eligible for bulk approval
     private boolean edited;
     private String extractionId;
+
+    // creation (Phase 5)
+    private String creationState;                  // null | CREATING | CREATED | FAILED
+    private Instant creationStartedAt;
+    private String creationError;
+    private String createdTaskId;
+    private String createdBy;                      // the person, or the Meeting Assistant system actor
+    private boolean autoCreated;
+    private Instant createdRecordAt;
     private String updatedBy;
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
