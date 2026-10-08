@@ -158,6 +158,8 @@ function SettingsForm({ initial, caps, usage, onSaved }) {
         defaultVisibility: f.defaultVisibility,
         autoGenerateOutputs: !!f.autoGenerateOutputs,
         autoExtractActions: !!f.autoExtractActions,
+        autoCreateTasks: !!f.autoCreateTasks,
+        autoCreateProjects: !!f.autoCreateProjects,
         transcriptRetentionDays: Number(f.transcriptRetentionDays),
         generatedContentRetentionDays: Number(f.generatedContentRetentionDays),
         retainRawAudio: !!f.retainRawAudio,
@@ -248,12 +250,13 @@ function SettingsForm({ initial, caps, usage, onSaved }) {
 
       <fieldset style={{ border: 0, padding: 0 }}>
         <legend className="ma-legend">Creating tasks and projects</legend>
+        <p className="ma-hint">By default people review each meeting, press <strong>Create approved items</strong>, and the records are created as them.</p>
         <div className="ma-checks">
-          <label><input type="radio" checked readOnly /> Review before creating (default)</label>
-          <label><input type="checkbox" disabled /> Create tasks automatically</label>
-          <label><input type="checkbox" disabled /> Create projects automatically</label>
+          <label><input type="checkbox" checked={!!f.autoCreateTasks} onChange={(e) => set("autoCreateTasks", e.target.checked)} /> Create tasks automatically</label>
+          <label><input type="checkbox" checked={!!f.autoCreateProjects} onChange={(e) => set("autoCreateProjects", e.target.checked)} /> Create projects automatically</label>
         </div>
-        <p className="ma-hint">Automatic creation isn't available yet. Everything goes to review first.</p>
+        <p className="ma-hint">Automatic items are created by a dedicated <strong>Meeting Assistant system user</strong>, not by a person, after a short wait so corrections count.
+          Only clear, agreed actions are created — with a named owner who matches your directory, a project, and a reliable deadline (or none). Suggestions, unassigned or ambiguous items, and anything a person rejected stay in review.</p>
       </fieldset>
 
       {error && <p className="ma-error" role="alert">{error}</p>}

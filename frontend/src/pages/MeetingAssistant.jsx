@@ -321,7 +321,8 @@ export default function MeetingAssistant() {
   const [projects, setProjects] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState(null);
+  // A link like /meeting-assistant?session=<id> (written into every created task and project) opens that meeting.
+  const [selectedId, setSelectedId] = useState(() => new URLSearchParams(window.location.search).get("session"));
 
   const [url, setUrl] = useState("");
   const [result, setResult] = useState(null); // answer for one specific link: { url, ok, data }

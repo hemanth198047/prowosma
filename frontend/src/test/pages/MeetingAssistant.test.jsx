@@ -34,6 +34,7 @@ vi.mock("../../api/meetingAssistant", () => ({
   resolveMeetingActionsDiff: vi.fn(),
   patchProposedProject: vi.fn(),
   decideProposedProject: vi.fn(),
+  createMeetingRecords: vi.fn(),
 }));
 vi.mock("../../api/projects", () => ({ getProjects: vi.fn() }));
 vi.mock("../../api/team", () => ({ getTeamMembers: vi.fn() }));
@@ -68,7 +69,7 @@ beforeEach(() => {
   api.getMeetingTranscript.mockResolvedValue({ data: { segments: [], total: 0, nextAfter: null } });
   api.getMeetingArtifacts.mockResolvedValue({ data: { SUMMARY: null, MOM: null, NOTES: null } });
   api.getMeetingActions.mockResolvedValue({ data: { status: "NONE", message: null, pendingDiff: null, actions: [], proposedProjects: [] } });
-  api.getMeetingActionsPreview.mockResolvedValue({ data: { tasks: [], projects: [], waitingForReview: 0 } });
+  api.getMeetingActionsPreview.mockResolvedValue({ data: { tasks: [], projects: [], waitingForReview: 0, created: [], failed: [] } });
 });
 afterEach(cleanup);
 
@@ -275,7 +276,7 @@ describe("MeetingAssistant page", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Extract actions" }));
     await waitFor(() => expect(api.extractMeetingActions).toHaveBeenCalledWith("s1"));
     fireEvent.click(screen.getByRole("tab", { name: "Projects and Tasks" }));
-    expect(await screen.findByText(/Nothing below exists in Prowosma yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing is created until you press Create/)).toBeInTheDocument();
   });
 
   // ── Google ───────────────────────────────────────────────────────────────
@@ -303,6 +304,17 @@ describe("MeetingAssistant page", () => {
     await openSession(SESSION);
     await screen.findByRole("tablist", { name: "Meeting results" });
     expect(screen.queryByRole("button", { name: "Check Google Meet now" })).toBeNull();
+  });
+
+  it("a link written into a created task (?session=<id>) opens that meeting straight away", async () => {
+    window.history.pushState({}, "", "/meeting-assistant?session=s1");
+    try {
+      api.listMeetingSessions.mockResolvedValue({ data: [SESSION] });
+      render(<MeetingAssistant />);
+      expect(await screen.findByRole("region", { name: "Details for Weekly sync" })).toBeInTheDocument();
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
   });
 
   it("has no automatically detectable accessibility violations", async () => {

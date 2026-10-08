@@ -95,11 +95,20 @@ describe("MeetingPlatforms page", () => {
     expect(await screen.findByText(/sign-in isn't set up yet/)).toBeInTheDocument();
   });
 
-  it("automatic creation cannot be switched on from the UI", async () => {
+  it("automatic creation of tasks and projects has separate switches and explains the system user and the strict rules", async () => {
+    api.updateAssistantSettings.mockResolvedValue({ data: { ...SETTINGS, autoCreateTasks: true } });
     renderAs({ isAdmin: true });
-    const auto = await screen.findByRole("checkbox", { name: /Create tasks automatically/ });
-    expect(auto).toBeDisabled();
-    expect(screen.getByRole("checkbox", { name: /Create projects automatically/ })).toBeDisabled();
+    const tasks = await screen.findByRole("checkbox", { name: /Create tasks automatically/ });
+    const projects = screen.getByRole("checkbox", { name: /Create projects automatically/ });
+    expect(tasks).toBeEnabled();
+    expect(tasks).not.toBeChecked();
+    expect(projects).not.toBeChecked();
+    expect(screen.getByText(/dedicated/)).toHaveTextContent("Meeting Assistant system user");
+    expect(screen.getByText(/Only clear, agreed actions are created/)).toBeInTheDocument();
+    fireEvent.click(tasks);
+    fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
+    await waitFor(() => expect(api.updateAssistantSettings).toHaveBeenCalledTimes(1));
+    expect(api.updateAssistantSettings.mock.calls[0][0]).toMatchObject({ autoCreateTasks: true, autoCreateProjects: false });
   });
 
   it("saves settings and shows the server's validation message when rejected", async () => {

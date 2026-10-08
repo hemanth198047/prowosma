@@ -28,6 +28,8 @@ export const getMeetingActionsPreview  = (id)            => client.get(`/meeting
 export const patchMeetingAction        = (id, aid, data) => client.patch(`/meeting-assistant/sessions/${id}/actions/${aid}`, data);
 export const decideMeetingAction       = (id, aid, decision) => client.post(`/meeting-assistant/sessions/${id}/actions/${aid}/decision`, { decision });
 export const mergeMeetingAction        = (id, aid, intoId) => client.post(`/meeting-assistant/sessions/${id}/actions/${aid}/merge`, { intoId });
+// Review mode: create every approved project and task now (repeat-safe: only what is not created yet, or failed, is attempted)
+export const createMeetingRecords      = (id)            => client.post(`/meeting-assistant/sessions/${id}/create`, {});
 export const approveValidMeetingActions = (id)           => client.post(`/meeting-assistant/sessions/${id}/actions/approve-valid`, {});
 export const resolveMeetingActionsDiff = (id, apply)     => client.post(`/meeting-assistant/sessions/${id}/actions/diff`, { apply });
 export const patchProposedProject      = (id, pid, data) => client.patch(`/meeting-assistant/sessions/${id}/proposed-projects/${pid}`, data);

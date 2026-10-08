@@ -3,13 +3,13 @@ import { apiErrorMessage } from "../utils/apiError";
 import { formatClock } from "../utils/meetingStatus";
 import {
   extractMeetingActions, getMeetingActions, getMeetingActionsPreview, patchMeetingAction, decideMeetingAction, mergeMeetingAction,
-  approveValidMeetingActions, resolveMeetingActionsDiff, patchProposedProject, decideProposedProject, getMeetingTranscript,
+  approveValidMeetingActions, resolveMeetingActionsDiff, patchProposedProject, decideProposedProject, getMeetingTranscript, createMeetingRecords,
 } from "../api/meetingAssistant";
 
 const KIND = { COMMITMENT: ["Agreed", "success"], SUGGESTION: ["Suggested, not agreed", "progress"], UNRESOLVED: ["Not settled", "neutral"] };
-const STATE = { PROPOSED: ["Needs review", "info"], APPROVED: ["Approved", "success"], REJECTED: ["Rejected", "neutral"], MERGED: ["Merged", "neutral"], WITHDRAWN: ["Withdrawn", "danger"] };
+const STATE = { PROPOSED: ["Needs review", "info"], APPROVED: ["Approved", "success"], CREATED: ["Created", "success"], REJECTED: ["Rejected", "neutral"], MERGED: ["Merged", "neutral"], WITHDRAWN: ["Withdrawn", "danger"] };
 const CONF = { HIGH: "High confidence", MEDIUM: "Medium confidence", LOW: "Low confidence" };
-const NOT_BUILT = "Creating tasks and projects in Prowosma isn't available yet. Approving only marks items as ready.";
+const HOW_CREATION_WORKS = "Approving marks an item ready. Press Create on the Projects and Tasks tab to create every approved item.";
 
 function Chip({ tone, children }) { return <span className={`ma-chip ${tone}`}>{children}</span>; }
 
@@ -52,7 +52,7 @@ function ActionCard({ a, all, members, projects, proposals, canManage, busy, sel
   const notes = a.reasons.filter((r) => !r.blocking);
   const ownerValue = a.owner.userId || "";
   const projectValue = a.project.state === "PROPOSED_NEW" ? `new:${a.project.proposedName}` : a.project.id || "";
-  const locked = !canManage || a.status === "MERGED";
+  const locked = !canManage || a.status === "MERGED" || a.status === "CREATED";
   const ownerLabel = a.owner.userId ? `${a.owner.name}${a.owner.basis === "SPEAKER_LABEL" ? " (the speaker)" : ""}` : "Unassigned";
 
   return (
@@ -121,6 +121,11 @@ function ActionCard({ a, all, members, projects, proposals, canManage, busy, sel
         </p>
       )}
 
+      {a.status === "CREATED" && (
+        <p className="ma-ok">Created as a task {a.creation.auto ? "automatically by the Meeting Assistant" : `by ${a.creation.by}`}. Edit it in <a href="/tasks">Tasks</a>.</p>
+      )}
+      {a.status === "APPROVED" && a.creation.state === "FAILED" && <p className="ma-error" role="alert">Couldn't be created: {a.creation.error} Press Create to retry.</p>}
+      {a.creation.error && a.status === "PROPOSED" && <p className="ma-warn">{a.creation.error}</p>}
       {blocking.length > 0 && <ul className="ma-reasons" aria-label="Needs attention">{blocking.map((r) => <li key={r.code}><strong>Needs attention:</strong> {r.message}</li>)}</ul>}
       {notes.length > 0 && <ul className="ma-reasons soft" aria-label="Notes">{notes.map((r) => <li key={r.code}>{r.message}</li>)}</ul>}
 
@@ -189,6 +194,19 @@ function ProposalCard({ p, canManage, busy, run, sessionId, onShow }) {
         </div>
       )}
     </li>
+  );
+}
+
+function CreationResult({ result }) {
+  if (!result) return null;
+  return (
+    <section className="ma-note ok" role="status" aria-label="Creation result">
+      <strong>{result.created} created, {result.failed} failed, {result.skipped} sent back for review.</strong>
+      {result.failed > 0 && <> Press Create again to retry only the failed items.</>}
+      <ul className="ma-reasons">
+        {result.items.map((i) => <li key={`${i.kind}-${i.id}`}>{i.kind === "PROJECT" ? "Project" : "Task"} “{i.title}” — {i.state.toLowerCase()}{i.message ? `: ${i.message}` : ""}</li>)}
+      </ul>
+    </section>
   );
 }
 
@@ -277,7 +295,7 @@ export function MeetingActionsPanel({ session, members = [], projects = [], aiRe
       )}
       {data.actions.length > 0 && (
         <>
-          <p className="ma-hint">{NOT_BUILT} Owners are matched only on an exact, unique name; anything else stays unassigned for you to pick.</p>
+          <p className="ma-hint">{HOW_CREATION_WORKS} Owners are matched only on an exact, unique name; anything else stays unassigned for you to pick.</p>
           {canManage && (
             <div className="ma-actions">
               <button className="ma-btn primary" disabled={sh.busy || validCount === 0} onClick={() => sh.run(() => approveValidMeetingActions(session.id), "Approved")}>Approve all valid ({validCount})</button>
@@ -301,17 +319,32 @@ export function MeetingActionsPanel({ session, members = [], projects = [], aiRe
 export function MeetingProjectsTasksPanel({ session, onChanged }) {
   const { data, error: loadError, reload } = useActionsData(session, "preview");
   const sh = useShared(session, reload, onChanged);
+  const [result, setResult] = useState(null);
   if (loadError) return <p className="ma-error" role="alert">{loadError}</p>;
   if (data === undefined) return <p className="ma-hint">Loading…</p>;
   const { preview, list } = data;
   const canManage = !!session.canManage;
+  const pending = preview.tasks.length + preview.projects.length;
+  const createNow = async () => {
+    const r = await sh.run(async () => { const res = await createMeetingRecords(session.id); setResult(res.data); });
+    return r;
+  };
   return (
     <div>
-      <p className="ma-note" role="note">{NOT_BUILT} Nothing below exists in Prowosma yet.</p>
+      <p className="ma-note" role="note">Nothing is created until you press Create. It creates every approved item at once, as you, using the normal Tasks and Projects.</p>
       <h4>New projects proposed from the discussion</h4>
       <ProposedProjects proposals={list.proposedProjects} canManage={canManage} busy={sh.busy} run={sh.run} sessionId={session.id} onShow={sh.showEvidence} />
 
       <h4>What will be created from approved actions</h4>
+      {canManage && (
+        <p><button className="ma-btn primary" disabled={sh.busy || pending === 0} onClick={createNow}>
+          {sh.busy ? "Creating…" : `Create approved items (${pending})`}</button></p>)}
+      <CreationResult result={result} />
+      {preview.failed.length > 0 && (
+        <ul className="ma-reasons" aria-label="Items that failed to create">
+          {preview.failed.map((f) => <li key={f.id}><strong>Couldn't create</strong> “{f.title}”: {f.error} Press Create to retry.</li>)}
+        </ul>
+      )}
       {preview.tasks.length === 0 ? (
         <div className="ma-empty">No actions are approved yet.{preview.waitingForReview > 0 && ` ${preview.waitingForReview} are waiting for review in the Actions tab.`}</div>
       ) : (
@@ -327,6 +360,19 @@ export function MeetingProjectsTasksPanel({ session, onChanged }) {
             </li>
           ))}
         </ol>
+      )}
+      {preview.created.length > 0 && (
+        <>
+          <h4>Already created from this meeting</h4>
+          <ul className="ma-list" aria-label="Created from this meeting">
+            {preview.created.map((c) => (
+              <li key={`${c.kind}-${c.recordId}`} className="ma-row">
+                <strong>{c.kind === "PROJECT" ? "Project" : "Task"}: {c.title}</strong>
+                <p className="ma-meta">Created {c.auto ? "automatically by the Meeting Assistant" : `by ${c.by}`}. <a href={c.kind === "PROJECT" ? "/projects" : "/tasks"}>Open {c.kind === "PROJECT" ? "Projects" : "Tasks"}</a></p>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {preview.projects.length > 0 && (
         <ul className="ma-list" aria-label="Projects that will be created">

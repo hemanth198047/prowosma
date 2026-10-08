@@ -5,7 +5,7 @@ import { axe } from "vitest-axe";
 vi.mock("../../api/meetingAssistant", () => ({
   extractMeetingActions: vi.fn(), getMeetingActions: vi.fn(), getMeetingActionsPreview: vi.fn(), patchMeetingAction: vi.fn(),
   decideMeetingAction: vi.fn(), mergeMeetingAction: vi.fn(), approveValidMeetingActions: vi.fn(), resolveMeetingActionsDiff: vi.fn(),
-  patchProposedProject: vi.fn(), decideProposedProject: vi.fn(), getMeetingTranscript: vi.fn(),
+  patchProposedProject: vi.fn(), decideProposedProject: vi.fn(), getMeetingTranscript: vi.fn(), createMeetingRecords: vi.fn(),
 }));
 
 import * as api from "../../api/meetingAssistant";
@@ -20,7 +20,8 @@ const action = (over = {}) => ({
   owner: { state: "RESOLVED", basis: "EXACT_NAME", asSpoken: "Priya Nair", speakerLabel: "", userId: "m1", name: "Priya Nair", email: "", candidates: [] },
   project: { state: "EXISTING", basis: "SELECTED", id: "p1", name: "Apollo", proposedName: "", differsFromSelected: false, candidates: [] },
   deadline: { text: "by Friday", date: "2026-10-09", status: "RESOLVED", note: "The next Friday after the meeting.", timezone: "UTC" },
-  priority: "MEDIUM", priorityBasis: "DEFAULT", dependencies: [], acceptanceCriteria: [], evidence: [1, 2], confidence: "HIGH", reasons: [], valid: true, edited: false, ...over,
+  priority: "MEDIUM", priorityBasis: "DEFAULT", dependencies: [], acceptanceCriteria: [], evidence: [1, 2], confidence: "HIGH", reasons: [], valid: true, edited: false,
+  creation: { state: null, error: null, taskId: null, by: null, auto: false }, ...over,
 });
 const unresolved = () => action({
   id: "a2", title: "Fix the login bug", valid: false, confidence: "LOW",
@@ -51,7 +52,7 @@ describe("MeetingActionsPanel", () => {
     expect(within(card).getByLabelText(/Owner \(said: “Priya Nair”\)/)).toHaveValue("m1");
     expect(within(card).getByLabelText(/Due date \(said: “by Friday”\)/)).toHaveValue("2026-10-09");
     expect(within(card).getByText(/Default — priority wasn't discussed/)).toBeInTheDocument();
-    expect(screen.getByText(/isn't available yet. Approving only marks items as ready/)).toBeInTheDocument();
+    expect(screen.getByText(/Approving marks an item ready. Press Create on the Projects and Tasks tab/)).toBeInTheDocument();
   });
 
   it("an unresolved action stays unassigned with plain reasons, suggestions to confirm, and cannot be approved", async () => {
@@ -194,6 +195,22 @@ describe("MeetingActionsPanel", () => {
     expect(await screen.findByRole("region", { name: "Transcript evidence" })).toHaveTextContent("Tom Becker");
   });
 
+  it("created items are locked and show who created them; a failed creation says why and how to retry", async () => {
+    api.getMeetingActions.mockResolvedValue(LIST([
+      action({ id: "c1", title: "Already made", status: "CREATED", creation: { state: "CREATED", taskId: "t1", by: "me@x.com", auto: false } }),
+      action({ id: "c2", title: "Made by the assistant", status: "CREATED", creation: { state: "CREATED", taskId: "t2", by: "meeting-assistant@system.prowosma", auto: true } }),
+      action({ id: "c3", title: "Did not work", status: "APPROVED", creation: { state: "FAILED", error: "Prowosma couldn't create it just now. Try again.", taskId: null, by: null, auto: false } })]));
+    renderActions();
+    const made = await screen.findByRole("listitem", { name: "Action: Already made" });
+    expect(within(made).getByText("Created")).toBeInTheDocument();
+    expect(within(made).getByText(/Created as a task by me@x.com/)).toBeInTheDocument();
+    expect(within(made).getByRole("link", { name: "Tasks" })).toHaveAttribute("href", "/tasks");
+    expect(within(made).getByLabelText(/^Owner/)).toBeDisabled();
+    expect(within(made).queryByRole("button", { name: "Approve" })).toBeNull();
+    expect(within(screen.getByRole("listitem", { name: "Action: Made by the assistant" })).getByText(/automatically by the Meeting Assistant/)).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: "Action: Did not work" })).getByRole("alert")).toHaveTextContent("Press Create to retry");
+  });
+
   it("has no automatically detectable accessibility violations", async () => {
     const { container } = renderActions();
     await screen.findByRole("listitem", { name: "Action: Fix the login bug" });
@@ -202,7 +219,8 @@ describe("MeetingActionsPanel", () => {
 });
 
 describe("MeetingProjectsTasksPanel", () => {
-  const PREVIEW = { tasks: [{ actionId: "a1", title: "Send the budget", assignee: { id: "m1", name: "Priya Nair", email: "" }, project: { id: "", name: "Vendor Migration", isNew: true },
+  const EMPTY = { created: [], failed: [] };
+  const PREVIEW = { ...EMPTY, tasks: [{ actionId: "a1", title: "Send the budget", assignee: { id: "m1", name: "Priya Nair", email: "" }, project: { id: "", name: "Vendor Migration", isNew: true },
     dueDate: "2026-12-15", timezone: "UTC", priority: "MEDIUM", priorityBasis: "DEFAULT", evidence: [1] }],
     projects: [{ id: "pp1", name: "Vendor Migration", description: "Move off vendor A", taskCount: 1 }], waitingForReview: 2 };
   const PROPOSAL = { id: "pp1", name: "Vendor Migration", description: "", rationale: "A distinct initiative", status: "PROPOSED", evidence: [1], missingFields: ["description"] };
@@ -214,7 +232,7 @@ describe("MeetingProjectsTasksPanel", () => {
 
   it("shows exactly what would be created, and says nothing exists yet", async () => {
     render(<MeetingProjectsTasksPanel session={SESSION} onChanged={vi.fn()} />);
-    expect(await screen.findByRole("note")).toHaveTextContent("Nothing below exists in Prowosma yet");
+    expect(await screen.findByRole("note")).toHaveTextContent("Nothing is created until you press Create");
     const tasks = await screen.findByRole("list", { name: "Tasks that will be created" });
     expect(tasks).toHaveTextContent("Assigned to: Priya Nair");
     expect(tasks).toHaveTextContent("Project: Vendor Migration (new)");
@@ -237,13 +255,54 @@ describe("MeetingProjectsTasksPanel", () => {
   it("an approvable proposal can be approved or rejected; the empty states are honest", async () => {
     api.decideProposedProject.mockResolvedValue({ data: {} });
     api.getMeetingActions.mockResolvedValue(LIST([], { proposedProjects: [{ ...PROPOSAL, description: "Move off vendor A", missingFields: [] }] }));
-    api.getMeetingActionsPreview.mockResolvedValue({ data: { tasks: [], projects: [], waitingForReview: 3 } });
+    api.getMeetingActionsPreview.mockResolvedValue({ data: { ...EMPTY, tasks: [], projects: [], waitingForReview: 3 } });
     render(<MeetingProjectsTasksPanel session={SESSION} onChanged={vi.fn()} />);
     expect(await screen.findByText(/No actions are approved yet. 3 are waiting for review/)).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "Approve project" }));
     await waitFor(() => expect(api.decideProposedProject).toHaveBeenCalledWith("s1", "pp1", "APPROVE"));
     fireEvent.click(screen.getByRole("button", { name: "Reject" }));
     await waitFor(() => expect(api.decideProposedProject).toHaveBeenCalledWith("s1", "pp1", "REJECT"));
+  });
+
+  it("Create makes every approved item at once, then shows exactly what happened and how to retry failures", async () => {
+    api.createMeetingRecords.mockResolvedValue({ data: { created: 1, failed: 1, skipped: 1, items: [
+      { kind: "TASK", id: "a1", title: "Send the budget", state: "CREATED", message: null },
+      { kind: "TASK", id: "a2", title: "Boom task", state: "FAILED", message: "Prowosma couldn't create it just now. Try again." },
+      { kind: "TASK", id: "a3", title: "Stale one", state: "RETURNED", message: "Sent back for review: No project was identified." }] } });
+    const onChanged = vi.fn();
+    render(<MeetingProjectsTasksPanel session={SESSION} onChanged={onChanged} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Create approved items (2)" }));            // 1 task + 1 project
+    await waitFor(() => expect(api.createMeetingRecords).toHaveBeenCalledWith("s1"));
+    const result = await screen.findByRole("status", { name: "Creation result" });
+    expect(result).toHaveTextContent("1 created, 1 failed, 1 sent back for review");
+    expect(result).toHaveTextContent("Press Create again to retry only the failed items");
+    expect(result).toHaveTextContent("“Boom task” — failed: Prowosma couldn't create it just now");
+    expect(onChanged).toHaveBeenCalled();
+  });
+
+  it("the Create button is disabled with nothing approved, and absent for people who can't manage the meeting", async () => {
+    api.getMeetingActionsPreview.mockResolvedValue({ data: { ...EMPTY, tasks: [], projects: [], waitingForReview: 0 } });
+    render(<MeetingProjectsTasksPanel session={SESSION} onChanged={vi.fn()} />);
+    expect(await screen.findByRole("button", { name: "Create approved items (0)" })).toBeDisabled();
+    cleanup();
+    render(<MeetingProjectsTasksPanel session={{ ...SESSION, canManage: false }} onChanged={vi.fn()} />);
+    await screen.findByText(/No actions are approved yet/);
+    expect(screen.queryByRole("button", { name: /Create approved items/ })).toBeNull();
+  });
+
+  it("lists what has already been created (by whom) and anything that failed", async () => {
+    api.getMeetingActionsPreview.mockResolvedValue({ data: { tasks: [], projects: [], waitingForReview: 0,
+      created: [{ kind: "TASK", actionId: "a1", title: "Send the budget", recordId: "t1", by: "me@x.com", auto: false },
+                { kind: "PROJECT", actionId: "p1", title: "Vendor Migration", recordId: "pr1", by: "meeting-assistant@system.prowosma", auto: true }],
+      failed: [{ kind: "TASK", id: "a9", title: "Did not work", error: "Prowosma couldn't create it just now. Try again." }] } });
+    render(<MeetingProjectsTasksPanel session={SESSION} onChanged={vi.fn()} />);
+    const created = await screen.findByRole("list", { name: "Created from this meeting" });
+    expect(created).toHaveTextContent("Task: Send the budget");
+    expect(created).toHaveTextContent("Created by me@x.com");
+    expect(created).toHaveTextContent("Project: Vendor Migration");
+    expect(created).toHaveTextContent("automatically by the Meeting Assistant");
+    expect(within(created).getByRole("link", { name: "Open Projects" })).toHaveAttribute("href", "/projects");
+    expect(screen.getByRole("list", { name: "Items that failed to create" })).toHaveTextContent("“Did not work”");
   });
 
   it("with no proposals it explains that actions go to existing projects", async () => {
