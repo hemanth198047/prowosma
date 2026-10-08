@@ -36,6 +36,15 @@ public class AIController {
         return aiSettingsService.get();
     }
 
+    /**
+     * Is AI on? Safe for everyone signed in: yes/no facts only — never the API key (unlike /settings, which returns the whole record).
+     * The top-bar badge reads this.
+     */
+    @GetMapping("/status")
+    public Map<String, Object> status() {
+        return com.prowosma.backend.service.AIStatus.of(aiSettingsService.get());
+    }
+
     @PostMapping("/settings")
     public AISettings saveSettings(@RequestBody AISettings settings) {
         return aiSettingsService.save(settings);
