@@ -30,6 +30,15 @@ export const isAuth0Configured =
 // instead of silently authenticating real users against a shared tenant.
 export const isUsingSharedDevTenant = AUTH0_DOMAIN === DEV_FALLBACK_DOMAIN;
 
+// <Auth0Provider> treats ANY page whose URL has ?code=…&state=… as an Auth0 login coming back and tries to process it. Other sign-in
+// flows return to the app the same way — e.g. connecting a Google account for Meeting Assistant returns to
+// /integrations/meeting-platforms/google-callback?code=…&state=… — and must not be handed to Auth0. Auth0's own return URL is
+// /auth0/callback (see main.jsx), so the automatic handling is switched on for that page only.
+export function shouldSkipAuth0RedirectCallback(pathname) {
+  const path = String(pathname || "").replace(/\/+$/, "");
+  return path !== "/auth0/callback";
+}
+
 if (typeof window !== "undefined" && isUsingSharedDevTenant && import.meta.env.PROD) {
   console.warn(
     "[auth0] VITE_AUTH0_DOMAIN / VITE_AUTH0_CLIENT_ID are not set — this production build is " +

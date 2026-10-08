@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { apiErrorMessage } from "../utils/apiError";
+import client from "../api/client";
 import { completeGoogleConnect } from "../api/meetingAssistant";
 import "../styles/pages/meeting-assistant.css";
 
@@ -13,7 +14,7 @@ export default function GoogleMeetCallback() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const started = useRef(false);
-  const [state, setState] = useState({ phase: "working", message: "" });
+  const [state, setState] = useState({ phase: "working", message: "", account: null, signedInAs: null });
 
   useEffect(() => {
     if (started.current) return;            // React may run effects twice in development; the code is single-use
@@ -30,8 +31,12 @@ export default function GoogleMeetCallback() {
       }
       if (!code || !st) { setState({ phase: "error", message: "This page needs to be opened from the Google sign-in. Start again from Meeting Platforms." }); return; }
       try {
-        await completeGoogleConnect(code, st);
-        setState({ phase: "done", message: "Your Google account is connected." });
+        const res = await completeGoogleConnect(code, st);
+        // Show both identities side by side: the Google account that was connected (only used to read transcripts) and the Prowosma
+        // account that is still signed in. The server ties this sign-in to the person who started it, so these are never swapped.
+        let signedInAs = null;
+        try { signedInAs = (await client.get("/auth/profile")).data?.email || null; } catch { /* the line is simply left out */ }
+        setState({ phase: "done", message: "Your Google account is connected.", account: res?.data?.account || null, signedInAs });
       } catch (e) {
         setState({ phase: "error", message: apiErrorMessage(e, "Couldn't finish connecting your Google account.") });
       }
@@ -43,7 +48,14 @@ export default function GoogleMeetCallback() {
       <PageHeader icon="🟢" title="Connecting Google Meet" />
       <div className="ma-card" aria-live="polite">
         {state.phase === "working" && <p>Finishing the connection…</p>}
-        {state.phase === "done" && <p className="ma-ok" role="status">✓ {state.message}</p>}
+        {state.phase === "done" && (
+          <div role="status">
+            <p className="ma-ok">✓ {state.message}</p>
+            {state.account && <p>Google account used to read transcripts: <strong>{state.account}</strong></p>}
+            {state.signedInAs && <p>You are still signed in to Prowosma as: <strong>{state.signedInAs}</strong></p>}
+            <p className="ma-hint">Connecting Google only lets Prowosma read your meeting transcripts. It never changes how you sign in to Prowosma.</p>
+          </div>
+        )}
         {state.phase === "error" && <p className="ma-error" role="alert">{state.message}</p>}
         {state.phase !== "working" && (
           <div className="ma-actions">

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { Auth0Provider } from '@auth0/auth0-react'
-import { AUTH0_DOMAIN, AUTH0_CLIENT_ID } from './config/auth0'
+import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, shouldSkipAuth0RedirectCallback } from './config/auth0'
 import { initErrorTracking, ErrorTrackingBoundary } from './config/errorTracking'
 import { ErrorFallback } from './components/ErrorFallback.jsx'
 import './i18n' // must run before any component using useTranslation() renders
@@ -17,6 +17,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Auth0Provider
         domain={AUTH0_DOMAIN}
         clientId={AUTH0_CLIENT_ID}
+        // Only /auth0/callback is an Auth0 return. Other pages that arrive with ?code=&state= (the Google Meet connection) are not Auth0's.
+        skipRedirectCallback={shouldSkipAuth0RedirectCallback(window.location.pathname)}
         authorizationParams={{
           redirect_uri: `${window.location.origin}/auth0/callback`,
           scope: "openid profile email",
