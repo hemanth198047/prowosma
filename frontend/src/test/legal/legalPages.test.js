@@ -35,9 +35,16 @@ describe("Privacy Policy page — what Google's verification requires", () => {
     expect(privacy).toMatch(/staff do not read your Google user data unless/);
   });
 
-  it("is honest about the AI provider and about not recording audio", () => {
+  it("is honest about the AI provider and about optional recording: what, where it goes, how long it is kept", () => {
     expect(privacy).toMatch(/AI provider selected by your workspace administrator/);
-    expect(privacy).toMatch(/do <strong>not<\/strong> record audio or video/);
+    expect(privacy).not.toMatch(/do <strong>not<\/strong> record audio or video/);                          // no longer true, so it must not be there
+    expect(privacy).toMatch(/optional <strong>recording<\/strong> feature/);
+    expect(privacy).toContain('id="recordings"');
+    expect(privacy).toMatch(/audio is deleted automatically 24 hours after the recording ends/);
+    expect(privacy).toMatch(/Meeting audio \(only if recording is used\)/);
+    expect(privacy).toMatch(/Speech-to-text \(only if recording is used\)/);
+    expect(privacy).toMatch(/encrypted at rest with AES-256-GCM/);
+    expect(privacy).toMatch(/everyone in the meeting knows it is being recorded/);
   });
 
   it("has a contact route and covers user rights", () => {
@@ -51,6 +58,8 @@ describe("Terms of Service page", () => {
     for (const phrase of ["Acceptable use", "Your content and meeting transcripts", "Consent and notice", "AI-generated content", "Limitation of liability", "Governing law", "Suspension and termination"])
       expect(terms, phrase).toContain(phrase);
     expect(terms).toContain('href="/privacy"');
+    expect(terms).toContain("Recordings.");
+    expect(terms).not.toMatch(/does not join, record or capture audio/);
   });
 });
 

@@ -7,6 +7,10 @@ import MeetingArtifactPanel from "../components/MeetingArtifactPanel";
 import { MeetingActionsPanel, MeetingProjectsTasksPanel } from "../components/MeetingActionsPanel";
 import MeetingCheckStatus from "../components/MeetingCheckStatus";
 import GoogleMeetTranscriptGuide from "../components/GoogleMeetTranscriptGuide";
+import RecordMeetingPanel from "../components/RecordMeetingPanel";
+import RecordingUpload from "../components/RecordingUpload";
+import RecordingSettingsCard from "../components/RecordingSettingsCard";
+import SessionRecordingInfo from "../components/SessionRecordingInfo";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getAssistantCapabilities, validateMeetingUrl, listMeetingSessions, createMeetingSession,
@@ -209,7 +213,7 @@ function AddTranscript({ session, onChanged }) {
   );
 }
 
-function SessionDetail({ session, members, projects, isAdmin, devEnabled, googleConnected, aiReady, aiReason, onChanged, onClose }) {
+function SessionDetail({ session, members, projects, isAdmin, devEnabled, googleConnected, aiReady, aiReason, recordingCaps, onChanged, onClose }) {
   const { show: toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [devStatus, setDevStatus] = useState("PROCESSING");
@@ -239,6 +243,15 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
       {WAITING_FOR_TRANSCRIPT.includes(session.status) && !session.simulated && <MeetingCheckStatus session={session} />}
       {session.provider === "GOOGLE_MEET" && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED") && (
         <GoogleMeetTranscriptGuide defaultOpen={session.status === "FAILED" || session.lastCheck?.code === "NO_TRANSCRIPT_YET"} />
+      )}
+
+      <SessionRecordingInfo session={session} onChanged={onChanged} />
+      {recordingCaps?.ready && session.canManage && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED")
+        && (!session.recording || ["DELETED", "EXPIRED"].includes(session.recording.state)) && (
+        <details className="ma-guide">
+          <summary>Have a recording of this meeting? Upload it</summary>
+          <div className="ma-guide-body"><RecordingUpload recording={recordingCaps} sessionId={session.id} onDone={onChanged} /></div>
+        </details>
       )}
 
       {session.status === "FAILED" && (
@@ -347,6 +360,10 @@ export default function MeetingAssistant() {
     catch (e) { toast(apiErrorMessage(e, "Couldn't load meetings."), "error"); }
   }, [toast]);
 
+  const reloadCaps = useCallback(async () => {
+    try { setCaps((await getAssistantCapabilities()).data); } catch { /* keep what we have */ }
+  }, []);
+
   useEffect(() => {
     let live = true;
     (async () => {
@@ -445,6 +462,10 @@ export default function MeetingAssistant() {
         </div>
       )}
 
+      {caps?.recording?.ready && (
+        <RecordMeetingPanel recording={caps.recording} onCreated={async (id) => { await refresh(); setSelectedId(id); }} />
+      )}
+
       <div className="ma-grid">
         <form className="ma-card" onSubmit={submit} aria-label="Register a meeting" noValidate>
           <h2>Add a meeting</h2>
@@ -508,7 +529,7 @@ export default function MeetingAssistant() {
           {selected && (
             <SessionDetail session={selected} members={members} projects={projects} isAdmin={admin}
               devEnabled={!!caps?.devFixturesEnabled} googleConnected={googleConnected}
-              aiReady={!!caps?.aiReady} aiReason={caps?.aiReason}
+              aiReady={!!caps?.aiReady} aiReason={caps?.aiReason} recordingCaps={caps?.recording}
               onChanged={refresh} onClose={() => setSelectedId(null)} />
           )}
           <section className="ma-card" aria-label="Your meetings" style={selected ? { marginTop: 16 } : undefined}>
@@ -549,6 +570,8 @@ export default function MeetingAssistant() {
           </section>
         </div>
       </div>
+
+      {admin && caps && <RecordingSettingsCard recording={caps.recording} onChanged={reloadCaps} />}
     </div>
   );
 }

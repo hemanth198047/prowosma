@@ -21,6 +21,8 @@ const FACT_LABELS = {
   transcriptsReturned: "Transcripts returned for the organizer",
   fromThisMeeting: "…from this meeting",
   transcriptsFromThisMeeting: "Transcripts from this meeting",
+  partsDone: "Parts turned into text",
+  partsTotal: "Parts in total",
 };
 const ACCOUNT_TYPES = { PERSONAL: "Personal Google account", WORKSPACE_OR_OTHER: "Google Workspace (or other)" };
 const TIME_KEYS = new Set(["meetingStarted", "meetingEnded", "willKeepCheckingUntil"]);
@@ -46,14 +48,18 @@ function factValue(key, value) {
 export default function MeetingCheckStatus({ session }) {
   const check = session.lastCheck;
   const platform = providerName(session.provider);
+  const isRecording = session.provider === "RECORDING";
+  const heading = isRecording ? "Recording progress" : `What Prowosma found at ${platform}`;
   const facts = check?.facts ? Object.entries(check.facts).filter(([, v]) => v !== null && v !== undefined && v !== "") : [];
   const tone = !check ? "" : ["IMPORTED"].includes(check.code) ? "ok" : /^GOOGLE_(SIGN_IN_EXPIRED|ACCESS_DENIED|NOT_CONNECTED)$/.test(check.code) ? "bad" : "info";
 
   return (
-    <div className={`ma-check ${tone}`} aria-live="polite" aria-label={`What Prowosma found at ${platform}`}>
-      <h3>What Prowosma found at {platform}</h3>
+    <div className={`ma-check ${tone}`} aria-live="polite" aria-label={heading}>
+      <h3>{heading}</h3>
       {check ? (
         <p><strong>Last checked {ago(check.at)} ({clock(check.at)}):</strong> {check.message}</p>
+      ) : isRecording ? (
+        <p>The recording hasn&rsquo;t been turned into text yet. Progress appears here once it starts.</p>
       ) : (
         <p>Prowosma hasn&rsquo;t looked yet. It checks about two minutes after you register a meeting and then every few minutes.
           {session.canManage ? " You can also press the check button below to look right now." : ""}</p>

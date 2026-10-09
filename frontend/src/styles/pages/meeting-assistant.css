@@ -132,3 +132,23 @@
 .ma-guide-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; display: block; overflow-x: auto; }
 .ma-guide-table th, .ma-guide-table td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
 .ma-guide-table th { background: var(--surface-2, rgba(127,127,127,.08)); }
+
+/* Recording a meeting, uploading a recording, and the admin settings for them */
+.ma-record { margin-bottom: 16px; }
+.ma-record-steps { margin: 8px 0 12px; padding-left: 22px; font-size: 14px; line-height: 1.6; }
+.ma-inline { display: flex; gap: 8px; }
+.ma-inline input { flex: 1; min-width: 0; }
+.ma-check-row { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; font-size: 14px; }
+.ma-check-row input { margin-top: 3px; }
+.ma-record-live { display: flex; align-items: center; gap: 8px; font-size: 16px; margin-bottom: 4px; }
+.ma-rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #dc2626; animation: ma-rec-pulse 1.4s ease-in-out infinite; }
+@keyframes ma-rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .ma-rec-dot { animation: none; } }
+.ma-record-upload { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+.ma-record-upload > summary, .ma-record-settings > summary { cursor: pointer; font-size: 14px; }
+.ma-upload-recording { margin-top: 10px; }
+.ma-upload-recording progress { width: 100%; margin: 6px 0; }
+.ma-recording-info { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-1); font-size: 14px; }
+.ma-record-settings { margin-top: 16px; }
+.ma-record-settings[open] > summary { margin-bottom: 10px; }
+.ma-small { padding: 4px 10px; font-size: 12px; align-self: flex-start; margin-top: 4px; }

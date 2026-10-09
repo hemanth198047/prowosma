@@ -57,3 +57,16 @@ export const getMeetingPlatforms      = ()          => client.get("/admin/meetin
 export const setMeetingPlatformEnabled = (p, enabled) => client.put(`/admin/meeting-assistant/platforms/${p}/enabled`, { enabled });
 export const testMeetingPlatform      = (p)         => client.post(`/admin/meeting-assistant/platforms/${p}/test`);
 export const disconnectMeetingPlatform = (p)        => client.delete(`/admin/meeting-assistant/platforms/${p}`);
+
+// Recording (browser capture or an uploaded audio file). Audio is sent as the raw request body.
+const OCTET = { "Content-Type": "application/octet-stream" };
+export const startRecording          = (data)       => client.post("/meeting-assistant/recordings", data);
+export const uploadRecordingChunk    = (id, track, seq, blob, startMs, durationMs) =>
+  client.put(`/meeting-assistant/sessions/${id}/recording/chunks/${track}/${seq}`, blob, { params: { startMs, durationMs }, headers: OCTET });
+export const finishRecording         = (id)         => client.post(`/meeting-assistant/sessions/${id}/recording/finish`);
+export const uploadRecordingFile     = (id, file, { consent, title, onProgress } = {}) =>
+  client.post(id ? `/meeting-assistant/sessions/${id}/recording/upload` : "/meeting-assistant/recordings/upload", file,
+    { params: { consent: !!consent, ...(id ? {} : { title: title || undefined }) }, headers: OCTET, timeout: 10 * 60 * 1000,
+      onUploadProgress: onProgress ? (e) => onProgress(e.total ? e.loaded / e.total : 0) : undefined });
+export const deleteRecordingAudio    = (id)         => client.delete(`/meeting-assistant/sessions/${id}/recording`);
+export const testSpeechToText        = ()           => client.post("/admin/meeting-assistant/stt/test");
