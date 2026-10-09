@@ -68,6 +68,12 @@ public class MeetingSession {
     private Instant outputsGeneratedAt;    // last time summary/minutes/notes were produced
     private String conferenceRecord;        // the platform transcript/record this session was matched to (Google conference record, or Teams transcript id)
     // What the most recent check of the meeting platform found — shown to the person waiting, so the page never just repeats the registration text.
+    // Recording (browser capture or an uploaded audio file). null = this meeting has no recording.
+    private String recordingState;              // RECORDING | UPLOADED | TRANSCRIBING | DONE | DELETED | EXPIRED
+    private java.time.Instant recordingStartedAt;
+    private java.time.Instant recordingFinishedAt;
+    private java.time.Instant audioExpiresAt;   // when the stored audio will be deleted
+    private java.time.Instant audioDeletedAt;
     private java.time.Instant lastCheckAt;
     private String lastCheckCode;
     private String lastCheckMessage;

@@ -4,13 +4,17 @@ import com.prowosma.backend.service.MeetingAssistantService;
 import com.prowosma.backend.service.MeetingAssistantService.CreateRequest;
 import com.prowosma.backend.service.MeetingAssistantException;
 import com.prowosma.backend.service.MeetingAssistantService.TranscriptUpload;
+import com.prowosma.backend.meetingassistant.RecordingRules;
+import com.prowosma.backend.service.MeetingAssistantService.StartRecordingRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +55,61 @@ public class MeetingAssistantController {
     @GetMapping("/sessions/{id}")
     public Map<String, Object> get(@PathVariable String id, Authentication auth) {
         return service.get(id, auth.getName());
+    }
+
+    // ── recording ─────────────────────────────────────────────────────────────
+    // Audio is sent as the raw request body (not multipart) so one clear size limit applies and nothing else in the app is affected.
+
+    /** Start recording: for a new meeting, or for one already registered (sessionId). */
+    @PostMapping("/recordings")
+    public ResponseEntity<Map<String, Object>> startRecording(@RequestBody StartRecordingRequest req, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.startRecording(req, auth.getName()));
+    }
+
+    @PutMapping("/sessions/{id}/recording/chunks/{track}/{seq}")
+    public Map<String, Object> recordingChunk(@PathVariable String id, @PathVariable String track, @PathVariable int seq,
+                                              @RequestParam(defaultValue = "0") long startMs, @RequestParam(defaultValue = "0") long durationMs,
+                                              HttpServletRequest request, Authentication auth) throws IOException {
+        return service.recordingChunk(id, track, seq, startMs, durationMs, readBody(request, RecordingRules.MAX_CHUNK_BYTES), auth.getName());
+    }
+
+    @PostMapping("/sessions/{id}/recording/finish")
+    public Map<String, Object> finishRecording(@PathVariable String id, Authentication auth) {
+        return service.finishRecording(id, auth.getName());
+    }
+
+    /** A recording file for a meeting that already exists. */
+    @PostMapping("/sessions/{id}/recording/upload")
+    public Map<String, Object> uploadRecording(@PathVariable String id, @RequestParam(defaultValue = "false") boolean consent,
+                                               HttpServletRequest request, Authentication auth) throws IOException {
+        return service.uploadRecording(id, null, null, readBody(request, RecordingRules.MAX_UPLOAD_BYTES), consent, auth.getName());
+    }
+
+    /** A recording file that gets its own new meeting. */
+    @PostMapping("/recordings/upload")
+    public ResponseEntity<Map<String, Object>> uploadRecordingAsNewMeeting(@RequestParam(required = false) String title, @RequestParam(required = false) String projectId,
+                                                                           @RequestParam(defaultValue = "false") boolean consent,
+                                                                           HttpServletRequest request, Authentication auth) throws IOException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                service.uploadRecording(null, title, projectId, readBody(request, RecordingRules.MAX_UPLOAD_BYTES), consent, auth.getName()));
+    }
+
+    @DeleteMapping("/sessions/{id}/recording")
+    public Map<String, Object> deleteRecordingAudio(@PathVariable String id, Authentication auth) {
+        return service.deleteRecordingAudio(id, auth.getName());
+    }
+
+    /** Reads at most {@code max} bytes; a larger body is refused up front when its length is declared, and never held in memory otherwise. */
+    private static byte[] readBody(HttpServletRequest request, long max) throws IOException {
+        long declared = request.getContentLengthLong();
+        if (declared > max) throw tooLarge(max);
+        byte[] data = request.getInputStream().readNBytes((int) max + 1);
+        if (data.length > max) throw tooLarge(max);
+        return data;
+    }
+
+    private static MeetingAssistantException tooLarge(long max) {
+        return new MeetingAssistantException(HttpStatus.PAYLOAD_TOO_LARGE, "AUDIO_TOO_LARGE", "That audio is larger than " + (max / 1_000_000) + " MB.");
     }
 
     @PostMapping("/sessions/{id}/cancel")

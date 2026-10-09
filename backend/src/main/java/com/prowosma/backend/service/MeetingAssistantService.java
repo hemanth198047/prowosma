@@ -6,6 +6,7 @@ import com.prowosma.backend.integration.GoogleMeetApi;
 import com.prowosma.backend.integration.GraphApiException;
 import com.prowosma.backend.integration.LlmClient;
 import com.prowosma.backend.meetingassistant.MeetingUrlParser;
+import com.prowosma.backend.meetingassistant.RecordingRules;
 import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.meetingassistant.TranscriptParser;
 import com.prowosma.backend.model.*;
@@ -58,6 +59,7 @@ public class MeetingAssistantService {
     private final TeamsAuthService teamsAuth;
     private final MeetingMetrics metrics;
     private final MeetingJobRunner jobRunner;
+    private final MeetingRecordingService recordings;
     private final MeetingHealthService healthService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
@@ -166,6 +168,7 @@ public class MeetingAssistantService {
             s.setOutputLanguage(l);
         }
 
+        recordings.applySettingsPatch(patch, s);
         s.setUpdatedBy(email);
         s.setUpdatedAt(Instant.now());
         MeetingAssistantSettings saved = saveSettings(s);
@@ -399,6 +402,15 @@ public class MeetingAssistantService {
         out.put("autoExtract", st.isAutoExtractActions());
         out.put("autoCreateTasks", st.isAutoCreateTasks());
         out.put("autoCreateProjects", st.isAutoCreateProjects());
+        Map<String, Object> rec = new LinkedHashMap<>();
+        String recWhy = recordings.notReadyReason(st);
+        rec.put("enabled", st.isRecordingEnabled());
+        rec.put("ready", recWhy == null);
+        rec.put("reason", recWhy);
+        rec.put("segmentSeconds", RecordingRules.SEGMENT_SECONDS);
+        rec.put("maxUploadBytes", RecordingRules.MAX_UPLOAD_BYTES);
+        rec.put("retentionHours", RecordingRules.clampRetentionHours(st.getAudioRetentionHours()));
+        out.put("recording", rec);
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
                 ? "Transcripts can be imported automatically (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
@@ -635,16 +647,22 @@ public class MeetingAssistantService {
         if (s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null && !s.isSimulated()) {
             return view(startGeneration(s, email, role), true);       // it has its transcript; what failed was the generation
         }
+        boolean recordingRetry = s.getRecordingState() != null && recordings.hasAudio(s.getOrganizationId(), s.getId());   // its audio is still stored: turn THAT into text again
         s.setActiveKey(MeetingSessionStore.activeKeyOf(s.getOrganizationId(), s.getProvider(), s.getMeetingKey(), s.getScheduledFor()));
         s.setRetryCount(s.getRetryCount() + 1);
         MeetingSession saved;
         try {
             saved = store.transition(s, SessionStatus.SCHEDULED, email, "Retried by user",
-                    "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured(), teamsReady(s.getOrganizationId())), null, null);
+                    recordingRetry ? "Retrying: turning the recording into text again."
+                            : "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured(), teamsReady(s.getOrganizationId())), null, null);
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
         }
-        if (!saved.isSimulated() && autoFetchPossible(saved, email)) {
+        if (recordingRetry) {
+            recordings.setState(saved.getOrganizationId(), saved.getId(), "UPLOADED");
+            jobs.enqueue(saved.getOrganizationId(), saved.getId(), TranscribeRecordingHandler.TYPE, email, Instant.now(),
+                    saved.getAudioExpiresAt() != null ? saved.getAudioExpiresAt() : Instant.now().plus(24, ChronoUnit.HOURS));
+        } else if (!saved.isSimulated() && autoFetchPossible(saved, email)) {
             enqueueFetch(saved, email, true);
         }
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "RETRIED", "FAILED", "SCHEDULED", email);
@@ -727,6 +745,126 @@ public class MeetingAssistantService {
         Map<String, Object> out = view(saved, true);
         out.put("warnings", parsed.warnings());
         return out;
+    }
+
+    // ── recording (browser capture or an uploaded audio file) ─────────────────
+    // Entirely separate from the Google Meet / Teams import: nothing below runs unless an admin turned recording on and a person chooses to record or upload.
+
+    public record StartRecordingRequest(String sessionId, String title, String projectId, Boolean consent) {}
+
+    private void requireRecordingReady() {
+        String why = recordings.notReadyReason(getSettings());
+        if (why != null) throw err(HttpStatus.CONFLICT, "RECORDING_NOT_READY", why);
+    }
+
+    /** A meeting made just to hold a recording — for any platform (Meet, Teams, Zoom, a phone call, a room). */
+    private MeetingSession newRecordingSession(String rawTitle, String projectId, String email, String role) {
+        String org = orgId();
+        MeetingAssistantSettings st = getSettings();
+        if (!st.getSendRoles().contains(role))
+            throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't send the meeting assistant. Ask a workspace admin for access.");
+        String projId = null;
+        String projectMode = "DETECT";
+        if (projectId != null && !projectId.isBlank()) {
+            Project p = projectRepository.findById(projectId)
+                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
+            projId = p.getId();
+            projectMode = "SELECTED";
+        }
+        String title = rawTitle == null ? "" : CONTROL.matcher(rawTitle).replaceAll("").trim();
+        if (title.length() > 200) throw err(HttpStatus.BAD_REQUEST, "INVALID_TITLE", "The title can be up to 200 characters.");
+        if (title.isEmpty()) title = "Recorded meeting";
+
+        MeetingSession s = new MeetingSession();
+        String key = "rec:" + UUID.randomUUID();
+        s.setOrganizationId(org);
+        s.setProvider(MeetingRecordingService.PROVIDER);
+        s.setMeetingKey(key);
+        s.setTitle(title);
+        s.setRequestedBy(email);
+        s.setProjectMode(projectMode);
+        s.setProjectId(projId);
+        s.setTimezone("UTC");
+        s.setVisibility(st.getDefaultVisibility());
+        s.setActiveKey(MeetingSessionStore.activeKeyOf(org, MeetingRecordingService.PROVIDER, key, null));
+        s.setStatus(SessionStatus.AWAITING_TRANSCRIPT.name());
+        s.setStatusDetail("Waiting for the recording. Prowosma turns it into text when you stop recording.");
+        MeetingSessionStore.addHistory(s, null, SessionStatus.AWAITING_TRANSCRIPT.name(), email, "Requested");
+        MeetingSession saved = sessions.save(s);
+        metrics.sessionCreated(MeetingRecordingService.PROVIDER);
+        store.audit(org, saved.getId(), email, "CREATED", MeetingRecordingService.PROVIDER);
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CREATED", null, saved.getStatus(), email);
+        return saved;
+    }
+
+    /** Starts recording: for a new meeting (no sessionId) or for one already registered. The caller must confirm everyone knows. */
+    public Map<String, Object> startRecording(StartRecordingRequest req, String email) {
+        String role = roleOf(email);
+        if (req == null || !Boolean.TRUE.equals(req.consent()))
+            throw err(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED", "Please confirm that everyone in the meeting knows it is being recorded and turned into text.");
+        requireRecordingReady();
+        MeetingSession s = req.sessionId() != null && !req.sessionId().isBlank()
+                ? loadManageable(req.sessionId(), email, role)
+                : newRecordingSession(req.title(), req.projectId(), email, role);
+        recordings.start(s);
+        store.audit(s.getOrganizationId(), s.getId(), email, "RECORDING_STARTED", null);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    /** One short, self-contained piece of audio. Kept light: it is called every few minutes while a meeting runs. */
+    public Map<String, Object> recordingChunk(String id, String track, int seq, long startMs, long durationMs, byte[] data, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        recordings.storeChunk(s, track, seq, startMs, durationMs, data);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("ok", true);
+        out.put("seq", seq);
+        return out;
+    }
+
+    public Map<String, Object> finishRecording(String id, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        String state = s.getRecordingState();
+        if ("UPLOADED".equals(state) || "TRANSCRIBING".equals(state) || "DONE".equals(state)) return view(s, true);      // finishing twice is harmless
+        if (!"RECORDING".equals(state)) throw err(HttpStatus.CONFLICT, "NOT_RECORDING", "This meeting isn't being recorded.");
+        recordings.finish(s, email);
+        store.audit(s.getOrganizationId(), s.getId(), email, "RECORDING_FINISHED", null);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "RECORDING_ADDED", null, null, email);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    /** A recording made some other way: attach it to an existing meeting, or (no id) make a new meeting for it. */
+    public Map<String, Object> uploadRecording(String id, String title, String projectId, byte[] data, boolean consent, String email) {
+        String role = roleOf(email);
+        if (!consent)
+            throw err(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED", "Please confirm you have the right to use this recording and that its participants know it is being turned into text.");
+        requireRecordingReady();
+        boolean created = id == null || id.isBlank();
+        MeetingSession s = created ? newRecordingSession(title, projectId, email, role) : loadManageable(id, email, role);
+        try {
+            recordings.uploadFile(s, data, email);
+        } catch (RuntimeException e) {
+            if (created) {
+                try { store.transition(s, SessionStatus.CANCELLED, email, "Recording upload failed", null, null, null); } catch (RuntimeException ignored) { /* already gone */ }
+            }
+            throw e;
+        }
+        store.audit(s.getOrganizationId(), s.getId(), email, "RECORDING_UPLOADED", null);
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "RECORDING_ADDED", null, null, email);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    /** Deletes the stored audio now. A transcript that was already made from it is not touched. */
+    public Map<String, Object> deleteRecordingAudio(String id, String email) {
+        MeetingSession s = loadManageable(id, email, roleOf(email));
+        recordings.deleteAudioOnRequest(s);
+        store.audit(s.getOrganizationId(), s.getId(), email, "AUDIO_DELETED", null);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    /** Admin: does the configured speech-to-text server answer? */
+    public Map<String, Object> testSpeechToText() {
+        return recordings.testConnection(getSettings());
     }
 
     public Map<String, Object> getTranscript(String id, int afterSeq, int limit, String email) {
@@ -1013,6 +1151,15 @@ public class MeetingAssistantService {
             check.put("message", s.getLastCheckMessage());
             check.put("facts", s.getLastCheckFacts() == null ? Map.of() : s.getLastCheckFacts());
             m.put("lastCheck", check);
+        }
+        if (s.getRecordingState() != null || s.getAudioDeletedAt() != null) {
+            Map<String, Object> rec = new LinkedHashMap<>();
+            rec.put("state", s.getRecordingState());
+            rec.put("startedAt", s.getRecordingStartedAt() == null ? null : s.getRecordingStartedAt().toString());
+            rec.put("finishedAt", s.getRecordingFinishedAt() == null ? null : s.getRecordingFinishedAt().toString());
+            rec.put("audioExpiresAt", s.getAudioExpiresAt() == null ? null : s.getAudioExpiresAt().toString());
+            rec.put("audioDeletedAt", s.getAudioDeletedAt() == null ? null : s.getAudioDeletedAt().toString());
+            m.put("recording", rec);
         }
         SessionStatus viewStatus = SessionStatus.valueOf(s.getStatus());
         if (viewStatus == SessionStatus.SCHEDULED || viewStatus == SessionStatus.AWAITING_TRANSCRIPT) {   // when Prowosma will look again by itself

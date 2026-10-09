@@ -37,6 +37,18 @@ public class MeetingAssistantSettings {
     private int rawAudioRetentionDays = 0;
     private String outputLanguage = "en";
 
+    // ── Recording and speech-to-text (OFF unless an admin turns it on; nothing here changes how Google Meet or Teams import works) ──
+    private boolean recordingEnabled = false;
+    private String sttBaseUrl;                  // an OpenAI-compatible speech-to-text server, e.g. a free Whisper server on the client's own VPS
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String sttApiKeyEnc;                // encrypted; NEVER sent to the browser
+    private String sttModel;
+    private String sttLanguage;                 // blank = detect automatically
+    private int audioRetentionHours = 24;       // audio is deleted this long after a recording ends; 0 = as soon as it has been turned into text
+
+    /** What the settings page may know about the key: only that one is saved. */
+    public boolean isSttKeySaved() { return sttApiKeyEnc != null && !sttApiKeyEnc.isBlank(); }
+
     private String updatedBy;
     private Instant updatedAt;
 }

@@ -49,6 +49,7 @@ public class MeetingJobRunner {
     private final MeetingMetrics metrics;
     private final MeetingRecoveryService recovery;
     private final MeetingAssistantSettingsRepository settingsRepo;
+    private final MeetingRecordingService recordings;
     private final Map<String, MeetingJobHandler> handlers = new HashMap<>();
     private final String workerId = UUID.randomUUID().toString();
     private volatile Instant lastPurge = Instant.EPOCH;
@@ -59,7 +60,7 @@ public class MeetingJobRunner {
 
     public MeetingJobRunner(MeetingJobService jobs, MeetingSessionStore store, MeetingTranscriptService transcripts,
                             MeetingOutputService outputs, MeetingActionService actionService, MeetingMetrics metrics, MeetingRecoveryService recovery,
-                            MeetingAssistantSettingsRepository settingsRepo,
+                            MeetingAssistantSettingsRepository settingsRepo, MeetingRecordingService recordings,
                             List<MeetingJobHandler> handlerList) {
         this.jobs = jobs;
         this.store = store;
@@ -69,6 +70,7 @@ public class MeetingJobRunner {
         this.metrics = metrics;
         this.recovery = recovery;
         this.settingsRepo = settingsRepo;
+        this.recordings = recordings;
         for (MeetingJobHandler h : handlerList) handlers.put(h.type(), h);
     }
 
@@ -81,6 +83,7 @@ public class MeetingJobRunner {
             if (Instant.now().isAfter(lastSweep.plus(Duration.ofMinutes(5)))) {
                 lastSweep = Instant.now();
                 recovery.sweepStuck();
+                recordings.sweep();                  // delete audio whose time is up, finish abandoned recordings
             }
             if (Instant.now().isAfter(lastPurge.plus(PURGE_EVERY))) {
                 lastPurge = Instant.now();
@@ -230,6 +233,9 @@ public class MeetingJobRunner {
                 if (streak >= MAX_ERROR_STREAK || (generation && job.getAttempts() >= job.getMaxAttempts())) {
                     if (generation) failSession(job, "AI_UNAVAILABLE", "The AI service didn't respond after several tries.",
                             "Try again in a few minutes by pressing Generate again.");
+                    else if (TranscribeRecordingHandler.TYPE.equals(job.getType())) failSession(job, "STT_UNAVAILABLE",
+                            "The speech-to-text server didn't respond after several tries.",
+                            "Check that the server is running, then press Retry. The recording is kept for the time set in the recording settings.");
                     else failSession(job, "TEMPORARY_PROBLEM", "Prowosma couldn't reach the meeting platform after several tries.",
                             "Retry in a little while, or upload the transcript.");
                     jobs.failJob(job, "TOO_MANY_ERRORS");
@@ -257,7 +263,7 @@ public class MeetingJobRunner {
         try {
             store.find(job.getOrganizationId(), job.getSessionId()).ifPresent((MeetingSession s) -> {
                 if (failable(job).contains(SessionStatus.valueOf(s.getStatus()))) {
-                    store.transition(s, SessionStatus.FAILED, "system", (MeetingOutputService.JOB_TYPE.equals(job.getType()) ? "Generation failed (" : "Transcript import failed (") + code + ")", message, code, recovery);
+                    store.transition(s, SessionStatus.FAILED, "system", (MeetingOutputService.JOB_TYPE.equals(job.getType()) ? "Generation failed (" : TranscribeRecordingHandler.TYPE.equals(job.getType()) ? "Turning the recording into text failed (" : "Transcript import failed (") + code + ")", message, code, recovery);
                 }
             });
         } catch (MeetingAssistantException e) {

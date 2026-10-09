@@ -32,6 +32,11 @@ public class MeetingAssistantIndexConfig {
                     new Index().on("organizationId", Sort.Direction.ASC).on("conferenceRecord", Sort.Direction.ASC)
                             .sparse().named("org_conference_record"));
             // Transcript text: one row per line per generation; reads walk (session, generation, seq).
+            mongoTemplate.indexOps("meeting_audio_chunks").createIndex(
+                    new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC)
+                            .on("track", Sort.Direction.ASC).on("seq", Sort.Direction.ASC).unique().named("uniq_audio_chunk"));
+            mongoTemplate.indexOps("meeting_audio_chunks").createIndex(
+                    new Index().on("expireAt", Sort.Direction.ASC).named("audio_chunk_expiry"));
             mongoTemplate.indexOps("transcript_segments").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("sessionId", Sort.Direction.ASC)
                             .on("generation", Sort.Direction.ASC).on("seq", Sort.Direction.ASC)

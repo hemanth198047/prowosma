@@ -36,6 +36,12 @@ public class MeetingAssistantAdminController {
         return service.updateSettings(patch, auth.getName());
     }
 
+    /** Does the configured speech-to-text server answer? (sends one second of silence) */
+    @PostMapping("/stt/test")
+    public Map<String, Object> testSpeechToText() {
+        return service.testSpeechToText();
+    }
+
     /** Operational picture: queue, failures by reason, AI usage, connection health. */
     @GetMapping("/health")
     public Map<String, Object> health() {

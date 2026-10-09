@@ -120,4 +120,40 @@ public class FieldEncryptionService {
             throw new IllegalStateException("Field decryption failed — wrong ENCRYPTION_KEY, or data corruption", e);
         }
     }
+
+    /**
+     * Encrypts raw bytes (meeting audio) with the same AES-256-GCM key: a fresh random IV followed by the ciphertext. Returns the input unchanged when no key
+     * is configured — callers that must never store plaintext (recordings) check {@link #isActive()} first.
+     */
+    public byte[] encryptBytes(byte[] plain) {
+        if (key == null || plain == null) return plain;
+        try {
+            byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
+            random.nextBytes(iv);
+            Cipher cipher = Cipher.getInstance(ALGO);
+            cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            byte[] ciphertext = cipher.doFinal(plain);
+            byte[] combined = new byte[iv.length + ciphertext.length];
+            System.arraycopy(iv, 0, combined, 0, iv.length);
+            System.arraycopy(ciphertext, 0, combined, iv.length, ciphertext.length);
+            return combined;
+        } catch (Exception e) {
+            throw new IllegalStateException("Field encryption failed", e);
+        }
+    }
+
+    public byte[] decryptBytes(byte[] stored) {
+        if (key == null || stored == null) return stored;
+        try {
+            byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
+            byte[] ciphertext = new byte[stored.length - GCM_IV_LENGTH_BYTES];
+            System.arraycopy(stored, 0, iv, 0, iv.length);
+            System.arraycopy(stored, iv.length, ciphertext, 0, ciphertext.length);
+            Cipher cipher = Cipher.getInstance(ALGO);
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            return cipher.doFinal(ciphertext);
+        } catch (Exception e) {
+            throw new IllegalStateException("Field decryption failed — wrong ENCRYPTION_KEY, or data corruption", e);
+        }
+    }
 }
