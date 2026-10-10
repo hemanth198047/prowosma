@@ -26,6 +26,8 @@ public class MeetingAssistantIndexConfig {
             mongoTemplate.indexOps("meeting_sessions").createIndex(
                     new Index().on("activeKey", Sort.Direction.ASC).unique().sparse().named("uniq_active_meeting_session"));
             mongoTemplate.indexOps("meeting_sessions").createIndex(
+                    new Index().on("firefliesClaimKey", Sort.Direction.ASC).unique().sparse().named("uniq_fireflies_claim"));
+            mongoTemplate.indexOps("meeting_sessions").createIndex(
                     new Index().on("organizationId", Sort.Direction.ASC).on("createdAt", Sort.Direction.DESC)
                             .named("org_created"));
             mongoTemplate.indexOps("meeting_sessions").createIndex(

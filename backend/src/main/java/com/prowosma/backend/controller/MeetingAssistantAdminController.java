@@ -36,6 +36,12 @@ public class MeetingAssistantAdminController {
         return service.updateSettings(patch, auth.getName());
     }
 
+    /** Does the saved Fireflies API key work? */
+    @PostMapping("/fireflies/test")
+    public Map<String, Object> testFireflies() {
+        return service.testFireflies();
+    }
+
     /** Does the configured speech-to-text server answer? (sends one second of silence) */
     @PostMapping("/stt/test")
     public Map<String, Object> testSpeechToText() {

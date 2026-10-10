@@ -49,6 +49,13 @@ public class MeetingAssistantSettings {
     /** What the settings page may know about the key: only that one is saved. */
     public boolean isSttKeySaved() { return sttApiKeyEnc != null && !sttApiKeyEnc.isBlank(); }
 
+    // ── Fireflies.ai notetaker (OFF unless an admin turns it on) ──
+    private boolean firefliesEnabled = false;
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String firefliesApiKeyEnc;          // encrypted; NEVER sent to the browser
+
+    public boolean isFirefliesKeySaved() { return firefliesApiKeyEnc != null && !firefliesApiKeyEnc.isBlank(); }
+
     private String updatedBy;
     private Instant updatedAt;
 }

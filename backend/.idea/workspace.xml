@@ -4,20 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Checking Meeting Status">
-      <change afterPath="$PROJECT_DIR$/docs/GOOGLE_MEET_TRANSCRIPTS_GUIDE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/GoogleCheckReport.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleCheckReportTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceSelector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceSelector.java" afterDir="false" />
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Integrated FireFlies">
+      <change afterPath="$PROJECT_DIR$/docs/FIREFLIES_INTEGRATION.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesApi.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesHttp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/JdkFirefliesHttp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceLink.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesMapper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesMatcher.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesReport.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/FirefliesTranscriptFetchHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingFirefliesService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesApiTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesFetchHandlerTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesIntegrationApiTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesLogicTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesSettingsTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MeetingAssistantIndexConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MeetingAssistantIndexConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingAssistantSettings.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingAssistantSettings.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/GoogleTranscriptFetchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/GoogleTranscriptFetchHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingSessionStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingSessionStore.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsTranscriptFetchHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TeamsTranscriptFetchHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleMeetImportTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/GoogleMeetImportTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsAndOperationsTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/TeamsAndOperationsTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -207,6 +218,7 @@
     <MESSAGE value="Introduced env file 3" />
     <MESSAGE value="Introduced AI status" />
     <MESSAGE value="Checking Meeting Status" />
-    <option name="LAST_COMMIT_MESSAGE" value="Checking Meeting Status" />
+    <MESSAGE value="Integrated FireFlies" />
+    <option name="LAST_COMMIT_MESSAGE" value="Integrated FireFlies" />
   </component>
 </project>

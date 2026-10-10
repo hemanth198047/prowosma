@@ -233,6 +233,8 @@ public class MeetingJobRunner {
                 if (streak >= MAX_ERROR_STREAK || (generation && job.getAttempts() >= job.getMaxAttempts())) {
                     if (generation) failSession(job, "AI_UNAVAILABLE", "The AI service didn't respond after several tries.",
                             "Try again in a few minutes by pressing Generate again.");
+                    else if (FirefliesTranscriptFetchHandler.TYPE.equals(job.getType())) failSession(job, "FIREFLIES_UNAVAILABLE",
+                            "Fireflies didn't respond after several tries.", "Press Retry in a few minutes. The notetaker is not affected.");
                     else if (TranscribeRecordingHandler.TYPE.equals(job.getType())) failSession(job, "STT_UNAVAILABLE",
                             "The speech-to-text server didn't respond after several tries.",
                             "Check that the server is running, then press Retry. The recording is kept for the time set in the recording settings.");
@@ -263,7 +265,7 @@ public class MeetingJobRunner {
         try {
             store.find(job.getOrganizationId(), job.getSessionId()).ifPresent((MeetingSession s) -> {
                 if (failable(job).contains(SessionStatus.valueOf(s.getStatus()))) {
-                    store.transition(s, SessionStatus.FAILED, "system", (MeetingOutputService.JOB_TYPE.equals(job.getType()) ? "Generation failed (" : TranscribeRecordingHandler.TYPE.equals(job.getType()) ? "Turning the recording into text failed (" : "Transcript import failed (") + code + ")", message, code, recovery);
+                    store.transition(s, SessionStatus.FAILED, "system", (MeetingOutputService.JOB_TYPE.equals(job.getType()) ? "Generation failed (" : TranscribeRecordingHandler.TYPE.equals(job.getType()) ? "Turning the recording into text failed (" : FirefliesTranscriptFetchHandler.TYPE.equals(job.getType()) ? "Fireflies import failed (" : "Transcript import failed (") + code + ")", message, code, recovery);
                 }
             });
         } catch (MeetingAssistantException e) {

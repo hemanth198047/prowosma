@@ -6,6 +6,7 @@ import com.prowosma.backend.integration.GoogleMeetApi;
 import com.prowosma.backend.integration.GraphApiException;
 import com.prowosma.backend.integration.LlmClient;
 import com.prowosma.backend.meetingassistant.MeetingUrlParser;
+import com.prowosma.backend.meetingassistant.ConferenceLink;
 import com.prowosma.backend.meetingassistant.RecordingRules;
 import com.prowosma.backend.meetingassistant.SessionStatus;
 import com.prowosma.backend.meetingassistant.TranscriptParser;
@@ -60,6 +61,7 @@ public class MeetingAssistantService {
     private final MeetingMetrics metrics;
     private final MeetingJobRunner jobRunner;
     private final MeetingRecordingService recordings;
+    private final MeetingFirefliesService firefliesSvc;
     private final MeetingHealthService healthService;
 
     @Value("${app.meeting-assistant.dev-fixtures-enabled:false}")
@@ -169,6 +171,7 @@ public class MeetingAssistantService {
         }
 
         recordings.applySettingsPatch(patch, s);
+        firefliesSvc.applySettingsPatch(patch, s);
         s.setUpdatedBy(email);
         s.setUpdatedAt(Instant.now());
         MeetingAssistantSettings saved = saveSettings(s);
@@ -411,6 +414,12 @@ public class MeetingAssistantService {
         rec.put("maxUploadBytes", RecordingRules.MAX_UPLOAD_BYTES);
         rec.put("retentionHours", RecordingRules.clampRetentionHours(st.getAudioRetentionHours()));
         out.put("recording", rec);
+        Map<String, Object> ff = new LinkedHashMap<>();
+        String ffWhy = firefliesSvc.notReadyReason(st);
+        ff.put("enabled", st.isFirefliesEnabled());
+        ff.put("ready", ffWhy == null);
+        ff.put("reason", ffWhy);
+        out.put("fireflies", ff);
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
                 ? "Transcripts can be imported automatically (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
@@ -647,13 +656,15 @@ public class MeetingAssistantService {
         if (s.getSegmentCount() > 0 && s.getTranscriptPurgedAt() == null && !s.isSimulated()) {
             return view(startGeneration(s, email, role), true);       // it has its transcript; what failed was the generation
         }
-        boolean recordingRetry = s.getRecordingState() != null && recordings.hasAudio(s.getOrganizationId(), s.getId());   // its audio is still stored: turn THAT into text again
+        boolean recordingRetry = s.getRecordingState() != null && recordings.hasAudio(s.getOrganizationId(), s.getId());
+        boolean firefliesRetry = !recordingRetry && "SENT".equals(s.getFirefliesState());          // the notetaker was sent: look for ITS transcript again   // its audio is still stored: turn THAT into text again
         s.setActiveKey(MeetingSessionStore.activeKeyOf(s.getOrganizationId(), s.getProvider(), s.getMeetingKey(), s.getScheduledFor()));
         s.setRetryCount(s.getRetryCount() + 1);
         MeetingSession saved;
         try {
             saved = store.transition(s, SessionStatus.SCHEDULED, email, "Retried by user",
                     recordingRetry ? "Retrying: turning the recording into text again."
+                            : firefliesRetry ? "Retrying: looking for the Fireflies transcript again."
                             : "Retrying. " + waitingDetail(s.getProvider(), SessionStatus.AWAITING_TRANSCRIPT, false, google.isConfigured(), teamsReady(s.getOrganizationId())), null, null);
         } catch (DuplicateKeyException dup) {
             throw duplicateError(s.getActiveKey(), email, role);
@@ -662,6 +673,8 @@ public class MeetingAssistantService {
             recordings.setState(saved.getOrganizationId(), saved.getId(), "UPLOADED");
             jobs.enqueue(saved.getOrganizationId(), saved.getId(), TranscribeRecordingHandler.TYPE, email, Instant.now(),
                     saved.getAudioExpiresAt() != null ? saved.getAudioExpiresAt() : Instant.now().plus(24, ChronoUnit.HOURS));
+        } else if (firefliesRetry) {
+            firefliesSvc.resumeWaiting(saved, email);
         } else if (!saved.isSimulated() && autoFetchPossible(saved, email)) {
             enqueueFetch(saved, email, true);
         }
@@ -865,6 +878,175 @@ public class MeetingAssistantService {
     /** Admin: does the configured speech-to-text server answer? */
     public Map<String, Object> testSpeechToText() {
         return recordings.testConnection(getSettings());
+    }
+
+    // ── Fireflies notetaker (any platform it can join) ────────────────────────
+    // Separate from the Google Meet / Teams import and from recording: nothing below runs unless an admin turned Fireflies on and a person chooses to use it.
+
+    public record FirefliesNotetakerRequest(String sessionId, String meetingUrl, String title, String projectId, Boolean consent) {}
+
+    public record FirefliesImportRequest(String transcriptId, String title, String projectId, Boolean consent) {}
+
+    private void requireFirefliesReady() {
+        String why = firefliesSvc.notReadyReason(getSettings());
+        if (why != null) throw err(HttpStatus.CONFLICT, "FIREFLIES_NOT_READY", why);
+    }
+
+    private void requireSendRole(String role) {
+        if (!getSettings().getSendRoles().contains(role))
+            throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't send the meeting assistant. Ask a workspace admin for access.");
+    }
+
+    /** A meeting made for a Fireflies notetaker or import. {@code link} may be null (an import whose meeting link isn't one we recognise). */
+    private MeetingSession newFirefliesSession(String rawTitle, String projectId, String email, String key, ConferenceLink.Link link) {
+        String org = orgId();
+        String projId = null;
+        String projectMode = "DETECT";
+        if (projectId != null && !projectId.isBlank()) {
+            Project p = projectRepository.findById(projectId)
+                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
+            projId = p.getId();
+            projectMode = "SELECTED";
+        }
+        String title = rawTitle == null ? "" : CONTROL.matcher(rawTitle).replaceAll("").trim();
+        if (title.length() > 200) title = title.substring(0, 200);
+        if (title.isEmpty()) title = link == null ? "Fireflies meeting" : ConferenceLink.platformName(link.platform()) + " meeting";
+
+        MeetingSession s = new MeetingSession();
+        s.setOrganizationId(org);
+        s.setProvider(MeetingFirefliesService.PROVIDER);
+        s.setMeetingKey(key);
+        s.setMeetingUrl(link == null ? null : link.url());
+        s.setPlatform(link == null ? null : link.platform());
+        s.setTitle(title);
+        s.setRequestedBy(email);
+        s.setProjectMode(projectMode);
+        s.setProjectId(projId);
+        s.setTimezone("UTC");
+        s.setVisibility(getSettings().getDefaultVisibility());
+        s.setActiveKey(MeetingSessionStore.activeKeyOf(org, MeetingFirefliesService.PROVIDER, key, null));
+        s.setStatus(SessionStatus.AWAITING_TRANSCRIPT.name());
+        s.setStatusDetail("Waiting for the Fireflies transcript.");
+        MeetingSessionStore.addHistory(s, null, SessionStatus.AWAITING_TRANSCRIPT.name(), email, "Requested");
+        MeetingSession saved;
+        try {
+            saved = sessions.save(s);
+        } catch (DuplicateKeyException already) {
+            throw err(HttpStatus.CONFLICT, "ALREADY_REGISTERED", "This meeting is already registered in Prowosma with a Fireflies notetaker. Open it from the list instead.");
+        }
+        metrics.sessionCreated(MeetingFirefliesService.PROVIDER);
+        store.audit(org, saved.getId(), email, "CREATED", MeetingFirefliesService.PROVIDER);
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CREATED", null, saved.getStatus(), email);
+        return saved;
+    }
+
+    private void cancelQuietly(MeetingSession s, String email, String why) {
+        try { store.transition(s, SessionStatus.CANCELLED, email, why, null, null, null); } catch (RuntimeException ignored) { /* already gone */ }
+    }
+
+    /** Sends the Fireflies notetaker into a RUNNING meeting — a new one (meetingUrl) or one already registered (sessionId) — and starts waiting for its transcript. */
+    public Map<String, Object> sendFirefliesNotetaker(FirefliesNotetakerRequest req, String email) {
+        String role = roleOf(email);
+        requireSendRole(role);
+        if (req == null || !Boolean.TRUE.equals(req.consent()))
+            throw err(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED", "Please confirm that everyone in the meeting knows a Fireflies notetaker will join, record and transcribe it.");
+        requireFirefliesReady();
+        boolean attach = req.sessionId() != null && !req.sessionId().isBlank();
+        MeetingSession s;
+        ConferenceLink.Link link;
+        boolean created = !attach;
+        try {
+            if (attach) {
+                s = loadManageable(req.sessionId(), email, role);
+                if (s.getMeetingUrl() == null || s.getMeetingUrl().isBlank())
+                    throw err(HttpStatus.BAD_REQUEST, "NO_MEETING_LINK", "This meeting has no meeting link, so the notetaker can't be sent to it.");
+                link = ConferenceLink.parse(s.getMeetingUrl());
+                if (!"SCHEDULED".equals(s.getStatus()) && !"AWAITING_TRANSCRIPT".equals(s.getStatus()))
+                    throw err(HttpStatus.CONFLICT, "INVALID_STATE", "This meeting isn't waiting for a transcript, so a notetaker can't be sent to it.");
+                if ("SENT".equals(s.getFirefliesState()))
+                    throw err(HttpStatus.CONFLICT, "ALREADY_SENT", "A Fireflies notetaker was already sent to this meeting. Prowosma is waiting for its transcript.");
+            } else {
+                link = ConferenceLink.parse(req.meetingUrl());
+                s = newFirefliesSession(req.title(), req.projectId(), email, link.key(), link);
+            }
+        } catch (IllegalArgumentException bad) {
+            throw err(HttpStatus.BAD_REQUEST, "INVALID_MEETING_LINK", bad.getMessage());
+        }
+        try {
+            firefliesSvc.sendNotetaker(s, link, req.title() != null && !req.title().isBlank() ? req.title() : s.getTitle(), email);
+        } catch (RuntimeException e) {
+            if (created) cancelQuietly(s, email, "Notetaker could not be sent");          // no empty meeting left behind
+            throw e;
+        }
+        store.audit(s.getOrganizationId(), s.getId(), email, "NOTETAKER_SENT", link.platform());
+        activityLog.log("MEETING_SESSION", s.getId(), s.getTitle(), "NOTETAKER_SENT", null, null, email);
+        return view(store.find(s.getOrganizationId(), s.getId()).orElse(s), true);
+    }
+
+    /** The workspace's recent Fireflies meetings, for the "import" picker. */
+    public List<Map<String, Object>> listFirefliesRecent(String email) {
+        requireSendRole(roleOf(email));
+        requireFirefliesReady();
+        try {
+            return firefliesSvc.recentForPicker(orgId());
+        } catch (com.prowosma.backend.integration.FirefliesException e) {
+            throw MeetingFirefliesService.toApiError(e);
+        }
+    }
+
+    /** Brings a transcript Fireflies already has into Prowosma as a new meeting (no notetaker needed — for example meetings Fireflies joined from your calendar). */
+    public Map<String, Object> importFromFireflies(FirefliesImportRequest req, String email) {
+        String role = roleOf(email);
+        requireSendRole(role);
+        if (req == null || !Boolean.TRUE.equals(req.consent()))
+            throw err(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED", "Please confirm you have the right to import this transcript into Prowosma.");
+        requireFirefliesReady();
+        String org = orgId();
+        String id = req.transcriptId() == null ? "" : req.transcriptId().trim();
+        if (id.isEmpty()) throw err(HttpStatus.BAD_REQUEST, "INVALID_TRANSCRIPT", "Choose a Fireflies meeting to import.");
+        if (firefliesSvc.isClaimed(org, id)) throw err(HttpStatus.CONFLICT, "ALREADY_IMPORTED", "That Fireflies meeting was already imported into Prowosma.");
+
+        com.prowosma.backend.integration.FirefliesApi.Transcript t;
+        try {
+            t = firefliesSvc.transcript(firefliesSvc.apiKey(getSettings()), id).orElse(null);
+        } catch (com.prowosma.backend.integration.FirefliesException e) {
+            throw MeetingFirefliesService.toApiError(e);
+        }
+        if (t == null) throw err(HttpStatus.CONFLICT, "FIREFLIES_PROCESSING", "Fireflies is still processing that meeting. Try again in a few minutes.");
+        if (t.live()) throw err(HttpStatus.CONFLICT, "FIREFLIES_LIVE", "That meeting is still in progress in Fireflies. Import it after it ends.");
+        List<com.prowosma.backend.meetingassistant.FirefliesMapper.Line> lines = com.prowosma.backend.meetingassistant.FirefliesMapper.toLines(t.sentences(), t.durationMinutes());
+        if (lines.isEmpty()) throw err(HttpStatus.CONFLICT, "NO_TEXT", "That Fireflies meeting has no transcript text to import.");
+        if (lines.size() > TranscriptParser.MAX_SEGMENTS) throw err(HttpStatus.CONFLICT, "TRANSCRIPT_TOO_LONG", "That transcript is too long to import in one go.");
+
+        ConferenceLink.Link link = null;
+        try { link = ConferenceLink.parse(t.meetingLink()); } catch (RuntimeException ignored) { /* a link we don't recognise: the transcript is still importable */ }
+        MeetingSession s = newFirefliesSession(req.title() != null && !req.title().isBlank() ? req.title() : t.title(), req.projectId(), email, "ffimport:" + id, link);
+        if (!firefliesSvc.claim(org, s.getId(), id)) {
+            cancelQuietly(s, email, "Already imported");
+            throw err(HttpStatus.CONFLICT, "ALREADY_IMPORTED", "That Fireflies meeting was already imported into Prowosma.");
+        }
+        List<com.prowosma.backend.model.TranscriptSegment> segments = new ArrayList<>();
+        for (com.prowosma.backend.meetingassistant.FirefliesMapper.Line l : lines) {
+            com.prowosma.backend.model.TranscriptSegment seg = new com.prowosma.backend.model.TranscriptSegment();
+            seg.setText(l.text());
+            seg.setSpeakerLabel(l.speaker());
+            seg.setStartMs(l.startMs());
+            seg.setEndMs(l.endMs());
+            seg.setSource("FIREFLIES");
+            segments.add(seg);
+        }
+        MeetingSession saved = transcripts.receive(s, segments, "FIREFLIES", "NOTETAKER",
+                "Imported from Fireflies. Speaker names come from Fireflies, and its speech recognition can make mistakes.", email, outputs.receivedDetail(org, segments.size()));
+        firefliesSvc.markImported(org, saved.getId());
+        saved = outputs.startIfEnabled(saved, email);
+        store.audit(org, saved.getId(), email, "FIREFLIES_IMPORTED", null);
+        return view(store.find(org, saved.getId()).orElse(saved), true);
+    }
+
+    /** Admin: does the saved Fireflies key work? */
+    public Map<String, Object> testFireflies() {
+        return firefliesSvc.testConnection(getSettings());
     }
 
     public Map<String, Object> getTranscript(String id, int afterSeq, int limit, String email) {
@@ -1160,6 +1342,15 @@ public class MeetingAssistantService {
             rec.put("audioExpiresAt", s.getAudioExpiresAt() == null ? null : s.getAudioExpiresAt().toString());
             rec.put("audioDeletedAt", s.getAudioDeletedAt() == null ? null : s.getAudioDeletedAt().toString());
             m.put("recording", rec);
+        }
+        if (s.getPlatform() != null) m.put("platform", s.getPlatform());
+        if (s.getFirefliesState() != null) {
+            Map<String, Object> ff = new LinkedHashMap<>();
+            ff.put("state", s.getFirefliesState());
+            ff.put("platform", s.getPlatform());
+            ff.put("platformName", ConferenceLink.platformName(s.getPlatform()));
+            ff.put("sentAt", s.getNotetakerSentAt() == null ? null : s.getNotetakerSentAt().toString());
+            m.put("fireflies", ff);
         }
         SessionStatus viewStatus = SessionStatus.valueOf(s.getStatus());
         if (viewStatus == SessionStatus.SCHEDULED || viewStatus == SessionStatus.AWAITING_TRANSCRIPT) {   // when Prowosma will look again by itself

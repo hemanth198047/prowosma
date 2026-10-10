@@ -69,6 +69,11 @@ public class MeetingSession {
     private String conferenceRecord;        // the platform transcript/record this session was matched to (Google conference record, or Teams transcript id)
     // What the most recent check of the meeting platform found — shown to the person waiting, so the page never just repeats the registration text.
     // Recording (browser capture or an uploaded audio file). null = this meeting has no recording.
+    // Fireflies notetaker. null = no notetaker was sent and no transcript came from Fireflies.
+    private String platform;                    // GOOGLE_MEET | ZOOM | MS_TEAMS | WEBEX — what kind of meeting a Fireflies session is about
+    private String firefliesState;              // SENT | IMPORTED
+    private java.time.Instant notetakerSentAt;
+    private String firefliesClaimKey;           // organization|ff|transcriptId — unique, so one transcript can only ever belong to one meeting
     private String recordingState;              // RECORDING | UPLOADED | TRANSCRIBING | DONE | DELETED | EXPIRED
     private java.time.Instant recordingStartedAt;
     private java.time.Instant recordingFinishedAt;

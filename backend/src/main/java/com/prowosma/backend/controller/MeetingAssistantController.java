@@ -6,6 +6,8 @@ import com.prowosma.backend.service.MeetingAssistantException;
 import com.prowosma.backend.service.MeetingAssistantService.TranscriptUpload;
 import com.prowosma.backend.meetingassistant.RecordingRules;
 import com.prowosma.backend.service.MeetingAssistantService.StartRecordingRequest;
+import com.prowosma.backend.service.MeetingAssistantService.FirefliesNotetakerRequest;
+import com.prowosma.backend.service.MeetingAssistantService.FirefliesImportRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,24 @@ public class MeetingAssistantController {
     @GetMapping("/sessions/{id}")
     public Map<String, Object> get(@PathVariable String id, Authentication auth) {
         return service.get(id, auth.getName());
+    }
+
+    // ── Fireflies notetaker ───────────────────────────────────────────────────
+
+    /** Send the Fireflies notetaker to a running meeting: a new one (meetingUrl) or a registered one (sessionId). */
+    @PostMapping("/fireflies/notetaker")
+    public ResponseEntity<Map<String, Object>> sendFirefliesNotetaker(@RequestBody FirefliesNotetakerRequest req, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.sendFirefliesNotetaker(req, auth.getName()));
+    }
+
+    @GetMapping("/fireflies/recent")
+    public java.util.List<Map<String, Object>> firefliesRecent(Authentication auth) {
+        return service.listFirefliesRecent(auth.getName());
+    }
+
+    @PostMapping("/fireflies/import")
+    public ResponseEntity<Map<String, Object>> importFromFireflies(@RequestBody FirefliesImportRequest req, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.importFromFireflies(req, auth.getName()));
     }
 
     // ── recording ─────────────────────────────────────────────────────────────
