@@ -20,6 +20,9 @@ const FACT_LABELS = {
   lines: "Lines imported",
   transcriptsReturned: "Transcripts returned for the organizer",
   fromThisMeeting: "…from this meeting",
+  recentMeetingsChecked: "Recent Fireflies meetings checked",
+  fromThisLink: "…from this meeting link",
+  platform: "Platform",
   transcriptsFromThisMeeting: "Transcripts from this meeting",
   partsDone: "Parts turned into text",
   partsTotal: "Parts in total",
@@ -49,7 +52,8 @@ export default function MeetingCheckStatus({ session }) {
   const check = session.lastCheck;
   const platform = providerName(session.provider);
   const isRecording = session.provider === "RECORDING";
-  const heading = isRecording ? "Recording progress" : `What Prowosma found at ${platform}`;
+  const fromFireflies = session.provider === "FIREFLIES" || (check?.code || "").startsWith("FIREFLIES_");
+  const heading = isRecording ? "Recording progress" : fromFireflies ? "What Prowosma found at Fireflies" : `What Prowosma found at ${platform}`;
   const facts = check?.facts ? Object.entries(check.facts).filter(([, v]) => v !== null && v !== undefined && v !== "") : [];
   const tone = !check ? "" : ["IMPORTED"].includes(check.code) ? "ok" : /^GOOGLE_(SIGN_IN_EXPIRED|ACCESS_DENIED|NOT_CONNECTED)$/.test(check.code) ? "bad" : "info";
 

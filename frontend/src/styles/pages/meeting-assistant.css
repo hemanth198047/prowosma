@@ -152,3 +152,8 @@
 .ma-record-settings { margin-top: 16px; }
 .ma-record-settings[open] > summary { margin-bottom: 10px; }
 .ma-small { padding: 4px 10px; font-size: 12px; align-self: flex-start; margin-top: 4px; }
+
+/* Fireflies notetaker */
+.ma-fireflies { margin-bottom: 16px; }
+.ma-ff-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.ma-ff-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }

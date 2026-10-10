@@ -44,7 +44,7 @@ footer{padding-top:24px;padding-bottom:40px;border-top:1px solid var(--line);mar
   <li><strong>Technical and security information</strong> &mdash; IP address, browser and device type, timestamps, and activity and audit logs used to keep the service secure and to show workspace administrators who changed what.</li>
   <li><strong>Billing information</strong> (if your workspace has a paid plan) &mdash; handled by our payment processor; we do not store full card numbers.</li>
 </ul>
-<p>By default, Meeting Assistant works only with text transcripts. If a workspace administrator turns on the optional <strong>recording</strong> feature, audio that a person records in their browser (or uploads) is processed as described in <a href="#recordings">section 4A</a>. We never join your meetings.</p>
+<p>By default, Meeting Assistant works only with text transcripts. If a workspace administrator turns on the optional <strong>recording</strong> feature, audio that a person records in their browser (or uploads) is processed as described in <a href="#recordings">section 4A</a>. Prowosma itself never joins your meetings; if a workspace administrator turns on the optional <strong>Fireflies</strong> integration, a Fireflies notetaker can be sent to a meeting at a person&rsquo;s request, as described in <a href="#fireflies">section 4B</a>.</p>
 
 <h2 id="google-user-data">2. Google user data (Google Meet)</h2>
 <p>Connecting Google Meet is optional and is done by each person for their own Google account. When you connect, Prowosma asks Google for the following permissions (&ldquo;scopes&rdquo;) and nothing more:</p>
@@ -99,6 +99,16 @@ footer{padding-top:24px;padding-bottom:40px;border-top:1px solid var(--line);mar
   <li>The person recording must make sure everyone in the meeting knows it is being recorded and turned into text, and has agreed where the law requires. Prowosma asks them to confirm this before it starts.</li>
 </ul>
 
+<h2 id="fireflies">4B. Fireflies notetaker (optional)</h2>
+<p>The Fireflies integration is <strong>off</strong> unless a workspace administrator connects a Fireflies account, and a notetaker is only sent when a person chooses to send one. When it is used:</p>
+<ul>
+  <li>The notetaker is run by <strong>Fireflies.ai</strong>, not by us. It joins the meeting as a visible participant and records and transcribes it under Fireflies&rsquo; own terms and privacy policy and the settings of the Fireflies account your administrator connected.</li>
+  <li>Prowosma sends Fireflies the meeting link and title the person provides, and asks Fireflies for the finished transcript (speaker names, text and times). We store that transcript like any other. <strong>We do not ask Fireflies for the audio or video.</strong></li>
+  <li>The workspace&rsquo;s Fireflies API key is stored encrypted and is only used to talk to Fireflies.</li>
+  <li>Fireflies keeps its own copy of the meeting under its own settings. Prowosma does not delete it; it can be deleted in Fireflies.</li>
+  <li>The person sending the notetaker must make sure everyone in the meeting knows it will join and transcribe, and has agreed where the law requires. Prowosma asks them to confirm this first.</li>
+</ul>
+
 <h2 id="sharing">5. Service providers we use</h2>
 <table>
   <tr><th>Purpose</th><th>Provider (currently)</th></tr>
@@ -107,6 +117,7 @@ footer{padding-top:24px;padding-bottom:40px;border-top:1px solid var(--line);mar
   <tr><td>Database</td><td>MongoDB Atlas</td></tr>
   <tr><td>AI processing (only when you use AI features)</td><td>The provider your workspace administrator configures (for example Anthropic, OpenAI or Google Gemini, or a custom endpoint)</td></tr>
   <tr><td>Speech-to-text (only if recording is used)</td><td>The speech-to-text server your workspace administrator configures &mdash; run by your own organization or by a third-party service</td></tr>
+  <tr><td>Meeting notetaker (only if the Fireflies integration is used)</td><td>Fireflies.ai, using the account your workspace administrator connects</td></tr>
   <tr><td>Meeting platforms (only when you connect them)</td><td>Google (Meet) and Microsoft (Teams)</td></tr>
   <tr><td>Sign-in, email and payments (where enabled)</td><td>Auth0 (single sign-on), your workspace&rsquo;s email provider, Stripe (billing)</td></tr>
 </table>

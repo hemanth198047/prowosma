@@ -11,6 +11,9 @@ import RecordMeetingPanel from "../components/RecordMeetingPanel";
 import RecordingUpload from "../components/RecordingUpload";
 import RecordingSettingsCard from "../components/RecordingSettingsCard";
 import SessionRecordingInfo from "../components/SessionRecordingInfo";
+import FirefliesPanel from "../components/FirefliesPanel";
+import FirefliesSettingsCard from "../components/FirefliesSettingsCard";
+import SessionFirefliesInfo from "../components/SessionFirefliesInfo";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getAssistantCapabilities, validateMeetingUrl, listMeetingSessions, createMeetingSession,
@@ -213,7 +216,7 @@ function AddTranscript({ session, onChanged }) {
   );
 }
 
-function SessionDetail({ session, members, projects, isAdmin, devEnabled, googleConnected, aiReady, aiReason, recordingCaps, onChanged, onClose }) {
+function SessionDetail({ session, members, projects, isAdmin, devEnabled, googleConnected, aiReady, aiReason, recordingCaps, firefliesCaps, onChanged, onClose }) {
   const { show: toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [devStatus, setDevStatus] = useState("PROCESSING");
@@ -246,6 +249,7 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
       )}
 
       <SessionRecordingInfo session={session} onChanged={onChanged} />
+      <SessionFirefliesInfo session={session} firefliesCaps={firefliesCaps} waiting={WAITING_FOR_TRANSCRIPT.includes(session.status)} onChanged={onChanged} />
       {recordingCaps?.ready && session.canManage && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED")
         && (!session.recording || ["DELETED", "EXPIRED"].includes(session.recording.state)) && (
         <details className="ma-guide">
@@ -466,6 +470,8 @@ export default function MeetingAssistant() {
         <RecordMeetingPanel recording={caps.recording} onCreated={async (id) => { await refresh(); setSelectedId(id); }} />
       )}
 
+      {caps?.fireflies?.ready && <FirefliesPanel onCreated={async (id) => { await refresh(); setSelectedId(id); }} />}
+
       <div className="ma-grid">
         <form className="ma-card" onSubmit={submit} aria-label="Register a meeting" noValidate>
           <h2>Add a meeting</h2>
@@ -529,7 +535,7 @@ export default function MeetingAssistant() {
           {selected && (
             <SessionDetail session={selected} members={members} projects={projects} isAdmin={admin}
               devEnabled={!!caps?.devFixturesEnabled} googleConnected={googleConnected}
-              aiReady={!!caps?.aiReady} aiReason={caps?.aiReason} recordingCaps={caps?.recording}
+              aiReady={!!caps?.aiReady} aiReason={caps?.aiReason} recordingCaps={caps?.recording} firefliesCaps={caps?.fireflies}
               onChanged={refresh} onClose={() => setSelectedId(null)} />
           )}
           <section className="ma-card" aria-label="Your meetings" style={selected ? { marginTop: 16 } : undefined}>
@@ -572,6 +578,7 @@ export default function MeetingAssistant() {
       </div>
 
       {admin && caps && <RecordingSettingsCard recording={caps.recording} onChanged={reloadCaps} />}
+      {admin && caps && <FirefliesSettingsCard fireflies={caps.fireflies} onChanged={reloadCaps} />}
     </div>
   );
 }

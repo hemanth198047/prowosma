@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent, within } from "@testing-library/react";
 import { axe } from "vitest-axe";
 
 vi.mock("../../api/meetingAssistant", () => ({
@@ -136,7 +136,8 @@ describe("Recording on the Meeting Assistant page", () => {
     await open([], CAPS_WITH({ ...REC_CAPS, ready: false, reason: "Recording isn't turned on." }));
     expect(screen.queryByRole("region", { name: "Record a meeting" })).toBeNull();
     api.getAssistantCapabilities.mockResolvedValue({ data: CAPS_WITH(REC_CAPS) });          // the server now says it is ready
-    fireEvent.click(await screen.findByRole("button", { name: "Save" }));
+    const card = (await screen.findByText(/Recording & speech-to-text/)).closest("details");        // the page now has more than one admin card, each with its own Save
+    fireEvent.click(within(card).getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("region", { name: "Record a meeting" })).toBeInTheDocument();
   });
 

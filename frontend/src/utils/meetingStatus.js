@@ -21,6 +21,7 @@ export const PROVIDER_META = {
   GOOGLE_MEET: { name: "Google Meet",     icon: "🟢" },
   MS_TEAMS:    { name: "Microsoft Teams", icon: "🟣" },
   RECORDING:   { name: "Recording",       icon: "🎙️" },
+  FIREFLIES:   { name: "Fireflies",       icon: "📝" },
 };
 
 const TERMINAL = new Set(["COMPLETED", "FAILED", "CANCELLED"]);

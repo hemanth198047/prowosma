@@ -70,3 +70,9 @@ export const uploadRecordingFile     = (id, file, { consent, title, onProgress }
       onUploadProgress: onProgress ? (e) => onProgress(e.total ? e.loaded / e.total : 0) : undefined });
 export const deleteRecordingAudio    = (id)         => client.delete(`/meeting-assistant/sessions/${id}/recording`);
 export const testSpeechToText        = ()           => client.post("/admin/meeting-assistant/stt/test");
+
+// Fireflies notetaker (Google Meet, Zoom, Teams, Webex)
+export const sendFirefliesNotetaker    = (data) => client.post("/meeting-assistant/fireflies/notetaker", data);
+export const getFirefliesRecent        = ()     => client.get("/meeting-assistant/fireflies/recent");
+export const importFirefliesTranscript = (data) => client.post("/meeting-assistant/fireflies/import", data);
+export const testFireflies             = ()     => client.post("/admin/meeting-assistant/fireflies/test");

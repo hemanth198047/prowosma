@@ -45,6 +45,11 @@ describe("Privacy Policy page — what Google's verification requires", () => {
     expect(privacy).toMatch(/Speech-to-text \(only if recording is used\)/);
     expect(privacy).toMatch(/encrypted at rest with AES-256-GCM/);
     expect(privacy).toMatch(/everyone in the meeting knows it is being recorded/);
+    expect(privacy).not.toMatch(/We never join your meetings/);                                    // a Fireflies notetaker can now join at a person's request
+    expect(privacy).toContain('id="fireflies"');
+    expect(privacy).toMatch(/Prowosma itself never joins your meetings/);
+    expect(privacy).toMatch(/We do not ask Fireflies for the audio or video/);
+    expect(privacy).toMatch(/Meeting notetaker \(only if the Fireflies integration is used\)/);
   });
 
   it("has a contact route and covers user rights", () => {
@@ -59,6 +64,8 @@ describe("Terms of Service page", () => {
       expect(terms, phrase).toContain(phrase);
     expect(terms).toContain('href="/privacy"');
     expect(terms).toContain("Recordings.");
+    expect(terms).toContain("Notetakers.");
+    expect(terms).toMatch(/if enabled, Fireflies\.ai/);
     expect(terms).not.toMatch(/does not join, record or capture audio/);
   });
 });
