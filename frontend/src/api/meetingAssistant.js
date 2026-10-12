@@ -71,6 +71,14 @@ export const uploadRecordingFile     = (id, file, { consent, title, onProgress }
 export const deleteRecordingAudio    = (id)         => client.delete(`/meeting-assistant/sessions/${id}/recording`);
 export const testSpeechToText        = ()           => client.post("/admin/meeting-assistant/stt/test");
 
+// A transcript you already have (any meeting, any platform, no link needed): pasted text, or a .txt / .vtt / .srt / .docx file sent as the raw body
+export const createMeetingFromTranscriptText = (data) => client.post("/meeting-assistant/transcripts", data);
+export const createMeetingFromTranscriptFile = (file, { consent, title, projectId, format, onProgress } = {}) =>
+  client.post("/meeting-assistant/transcripts/upload", file,
+    { params: { filename: file.name, consent: !!consent, title: title || undefined, projectId: projectId || undefined, format: format || undefined },
+      headers: OCTET, timeout: 2 * 60 * 1000,
+      onUploadProgress: onProgress ? (e) => onProgress(e.total ? e.loaded / e.total : 0) : undefined });
+
 // Fireflies notetaker (Google Meet, Zoom, Teams, Webex)
 export const sendFirefliesNotetaker    = (data) => client.post("/meeting-assistant/fireflies/notetaker", data);
 export const getFirefliesRecent        = ()     => client.get("/meeting-assistant/fireflies/recent");

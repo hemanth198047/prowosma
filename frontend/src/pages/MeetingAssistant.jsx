@@ -12,6 +12,7 @@ import RecordingUpload from "../components/RecordingUpload";
 import RecordingSettingsCard from "../components/RecordingSettingsCard";
 import SessionRecordingInfo from "../components/SessionRecordingInfo";
 import FirefliesPanel from "../components/FirefliesPanel";
+import UploadTranscriptPanel from "../components/UploadTranscriptPanel";
 import FirefliesSettingsCard from "../components/FirefliesSettingsCard";
 import SessionFirefliesInfo from "../components/SessionFirefliesInfo";
 import { apiErrorMessage } from "../utils/apiError";
@@ -450,7 +451,7 @@ export default function MeetingAssistant() {
   return (
     <div>
       <PageHeader icon="🤖" title="Meeting Assistant"
-        description="Register a Google Meet or Microsoft Teams meeting and follow its progress." />
+        description="Register a meeting, send a notetaker, or upload a transcript you already have — and turn it into minutes, tasks and projects." />
 
       {caps && !live && (
         <div className="ma-banner" role="note">
@@ -465,6 +466,10 @@ export default function MeetingAssistant() {
             <a href="/integrations/meeting-platforms">Connect Google</a></span>
         </div>
       )}
+
+      <UploadTranscriptPanel projects={projects} aiReady={!!caps?.aiReady} aiReason={caps?.aiReason}
+        autoCreate={!!(caps?.autoCreateTasks || caps?.autoCreateProjects)} limits={caps?.transcriptUpload}
+        onCreated={async (id) => { await refresh(); setSelectedId(id); }} />
 
       {caps?.recording?.ready && (
         <RecordMeetingPanel recording={caps.recording} onCreated={async (id) => { await refresh(); setSelectedId(id); }} />

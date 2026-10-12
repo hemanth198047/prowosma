@@ -22,6 +22,7 @@ export const PROVIDER_META = {
   MS_TEAMS:    { name: "Microsoft Teams", icon: "🟣" },
   RECORDING:   { name: "Recording",       icon: "🎙️" },
   FIREFLIES:   { name: "Fireflies",       icon: "📝" },
+  UPLOAD:      { name: "Uploaded transcript", icon: "📄" },
 };
 
 const TERMINAL = new Set(["COMPLETED", "FAILED", "CANCELLED"]);
