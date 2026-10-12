@@ -4,6 +4,7 @@ import com.prowosma.backend.service.MeetingAssistantService;
 import com.prowosma.backend.service.MeetingAssistantService.CreateRequest;
 import com.prowosma.backend.service.MeetingAssistantException;
 import com.prowosma.backend.service.MeetingAssistantService.TranscriptUpload;
+import com.prowosma.backend.service.MeetingAssistantService.NewTranscript;
 import com.prowosma.backend.meetingassistant.RecordingRules;
 import com.prowosma.backend.service.MeetingAssistantService.StartRecordingRequest;
 import com.prowosma.backend.service.MeetingAssistantService.FirefliesNotetakerRequest;
@@ -151,6 +152,28 @@ public class MeetingAssistantController {
     }
 
     // ── transcripts ──────────────────────────────────────────────────────────
+
+    /** Pasted transcript text that gets its own new meeting — no meeting link needed, the meeting need not be running. */
+    @PostMapping("/transcripts")
+    public ResponseEntity<Map<String, Object>> newMeetingFromTranscriptText(@RequestBody NewTranscript body, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.uploadTranscriptAsNewMeeting(body, null, auth.getName()));
+    }
+
+    /** A transcript FILE (.txt, .vtt, .srt, .docx) sent as the raw request body; it gets its own new meeting. */
+    @PostMapping("/transcripts/upload")
+    public ResponseEntity<Map<String, Object>> newMeetingFromTranscriptFile(@RequestParam(required = false) String filename, @RequestParam(required = false) String title,
+                                                                            @RequestParam(required = false) String projectId, @RequestParam(required = false) String format,
+                                                                            @RequestParam(defaultValue = "false") boolean consent,
+                                                                            HttpServletRequest request, Authentication auth) throws IOException {
+        long max = MeetingAssistantService.MAX_TRANSCRIPT_FILE_BYTES;
+        if (request.getContentLengthLong() > max)
+            throw new MeetingAssistantException(HttpStatus.PAYLOAD_TOO_LARGE, "TRANSCRIPT_TOO_LARGE", "That file is larger than " + (max / 1_000_000) + " MB. Split it into parts and upload them one at a time.");
+        byte[] data = request.getInputStream().readNBytes((int) max + 1);
+        if (data.length > max)
+            throw new MeetingAssistantException(HttpStatus.PAYLOAD_TOO_LARGE, "TRANSCRIPT_TOO_LARGE", "That file is larger than " + (max / 1_000_000) + " MB. Split it into parts and upload them one at a time.");
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                service.uploadTranscriptAsNewMeeting(new NewTranscript(null, format, filename, title, projectId, consent), data, auth.getName()));
+    }
 
     /** Paste or upload: the browser sends the file's text. Requester or admin only. */
     @PostMapping("/sessions/{id}/transcript")

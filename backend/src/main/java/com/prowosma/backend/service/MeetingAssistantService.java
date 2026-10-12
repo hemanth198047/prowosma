@@ -68,6 +68,10 @@ public class MeetingAssistantService {
     private boolean devFixtures;
 
     public static final int MAX_UPLOAD_CHARS = 5_000_000;
+    /** Provider of a meeting made only to hold an uploaded or pasted transcript — no meeting link, no platform, no meeting that has to be running. */
+    public static final String UPLOAD_PROVIDER = "UPLOAD";
+    /** Largest transcript FILE accepted (a .docx is compressed, so this is on the file, not on the text). */
+    public static final int MAX_TRANSCRIPT_FILE_BYTES = 5_000_000;
 
     private static MeetingAssistantException err(HttpStatus st, String code, String msg) {
         return new MeetingAssistantException(st, code, msg);
@@ -420,6 +424,11 @@ public class MeetingAssistantService {
         ff.put("ready", ffWhy == null);
         ff.put("reason", ffWhy);
         out.put("fireflies", ff);
+        Map<String, Object> tu = new LinkedHashMap<>();
+        tu.put("enabled", true);
+        tu.put("maxBytes", MAX_TRANSCRIPT_FILE_BYTES);
+        tu.put("formats", List.of("txt", "vtt", "srt", "docx"));
+        out.put("transcriptUpload", tu);
         out.put("devFixturesEnabled", devFixtures);
         out.put("note", anyAuto
                 ? "Transcripts can be imported automatically (if transcription was on) or added by upload or paste. The assistant can't join meetings live."
@@ -756,6 +765,94 @@ public class MeetingAssistantService {
         jobs.cancelForSession(saved.getOrganizationId(), saved.getId());   // a transcript is here; stop looking for one
         activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "TRANSCRIPT_ADDED", null, segments.size() + " lines", email);
         Map<String, Object> out = view(saved, true);
+        out.put("warnings", parsed.warnings());
+        return out;
+    }
+
+    // ── a transcript on its own: no meeting link, no running meeting ──────────
+    // For a meeting that already happened anywhere (a phone call, a room, Zoom, Meet, Teams, Fireflies, a recording someone else made) —
+    // the person has the transcript as a file or as text. Nothing here talks to any meeting platform.
+
+    public record NewTranscript(String content, String format, String filename, String title, String projectId, Boolean consent) {}
+
+    private MeetingSession newUploadSession(String rawTitle, String filename, String projectId, String email) {
+        String org = orgId();
+        String projId = null;
+        String projectMode = "DETECT";
+        if (projectId != null && !projectId.isBlank()) {
+            Project p = projectRepository.findById(projectId)
+                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
+            projId = p.getId();
+            projectMode = "SELECTED";
+        }
+        String title = rawTitle == null ? "" : CONTROL.matcher(rawTitle).replaceAll("").trim();
+        if (title.length() > 200) throw err(HttpStatus.BAD_REQUEST, "INVALID_TITLE", "The title can be up to 200 characters.");
+        if (title.isEmpty()) {
+            String fromFile = com.prowosma.backend.meetingassistant.TranscriptFileReader.titleFromFilename(filename);
+            title = fromFile != null ? fromFile : "Uploaded transcript";
+        }
+        String key = "upload:" + UUID.randomUUID();
+        MeetingSession s = new MeetingSession();
+        s.setOrganizationId(org);
+        s.setProvider(UPLOAD_PROVIDER);
+        s.setMeetingKey(key);
+        s.setTitle(title);
+        s.setRequestedBy(email);
+        s.setProjectMode(projectMode);
+        s.setProjectId(projId);
+        s.setTimezone("UTC");
+        s.setVisibility(getSettings().getDefaultVisibility());
+        s.setActiveKey(MeetingSessionStore.activeKeyOf(org, UPLOAD_PROVIDER, key, null));
+        s.setStatus(SessionStatus.AWAITING_TRANSCRIPT.name());
+        s.setStatusDetail("Reading the transcript.");
+        MeetingSessionStore.addHistory(s, null, SessionStatus.AWAITING_TRANSCRIPT.name(), email, "Created from an uploaded transcript");
+        MeetingSession saved = sessions.save(s);
+        metrics.sessionCreated(UPLOAD_PROVIDER);
+        store.audit(org, saved.getId(), email, "CREATED", UPLOAD_PROVIDER);
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "CREATED", null, saved.getStatus(), email);
+        return saved;
+    }
+
+    /**
+     * Makes a new meeting from a transcript the person already has — a file ({@code file} = its bytes: .txt, .vtt, .srt or .docx) or pasted text ({@code req.content()}) —
+     * and starts the normal pipeline: summary, minutes and notes, action items, then the review where tasks and projects are created.
+     * The text is read and checked BEFORE the meeting is made, so a bad file never leaves an empty meeting behind.
+     */
+    public Map<String, Object> uploadTranscriptAsNewMeeting(NewTranscript req, byte[] file, String email) {
+        String role = roleOf(email);
+        requireSendRole(role);
+        if (req == null || !Boolean.TRUE.equals(req.consent()))
+            throw err(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED", "Please confirm you have the right to use this transcript. Its text is sent to the AI provider your workspace uses to write the summary and find the tasks.");
+        String text;
+        String format = req.format();
+        if (file != null) {
+            if (file.length > MAX_TRANSCRIPT_FILE_BYTES)
+                throw err(HttpStatus.PAYLOAD_TOO_LARGE, "TRANSCRIPT_TOO_LARGE", "That file is larger than 5 MB. Split it into parts and upload them one at a time.");
+            com.prowosma.backend.meetingassistant.TranscriptFileReader.Content c = transcripts.readFile(file, req.filename());
+            text = c.text();
+            if (format == null || format.isBlank()) format = c.formatHint();
+        } else {
+            text = req.content();
+        }
+        if (text == null || text.isBlank()) throw err(HttpStatus.BAD_REQUEST, "EMPTY_TRANSCRIPT", "The transcript is empty.");
+        if (text.length() > MAX_UPLOAD_CHARS)
+            throw err(HttpStatus.PAYLOAD_TOO_LARGE, "TRANSCRIPT_TOO_LARGE", "That transcript is larger than 5 MB of text. Split it into parts and upload them one at a time.");
+
+        TranscriptParser.Parsed parsed = transcripts.parse(text, format);                 // may refuse; nothing exists yet
+        List<TranscriptSegment> segments = MeetingTranscriptService.fromParsed(parsed, "UPLOAD_" + parsed.format());
+        MeetingSession s = newUploadSession(req.title(), req.filename(), req.projectId(), email);
+        MeetingSession saved;
+        try {
+            saved = transcripts.receive(s, segments, "UPLOAD", "UPLOADED",
+                    "Uploaded by " + email + ". Whether it covers the whole meeting can't be verified.", email, outputs.receivedDetail(s.getOrganizationId(), segments.size()));
+        } catch (RuntimeException e) {
+            cancelQuietly(s, email, "The transcript could not be stored");              // no empty meeting left behind
+            throw e;
+        }
+        saved = outputs.startIfEnabled(saved, email);
+        activityLog.log("MEETING_SESSION", saved.getId(), saved.getTitle(), "TRANSCRIPT_ADDED", null, segments.size() + " lines", email);
+        Map<String, Object> out = view(store.find(saved.getOrganizationId(), saved.getId()).orElse(saved), true);
         out.put("warnings", parsed.warnings());
         return out;
     }

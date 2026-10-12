@@ -45,6 +45,15 @@ public class MeetingTranscriptService {
         }
     }
 
+    /** An uploaded file (.txt, .vtt, .srt, .docx) as text for the parser. Anything unreadable becomes a plain 400 that says what to do instead. */
+    public com.prowosma.backend.meetingassistant.TranscriptFileReader.Content readFile(byte[] data, String filename) {
+        try {
+            return com.prowosma.backend.meetingassistant.TranscriptFileReader.read(data, filename);
+        } catch (TranscriptParser.TranscriptFormatException e) {
+            throw new MeetingAssistantException("TRANSCRIPT_TOO_LARGE".equals(e.getCode()) ? HttpStatus.PAYLOAD_TOO_LARGE : HttpStatus.BAD_REQUEST, e.getCode(), e.getMessage());
+        }
+    }
+
     public static List<TranscriptSegment> fromParsed(TranscriptParser.Parsed parsed, String source) {
         List<TranscriptSegment> out = new ArrayList<>(parsed.segments().size());
         for (TranscriptParser.Segment p : parsed.segments()) {
