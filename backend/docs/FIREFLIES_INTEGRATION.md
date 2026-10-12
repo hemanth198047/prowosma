@@ -12,6 +12,17 @@ Two more ways in:
 - **Attach to a meeting you already registered.** On a waiting Google Meet / Teams meeting that has a link, open *No transcript? Send a Fireflies notetaker to this meeting*.
 - **Import a meeting Fireflies already has** (for example one Fireflies joined from your calendar): *Already have a meeting in Fireflies? Import it* → load your recent meetings → *Import*. Nothing is sent to any meeting.
 
+## Instant meetings, personal rooms and short links
+The notetaker can only join a meeting that is **running**, so an instant meeting works exactly like a scheduled one: start it, copy its link, paste it, press Send.
+| Platform | Links Prowosma accepts |
+|---|---|
+| Google Meet | `meet.google.com/abc-defg-hij` (instant and scheduled), `meet.google.com/lookup/…`, `g.co/meet/…` |
+| Zoom | `/j/<id>`, `/s/<id>`, `/wc/join/<id>`, `/wc/<id>/start`, personal link `/my/<name>` — on `zoom.us`, `zoom.com`, vanity subdomains and `zoomgov.com` |
+| Microsoft Teams | `teams.live.com/meet/<id>` and `teams.microsoft.com/meet/<id>` (Meet now), `teams.cloud.microsoft/meet/<id>`, `…/l/meetup-join/…` |
+| Webex | personal room `…/meet/<name>`, `…/join/<name>`, and `…/j.php?MTID=…` (instant / scheduled) |
+
+A personal-room, lookup or short link is only a *name* for a meeting, and Fireflies may report the meeting under its real id. For those links Prowosma also accepts a transcript of the **same platform** from right around the send when it carries the title Prowosma sent or is the only such transcript. A link that is already a real meeting id is matched exactly.
+
 ## Admin setup
 1. In **Fireflies**, open *Integrations → Fireflies API* and copy your API key. (It uses *your* Fireflies account, so the notetaker's meetings count against your Fireflies plan.)
 2. In Prowosma: Meeting Assistant → *Fireflies notetaker (admins)* → tick **Allow sending the Fireflies notetaker…**, paste the key, **Save**, then **Test connection** (it says which Fireflies account it reached).
@@ -40,7 +51,7 @@ When a limit is reached Prowosma **waits for the time Fireflies asks** and carri
 - **The meeting has to be running** when you press Send. Fireflies refuses a meeting that hasn't started or has ended.
 - **The host must admit the notetaker.** The most common reason for "no transcript" is that nobody let it in.
 - The notetaker is **visible to everyone** in the meeting, and **everyone must know** it is transcribing. Prowosma makes the person confirm this.
-- A transcript is matched to a meeting by its **meeting link** and its time. A transcript can only ever be imported into **one** Prowosma meeting.
+- A transcript is matched to a meeting by its **meeting link** and its time. If Fireflies reports **no link** for a meeting the notetaker was sent to through the API, Prowosma falls back to the **title it sent** (or, if only one unlinked transcript started right around the send, that one). A transcript that carries a *different* link is never matched this way. A transcript can only ever be imported into **one** Prowosma meeting.
 - A meeting is marked as having no transcript after **6 hours** of nothing; you can then import it from your recent Fireflies meetings, upload a transcript, or send the notetaker again.
 
 ## When something goes wrong
@@ -55,8 +66,17 @@ When a limit is reached Prowosma **waits for the time Fireflies asks** and carri
 | "3 times every 20 minutes" | Fireflies' send limit | Wait a few minutes |
 | "already imported for another meeting" | That transcript is already attached to a different Prowosma meeting | Open that meeting |
 
+## Checking why a transcript didn't arrive
+1. Open **app.fireflies.ai** with the same account as the API key. Is the meeting listed, and does it have a transcript? If not, the notetaker was not admitted or Fireflies is still processing — Prowosma cannot import what Fireflies doesn't have.
+2. Open the meeting in Prowosma and read the waiting message. *"looked at your N most recent meetings and none came from this meeting link"* means Fireflies has the meeting but reported a different (or empty) link.
+3. Server log lines `Fireflies check for session … decision=… recent=… linkMatches=…` show the same counts for every check (no links, titles or text are logged). `recent=0` means Fireflies returned no transcripts for the key.
+
 ## Not yet verified by the developers
 This was tested against a **scripted** Fireflies, not the real service. Please run **one real test meeting and one import** before relying on it, and check in particular:
 - that the transcript's **speaker names and timings** look right (the code assumes times in seconds and checks for milliseconds, but this wasn't confirmed against a real transcript),
 - that Fireflies reports the **same meeting link** you pasted (this is how a transcript is matched to its meeting),
 - that your Fireflies **plan** allows sending the notetaker through the API.
+
+
+
+ee952366-86ae-4155-bce8-86ee06265e87

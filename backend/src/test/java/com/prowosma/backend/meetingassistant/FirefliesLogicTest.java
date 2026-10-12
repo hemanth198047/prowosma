@@ -124,6 +124,64 @@ class FirefliesLogicTest {
         assertThat(FirefliesMatcher.newestFirst(List.of(s("old", "l", -5, false), s("new", "l", 5, false), new Summary("none", "t", "l", null, false))).get(0).id()).isEqualTo("new");
     }
 
+    @Test @DisplayName("a link Fireflies reports without https:// still matches — but look-alikes and http:// stay refused")
+    void schemelessLinkStillMatches() {
+        assertThat(ConferenceLink.keyOf("meet.google.com/abc-defg-hij")).isEqualTo("meet:abc-defg-hij");
+        assertThat(ConferenceLink.keyOf("evilmeet.google.com/abc-defg-hij")).isNull();
+        assertThat(ConferenceLink.keyOf("zoom.us.evil.com/j/84511223344")).isNull();
+        assertThat(ConferenceLink.keyOf("http://meet.google.com/abc-defg-hij")).isNull();
+    }
+
+    @Test @DisplayName("a transcript Fireflies gave NO link for is matched by the title we sent, or when it is the only one from around the send")
+    void matchesWhenFirefliesReportsNoLink() {
+        String key = ConferenceLink.keyOf("https://meet.google.com/abc-defg-hij");
+        Summary noLink = new Summary("t1", "Google Meet meeting", null, ANCHOR.plusSeconds(120), false);
+        assertThat(FirefliesMatcher.pick(List.of(noLink), key, ANCHOR, id -> false, "Google Meet meeting").id()).isEqualTo("t1");
+        assertThat(FirefliesMatcher.pick(List.of(noLink), key, ANCHOR, id -> false, null).kind()).isEqualTo(Kind.MATCH);       // the only candidate
+        Summary other = new Summary("t2", "Standup", null, ANCHOR.plusSeconds(90), false);
+        assertThat(FirefliesMatcher.pick(List.of(noLink, other), key, ANCHOR, id -> false, "Google Meet meeting").id()).isEqualTo("t1");   // title decides
+        assertThat(FirefliesMatcher.pick(List.of(noLink, other), key, ANCHOR, id -> false, "something else").kind()).isEqualTo(Kind.NONE); // ambiguous: never guess
+    }
+
+    @Test @DisplayName("the no-link fallback never takes a transcript that has another meeting's link, is old, or is already imported")
+    void fallbackIsConservative() {
+        String key = ConferenceLink.keyOf("https://meet.google.com/abc-defg-hij");
+        assertThat(FirefliesMatcher.pick(List.of(new Summary("a", "x", "https://meet.google.com/zzz-yyyy-xxx", ANCHOR.plusSeconds(60), false)), key, ANCHOR, id -> false, "x").kind()).isEqualTo(Kind.NONE);
+        assertThat(FirefliesMatcher.pick(List.of(new Summary("b", "x", null, ANCHOR.minus(2, ChronoUnit.DAYS), false)), key, ANCHOR, id -> false, "x").kind()).isEqualTo(Kind.NONE);
+        assertThat(FirefliesMatcher.pick(List.of(new Summary("c", "x", null, ANCHOR.plusSeconds(60), false)), key, ANCHOR, "c"::equals, "x").kind()).isEqualTo(Kind.NONE);
+        assertThat(FirefliesMatcher.pick(List.of(new Summary("d", "x", null, null, false)), key, ANCHOR, id -> false, "x").kind()).isEqualTo(Kind.NONE);
+    }
+
+    @Test @DisplayName("instant, personal-room and short links of every platform are recognised")
+    void instantAndPersonalLinks() {
+        assertThat(ConferenceLink.parse("https://meet.google.com/lookup/abc123def4")).extracting(Link::platform, Link::key).containsExactly("GOOGLE_MEET", "meet:lookup:abc123def4");
+        assertThat(ConferenceLink.parse("https://g.co/meet/my-room").key()).isEqualTo("meet:nick:my-room");
+        assertThat(ConferenceLink.parse("https://zoom.us/wc/84511223344/start").key()).isEqualTo("zoom:84511223344");
+        assertThat(ConferenceLink.parse("https://acme.zoom.com/j/84511223344").platform()).isEqualTo("ZOOM");
+        assertThat(ConferenceLink.parse("https://teams.live.com/meet/9876543210123?p=abc").key()).isEqualTo("teams:meet:9876543210123");
+        assertThat(ConferenceLink.parse("https://teams.cloud.microsoft/meet/9876543210123").platform()).isEqualTo("MS_TEAMS");
+        assertThat(ConferenceLink.parse("https://acme.webex.com/acme/j.php?MTID=m1a2b3c4d5").key()).isEqualTo("webex:mtid:m1a2b3c4d5");
+        assertThat(ConferenceLink.parse("https://acme.webex.com/acme/j.php?MTID=OTHER1234").key()).isNotEqualTo("webex:mtid:m1a2b3c4d5");   // two Webex meetings never share a key
+        for (String bad : new String[]{"https://meet.google.com/lookup/x", "https://g.co/other/abc", "https://evilg.co/meet/abc", "https://zoom.com.evil.com/j/84511223344", "https://zoom.us/wc/12/start"})
+            assertThat(ConferenceLink.keyOf(bad)).as(bad).isNull();
+    }
+
+    @Test @DisplayName("a personal-room / lookup / short link is only a NAME: a same-platform transcript with the real id is matched (by title, or when alone) — nothing else is")
+    void aliasLinksMatchTheRealMeeting() {
+        String zoomName = ConferenceLink.keyOf("https://zoom.us/my/priya.s");
+        assertThat(ConferenceLink.isAliasKey(zoomName)).isTrue();
+        assertThat(ConferenceLink.isAliasKey(ConferenceLink.keyOf("https://zoom.us/j/84511223344"))).isFalse();
+        assertThat(ConferenceLink.isAliasKey(ConferenceLink.keyOf("https://meet.google.com/lookup/abc123def4"))).isTrue();
+        Summary real = new Summary("z1", "Zoom meeting", "https://zoom.us/j/84511223344", ANCHOR.plusSeconds(100), false);
+        assertThat(FirefliesMatcher.pick(List.of(real), zoomName, ANCHOR, id -> false, "Zoom meeting").id()).isEqualTo("z1");
+        Summary other = new Summary("z2", "Weekly", "https://zoom.us/j/55566677788", ANCHOR.plusSeconds(200), false);
+        assertThat(FirefliesMatcher.pick(List.of(real, other), zoomName, ANCHOR, id -> false, "nope").kind()).isEqualTo(Kind.NONE);          // ambiguous → never guess
+        assertThat(FirefliesMatcher.pick(List.of(real, other), zoomName, ANCHOR, id -> false, "Weekly").id()).isEqualTo("z2");               // title decides
+        assertThat(FirefliesMatcher.pick(List.of(new Summary("m", "Zoom meeting", "https://meet.google.com/abc-defg-hij", ANCHOR.plusSeconds(100), false)), zoomName, ANCHOR, id -> false, "Zoom meeting").kind()).isEqualTo(Kind.NONE); // other platform
+        String zoomId = ConferenceLink.keyOf("https://zoom.us/j/11122233344");
+        assertThat(FirefliesMatcher.pick(List.of(real), zoomId, ANCHOR, id -> false, "Zoom meeting").kind()).isEqualTo(Kind.NONE);          // a real id is exact
+    }
+
     // ── mapping ──────────────────────────────────────────────────────────────
 
     @Test @DisplayName("sentences become lines with real speaker names and times in milliseconds")

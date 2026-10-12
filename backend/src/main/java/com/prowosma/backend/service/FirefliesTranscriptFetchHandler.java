@@ -15,6 +15,7 @@ import com.prowosma.backend.model.MeetingJob;
 import com.prowosma.backend.model.MeetingSession;
 import com.prowosma.backend.model.TranscriptSegment;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -28,6 +29,7 @@ import java.util.Optional;
  * workspace (cached for a few minutes), a rate limit means "try again when Fireflies says", and every check writes what it found on the meeting.
  */
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class FirefliesTranscriptFetchHandler implements MeetingJobHandler {
 
@@ -74,7 +76,9 @@ public class FirefliesTranscriptFetchHandler implements MeetingJobHandler {
         final String org = s.getOrganizationId();
         String key = ConferenceLink.keyOf(s.getMeetingUrl());
         List<Summary> recent = fireflies.recentCached(org, apiKey);
-        Decision d = FirefliesMatcher.pick(recent, key, sentAt, id -> fireflies.isClaimed(org, id));
+        Decision d = FirefliesMatcher.pick(recent, key, sentAt, id -> fireflies.isClaimed(org, id), s.getTitle());
+        // Counts only — never links, titles or transcript text.
+        log.info("Fireflies check for session {}: decision={} recent={} linkMatches={} imported={} outsideWindow={}", s.getId(), d.kind(), d.returned(), d.linkMatches(), d.alreadyImported(), d.outsideWindow());
 
         if (d.kind() == FirefliesMatcher.Kind.NONE) {
             if (now.isAfter(sentAt.plus(MeetingFirefliesService.GIVE_UP_AFTER)))

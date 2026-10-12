@@ -4,32 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Integrated FireFlies">
-      <change afterPath="$PROJECT_DIR$/docs/FIREFLIES_INTEGRATION.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesApi.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/FirefliesHttp.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/integration/JdkFirefliesHttp.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/ConferenceLink.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesMatcher.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/meetingassistant/FirefliesReport.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/FirefliesTranscriptFetchHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingFirefliesService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesApiTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesFetchHandlerTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesIntegrationApiTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesLogicTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/prowosma/backend/meetingassistant/FirefliesSettingsTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MeetingAssistantIndexConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MeetingAssistantIndexConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantAdminController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/MeetingAssistantController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingAssistantSettings.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingAssistantSettings.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/MeetingSession.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingAssistantService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/MeetingJobRunner.java" afterDir="false" />
-    </list>
+    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Integrated FireFlies" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -78,23 +53,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.010053866734675" />
-      <entry key="MS500" value="1.796896149689603" />
-      <entry key="S2" value="3.7966838220695354" />
-      <entry key="S5" value="4.914411827246675" />
-      <entry key="S10" value="5.41472246139399" />
-      <entry key="S30" value="5.794502744529638" />
-      <entry key="S60" value="5.895887595713085" />
-      <entry key="M2" value="5.951082261440556" />
-      <entry key="M5" value="6.252059353945437" />
-      <entry key="M10" value="7.158018883925105" />
-      <entry key="M15" value="7.890069466965096" />
-      <entry key="M30" value="9.077381979468244" />
-      <entry key="H1" value="10.063991926603617" />
-      <entry key="H2" value="12.249712526514367" />
-      <entry key="H4" value="17.399427918519745" />
-      <entry key="D1" value="30.99845404559578" />
-      <entry key="W1" value="35.21619194641051" />
+      <entry key="MS100" value="1.0002635723673088" />
+      <entry key="MS500" value="1.2974155920887687" />
+      <entry key="S2" value="3.9854685931038785" />
+      <entry key="S5" value="6.635325276071555" />
+      <entry key="S10" value="8.088553392446794" />
+      <entry key="S30" value="9.30281726737714" />
+      <entry key="S60" value="9.64324623500746" />
+      <entry key="M2" value="9.822959468572199" />
+      <entry key="M5" value="10.19869827846153" />
+      <entry key="M10" value="11.128461325170404" />
+      <entry key="M15" value="11.868825437836284" />
+      <entry key="M30" value="13.065513940977539" />
+      <entry key="H1" value="14.057540795212548" />
+      <entry key="H2" value="16.24591533608953" />
+      <entry key="H4" value="21.39685624503302" />
+      <entry key="D1" value="34.99772921075682" />
+      <entry key="W1" value="39.21607527373577" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -116,23 +91,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9597720006595423" />
-      <entry key="MS500" value="1.654555678072458" />
-      <entry key="S2" value="3.6956345584731554" />
-      <entry key="S5" value="4.863977633696222" />
-      <entry key="S10" value="5.38754067365839" />
-      <entry key="S30" value="5.784973761147394" />
-      <entry key="S60" value="5.891062442848965" />
-      <entry key="M2" value="5.948654143509482" />
-      <entry key="M5" value="6.251077809226025" />
-      <entry key="M10" value="7.157516531175243" />
-      <entry key="M15" value="7.889728480291234" />
-      <entry key="M30" value="9.077206558724262" />
-      <entry key="H1" value="10.063900832985924" />
-      <entry key="H2" value="12.249657667528659" />
-      <entry key="H4" value="17.399388341672328" />
-      <entry key="D1" value="30.998442179976763" />
-      <entry key="W1" value="35.2161900212192" />
+      <entry key="MS100" value="0.9595169435674306" />
+      <entry key="MS500" value="1.2801197831672038" />
+      <entry key="S2" value="3.927057823273224" />
+      <entry key="S5" value="6.58847227429364" />
+      <entry key="S10" value="8.058819690148658" />
+      <entry key="S30" value="9.291180227610136" />
+      <entry key="S60" value="9.63718831433228" />
+      <entry key="M2" value="9.819868527952007" />
+      <entry key="M5" value="10.197440267848698" />
+      <entry key="M10" value="11.127818847626049" />
+      <entry key="M15" value="11.868390609934643" />
+      <entry key="M30" value="13.065291382661952" />
+      <entry key="H1" value="14.057426077720477" />
+      <entry key="H2" value="16.24584865293861" />
+      <entry key="H4" value="21.39681075341589" />
+      <entry key="D1" value="34.997716358643416" />
+      <entry key="W1" value="39.216073207583406" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{

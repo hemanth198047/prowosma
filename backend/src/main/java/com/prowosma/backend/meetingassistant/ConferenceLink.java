@@ -23,7 +23,11 @@ public final class ConferenceLink {
     public record Link(String platform, String url, String key) {}
 
     private static final Pattern MEET_PATH = Pattern.compile("^/([a-z]{3}-[a-z]{4}-[a-z]{3})/?$");
+    /** Google Meet "lookup" links (what a calendar-less / instant meeting can be shared as) and g.co/meet short links. Both are ALIASES: Fireflies may report the meeting under its abc-defg-hij code instead. */
+    private static final Pattern MEET_LOOKUP = Pattern.compile("^/lookup/([A-Za-z0-9_-]{4,64})/?$");
+    private static final Pattern MEET_SHORT = Pattern.compile("^/meet/([A-Za-z0-9_-]{3,60})/?$");
     private static final Pattern ZOOM_PATH = Pattern.compile("^/(?:j|wc/join|s)/(\\d{8,12})/?$");
+    private static final Pattern ZOOM_WC = Pattern.compile("^/wc/(\\d{8,12})/(?:join|start)/?$");
     private static final Pattern ZOOM_PERSONAL = Pattern.compile("^/my/([A-Za-z0-9._-]{1,64})/?$");
     private static final Pattern TEAMS_MEET = Pattern.compile("^/meet/(\\d{6,20})/?$");
     private static final Pattern TEAMS_JOIN = Pattern.compile("^/l/meetup-join/([^/]{10,300})(?:/.*)?$");
@@ -59,17 +63,26 @@ public final class ConferenceLink {
 
         if (host.equals("meet.google.com")) {
             Matcher m = MEET_PATH.matcher(path);
-            if (!m.matches()) throw new IllegalArgumentException("That doesn't look like a Google Meet link (it should end in a code like abc-defg-hij).");
-            return new Link(GOOGLE_MEET, clean, "meet:" + m.group(1));
+            if (m.matches()) return new Link(GOOGLE_MEET, clean, "meet:" + m.group(1));
+            Matcher l = MEET_LOOKUP.matcher(path);
+            if (l.matches()) return new Link(GOOGLE_MEET, clean, "meet:lookup:" + l.group(1).toLowerCase(Locale.ROOT));
+            throw new IllegalArgumentException("That doesn't look like a Google Meet link (it should end in a code like abc-defg-hij).");
         }
-        if (host.equals("zoom.us") || host.endsWith(".zoom.us") || host.equals("zoomgov.com") || host.endsWith(".zoomgov.com")) {
+        if (host.equals("g.co")) {
+            Matcher m = MEET_SHORT.matcher(path);
+            if (!m.matches()) throw new IllegalArgumentException("That doesn't look like a Google Meet link (it should end in a code like abc-defg-hij).");
+            return new Link(GOOGLE_MEET, clean, "meet:nick:" + m.group(1).toLowerCase(Locale.ROOT));
+        }
+        if (host.equals("zoom.us") || host.endsWith(".zoom.us") || host.equals("zoom.com") || host.endsWith(".zoom.com") || host.equals("zoomgov.com") || host.endsWith(".zoomgov.com")) {
             Matcher m = ZOOM_PATH.matcher(path);
             if (m.matches()) return new Link(ZOOM, clean, "zoom:" + m.group(1));
+            Matcher wc = ZOOM_WC.matcher(path);
+            if (wc.matches()) return new Link(ZOOM, clean, "zoom:" + wc.group(1));
             Matcher p = ZOOM_PERSONAL.matcher(path);
             if (p.matches()) return new Link(ZOOM, clean, "zoom:my:" + p.group(1).toLowerCase(Locale.ROOT));
             throw new IllegalArgumentException("That doesn't look like a Zoom meeting link (it should contain /j/ and the meeting number).");
         }
-        if (host.equals("teams.microsoft.com") || host.equals("teams.live.com")) {
+        if (host.equals("teams.microsoft.com") || host.equals("teams.live.com") || host.equals("teams.cloud.microsoft")) {
             Matcher m = TEAMS_MEET.matcher(path);
             if (m.matches()) return new Link(MS_TEAMS, clean, "teams:meet:" + m.group(1));
             Matcher j = TEAMS_JOIN.matcher(path);
@@ -78,6 +91,8 @@ public final class ConferenceLink {
         }
         if (host.endsWith(".webex.com") || host.equals("webex.com")) {
             if (path.length() < 2) throw new IllegalArgumentException("That doesn't look like a Webex meeting link.");
+            String mtid = queryParam(uri.getRawQuery(), "MTID");                 // scheduled / instant meetings: .../j.php?MTID=m1234abcd — the id is in the query, not the path
+            if (path.toLowerCase(Locale.ROOT).endsWith("/j.php") && mtid != null) return new Link(WEBEX, clean, "webex:mtid:" + mtid.toLowerCase(Locale.ROOT));
             return new Link(WEBEX, clean, "webex:" + host + path.replaceAll("/+$", "").toLowerCase(Locale.ROOT));
         }
         throw new IllegalArgumentException(SUPPORTED);
@@ -85,6 +100,45 @@ public final class ConferenceLink {
 
     /** The matching key of a link, or null if it isn't a link we recognise. Never throws. */
     public static String keyOf(String raw) {
-        try { return parse(raw).key(); } catch (RuntimeException e) { return null; }
+        try { return parse(raw).key(); } catch (RuntimeException e) {
+            // Fireflies sometimes reports a link without "https://" (meet.google.com/abc-defg-hij). Only for MATCHING we accept that;
+            // links we SEND are still parsed strictly.
+            try {
+                String t = raw == null ? "" : raw.trim();
+                if (!t.isEmpty() && !t.contains("://") && !t.contains(":") && t.contains("/")) return parse("https://" + t).key();
+            } catch (RuntimeException ignored) { /* not a link we recognise */ }
+            return null;
+        }
+    }
+
+    private static String queryParam(String rawQuery, String name) {
+        if (rawQuery == null) return null;
+        for (String part : rawQuery.split("&")) {
+            int eq = part.indexOf('=');
+            if (eq > 0 && part.substring(0, eq).equalsIgnoreCase(name) && eq < part.length() - 1) {
+                String v = part.substring(eq + 1);
+                return v.matches("[A-Za-z0-9_-]{4,80}") ? v : null;
+            }
+        }
+        return null;
+    }
+
+    /** The platform a matching key belongs to, or null. */
+    public static String platformOfKey(String key) {
+        if (key == null) return null;
+        if (key.startsWith("meet:")) return GOOGLE_MEET;
+        if (key.startsWith("zoom:")) return ZOOM;
+        if (key.startsWith("teams:")) return MS_TEAMS;
+        if (key.startsWith("webex:")) return WEBEX;
+        return null;
+    }
+
+    /**
+     * True for links that are a NAME for a meeting rather than its id — a Zoom personal link, a Meet lookup / short link, a Webex personal room.
+     * The service may report such a meeting under its real id, so a transcript with a different link of the same platform can still be the one.
+     */
+    public static boolean isAliasKey(String key) {
+        return key != null && (key.startsWith("zoom:my:") || key.startsWith("meet:lookup:") || key.startsWith("meet:nick:")
+                || (key.startsWith("webex:") && !key.startsWith("webex:mtid:") && (key.contains("/meet/") || key.contains("/join/"))));
     }
 }
