@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useToast } from "./ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
-import { detectPlatform, SUPPORTED_TEXT, PLATFORM_NAMES } from "../utils/conferenceLink";
+import { detectPlatform, SUPPORTED_TEXT, PLATFORM_NAMES, INSTANT_MEETING_TIPS } from "../utils/conferenceLink";
 import { sendFirefliesNotetaker, getFirefliesRecent, importFirefliesTranscript } from "../api/meetingAssistant";
 
 const when = (iso) => { if (!iso) return ""; const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(); };
@@ -85,6 +85,13 @@ export default function FirefliesPanel({ onCreated }) {
         <input id="ff-link" type="url" inputMode="url" placeholder="https://meet.google.com/…  or  https://zoom.us/j/…" value={link} onChange={(e) => setLink(e.target.value)} />
         {detected && <span className="ma-ok" role="status">✓ {detected.name} meeting</span>}
         {showLinkProblem && <span className="ma-hint" role="status">{SUPPORTED_TEXT}</span>}
+        <details className="ma-hint ma-instant-tips">
+          <summary>Started an instant meeting? How to find its link</summary>
+          <ul>
+            {INSTANT_MEETING_TIPS.map((t) => <li key={t.platform}><strong>{t.name}:</strong> {t.text}</li>)}
+          </ul>
+          <p>Instant, personal-room and scheduled meetings all work, as long as the meeting is running when you press Send.</p>
+        </details>
       </div>
       <div className="ma-field">
         <label htmlFor="ff-title">Title (optional)</label>

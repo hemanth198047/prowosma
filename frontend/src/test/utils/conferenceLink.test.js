@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectPlatform, PLATFORM_NAMES, SUPPORTED_TEXT } from "../../utils/conferenceLink";
+import { detectPlatform, PLATFORM_NAMES, SUPPORTED_TEXT, INSTANT_MEETING_TIPS } from "../../utils/conferenceLink";
 
 describe("detectPlatform (instant feedback; the server re-checks everything)", () => {
   it("recognises the four platforms and names them", () => {
@@ -11,6 +11,23 @@ describe("detectPlatform (instant feedback; the server re-checks everything)", (
     expect(detectPlatform("https://acme.webex.com/meet/priya").platform).toBe("WEBEX");
     expect(PLATFORM_NAMES.MS_TEAMS).toBe("Microsoft Teams");
     expect(SUPPORTED_TEXT).toContain("Google Meet, Zoom, Microsoft Teams and Webex");
+  });
+
+  it("recognises instant / personal-room / short links too", () => {
+    expect(detectPlatform("https://meet.google.com/lookup/abc123def4").platform).toBe("GOOGLE_MEET");
+    expect(detectPlatform("https://g.co/meet/my-room").platform).toBe("GOOGLE_MEET");
+    expect(detectPlatform("https://zoom.us/wc/84511223344/start").platform).toBe("ZOOM");
+    expect(detectPlatform("https://acme.zoom.com/j/84511223344").platform).toBe("ZOOM");
+    expect(detectPlatform("https://teams.live.com/meet/9876543210123?p=abc").platform).toBe("MS_TEAMS");
+    expect(detectPlatform("https://teams.cloud.microsoft/meet/9876543210123").platform).toBe("MS_TEAMS");
+    expect(detectPlatform("https://acme.webex.com/acme/j.php?MTID=m1a2b3c4d5").platform).toBe("WEBEX");
+    for (const bad of ["https://meet.google.com/lookup/x", "https://g.co/other/abc", "https://evilg.co/meet/abc", "https://zoom.com.evil.com/j/84511223344", "https://zoom.us/wc/12/start"]) {
+      expect(detectPlatform(bad), bad).toBeNull();
+    }
+  });
+
+  it("has a how-to-find-the-link tip for each platform", () => {
+    expect(INSTANT_MEETING_TIPS.map((t) => t.platform).sort()).toEqual(["GOOGLE_MEET", "MS_TEAMS", "WEBEX", "ZOOM"]);
   });
 
   it("surrounding spaces are fine", () => {
