@@ -1,5 +1,6 @@
 package com.prowosma.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,6 +14,7 @@ public class User {
     private String organizationId;
     private String name;
     private String email;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     /** When the password was last set - drives expiry policy checks at login. */
     private LocalDateTime passwordChangedAt = LocalDateTime.now();
@@ -21,6 +23,7 @@ public class User {
 
     // ── 2FA ──────────────────────────────────────────────────
     private boolean twoFactorEnabled = false;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String  twoFactorSecret;              // base32 TOTP secret, live/active
 
     /**
@@ -30,6 +33,7 @@ public class User {
      * the active secret, and so replacing a working authenticator doesn't
      * disable 2FA in between.
      */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String pendingTwoFactorSecret;
 
     /**
@@ -85,6 +89,7 @@ public class User {
     private String        lastLoginIp;
 
     // ── Magic link / passwordless ────────────────────────────
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String  magicLinkToken;
     private LocalDateTime magicLinkExpiry;
 
@@ -97,6 +102,7 @@ public class User {
     private LocalDateTime emailOtpExpiry;
 
     // ── Backup codes (MFA) ────────────────────────────────────
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private java.util.List<String> backupCodes = new java.util.ArrayList<>();  // hashed
 
     // ── Refresh tokens ────────────────────────────────────────

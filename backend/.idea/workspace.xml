@@ -4,8 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="Integrated FireFlies 1">
+    <list default="true" id="323a7d8f-9fdc-476d-8fff-209303bc4f9a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/JwtUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/RoleGuardFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/RoleGuardFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AIService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AIService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AISettingsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AISettingsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,109 +49,45 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;hemanth198047&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "hemanth198047"
   }
-}</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/hemanth198047/prowosma.git&quot;,
-    &quot;accountId&quot;: &quot;cd7196df-55cb-4ae5-9565-3d9de36acccb&quot;
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/hemanth198047/prowosma.git",
+    "accountId": "cd7196df-55cb-4ae5-9565-3d9de36acccb"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
-  <component name="NextEditCompletionFeaturesState">
-    <decayedCancelled>
-      <entry key="MS100" value="1.6879521864765414" />
-      <entry key="MS500" value="2.2038375158594534" />
-      <entry key="S2" value="4.911574274405176" />
-      <entry key="S5" value="7.585838759269523" />
-      <entry key="S10" value="9.058334569090823" />
-      <entry key="S30" value="10.291217706256376" />
-      <entry key="S60" value="10.637232340988335" />
-      <entry key="M2" value="10.819896005871728" />
-      <entry key="M5" value="11.197425902025875" />
-      <entry key="M10" value="12.127767117280865" />
-      <entry key="M15" value="12.868331837527156" />
-      <entry key="M30" value="14.06524225407781" />
-      <entry key="H1" value="15.057394636800852" />
-      <entry key="H2" value="17.245830880230976" />
-      <entry key="H4" value="22.39680062821563" />
-      <entry key="D1" value="35.99771404914927" />
-      <entry key="W1" value="40.216072846725844" />
-    </decayedCancelled>
-    <decayedSelected>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="0.0" />
-      <entry key="S5" value="0.0" />
-      <entry key="S10" value="0.0" />
-      <entry key="S30" value="0.0" />
-      <entry key="S60" value="0.0" />
-      <entry key="M2" value="0.0" />
-      <entry key="M5" value="0.0" />
-      <entry key="M10" value="0.0" />
-      <entry key="M15" value="0.0" />
-      <entry key="M30" value="0.0" />
-      <entry key="H1" value="0.0" />
-      <entry key="H2" value="0.0" />
-      <entry key="H4" value="0.0" />
-      <entry key="D1" value="0.0" />
-      <entry key="W1" value="0.0" />
-    </decayedSelected>
-    <decayedShown>
-      <entry key="MS100" value="1.3476987496151884" />
-      <entry key="MS500" value="2.1156626699783008" />
-      <entry key="S2" value="4.835705558781699" />
-      <entry key="S5" value="7.531877149702262" />
-      <entry key="S10" value="9.024975953358119" />
-      <entry key="S30" value="10.278348289647258" />
-      <entry key="S60" value="10.630554560342711" />
-      <entry key="M2" value="10.816494161625299" />
-      <entry key="M5" value="11.196043289651339" />
-      <entry key="M10" value="12.127062298514637" />
-      <entry key="M15" value="12.867855439743094" />
-      <entry key="M30" value="14.064998906190933" />
-      <entry key="H1" value="15.057269523347859" />
-      <entry key="H2" value="17.24575899883637" />
-      <entry key="H4" value="22.396752537418195" />
-      <entry key="D1" value="35.99770076382454" />
-      <entry key="W1" value="40.21607071868547" />
-    </decayedShown>
-  </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 6,
-  &quot;fromUser&quot;: false
-}</component>
-  <component name="ProjectId" id="3KLytws1EWLOi7NuVtIZzTE1KKZ" />
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 6
+}]]></component>
+  <component name="ProjectId" id="3Kgv7PrcsaDWwe5NHcYhmSwBRMU" />
   <component name="ProjectViewState">
     <option name="autoscrollFromSource" value="true" />
     <option name="autoscrollToSource" value="true" />
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "nodejs_package_manager_path": "npm"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="ProwosmaBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="prowosma-backend.main" />
@@ -159,44 +107,15 @@
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="47c8b8ed-e49b-4c06-bcfd-e067e03f372d" name="Changes" comment="" />
-      <created>1791351364397</created>
+      <changelist id="323a7d8f-9fdc-476d-8fff-209303bc4f9a" name="Changes" comment="" />
+      <created>1791991861324</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1791351364397</updated>
+      <updated>1791991861324</updated>
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="UnknownFeatures">
-    <option featureType="dependencySupport" implementationName="java:org.springframework.security:spring-security-core" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-core" />
-    <option featureType="dependencySupport" implementationName="java:jakarta.validation:jakarta.validation-api" />
-    <option featureType="dependencySupport" implementationName="java:io.projectreactor:reactor-core" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework.data:spring-data-commons" />
-    <option featureType="dependencySupport" implementationName="executable:kubectl" />
-    <option featureType="dependencySupport" implementationName="java:org.hibernate.validator:hibernate-validator" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-webmvc" />
-    <option featureType="dependencySupport" implementationName="java:org.projectlombok:lombok" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-websocket" />
-    <option featureType="dependencySupport" implementationName="executable:docker" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework:spring-messaging" />
-    <option featureType="dependencySupport" implementationName="java:org.springframework.boot:spring-boot" />
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="Implemented Team meeting changes" />
-    <MESSAGE value="Implemented Team meeting changes Further" />
-    <MESSAGE value="Extended meeting feature" />
-    <MESSAGE value="Introduced env file" />
-    <MESSAGE value="Introduced env file 1" />
-    <MESSAGE value="Introduced env file 2" />
-    <MESSAGE value="Introduced env file 3" />
-    <MESSAGE value="Introduced AI status" />
-    <MESSAGE value="Checking Meeting Status" />
-    <MESSAGE value="Integrated FireFlies" />
-    <MESSAGE value="Integrated FireFlies 1" />
-    <option name="LAST_COMMIT_MESSAGE" value="Integrated FireFlies 1" />
   </component>
 </project>

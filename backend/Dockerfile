@@ -49,7 +49,8 @@ EXPOSE 9090
 # host's, which is the JVM's default behavior on some older setups and a
 # classic cause of containers getting OOM-killed despite "having enough
 # RAM" on the host.
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+# ExitOnOutOfMemoryError: if memory runs out, stop so the platform restarts a clean process instead of leaving a half-working one running.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
 
 # Real health check — hits the actual HealthController endpoint (see
 # HealthController.java's /api/health/ready, which pings MongoDB) rather
@@ -58,4 +59,6 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:${PORT:-9090}/api/health/ready || exit 1
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# exec: java becomes the main process, so the platform's stop signal reaches it and it can shut down gracefully (with plain `sh -c`, the shell
+# swallowed the signal and the container was killed after the grace period).
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

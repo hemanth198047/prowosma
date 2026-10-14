@@ -17,6 +17,7 @@ public class AIService {
     private final ObjectMapper objectMapper;
     private final AISettingsRepository aiSettingsRepository;
     private final WorkspaceContext workspaceContext;
+    private final FieldEncryptionService crypto;
     private AISettings getSettings() {
         return aiSettingsRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
                 .findFirst()
@@ -50,6 +51,7 @@ public class AIService {
         if (settings.getApiKey() == null || settings.getApiKey().isBlank()) {
             return generateFallbackResponse(userMessage, systemPrompt);
         }
+        final String apiKey = crypto.decrypt(settings.getApiKey()).trim();      // saved encrypted since this fix; older plaintext keys still work
 
         try {
             RestTemplate rest = new RestTemplate();
@@ -65,7 +67,7 @@ public class AIService {
             switch (provider) {
                 case "OPENAI" -> {
                     url = "https://api.openai.com/v1/chat/completions";
-                    headers.set("Authorization", "Bearer " + settings.getApiKey());
+                    headers.set("Authorization", "Bearer " + apiKey);
                     String oaiModel = (settings.getModel() != null && !settings.getModel().isBlank()) ? settings.getModel() : "gpt-4o-mini";
                     body.put("model", oaiModel);
                     int oaiTokens = settings.getMaxTokens() > 0 ? settings.getMaxTokens() : 2048;
@@ -76,12 +78,13 @@ public class AIService {
                     ));
                 }
                 case "GEMINI" -> {
-                    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + settings.getApiKey();
+                    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+                    headers.set("x-goog-api-key", apiKey);          // a header, not ?key= — URLs are written to logs
                     body.put("contents", List.of(Map.of("parts", List.of(Map.of("text", systemPrompt + "\n" + userMessage)))));
                 }
                 case "CUSTOM" -> {
                     url = settings.getApiBaseUrl();
-                    headers.set("Authorization", "Bearer " + settings.getApiKey());
+                    headers.set("Authorization", "Bearer " + apiKey);
                     body.put("model", settings.getModel());
                     body.put("max_tokens", settings.getMaxTokens());
                     body.put("messages", List.of(
@@ -91,7 +94,7 @@ public class AIService {
                 }
                 default -> { // ANTHROPIC
                     url = "https://api.anthropic.com/v1/messages";
-                    headers.set("x-api-key", settings.getApiKey());
+                    headers.set("x-api-key", apiKey);
                     headers.set("anthropic-version", "2023-06-01");
                     body.put("model", settings.getModel() != null ? settings.getModel() : "claude-sonnet-4-20250514");
                     body.put("max_tokens", settings.getMaxTokens());

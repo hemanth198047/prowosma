@@ -1,3 +1,6 @@
+# Ports below are bound to 127.0.0.1 (this machine only) for everything except the app itself (backend 9090, frontend 8080).
+# MongoDB, Redis, RabbitMQ and the dashboards have no passwords here, so they must never be reachable from the internet.
+# To use a dashboard from your own computer on a server, use an SSH tunnel:  ssh -L 3001:127.0.0.1:3001 user@server
 # Local development orchestration: MongoDB + backend + frontend together.
 #
 # ASSUMED DIRECTORY LAYOUT — read this first:
@@ -35,7 +38,7 @@ services:
     restart: unless-stopped
     command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongodb-data:/data/db
     healthcheck:
@@ -80,7 +83,7 @@ services:
     image: redis:8.10-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -99,9 +102,9 @@ services:
       dockerfile: rabbitmq.Dockerfile
     restart: unless-stopped
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # management UI (http://localhost:15672, guest/guest)
-      - "61613:61613"  # STOMP — what WebSocketConfig actually connects to
+      - "127.0.0.1:5672:5672"    # AMQP
+      - "127.0.0.1:15672:15672"  # management UI (http://localhost:15672, guest/guest)
+      - "127.0.0.1:61613:61613"  # STOMP — what WebSocketConfig actually connects to
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 15s
@@ -123,8 +126,8 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     ports:
-      - "4318:4318"  # OTLP/HTTP — what the backend actually sends to
-      - "4317:4317"  # OTLP/gRPC
+      - "127.0.0.1:4318:4318"  # OTLP/HTTP — what the backend actually sends to
+      - "127.0.0.1:4317:4317"  # OTLP/gRPC
     depends_on:
       jaeger:
         condition: service_started
@@ -136,8 +139,8 @@ services:
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "4319:4317"    # Jaeger's own OTLP/gRPC (exposed on a different host port to
+      - "127.0.0.1:16686:16686"  # Jaeger UI
+      - "127.0.0.1:4319:4317"    # Jaeger's own OTLP/gRPC (exposed on a different host port to
                         # avoid clashing with otel-collector's 4317 above)
 
   # Real local metrics + alerting stack — previously /actuator/prometheus
@@ -150,7 +153,7 @@ services:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
     ports:
-      - "9091:9090"  # host 9091, not 9090 — the backend already owns 9090 above
+      - "127.0.0.1:9091:9090"  # host 9091, not 9090 — the backend already owns 9090 above
     depends_on:
       backend:
         condition: service_started
@@ -166,7 +169,7 @@ services:
     volumes:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     ports:
-      - "9095:9093"
+      - "127.0.0.1:9095:9093"
 
   # Dashboards on top of Prometheus + Jaeger — http://localhost:3001
   # (default login admin/admin, change on first login). No pre-built
@@ -179,8 +182,9 @@ services:
     restart: unless-stopped
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in the .env file next to this compose file}
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     depends_on:
       - prometheus
 
@@ -211,7 +215,8 @@ services:
       # point of structured logs for anything actually deployed.
       SPRING_PROFILES_ACTIVE: docker
       MONGODB_URI: mongodb://mongodb:27017/prowosma?replicaSet=rs0
-      JWT_SECRET: local-dev-only-jwt-secret-min-64-chars-do-not-use-in-real-deployment-xxxxx
+      # Required: a published default here would let anyone who has read this file forge a login. Generate one: openssl rand -base64 64
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the .env file next to this compose file (openssl rand -base64 64)}
       FRONTEND_URL: http://localhost:5173
       # Must match wherever the frontend container is actually reachable
       # from the browser (not from inside Docker) — see CorsConfig.java.

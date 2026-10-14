@@ -31,9 +31,10 @@ public class AIController {
 
     // ── Settings ──────────────────────────────────────────────
 
+    // The API key is never returned (see AISettingsService.view); changing any of this is admin-only (RoleGuardFilter).
     @GetMapping("/settings")
-    public AISettings getSettings() {
-        return aiSettingsService.get();
+    public Map<String, Object> getSettings() {
+        return aiSettingsService.view(aiSettingsService.get());
     }
 
     /**
@@ -46,18 +47,18 @@ public class AIController {
     }
 
     @PostMapping("/settings")
-    public AISettings saveSettings(@RequestBody AISettings settings) {
-        return aiSettingsService.save(settings);
+    public Map<String, Object> saveSettings(@RequestBody AISettings settings) {
+        return aiSettingsService.view(aiSettingsService.save(settings));
     }
 
     @PatchMapping("/settings/toggle")
-    public AISettings toggleAI(@RequestBody Map<String, Boolean> body) {
-        return aiSettingsService.toggleAI(body.get("enabled"));
+    public Map<String, Object> toggleAI(@RequestBody Map<String, Boolean> body) {
+        return aiSettingsService.view(aiSettingsService.toggleAI(Boolean.TRUE.equals(body.get("enabled"))));
     }
 
     @PatchMapping("/settings/features/{key}")
-    public AISettings toggleFeature(@PathVariable String key) {
-        return aiSettingsService.toggleFeature(key);
+    public Map<String, Object> toggleFeature(@PathVariable String key) {
+        return aiSettingsService.view(aiSettingsService.toggleFeature(key));
     }
 
     // ── AI-1: Task Assistant ───────────────────────────────────

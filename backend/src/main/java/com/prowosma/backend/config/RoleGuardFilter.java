@@ -189,6 +189,13 @@ public class RoleGuardFilter extends OncePerRequestFilter {
         }
 
         // ── Workspace DELETE requires OWNER only ──────────────────────────
+        // AI settings hold the provider key and decide what is sent to a third party: reading is open (the key itself is never returned),
+        // changing is for admins. Before this, any member could overwrite the key or switch AI on and off.
+        if (path.contains("/api/ai/settings") && !isAdminOrOwner(role)) {
+            sendForbidden(response,
+                    "Only Admins and the workspace Manager can change AI settings.");
+            return;
+        }
         if ("DELETE".equals(method) &&
                 path.matches("/api/workspaces/[^/]+$")) {
             sendForbidden(response,

@@ -2,6 +2,7 @@ package com.prowosma.backend.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
@@ -15,6 +16,16 @@ public class JwtUtil {
 
     @Value("${jwt.expiration:86400000}")
     private long expiration;
+
+    /** Local development only: ALLOW_INSECURE_DEV_JWT=true lets the built-in development secret be used. Never set this in a real deployment. */
+    @Value("${app.jwt.allow-dev-secret:false}")
+    private boolean allowInsecureDevSecret;
+
+    /** Fails the start-up — with a clear reason — instead of running with a secret anyone could know. Independent of which Spring profile is active. */
+    @PostConstruct
+    void validateSecret() {
+        JwtSecretGuard.check(secret, allowInsecureDevSecret);
+    }
 
     private SecretKey getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
