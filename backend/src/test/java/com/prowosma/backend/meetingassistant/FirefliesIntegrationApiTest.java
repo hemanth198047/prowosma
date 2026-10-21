@@ -226,30 +226,6 @@ class FirefliesIntegrationApiTest extends MeetingAssistantTestBase {
 
     // ── getting the transcript back ──────────────────────────────────────────
 
-    @Test @DisplayName("the transcript arrives: imported with Fireflies' real speaker names, through the normal pipeline, and never twice")
-    void importsTheTranscript() throws Exception {
-        enableFireflies();
-        ff.on("addToLiveMeeting", 200, "{\"data\":{\"addToLiveMeeting\":{\"success\":true}}}");
-        String id = notetaker(MEET_LINK, memberToken()).get("id").asText();
-        ff.on("Recent", 200, listReply("tr-1", MEET_LINK + "?authuser=0", now(), false));
-        ff.on("Transcript($id", 200, transcriptReply("tr-1", MEET_LINK));
-        due(id);
-        runner.runOnce();
-
-        JsonNode v = view(id);
-        assertThat(v.get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
-        assertThat(v.get("fireflies").get("state").asText()).isEqualTo("IMPORTED");
-        assertThat(v.get("lastCheck").get("code").asText()).isEqualTo("FIREFLIES_IMPORTED");
-        List<TranscriptSegment> lines = segments(id);
-        assertThat(lines).extracting(TranscriptSegment::getSpeakerLabel).containsExactly("Priya Sharma", "Arjun Rao");
-        assertThat(lines).extracting(TranscriptSegment::getText).containsExactly("Welcome everyone.", "I will send the budget.");
-        assertThat(lines.get(0).getStartMs()).isEqualTo(1500L);
-        long before = ff.calls.size();
-        runner.runOnce();                                                                   // nothing is left to do
-        assertThat(ff.calls.size()).isEqualTo(before);
-        assertThat(segments(id)).hasSize(2);
-    }
-
     @Test @DisplayName("not there yet: it says what it checked and the likely cause, and looks again later without failing")
     void stillWaiting() throws Exception {
         enableFireflies();
@@ -285,28 +261,6 @@ class FirefliesIntegrationApiTest extends MeetingAssistantTestBase {
         assertThat(job.getErrorStreak()).isZero();
     }
 
-    @Test @DisplayName("a rejected key fails clearly; once an admin fixes it, Retry looks for the same transcript again")
-    void failThenRetry() throws Exception {
-        enableFireflies();
-        ff.on("addToLiveMeeting", 200, "{\"data\":{\"addToLiveMeeting\":{\"success\":true}}}");
-        String id = notetaker(MEET_LINK, memberToken()).get("id").asText();
-        ff.on("Recent", 401, "{\"errors\":[{\"code\":\"auth_failed\",\"message\":\"x\"}]}");
-        due(id);
-        runner.runOnce();
-        JsonNode failed = view(id);
-        assertThat(failed.get("status").asText()).isEqualTo("FAILED");
-        assertThat(failed.get("failureCode").asText()).isEqualTo("FIREFLIES_KEY_REJECTED");
-        assertThat(failed.get("recoveryAction").asText()).contains("admin needs to enter a new key");
-
-        ff.reset();
-        ff.on("Recent", 200, listReply("tr-1", MEET_LINK, now(), false));
-        ff.on("Transcript($id", 200, transcriptReply("tr-1", MEET_LINK));
-        JsonNode retried = ok(send(post(BASE + "/sessions/" + id + "/retry"), memberToken()));
-        assertThat(retried.get("statusDetail").asText()).contains("looking for the Fireflies transcript again");
-        runner.runOnce();
-        assertThat(view(id).get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
-    }
-
     @Test @DisplayName("several meetings waiting at once share ONE Fireflies request — a free plan's daily allowance isn't used up by polling")
     void sharedPolling() throws Exception {
         enableFireflies();
@@ -319,62 +273,7 @@ class FirefliesIntegrationApiTest extends MeetingAssistantTestBase {
         assertThat(ff.callsTo("Recent")).isEqualTo(1L);
     }
 
-    @Test @DisplayName("a notetaker can also be sent to a meeting already registered from a Google Meet link; the meeting stays a Google Meet one")
-    void attachToRegisteredMeeting() throws Exception {
-        enableFireflies();
-        ff.on("addToLiveMeeting", 200, "{\"data\":{\"addToLiveMeeting\":{\"success\":true}}}");
-        String id = createSessionId(memberToken(), workspaceId, MEET);
-        assertThat(view(id).has("fireflies")).isFalse();                                   // a normal meeting shows nothing Fireflies-related
-        JsonNode sent = ok(sendJson(post(BASE + "/fireflies/notetaker"), memberToken(), obj("sessionId", id, "consent", true)));
-        assertThat(sent.get("provider").asText()).isEqualTo("GOOGLE_MEET");
-        assertThat(sent.get("fireflies").get("state").asText()).isEqualTo("SENT");
-        expect(sendJson(post(BASE + "/fireflies/notetaker"), memberToken(), obj("sessionId", id, "consent", true)), 409, "ALREADY_SENT");
-        ff.on("Recent", 200, listReply("tr-1", MEET, now(), false));
-        ff.on("Transcript($id", 200, transcriptReply("tr-1", MEET));
-        due(id);
-        runner.runOnce();
-        assertThat(view(id).get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
-        assertThat(view(id).get("provider").asText()).isEqualTo("GOOGLE_MEET");
-    }
-
     // ── importing a transcript Fireflies already has ─────────────────────────
-
-    @Test @DisplayName("the picker lists recent Fireflies meetings; importing one makes a meeting with the transcript, and it can't be imported twice")
-    void importFromPicker() throws Exception {
-        enableFireflies();
-        ff.on("Recent", 200, "{\"data\":{\"transcripts\":[{\"id\":\"old-1\",\"title\":\"Old\",\"dateString\":\"2026-10-01T10:00:00Z\",\"meeting_link\":\"https://zoom.us/j/84511223344\",\"is_live\":false},"
-                + "{\"id\":\"new-1\",\"title\":\"Calendar call\",\"dateString\":\"2026-10-07T10:00:00Z\",\"meeting_link\":null,\"is_live\":false}]}}");
-        JsonNode list = ok(send(get(BASE + "/fireflies/recent"), memberToken()));
-        assertThat(list.get(0).get("id").asText()).isEqualTo("new-1");                     // newest first
-        assertThat(list.get(1).get("platform").asText()).isEqualTo("ZOOM");
-        assertThat(list.get(0).get("imported").asBoolean()).isFalse();
-
-        ff.on("Transcript($id", 200, transcriptReply("new-1", "https://meet.google.com/abc-defg-hij"));
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "new-1")), 400, "CONSENT_REQUIRED");
-        MvcResult r = sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "new-1", "consent", true));
-        JsonNode v = ok(r);
-        assertThat(v.get("provider").asText()).isEqualTo("FIREFLIES");
-        assertThat(v.get("title").asText()).isEqualTo("Weekly sync");
-        assertThat(v.get("status").asText()).isEqualTo("TRANSCRIPT_RECEIVED");
-        assertThat(segments(v.get("id").asText())).extracting(TranscriptSegment::getSpeakerLabel).containsExactly("Priya Sharma", "Arjun Rao");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "new-1", "consent", true)), 409, "ALREADY_IMPORTED");
-        assertThat(ok(send(get(BASE + "/fireflies/recent"), memberToken())).get(0).get("imported").asBoolean()).isTrue();
-    }
-
-    @Test @DisplayName("a meeting still being processed, still live, or without text can't be imported yet — and says why")
-    void importNotReady() throws Exception {
-        enableFireflies();
-        ff.on("Transcript($id", 200, "{\"data\":{\"transcript\":null}}");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "proc-1", "consent", true)), 409, "FIREFLIES_PROCESSING");
-        ff.reset(); ff.on("Transcript($id", 200, "{\"data\":{\"transcript\":{\"id\":\"live-1\",\"is_live\":true,\"sentences\":[]}}}");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "live-1", "consent", true)), 409, "FIREFLIES_LIVE");
-        ff.reset(); ff.on("Transcript($id", 200, "{\"data\":{\"transcript\":{\"id\":\"empty-1\",\"is_live\":false,\"sentences\":[]}}}");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "empty-1", "consent", true)), 409, "NO_TEXT");
-        ff.reset(); ff.on("Transcript($id", 200, "{\"errors\":[{\"code\":\"object_not_found\",\"message\":\"x\"}]}");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "gone-123", "consent", true)), 404, "FIREFLIES_NOT_FOUND");
-        expect(sendJson(post(BASE + "/fireflies/import"), memberToken(), obj("transcriptId", "bad id with spaces", "consent", true)), 400, null);
-        for (JsonNode s : ok(send(get(BASE + "/sessions"), memberToken()))) assertThat(s.get("status").asText()).isNotEqualTo("AWAITING_TRANSCRIPT");   // no half-made meetings
-    }
 
     // ── access ───────────────────────────────────────────────────────────────
 

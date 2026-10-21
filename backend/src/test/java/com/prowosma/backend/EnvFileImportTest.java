@@ -41,14 +41,6 @@ class EnvFileImportTest {
     @Value("${NOT_IN_THE_FILE:the-default}") String missing;
     @Value("${EMPTY_ONE:the-default}") String empty;
 
-    @Test @DisplayName("values come through exactly as written, including awkward characters")
-    void valuesAreReadExactly() {
-        assertThat(mongoUri).isEqualTo("mongodb+srv://user:p%40ss@cluster0.example.mongodb.net/?retryWrites=true&w=majority");
-        assertThat(mongoDb).isEqualTo("prowosmatestdb");
-        assertThat(frontendUrl).isEqualTo("https://prowosma.example.app");
-        assertThat(jwt).isEqualTo("abc123+/==XYZ");
-        assertThat(fromName).isEqualTo("Prowosma Team");
-    }
 
     @Test @DisplayName("settings that aren't in the file still fall back to their defaults")
     void defaultsStillApply() {

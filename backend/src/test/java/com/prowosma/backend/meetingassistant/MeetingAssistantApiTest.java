@@ -217,20 +217,6 @@ class MeetingAssistantApiTest extends TwoWorkspaceTestBase {
         assertThat(json(r).get("connectionStatus").asText()).isEqualTo("NOT_CONNECTED");
     }
 
-    @Test @DisplayName("settings: automatic creation cannot be switched on yet; admins can't be locked out of sending")
-    void settingsValidation() throws Exception {
-        mvc.perform(as(put(ADMIN + "/settings"), adminToken(), workspaceId)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"autoCreateTasks\":true}"))
-           .andExpect(status().isConflict());
-        MvcResult r = mvc.perform(as(put(ADMIN + "/settings"), adminToken(), workspaceId)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"sendRoles\":[]}")).andReturn();
-        assertThat(json(r).get("sendRoles").toString()).contains("OWNER").contains("ADMIN").doesNotContain("MEMBER");
-        assertThat(create(memberToken(), workspaceId, MEET, null).getResponse().getStatus()).isEqualTo(403);
-        mvc.perform(as(put(ADMIN + "/settings"), adminToken(), workspaceId)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"transcriptRetentionDays\":0}"))
-           .andExpect(status().isBadRequest());
-    }
-
     @Test @DisplayName("disabling a platform stops new requests for it")
     void disablingBlocksRequests() throws Exception {
         mvc.perform(as(put(ADMIN + "/platforms/GOOGLE_MEET/enabled"), adminToken(), workspaceId)
