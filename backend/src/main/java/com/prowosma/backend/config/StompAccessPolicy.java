@@ -42,6 +42,12 @@ public final class StompAccessPolicy {
 
         /** Is the user the owner or a member of the workspace? */
         boolean isMember(String email, String workspaceId);
+
+        /**
+         * Beyond workspace membership: may this person see (or, with {@code write}, change) this particular document?
+         * Defaults to yes, which is the behaviour before department access control existed.
+         */
+        default boolean canAccessDoc(String email, String docId, boolean write) { return true; }
     }
 
     public static final long ALLOW_CACHE_MILLIS = 30_000L;
@@ -55,6 +61,7 @@ public final class StompAccessPolicy {
     private final Directory directory;
     private final LongSupplier clockMillis;
     private final Map<String, Long> allowedUntil = new ConcurrentHashMap<>();
+    private final Map<String, Long> docAllowedUntil = new ConcurrentHashMap<>();
 
     public StompAccessPolicy(Directory directory) {
         this(directory, System::currentTimeMillis);
@@ -72,7 +79,7 @@ public final class StompAccessPolicy {
         if (workspace.matches()) return isMember(email, workspace.group(1));
 
         Matcher doc = DOC_TOPIC.matcher(destination);
-        if (doc.matches()) return canUseDoc(email, doc.group(1));
+        if (doc.matches()) return canUseDoc(email, doc.group(1), false);
 
         return false;
     }
@@ -81,14 +88,24 @@ public final class StompAccessPolicy {
         if (email == null || destination == null) return false;
 
         Matcher doc = DOC_APP.matcher(destination);
-        if (doc.matches()) return canUseDoc(email, doc.group(1));
+        if (doc.matches()) return canUseDoc(email, doc.group(1), destination.endsWith("/edit"));
 
         return false;
     }
 
-    private boolean canUseDoc(String email, String docId) {
+    private boolean canUseDoc(String email, String docId, boolean write) {
         Optional<String> workspaceId = directory.workspaceOfDoc(docId);
-        return workspaceId.isPresent() && isMember(email, workspaceId.get());
+        if (workspaceId.isEmpty() || !isMember(email, workspaceId.get())) return false;
+        // Per-document access (department / sharing). Positive answers are remembered briefly, like membership,
+        // because an edit frame arrives per change; denials are never cached.
+        String key = email + "|" + docId + "|" + (write ? "w" : "r");
+        long now = clockMillis.getAsLong();
+        Long until = docAllowedUntil.get(key);
+        if (until != null && until > now) return true;
+        if (!directory.canAccessDoc(email, docId, write)) { docAllowedUntil.remove(key); return false; }
+        if (docAllowedUntil.size() >= MAX_CACHED) docAllowedUntil.clear();
+        docAllowedUntil.put(key, now + ALLOW_CACHE_MILLIS);
+        return true;
     }
 
     private boolean isMember(String email, String workspaceId) {

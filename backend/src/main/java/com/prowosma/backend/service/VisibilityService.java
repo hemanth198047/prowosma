@@ -127,7 +127,8 @@ public class VisibilityService {
                 .filter(g -> g.getMemberEmails() != null && g.getMemberEmails().stream().anyMatch(e -> e != null && e.equalsIgnoreCase(email)))
                 .map(UserGroup::getId).collect(Collectors.toSet());
         return AccessScope.of(email, member.getId(), profile.getScope(), departments, profile.isDepartmentAdmin(),
-                new HashSet<>(profile.getCapabilities() == null ? List.of() : profile.getCapabilities()), profile.getName());
+                new HashSet<>(profile.getCapabilities() == null ? List.of() : profile.getCapabilities()), profile.getName())
+                .withDocMode(cfg.getDocAccessMode());
     }
 
     public boolean isRestricted() { return current().isRestricted(); }
@@ -217,6 +218,92 @@ public class VisibilityService {
 
     public List<Project> redact(List<Project> list) { return list.stream().map(this::redact).collect(Collectors.toList()); }
 
+    // ── documents ───────────────────────────────────────────────────────────────
+
+    public DocFacts facts(Doc d) { return DocFacts.of(d.getCreatedBy(), d.getAudience(), d.getDepartmentIds(), d.getSharedWith()); }
+
+    public boolean canSeeDoc(Doc d) { return d != null && current().canSeeDoc(facts(d)); }
+    public boolean canEditDoc(Doc d) { return d != null && current().canEditDoc(facts(d)); }
+    public boolean canManageDoc(Doc d) { return d != null && current().canManageDoc(facts(d)); }
+
+    /** A doc the caller can't see is answered as not found, so its existence isn't revealed. */
+    public void requireDocVisible(Doc d) {
+        if (!canSeeDoc(d)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Doc not found");
+    }
+
+    public void requireCanEditDoc(Doc d) {
+        requireDocVisible(d);
+        if (!canEditDoc(d)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can view this document but not change it.");
+    }
+
+    public void requireCanManageDoc(Doc d) {
+        requireDocVisible(d);
+        if (!canManageDoc(d)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the document's creator, or a department admin of its departments, can do that.");
+    }
+
+    public List<Doc> filterDocs(List<Doc> docs) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return docs;
+        return docs.stream().filter(d -> s.canSeeDoc(facts(d))).collect(Collectors.toList());
+    }
+
+    /**
+     * Sets the audience, departments and sharing of a NEW document (workspace id must already be set). Does nothing while
+     * access control is off, so existing workspaces are unaffected. {@code lenient}: a choice the caller may not make
+     * (a copy of a workspace-wide doc, say) falls back to the default instead of being refused.
+     */
+    public void prepareNewDoc(Doc d, boolean lenient) {
+        String org = d.getWorkspaceId();
+        WorkspaceConfig cfg = org == null ? null : configRepository.findByWorkspaceId(org).orElse(null);
+        if (cfg == null || !cfg.isAccessControlEnabled()) return;
+        AccessScope s = current();
+        String requested = normalizeAudience(d.getAudience());
+        if ("?".equals(requested)) { if (lenient) requested = null; else throw bad("Audience must be PRIVATE, DEPARTMENTS or WORKSPACE."); }
+        if (requested != null && !s.mayUseAudience(requested)) {
+            if (lenient) requested = null;
+            else throw new ResponseStatusException(HttpStatus.FORBIDDEN, AUD_WORKSPACE.equals(requested)
+                    ? "Only a workspace admin can make a document visible to the whole workspace."
+                    : "Documents aren't shared by department in this workspace.");
+        }
+        Set<String> known = departmentIdsOf(org);
+        Set<String> depts = new LinkedHashSet<>(d.getDepartmentIds() == null ? List.of() : d.getDepartmentIds());
+        depts.retainAll(known);
+        if (s.isRestricted()) depts = new LinkedHashSet<>(s.attachableDepartments(depts));
+        String aud = requested;
+        if (aud == null) aud = (s.mayUseAudience(AUD_DEPARTMENTS) && !s.departmentIds().isEmpty()) ? AUD_DEPARTMENTS : AUD_PRIVATE;
+        if (AUD_DEPARTMENTS.equals(aud) && depts.isEmpty()) depts.addAll(s.departmentIds());
+        if (AUD_DEPARTMENTS.equals(aud) && depts.isEmpty()) aud = AUD_PRIVATE;     // nobody's department to put it in
+        d.setAudience(aud);
+        d.setDepartmentIds(new ArrayList<>(AUD_DEPARTMENTS.equals(aud) ? depts : Set.of()));
+        d.setSharedWith(s.sharingEnabled() ? canonical(d.getSharedWith(), workspaceEmails(org), "shared with") : new ArrayList<>());
+    }
+
+    /** Replaces who a document is for. The caller must already be allowed to manage it. */
+    public void applyDocAccessChange(Doc d, String audience, List<String> departmentIds, List<String> sharedWith) {
+        AccessScope s = current();
+        String org = d.getWorkspaceId();
+        String aud = audience == null ? normalizeAudience(d.getAudience()) : normalizeAudience(audience);
+        if (aud == null) aud = AUD_PRIVATE;
+        if ("?".equals(aud)) throw bad("Audience must be PRIVATE, DEPARTMENTS or WORKSPACE.");
+        if (!s.mayUseAudience(aud)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, AUD_WORKSPACE.equals(aud)
+                ? "Only a workspace admin can make a document visible to the whole workspace."
+                : "Documents aren't shared by department in this workspace.");
+        Set<String> depts = new LinkedHashSet<>(departmentIds == null ? (d.getDepartmentIds() == null ? List.of() : d.getDepartmentIds()) : departmentIds);
+        depts.retainAll(departmentIdsOf(org));
+        if (s.isRestricted()) {
+            // may only add or remove their own departments; the others stay as they were
+            Set<String> kept = new LinkedHashSet<>(d.getDepartmentIds() == null ? List.of() : d.getDepartmentIds());
+            kept.removeAll(s.departmentIds());
+            kept.addAll(s.attachableDepartments(depts));
+            depts = kept;
+        }
+        if (AUD_DEPARTMENTS.equals(aud) && depts.isEmpty()) throw bad("Choose at least one department, or pick another audience.");
+        d.setAudience(aud);
+        d.setDepartmentIds(new ArrayList<>(AUD_DEPARTMENTS.equals(aud) ? depts : Set.of()));
+        List<String> shared = sharedWith == null ? d.getSharedWith() : sharedWith;
+        d.setSharedWith(s.sharingEnabled() ? canonical(shared, workspaceEmails(org), "shared with") : new ArrayList<>());
+    }
+
     // ── tasks ───────────────────────────────────────────────────────────────────
 
     public boolean canSeeTask(Task t) {
@@ -268,6 +355,11 @@ public class VisibilityService {
             if ("PROJECT".equals(type)) {
                 ProjectFacts pf = projects.get(id);
                 return pf != null && scope.canSeeProject(pf, linked.contains(id));
+            }
+            if ("DOC".equals(type)) {
+                Doc d = mongoTemplate.findById(id, Doc.class);
+                if (d == null || d.isDeleted() || !org.equals(d.getWorkspaceId())) return false;
+                return scope.canSeeDoc(facts(d));
             }
             if ("TASK".equals(type)) {
                 Task t = mongoTemplate.findById(id, Task.class);
@@ -489,6 +581,7 @@ public class VisibilityService {
         m.put("departments", depts);
         WorkspaceConfig cfg = configRepository.findByWorkspaceId(org).orElse(null);
         m.put("roleSlots", cfg == null || cfg.getProjectRoleSlots() == null ? List.of() : cfg.getProjectRoleSlots());
+        m.put("docAccessMode", cfg == null ? DOC_MODE_BOTH : normalizeDocMode(cfg.getDocAccessMode()));
         return m;
     }
 
@@ -501,6 +594,7 @@ public class VisibilityService {
             enabled = org != null && configRepository.findByWorkspaceId(org).map(WorkspaceConfig::isAccessControlEnabled).orElse(false);
         } catch (RuntimeException ignored) { /* not in a request */ }
         m.put("accessControlEnabled", enabled);
+        m.put("docAccessMode", s.docMode());
         m.put("restricted", s.isRestricted());
         m.put("mode", s.mode());
         m.put("profileName", s.profileName());
@@ -508,7 +602,7 @@ public class VisibilityService {
         m.put("departmentAdmin", s.isDepartmentAdmin());
         m.put("capabilities", s.isRestricted() ? s.capabilities() : ALL_CAPABILITIES);
         // Pages the restricted caller can use in this phase (everything else is refused by the API).
-        List<String> areas = new ArrayList<>(List.of("dashboard", "projects", "tasks", "team", "gantt", "notifications", "activity", "search"));
+        List<String> areas = new ArrayList<>(List.of("dashboard", "projects", "tasks", "team", "gantt", "notifications", "activity", "search", "docs"));
         if (s.has(CAP_USE_MEETING_ASSISTANT)) areas.add("meeting-assistant");
         m.put("allowedAreas", s.isRestricted() ? areas : null);
         return m;

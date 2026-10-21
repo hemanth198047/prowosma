@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Department and project access control, phase 1 (projects, tasks, live feed): see `docs/DEPARTMENT_ACCESS.md`. Off until an admin enables it.
+- Department access, documents: docs follow the workspace's sharing setting (departments, creator and shared people, or both); see `docs/DEPARTMENT_ACCESS.md`. Fix: docs list/search/recent/favourites and document creation now use the verified workspace.
 - Department access, phase 2: dashboard summary, notifications, activity log, search, Gantt and the meeting assistant (incl. Fireflies) are scoped; see `docs/DEPARTMENT_ACCESS.md`.
 - Fix: task subtasks, checklists, watchers, relationships, SLA and goal-link endpoints now check that the caller may see the task (adding a watcher could otherwise grant access).
 - Fix: `/api/search` and the Tasks/Projects results of global search no longer return other workspaces' records.

@@ -80,6 +80,7 @@
   ],
   "defaultProfile": "Assigned Work Only",
   "defaultProjectVisibility": "DEPARTMENTS",
+  "docAccessMode": "BOTH",
   "members": [
     {
       "name": "Deepak",

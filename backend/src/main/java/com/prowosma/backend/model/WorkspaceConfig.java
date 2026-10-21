@@ -86,6 +86,8 @@ public class WorkspaceConfig {
     private String defaultAccessProfileId;
     /** Visibility given to a new project that does not choose one: WORKSPACE | DEPARTMENTS | MEMBERS_ONLY. */
     private String defaultProjectVisibility = "WORKSPACE";
+    /** How documents are shared: DEPARTMENTS (by department only), PRIVATE_SHARED (creator and people it is shared with), BOTH (each doc chooses). */
+    private String docAccessMode = "BOTH";
     /** The named responsibilities a project can assign to people, e.g. Creative Lead. Defined per workspace. */
     private java.util.List<RoleSlot> projectRoleSlots = new java.util.ArrayList<>();
 

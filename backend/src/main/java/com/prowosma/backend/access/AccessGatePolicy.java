@@ -22,6 +22,7 @@ public final class AccessGatePolicy {
             "/api/access/me",
             "/api/access/options",
             "/api/notifications",
+            "/api/docs",
             "/api/projects",
             "/api/tasks",
             "/api/auth",

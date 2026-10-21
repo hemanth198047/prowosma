@@ -51,7 +51,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     public StompAuthChannelInterceptor(JwtUtil jwtUtil,
                                        DocRepository docRepository,
                                        WorkspaceRepository workspaceRepository,
-                                       TeamMemberRepository teamMemberRepository) {
+                                       TeamMemberRepository teamMemberRepository,
+                                       com.prowosma.backend.service.VisibilityService visibilityService) {
         this.jwtUtil = jwtUtil;
         this.policy = new StompAccessPolicy(new StompAccessPolicy.Directory() {
             @Override
@@ -67,6 +68,16 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                         .map(ws -> email.equals(ws.getOwnerEmail()))
                         .orElse(false);
                 return isOwner || teamMemberRepository.existsByEmailAndOrganizationId(email, workspaceId);
+            }
+
+            // Department / sharing access: the person's scope in the document's workspace decides.
+            @Override
+            public boolean canAccessDoc(String email, String docId, boolean write) {
+                return docRepository.findById(docId).map(d -> {
+                    var scope = visibilityService.scopeFor(email, d.getWorkspaceId());
+                    var facts = visibilityService.facts(d);
+                    return write ? scope.canEditDoc(facts) : scope.canSeeDoc(facts);
+                }).orElse(false);
             }
         });
     }

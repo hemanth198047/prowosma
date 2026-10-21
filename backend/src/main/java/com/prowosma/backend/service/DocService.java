@@ -21,22 +21,41 @@ public class DocService {
     private final DocVersionRepository versionRepository;
     private final ActivityLogService   activityLogService;
     private final WorkspaceContext     workspaceContext;
+    private final VisibilityService    visibility;
+
+    /**
+     * Inside an HTTP request the workspace a caller may list docs from is the one they were verified for, not whatever
+     * workspaceId they put in the query string (that used to let any member list another workspace's docs).
+     * Outside a request (background work) the id passed in is used as given.
+     */
+    private boolean mayUseWorkspace(String workspaceId) {
+        if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() == null) return true;
+        String ws = workspaceContext.getWorkspaceId();
+        return ws != null && ws.equals(workspaceId);
+    }
 
     // Max versions to keep per doc (oldest auto-pruned beyond this)
     private static final int MAX_VERSIONS = 50;
 
     // ── List all docs in a workspace ──────────────────────────
     public List<Doc> getByWorkspace(String workspaceId) {
-        return docRepository.findByWorkspaceIdAndDeletedFalse(workspaceId);
+        if (!mayUseWorkspace(workspaceId)) return List.of();
+        return visibility.filterDocs(docRepository.findByWorkspaceIdAndDeletedFalse(workspaceId));
     }
 
     // ── Get single doc ────────────────────────────────────────
     public Optional<Doc> getById(String id) {
-        return docRepository.findById(id);
+        return docRepository.findById(id).filter(visibility::canSeeDoc);
     }
 
     // ── Create doc ────────────────────────────────────────────
     public Doc create(Doc doc, String createdBy) {
+        // The workspace comes from the verified request, not from the body (a body could name another workspace).
+        if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null
+                && workspaceContext.getWorkspaceId() != null) {
+            doc.setWorkspaceId(workspaceContext.getWorkspaceId());
+        }
+        visibility.prepareNewDoc(doc, false);
         doc.setCreatedBy(createdBy);
         doc.setCreatedAt(LocalDateTime.now());
         doc.setUpdatedAt(LocalDateTime.now());
@@ -60,11 +79,12 @@ public class DocService {
 
     public Optional<Doc> update(String id, Doc patch, String savedBy, String label) {
         return docRepository.findById(id).map(existing -> {
+            visibility.requireCanEditDoc(existing);
             if (patch.getTitle()   != null) existing.setTitle(patch.getTitle());
             if (patch.getEmoji()   != null) existing.setEmoji(patch.getEmoji());
             if (patch.getContent()    != null) existing.setContent(patch.getContent());
             if (patch.getParentId()   != null) existing.setParentId(patch.getParentId());
-            if (patch.getVisibility() != null) existing.setVisibility(patch.getVisibility());
+            if (patch.getVisibility() != null && visibility.canManageDoc(existing)) existing.setVisibility(patch.getVisibility());
             if (patch.getCategory()   != null) existing.setCategory(patch.getCategory());
             if (patch.getTags()       != null) existing.setTags(patch.getTags());
             existing.setUpdatedAt(LocalDateTime.now());
@@ -78,6 +98,7 @@ public class DocService {
     // ── Soft delete ───────────────────────────────────────────
     public boolean delete(String id) {
         return docRepository.findById(id).map(doc -> {
+            visibility.requireCanManageDoc(doc);
             activityLogService.log("DOC", doc.getId(), doc.getTitle(),
                     "DELETED", doc.getTitle(), null, null);
             doc.setDeleted(true);
@@ -89,21 +110,28 @@ public class DocService {
 
     // ── Search ────────────────────────────────────────────────
     public List<Doc> search(String workspaceId, String q) {
-        return docRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse(workspaceId, q);
+        if (!mayUseWorkspace(workspaceId)) return List.of();
+        return visibility.filterDocs(docRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse(workspaceId, q));
     }
 
     // ── Recent docs ───────────────────────────────────────────
     public List<Doc> getRecent(String workspaceId) {
-        return docRepository.findTop10ByWorkspaceIdAndDeletedFalseOrderByViewedAtDesc(workspaceId);
+        if (!mayUseWorkspace(workspaceId)) return List.of();
+        if (!visibility.isRestricted()) return docRepository.findTop10ByWorkspaceIdAndDeletedFalseOrderByViewedAtDesc(workspaceId);
+        // the newest ten the caller may SEE, not the newest ten overall with the hidden ones removed afterwards
+        return visibility.filterDocs(docRepository.findByWorkspaceIdAndDeletedFalse(workspaceId)).stream()
+                .sorted(java.util.Comparator.comparing(Doc::getViewedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .limit(10).collect(java.util.stream.Collectors.toList());
     }
 
     // ── Favorites ─────────────────────────────────────────────
     public List<Doc> getFavorites(String workspaceId) {
-        return docRepository.findByWorkspaceIdAndFavoriteTrueAndDeletedFalse(workspaceId);
+        if (!mayUseWorkspace(workspaceId)) return List.of();
+        return visibility.filterDocs(docRepository.findByWorkspaceIdAndFavoriteTrueAndDeletedFalse(workspaceId));
     }
 
     public Optional<Doc> toggleFavorite(String id) {
-        return docRepository.findById(id).map(doc -> {
+        return docRepository.findById(id).filter(visibility::canSeeDoc).map(doc -> {
             doc.setFavorite(!doc.isFavorite());
             doc.setUpdatedAt(LocalDateTime.now());
             return docRepository.save(doc);
@@ -113,6 +141,12 @@ public class DocService {
     // ── Move (change parent) ──────────────────────────────────
     public Optional<Doc> move(String id, String newParentId) {
         return docRepository.findById(id).map(doc -> {
+            visibility.requireCanEditDoc(doc);
+            if (newParentId != null && !newParentId.isBlank()) {
+                // can't hang a doc under one the caller can't see
+                docRepository.findById(newParentId).filter(visibility::canSeeDoc)
+                        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Parent doc not found"));
+            }
             doc.setParentId(newParentId);
             doc.setUpdatedAt(LocalDateTime.now());
             return docRepository.save(doc);
@@ -122,8 +156,13 @@ public class DocService {
     // ── Duplicate ─────────────────────────────────────────────
     public Doc duplicate(String id, String createdBy) {
         return docRepository.findById(id).map(original -> {
+            visibility.requireDocVisible(original);
             Doc copy = new Doc();
             copy.setWorkspaceId(original.getWorkspaceId());
+            copy.setAudience(original.getAudience());
+            copy.setDepartmentIds(new java.util.ArrayList<>(original.getDepartmentIds() == null ? List.of() : original.getDepartmentIds()));
+            copy.setSharedWith(new java.util.ArrayList<>(original.getSharedWith() == null ? List.of() : original.getSharedWith()));
+            visibility.prepareNewDoc(copy, true);
             copy.setParentId(original.getParentId());
             copy.setTitle(original.getTitle() + " (copy)");
             copy.setEmoji(original.getEmoji());
@@ -140,7 +179,7 @@ public class DocService {
 
     // ── Touch viewedAt ────────────────────────────────────────
     public void touch(String id) {
-        docRepository.findById(id).ifPresent(doc -> {
+        docRepository.findById(id).filter(visibility::canSeeDoc).ifPresent(doc -> {
             doc.setViewedAt(LocalDateTime.now());
             docRepository.save(doc);
         });
@@ -148,6 +187,7 @@ public class DocService {
 
     // ── Version history ───────────────────────────────────────
     public List<DocVersion> getVersions(String docId) {
+        if (docRepository.findById(docId).filter(visibility::canSeeDoc).isEmpty()) return List.of();
         return versionRepository.findByDocIdOrderByVersionNumberDesc(docId);
     }
 
@@ -224,10 +264,11 @@ public class DocService {
     }
 
     // ── A-8: Set visibility ───────────────────────────────────
-    public Optional<Doc> setVisibility(String id, String visibility) {
+    public Optional<Doc> setVisibility(String id, String visibilityValue) {
         return docRepository.findById(id).map(doc -> {
-            doc.setVisibility(visibility);
-            if ("PUBLIC".equals(visibility) && (doc.getPublishedSlug() == null || doc.getPublishedSlug().isEmpty())) {
+            this.visibility.requireCanManageDoc(doc);
+            doc.setVisibility(visibilityValue);
+            if ("PUBLIC".equals(visibilityValue) && (doc.getPublishedSlug() == null || doc.getPublishedSlug().isEmpty())) {
                 // generate a slug from title
                 String slug = doc.getTitle().toLowerCase()
                     .replaceAll("[^a-z0-9]+", "-")
@@ -244,6 +285,7 @@ public class DocService {
     @SuppressWarnings("unchecked")
     public Optional<Doc> updateTags(String id, java.util.Map<String, Object> body) {
         return docRepository.findById(id).map(doc -> {
+            visibility.requireCanEditDoc(doc);
             if (body.containsKey("tags")) {
                 Object t = body.get("tags");
                 if (t instanceof java.util.List) doc.setTags((java.util.List<String>) t);
@@ -256,6 +298,19 @@ public class DocService {
         });
     }
 
+
+    // ── Who can see the doc ───────────────────────────────────────
+    /** Replaces the doc's audience, departments and people it is shared with. Creator or a department admin only. */
+    public Optional<Doc> updateAccess(String id, String audience, List<String> departmentIds, List<String> sharedWith) {
+        return docRepository.findById(id).map(doc -> {
+            visibility.requireCanManageDoc(doc);
+            visibility.applyDocAccessChange(doc, audience, departmentIds, sharedWith);
+            doc.setUpdatedAt(LocalDateTime.now());
+            Doc saved = docRepository.save(doc);
+            activityLogService.log("DOC", saved.getId(), saved.getTitle(), "ACCESS_CHANGED", null, saved.getAudience(), null);
+            return saved;
+        });
+    }
 
     // ── A-9: Collab helpers ───────────────────────────────────────
     public Doc save(Doc doc) {

@@ -87,6 +87,14 @@ public class AccessController {
     @PutMapping("/api/admin/access/members/{id}")
     public Map<String, Object> updateMember(@PathVariable String id, @RequestBody Map<String, Object> body) { return admin.updateMember(id, body); }
 
+    // ── documents made before access control ──
+    /** Gives every document that has no audience yet one (body: audience, departmentIds). */
+    @PostMapping("/api/admin/access/docs/legacy")
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> assignLegacyDocs(@RequestBody Map<String, Object> body) {
+        return admin.assignLegacyDocs((String) body.get("audience"), (List<String>) body.get("departmentIds"));
+    }
+
     // ── organisation setup ──
     @PostMapping("/api/admin/access/org-setup")
     public Map<String, Object> orgSetup(@RequestBody Map<String, Object> plan,

@@ -28,6 +28,7 @@ public class DocPublishingController {
     private final DocRepository    docRepository;
     private final MongoTemplate    mongoTemplate;
     private final WorkspaceContext workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     private static final String META_COL = "doc_publish_meta";
 
@@ -37,6 +38,7 @@ public class DocPublishingController {
                                         Authentication auth) {
         Doc doc = docRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Doc not found: " + id));
+        visibility.requireCanManageDoc(doc);
 
         String token = UUID.randomUUID().toString().replace("-", "");
         doc.setPublishedSlug(token);         // Doc.publishedSlug is the existing field
@@ -75,6 +77,7 @@ public class DocPublishingController {
     public Map<String, String> unpublish(@PathVariable String id) {
         Doc doc = docRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Doc not found: " + id));
+        visibility.requireCanManageDoc(doc);
         doc.setPublishedSlug(null);
         doc.setVisibility("PRIVATE");
         doc.setUpdatedAt(LocalDateTime.now());
@@ -87,6 +90,7 @@ public class DocPublishingController {
     public Map<String, Object> getPublishStatus(@PathVariable String id) {
         Doc doc = docRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Doc not found: " + id));
+        visibility.requireDocVisible(doc);
         boolean published = doc.getPublishedSlug() != null;
         List<Map> metas = mongoTemplate.find(
             new Query(Criteria.where("docId").is(id)), Map.class, META_COL);

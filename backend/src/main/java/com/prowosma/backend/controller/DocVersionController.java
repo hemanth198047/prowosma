@@ -24,28 +24,43 @@ public class DocVersionController {
     private final DocVersionRepository docVersionRepository;
     private final DocRepository        docRepository;
     private final WorkspaceContext     workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
+
+    /** The doc, or 404 if it isn't there or the caller can't see it. */
+    private Doc visibleDoc(String docId) {
+        Doc d = docRepository.findById(docId).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Doc not found"));
+        visibility.requireDocVisible(d);
+        return d;
+    }
+
+    /** A version of THIS doc (an id from another doc is answered as not found). */
+    private DocVersion versionOf(String docId, String versionId) {
+        return docVersionRepository.findById(versionId).filter(v -> docId.equals(v.getDocId()))
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Version not found"));
+    }
 
     @GetMapping
     public PagedResponse<DocVersion> getVersions(
             @PathVariable String docId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
+        visibleDoc(docId);
         var all = docVersionRepository.findByDocIdOrderByVersionNumberDesc(docId);
         return PagedResponse.ofList(all, page, Math.min(size, 200));
     }
 
     @GetMapping("/{versionId}")
     public DocVersion getVersion(@PathVariable String docId, @PathVariable String versionId) {
-        return docVersionRepository.findById(versionId)
-                .orElseThrow(() -> new RuntimeException("Version not found: " + versionId));
+        visibleDoc(docId);
+        return versionOf(docId, versionId);
     }
 
     @PostMapping
     public DocVersion saveVersion(@PathVariable String docId,
                                    @RequestBody(required = false) Map<String, String> body,
                                    Authentication auth) {
-        Doc doc = docRepository.findById(docId)
-                .orElseThrow(() -> new RuntimeException("Doc not found: " + docId));
+        Doc doc = visibleDoc(docId);
+        visibility.requireCanEditDoc(doc);
         long next = docVersionRepository.countByDocId(docId) + 1;
         String labelStr = body != null ? body.getOrDefault("label", "v" + next) : "v" + next;
 
@@ -64,10 +79,9 @@ public class DocVersionController {
     public Doc restoreVersion(@PathVariable String docId,
                                @PathVariable String versionId,
                                Authentication auth) {
-        DocVersion version = docVersionRepository.findById(versionId)
-                .orElseThrow(() -> new RuntimeException("Version not found: " + versionId));
-        Doc doc = docRepository.findById(docId)
-                .orElseThrow(() -> new RuntimeException("Doc not found: " + docId));
+        Doc doc = visibleDoc(docId);
+        visibility.requireCanEditDoc(doc);
+        DocVersion version = versionOf(docId, versionId);
 
         // Save snapshot before overwriting
         long next = docVersionRepository.countByDocId(docId) + 1;
@@ -93,16 +107,17 @@ public class DocVersionController {
     public Map<String, Object> compareVersions(@PathVariable String docId,
                                                 @RequestParam String versionA,
                                                 @RequestParam String versionB) {
-        DocVersion a = docVersionRepository.findById(versionA)
-                .orElseThrow(() -> new RuntimeException("Version not found: " + versionA));
-        DocVersion b = docVersionRepository.findById(versionB)
-                .orElseThrow(() -> new RuntimeException("Version not found: " + versionB));
+        visibleDoc(docId);
+        DocVersion a = versionOf(docId, versionA);
+        DocVersion b = versionOf(docId, versionB);
         return Map.of("versionA", a, "versionB", b);
     }
 
     @DeleteMapping("/{versionId}")
     public ResponseEntity<Map<String, String>> deleteVersion(
             @PathVariable String docId, @PathVariable String versionId) {
+        visibility.requireCanManageDoc(visibleDoc(docId));
+        versionOf(docId, versionId);
         docVersionRepository.deleteById(versionId);
         return ResponseEntity.ok(Map.of("message", "Version deleted"));
     }

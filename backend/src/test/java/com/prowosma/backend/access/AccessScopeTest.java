@@ -159,7 +159,7 @@ class AccessScopeTest {
         assertTrue(AccessGatePolicy.isAllowed("/api/workspaces", "GET", editor));
         assertFalse(AccessGatePolicy.isAllowed("/api/workspaces/w1/members", "GET", editor));
         for (String p : List.of("/api/dashboard/sprints", "/api/dashboard/meeting-pulse", "/api/reports/x", "/api/analytics",
-                "/api/docs", "/api/meeting-assistant/sessions",
+                "/api/meeting-assistant/sessions",
                 "/api/ai/chat", "/api/goals", "/api/kpis", "/api/user-groups", "/api/import", "/api/time/x", "/api/tasksX",
                 "/api/push/subscribe", "/api/meetings", "/api/sprints", "/api/roi", "/api/searchX", "/api/ganttX")) {
             assertFalse(AccessGatePolicy.isAllowed(p, "GET", editor), p);
@@ -201,6 +201,10 @@ class AccessScopeTest {
         assertTrue(AccessGatePolicy.isAllowed("/api/gantt/tasks/t1/dates", "PATCH", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/activity-logs", "GET", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/activity-logs/entity/task/t1", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/docs", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/docs/d1/access", "PUT", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/docs/d1/versions", "GET", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/docsX", "GET", editor));
     }
 
     @Test void workspaceWideOperationsInsideThoseAreasStayClosed() {
@@ -228,5 +232,100 @@ class AccessScopeTest {
         assertFalse(AccessGatePolicy.isAllowed("/api/admin/meeting-assistant/settings", "GET", with));
         assertFalse(AccessGatePolicy.isAllowed("/api/meeting-assistantX", "GET", with));
         assertTrue(AccessGatePolicy.isAllowed("/api/meeting-assistant/fireflies/recent", "GET", AccessScope.unrestricted()));
+    }
+
+    // ── documents ───────────────────────────────────────────────────────────────
+
+    private static DocFacts doc(String audience, Set<String> depts, List<String> shared, String creator) {
+        return DocFacts.of(creator, audience, depts, shared);
+    }
+    private static AccessScope kashyap(String docMode) { return deptMember("kashyap@x.com", "m2", CREATIVE).withDocMode(docMode); }
+    private static AccessScope suman(String docMode) { return deptMember("suman@x.com", "m3", SALES).withDocMode(docMode); }
+
+    @Test void creatorAlwaysSeesAndManagesTheirDoc() {
+        DocFacts d = doc(AUD_PRIVATE, Set.of(), List.of(), "Kashyap@X.com");
+        for (String mode : ALL_DOC_MODES) {
+            assertTrue(kashyap(mode).canSeeDoc(d));
+            assertTrue(kashyap(mode).canManageDoc(d));
+            assertTrue(kashyap(mode).canEditDoc(d));
+        }
+    }
+
+    @Test void departmentDocIsVisibleToItsDepartmentWhenDepartmentsAreOn() {
+        DocFacts d = doc(AUD_DEPARTMENTS, CREATIVE, List.of(), "ansad@x.com");
+        assertTrue(kashyap(DOC_MODE_DEPARTMENTS).canSeeDoc(d));
+        assertTrue(kashyap(DOC_MODE_BOTH).canSeeDoc(d));
+        assertFalse(kashyap(DOC_MODE_PRIVATE_SHARED).canSeeDoc(d));     // departments switched off by the setting
+        assertFalse(suman(DOC_MODE_BOTH).canSeeDoc(d));                 // another department
+    }
+
+    @Test void sharingIsHonouredOnlyWhenSharingIsOn() {
+        DocFacts d = doc(AUD_PRIVATE, Set.of(), List.of("Suman@x.com"), "kashyap@x.com");
+        assertTrue(suman(DOC_MODE_PRIVATE_SHARED).canSeeDoc(d));
+        assertTrue(suman(DOC_MODE_BOTH).canSeeDoc(d));
+        assertFalse(suman(DOC_MODE_DEPARTMENTS).canSeeDoc(d));          // "departments only": no per-person sharing
+        assertFalse(suman(DOC_MODE_BOTH).canManageDoc(d));              // shared is not managing
+        assertTrue(suman(DOC_MODE_BOTH).canEditDoc(d));
+    }
+
+    @Test void aPrivateDocIsHiddenFromItsOwnDepartment() {
+        DocFacts d = doc(AUD_PRIVATE, CREATIVE, List.of(), "ansad@x.com");
+        assertFalse(kashyap(DOC_MODE_BOTH).canSeeDoc(d));
+    }
+
+    @Test void legacyDocsWithNoAudienceAreHiddenExceptFromCreatorAndSharedPeople() {
+        DocFacts legacy = doc(null, Set.of(), List.of(), "ansad@x.com");
+        assertFalse(kashyap(DOC_MODE_BOTH).canSeeDoc(legacy));
+        assertFalse(AccessScope.of("e@x.com", "m7", MODE_ASSIGNED, POST, false, Set.of(), "x").canSeeDoc(legacy));
+        assertTrue(AccessScope.unrestricted().canSeeDoc(legacy));
+        assertTrue(kashyap(DOC_MODE_BOTH).canSeeDoc(doc(null, Set.of(), List.of("kashyap@x.com"), "ansad@x.com")));
+    }
+
+    @Test void unknownAudienceMatchesNothing() {
+        DocFacts weird = doc("EVERYONE", CREATIVE, List.of(), "ansad@x.com");
+        assertFalse(kashyap(DOC_MODE_BOTH).canSeeDoc(weird));
+    }
+
+    @Test void workspaceWideDocIsSeenByAllButEditedOnlyByItsOwner() {
+        DocFacts d = doc(AUD_WORKSPACE, Set.of(), List.of(), "ansad@x.com");
+        assertTrue(suman(DOC_MODE_BOTH).canSeeDoc(d));
+        assertTrue(assignedOnly("e@x.com", "m7").withDocMode(DOC_MODE_BOTH).canSeeDoc(d));
+        assertFalse(suman(DOC_MODE_BOTH).canEditDoc(d));
+        assertTrue(deptMember("ansad@x.com", "m8", CREATIVE).canEditDoc(d));
+    }
+
+    @Test void departmentAdminManagesTheirDepartmentsDocsOnlyWhenDepartmentsAreOn() {
+        DocFacts d = doc(AUD_DEPARTMENTS, CREATIVE, List.of(), "kashyap@x.com");
+        AccessScope ansad = deptAdmin("ansad@x.com", "m8", CREATIVE);
+        assertTrue(ansad.withDocMode(DOC_MODE_BOTH).canManageDoc(d));
+        assertFalse(ansad.withDocMode(DOC_MODE_PRIVATE_SHARED).canManageDoc(d));
+        assertFalse(deptAdmin("deepak@x.com", "m5", SALES).withDocMode(DOC_MODE_BOTH).canManageDoc(d));
+    }
+
+    @Test void whichAudiencesAPersonMayChoose() {
+        assertTrue(kashyap(DOC_MODE_BOTH).mayUseAudience(AUD_DEPARTMENTS));
+        assertTrue(kashyap(DOC_MODE_BOTH).mayUseAudience(AUD_PRIVATE));
+        assertFalse(kashyap(DOC_MODE_BOTH).mayUseAudience(AUD_WORKSPACE));
+        assertFalse(kashyap(DOC_MODE_PRIVATE_SHARED).mayUseAudience(AUD_DEPARTMENTS));
+        assertTrue(AccessScope.unrestricted().mayUseAudience(AUD_WORKSPACE));
+        assertFalse(kashyap(DOC_MODE_DEPARTMENTS).sharingEnabled());
+        assertTrue(kashyap(DOC_MODE_BOTH).sharingEnabled());
+    }
+
+    @Test void unrestrictedPeopleSeeEveryDocWhateverTheSetting() {
+        DocFacts d = doc(AUD_PRIVATE, Set.of(), List.of(), "x@x.com");
+        assertTrue(AccessScope.unrestricted().withDocMode(DOC_MODE_PRIVATE_SHARED).canSeeDoc(d));
+        assertTrue(AccessScope.of("a@x.com", "m1", MODE_ALL, Set.of(), false, Set.of(), "All").canSeeDoc(d));
+    }
+
+    @Test void docModeFallsBackToBothAndAudienceIsNormalised() {
+        assertEquals(DOC_MODE_BOTH, normalizeDocMode(null));
+        assertEquals(DOC_MODE_BOTH, normalizeDocMode("nonsense"));
+        assertEquals(DOC_MODE_DEPARTMENTS, normalizeDocMode("departments"));
+        assertNull(normalizeAudience(null));
+        assertEquals("PRIVATE", normalizeAudience("private"));
+        assertEquals("?", normalizeAudience("public"));
+        assertTrue(isValidAudience("workspace"));
+        assertFalse(isValidAudience("public"));
     }
 }

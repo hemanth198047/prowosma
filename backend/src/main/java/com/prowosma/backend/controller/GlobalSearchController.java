@@ -75,8 +75,8 @@ public class GlobalSearchController {
         }
 
         // Docs — DocRepository has findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse
-        if (!visibility.isRestricted() && (type == null || "doc".equals(type))) {
-            docRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse(orgId, q).stream()
+        if (type == null || "doc".equals(type)) {
+            visibility.filterDocs(docRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse(orgId, q)).stream()
                 .limit(limit)
                 .forEach(d -> results.add(Map.of(
                     "id", d.getId(), "title", d.getTitle(),

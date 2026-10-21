@@ -27,6 +27,14 @@ public class Doc {
     // A-8: Document publishing
     // visibility: PRIVATE | TEAM | PUBLIC
     private String visibility = "PRIVATE";
+
+    // ── Department / sharing access (see access/AccessScope). Separate from `visibility`, which is about public publishing. ──
+    /** PRIVATE | DEPARTMENTS | WORKSPACE. Null on docs made before access control: seen only by their creator and people they are shared with. */
+    private String audience;
+    /** Ids of the DEPARTMENT groups the doc belongs to (used when audience is DEPARTMENTS). */
+    private List<String> departmentIds = new ArrayList<>();
+    /** People (emails) the doc is shared with individually. */
+    private List<String> sharedWith = new ArrayList<>();
     private String publishedSlug;     // URL slug when published publicly
 
     // A-12: Tagging & categorisation

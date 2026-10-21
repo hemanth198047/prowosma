@@ -38,6 +38,7 @@ public class AccessAdminService {
     private final BillingService billingService;
     private final ActivityLogService activityLogService;
     private final RealtimeService realtimeService;
+    private final DocRepository docRepository;
 
     private String org() {
         String id = workspaceContext.getWorkspaceId();
@@ -66,6 +67,8 @@ public class AccessAdminService {
         m.put("defaultAccessProfileId", c.getDefaultAccessProfileId());
         m.put("defaultProjectVisibility", c.getDefaultProjectVisibility());
         m.put("projectRoleSlots", c.getProjectRoleSlots());
+        m.put("docAccessMode", normalizeDocMode(c.getDocAccessMode()));
+        m.put("docAccessModes", ALL_DOC_MODES);
         m.put("scopes", ALL_MODES);
         m.put("visibilities", ALL_VISIBILITIES);
         m.put("capabilities", ALL_CAPABILITIES);
@@ -83,6 +86,7 @@ public class AccessAdminService {
             if (body.containsKey("defaultProjectVisibility")) {
                 c.setDefaultProjectVisibility(AccessValidation.visibility(str(body.get("defaultProjectVisibility"))));
             }
+            if (body.containsKey("docAccessMode")) c.setDocAccessMode(AccessValidation.docMode(str(body.get("docAccessMode"))));
         } catch (IllegalArgumentException e) { throw bad(e.getMessage()); }
         if (body.containsKey("defaultAccessProfileId")) {
             String pid = str(body.get("defaultAccessProfileId"));
@@ -109,6 +113,38 @@ public class AccessAdminService {
 
     private static List<WorkspaceConfig.RoleSlot> toSlots(List<Map<String, String>> raw) {
         return raw.stream().map(m -> { var s = new WorkspaceConfig.RoleSlot(); s.setKey(m.get("key")); s.setLabel(m.get("label")); return s; }).collect(Collectors.toList());
+    }
+
+    // ── documents made before access control ────────────────────────────────────
+
+    /**
+     * Documents created before access control have no audience, so only their creator (and people they were shared
+     * with) can see them once restrictions start. This gives all of them an audience in one step.
+     * @return how many documents were updated
+     */
+    public Map<String, Object> assignLegacyDocs(String audience, List<String> departmentIds) {
+        String org = org();
+        String aud;
+        try { aud = AccessValidation.audience(audience); } catch (IllegalArgumentException e) { throw bad(e.getMessage()); }
+        Set<String> known = groupRepository.findByOrganizationIdAndType(org, GROUP_DEPARTMENT).stream().map(UserGroup::getId).collect(Collectors.toSet());
+        List<String> depts = new ArrayList<>();
+        if (AUD_DEPARTMENTS.equals(aud)) {
+            for (String d : departmentIds == null ? List.<String>of() : departmentIds) if (known.contains(d) && !depts.contains(d)) depts.add(d);
+            if (depts.isEmpty()) throw bad("Choose at least one department.");
+        }
+        int n = 0;
+        for (Doc d : docRepository.findByWorkspaceIdAndDeletedFalse(org)) {
+            if (d.getAudience() != null && !d.getAudience().isBlank()) continue;
+            d.setAudience(aud);
+            d.setDepartmentIds(new ArrayList<>(depts));
+            d.setUpdatedAt(LocalDateTime.now());
+            docRepository.save(d);
+            n++;
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("updated", n);
+        out.put("audience", aud);
+        return out;
     }
 
     // ── profiles ────────────────────────────────────────────────────────────────
@@ -323,6 +359,11 @@ public class AccessAdminService {
             try { cfg.setDefaultProjectVisibility(AccessValidation.visibility(str(plan.get("defaultProjectVisibility")))); }
             catch (IllegalArgumentException e) { throw bad(e.getMessage()); }
             actions.add("New projects default to " + cfg.getDefaultProjectVisibility());
+        }
+        if (str(plan.get("docAccessMode")) != null) {
+            try { cfg.setDocAccessMode(AccessValidation.docMode(str(plan.get("docAccessMode")))); }
+            catch (IllegalArgumentException e) { throw bad(e.getMessage()); }
+            actions.add("Documents are shared: " + cfg.getDocAccessMode());
         }
         if (str(plan.get("defaultProfile")) != null) {
             String id = profileIds.get(norm(str(plan.get("defaultProfile"))));

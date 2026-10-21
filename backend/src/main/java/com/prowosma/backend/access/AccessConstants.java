@@ -43,6 +43,37 @@ public final class AccessConstants {
             CAP_CREATE_PROJECT, CAP_CREATE_TASK, CAP_ALLOCATE_TASKS,
             CAP_APPROVE, CAP_VIEW_FINANCIALS, CAP_USE_MEETING_ASSISTANT);
 
+    // ── Documents ───────────────────────────────────────────────────────────────
+    /** Creator and the people the doc is shared with. */
+    public static final String AUD_PRIVATE = "PRIVATE";
+    /** Members of the doc's departments (plus creator and anyone it is shared with, where sharing is on). */
+    public static final String AUD_DEPARTMENTS = "DEPARTMENTS";
+    /** Everyone in the workspace. Only unrestricted people can choose it. */
+    public static final String AUD_WORKSPACE = "WORKSPACE";
+    public static final List<String> ALL_AUDIENCES = List.of(AUD_PRIVATE, AUD_DEPARTMENTS, AUD_WORKSPACE);
+
+    /** Workspace setting: how documents are shared between people. */
+    public static final String DOC_MODE_DEPARTMENTS = "DEPARTMENTS";       // by department only
+    public static final String DOC_MODE_PRIVATE_SHARED = "PRIVATE_SHARED"; // creator + people it is shared with only
+    public static final String DOC_MODE_BOTH = "BOTH";                      // each doc chooses
+    public static final List<String> ALL_DOC_MODES = List.of(DOC_MODE_DEPARTMENTS, DOC_MODE_PRIVATE_SHARED, DOC_MODE_BOTH);
+
+    /** Null / blank means a legacy doc made before access control (no audience): only its creator and people it is shared with see it. Unknown values return null from {@link #isValidAudience}. */
+    public static String normalizeAudience(String a) {
+        if (a == null || a.isBlank()) return null;
+        String x = a.trim().toUpperCase(Locale.ROOT);
+        return ALL_AUDIENCES.contains(x) ? x : "?";
+    }
+
+    public static boolean isValidAudience(String a) { return a != null && ALL_AUDIENCES.contains(a.trim().toUpperCase(Locale.ROOT)); }
+
+    /** Unknown or missing mode falls back to BOTH (the most flexible, and still fail-closed for anything not explicitly shared). */
+    public static String normalizeDocMode(String m) {
+        if (m == null) return DOC_MODE_BOTH;
+        String x = m.trim().toUpperCase(Locale.ROOT);
+        return ALL_DOC_MODES.contains(x) ? x : DOC_MODE_BOTH;
+    }
+
     /** Group kinds. Only DEPARTMENT groups take part in access decisions. */
     public static final String GROUP_DEPARTMENT = "DEPARTMENT";
     public static final String GROUP_TEAM = "TEAM";

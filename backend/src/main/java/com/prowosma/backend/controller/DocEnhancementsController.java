@@ -17,10 +17,19 @@ public class DocEnhancementsController {
     private final DocRepository  docRepo;
     private final AIService      aiService;
     private final WorkspaceContext ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
+
+    /** The doc if the caller can see it, otherwise empty (answered as not found). */
+    private Optional<Doc> visibleDoc(String id) { return docRepo.findById(id).filter(visibility::canSeeDoc); }
+
+    /** The doc if the caller can change it; throws 403 if they can see it but not change it. */
+    private Optional<Doc> editableDoc(String id) {
+        return docRepo.findById(id).filter(visibility::canSeeDoc).map(d -> { visibility.requireCanEditDoc(d); return d; });
+    }
 
     @GetMapping("/{id}/comments")
     public List<Doc.InlineComment> getComments(@PathVariable String id) {
-        return docRepo.findById(id).map(d ->
+        return visibleDoc(id).map(d ->
             d.getInlineComments() != null ? d.getInlineComments() : List.<Doc.InlineComment>of()
         ).orElse(List.of());
     }
@@ -30,7 +39,7 @@ public class DocEnhancementsController {
                            @RequestBody Doc.InlineComment comment, Authentication auth) {
         comment.setAuthorEmail(auth.getName());
         comment.setCreatedAt(LocalDateTime.now());
-        return docRepo.findById(id).map(d -> {
+        return visibleDoc(id).map(d -> {
             if (d.getInlineComments() == null) d.setInlineComments(new ArrayList<>());
             d.getInlineComments().add(comment);
             return docRepo.save(d);
@@ -42,7 +51,7 @@ public class DocEnhancementsController {
                          @RequestBody Doc.InlineComment reply, Authentication auth) {
         reply.setAuthorEmail(auth.getName());
         reply.setCreatedAt(LocalDateTime.now());
-        return docRepo.findById(id).map(d -> {
+        return visibleDoc(id).map(d -> {
             if (d.getInlineComments() != null)
                 d.getInlineComments().stream().filter(c -> cid.equals(c.getId())).findFirst()
                     .ifPresent(c -> { if (c.getReplies()==null) c.setReplies(new ArrayList<>()); c.getReplies().add(reply); });
@@ -52,7 +61,7 @@ public class DocEnhancementsController {
 
     @PatchMapping("/{id}/comments/{cid}/resolve")
     public Doc resolveComment(@PathVariable String id, @PathVariable String cid) {
-        return docRepo.findById(id).map(d -> {
+        return visibleDoc(id).map(d -> {
             if (d.getInlineComments() != null)
                 d.getInlineComments().stream().filter(c -> cid.equals(c.getId())).findFirst()
                     .ifPresent(c -> c.setResolved(true));
@@ -62,7 +71,7 @@ public class DocEnhancementsController {
 
     @PatchMapping("/{id}/freshness")
     public Doc updateFreshness(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return docRepo.findById(id).map(d -> {
+        return editableDoc(id).map(d -> {
             if (body.containsKey("reviewAt"))
                 try { d.setReviewAt(LocalDateTime.parse((String)body.get("reviewAt"))); } catch (Exception ignored) {}
             if (body.containsKey("stale")) d.setStale((Boolean)body.get("stale"));
@@ -83,8 +92,8 @@ public class DocEnhancementsController {
 
     @PostMapping("/{id}/auto-link")
     public ResponseEntity<Map<String, Object>> autoLink(@PathVariable String id) {
-        Doc doc = docRepo.findById(id).orElseThrow();
-        List<Doc> allDocs = docRepo.findByWorkspaceIdAndDeletedFalse(ws.getWorkspaceId()).stream().limit(2000).toList(); // [PAGINATION-FIX]
+        Doc doc = visibleDoc(id).orElseThrow();
+        List<Doc> allDocs = visibility.filterDocs(docRepo.findByWorkspaceIdAndDeletedFalse(ws.getWorkspaceId())).stream().limit(2000).toList(); // [PAGINATION-FIX]
         String[] words = doc.getTitle().toLowerCase().split("\\s+");
         List<String> related = allDocs.stream()
             .filter(d -> !d.getId().equals(id))

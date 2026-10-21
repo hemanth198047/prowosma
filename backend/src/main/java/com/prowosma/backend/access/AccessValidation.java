@@ -65,6 +65,17 @@ public final class AccessValidation {
         return out;
     }
 
+    public static String docMode(String raw) {
+        String m = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
+        if (!ALL_DOC_MODES.contains(m)) throw new IllegalArgumentException("Document sharing must be one of " + ALL_DOC_MODES + ".");
+        return m;
+    }
+
+    public static String audience(String raw) {
+        if (!isValidAudience(raw)) throw new IllegalArgumentException("Audience must be one of " + ALL_AUDIENCES + ".");
+        return raw.trim().toUpperCase(Locale.ROOT);
+    }
+
     public static String visibility(String raw) {
         String v = normalizeVisibility(raw);
         if (v == null) throw new IllegalArgumentException("Visibility must be one of " + ALL_VISIBILITIES + ".");

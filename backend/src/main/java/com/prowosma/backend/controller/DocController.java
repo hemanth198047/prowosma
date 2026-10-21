@@ -192,6 +192,36 @@ public class DocController {
                 .orElse(ResponseEntity.<Map<String, Object>>notFound().build());
     }
 
+    // ── PUT /api/docs/{id}/access ─────────────────────────────
+    /** Who can see the doc: audience (PRIVATE | DEPARTMENTS | WORKSPACE), departmentIds, sharedWith (emails). Omitted = unchanged. */
+    @PutMapping("/{id}/access")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map<String, Object>> updateAccess(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        return docService.updateAccess(id, (String) body.get("audience"),
+                        (List<String>) body.get("departmentIds"), (List<String>) body.get("sharedWith"))
+                .map(doc -> {
+                    Map<String, Object> out = new java.util.HashMap<>();
+                    out.put("data", doc);
+                    return ResponseEntity.<Map<String, Object>>ok(out);
+                })
+                .orElse(ResponseEntity.<Map<String, Object>>notFound().build());
+    }
+
+    // ── PUT /api/docs/{id}/access ─────────────────────────────
+    /** Who can see the doc: audience (PRIVATE | DEPARTMENTS | WORKSPACE), departmentIds, sharedWith (emails). Omitted = unchanged. */
+    @PutMapping("/{id}/access")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map<String, Object>> updateAccess(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        return docService.updateAccess(id, (String) body.get("audience"),
+                        (List<String>) body.get("departmentIds"), (List<String>) body.get("sharedWith"))
+                .map(doc -> {
+                    Map<String, Object> out = new java.util.HashMap<>();
+                    out.put("data", doc);
+                    return ResponseEntity.<Map<String, Object>>ok(out);
+                })
+                .orElse(ResponseEntity.<Map<String, Object>>notFound().build());
+    }
+
     // ── A-8: PATCH /api/docs/{id}/publish ────────────────────
     @PatchMapping("/{id}/publish")
     @Operation(summary = "Set doc visibility: PRIVATE | TEAM | PUBLIC")

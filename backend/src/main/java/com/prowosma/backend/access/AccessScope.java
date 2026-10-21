@@ -29,9 +29,15 @@ public final class AccessScope {
     private final boolean departmentAdmin;
     private final Set<String> capabilities;
     private final String profileName;
+    private final String docMode;
 
     private AccessScope(boolean enforced, String email, String memberId, String mode, Set<String> departmentIds,
                         boolean departmentAdmin, Set<String> capabilities, String profileName) {
+        this(enforced, email, memberId, mode, departmentIds, departmentAdmin, capabilities, profileName, DOC_MODE_BOTH);
+    }
+
+    private AccessScope(boolean enforced, String email, String memberId, String mode, Set<String> departmentIds,
+                        boolean departmentAdmin, Set<String> capabilities, String profileName, String docMode) {
         this.enforced = enforced;
         this.email = norm(email);
         this.memberId = memberId;
@@ -40,7 +46,16 @@ public final class AccessScope {
         this.departmentAdmin = departmentAdmin;
         this.capabilities = capabilities;
         this.profileName = profileName;
+        this.docMode = normalizeDocMode(docMode);
     }
+
+    /** The same scope under the workspace's document-sharing setting. */
+    public AccessScope withDocMode(String docMode) {
+        if (!enforced) return this;
+        return new AccessScope(true, email, memberId, mode, departmentIds, departmentAdmin, capabilities, profileName, docMode);
+    }
+
+    public String docMode() { return docMode; }
 
     public static AccessScope unrestricted() { return UNRESTRICTED; }
 
@@ -139,4 +154,53 @@ public final class AccessScope {
         if (requested != null) for (String d : requested) if (departmentIds.contains(d)) out.add(d);
         return out;
     }
+
+    // ── documents ───────────────────────────────────────────────────────────────
+
+    private boolean docSharingOn() { return !DOC_MODE_DEPARTMENTS.equals(docMode); }
+    private boolean docDepartmentsOn() { return !DOC_MODE_PRIVATE_SHARED.equals(docMode); }
+
+    /**
+     * Who sees a document. Always: its creator. Then, depending on the workspace's document setting:
+     * people it is shared with (not in "departments only"), members of its departments when its audience is
+     * DEPARTMENTS (not in "creator and shared only"), a department admin of those departments, and everyone
+     * when the audience was explicitly set to WORKSPACE. A legacy doc (no audience) is seen by its creator and
+     * people it is shared with only. An unrecognised audience matches nothing.
+     */
+    public boolean canSeeDoc(DocFacts d) {
+        if (!isRestricted()) return true;
+        if (d == null) return false;
+        if (!email.isEmpty() && email.equals(d.creatorEmail())) return true;
+        if (docSharingOn() && !email.isEmpty() && d.sharedWith().contains(email)) return true;
+        if (AUD_WORKSPACE.equals(d.audience())) return true;
+        if (AUD_DEPARTMENTS.equals(d.audience()) && docDepartmentsOn()) return intersects(departmentIds, d.departmentIds());
+        return false;
+    }
+
+    /** Change who sees the doc, delete it, publish it: its creator, or an admin of one of its departments. */
+    public boolean canManageDoc(DocFacts d) {
+        if (!isRestricted()) return true;
+        if (d == null) return false;
+        if (!email.isEmpty() && email.equals(d.creatorEmail())) return true;
+        return departmentAdmin && docDepartmentsOn() && AUD_DEPARTMENTS.equals(d.audience()) && intersects(departmentIds, d.departmentIds());
+    }
+
+    /** Edit the content: anyone who can see it, except a workspace-wide doc is edited by its creator and managers only. */
+    public boolean canEditDoc(DocFacts d) {
+        if (!isRestricted()) return true;
+        if (!canSeeDoc(d)) return false;
+        if (AUD_WORKSPACE.equals(d.audience())) return canManageDoc(d);
+        return true;
+    }
+
+    /** Which audience a caller may put on a doc they create or manage. */
+    public boolean mayUseAudience(String audience) {
+        if (!isRestricted()) return true;
+        if (AUD_WORKSPACE.equals(audience)) return false;       // workspace-wide sharing is for unrestricted people
+        if (AUD_DEPARTMENTS.equals(audience)) return docDepartmentsOn();
+        return AUD_PRIVATE.equals(audience);
+    }
+
+    /** Whether per-person sharing is honoured under the workspace's setting. */
+    public boolean sharingEnabled() { return !isRestricted() || docSharingOn(); }
 }

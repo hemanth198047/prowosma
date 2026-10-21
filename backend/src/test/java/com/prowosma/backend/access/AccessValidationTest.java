@@ -46,4 +46,14 @@ class AccessValidationTest {
         assertFalse(AccessValidation.departmentAdmin(true, "ASSIGNED_ONLY"));
         assertFalse(AccessValidation.departmentAdmin(true, "ALL"));
     }
+
+    @Test void docModeAndAudienceAreChecked() {
+        assertEquals("BOTH", AccessValidation.docMode("both"));
+        assertEquals("PRIVATE_SHARED", AccessValidation.docMode(" private_shared "));
+        rejects(() -> AccessValidation.docMode("everyone"));
+        rejects(() -> AccessValidation.docMode(null));
+        assertEquals("DEPARTMENTS", AccessValidation.audience("departments"));
+        rejects(() -> AccessValidation.audience("PUBLIC"));
+        rejects(() -> AccessValidation.audience(null));
+    }
 }

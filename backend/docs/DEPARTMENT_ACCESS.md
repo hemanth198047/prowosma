@@ -35,13 +35,29 @@ The workspace owner is never restricted. Rules live in `access/AccessScope.java`
 * **Fireflies:** a restricted person can send the notetaker to their own meeting. "Load my recent Fireflies meetings" and "Import" list the whole company's Fireflies account, so they stay owner/admin only.
 * **Watchers:** adding someone as a watcher lets them see the task, so a restricted person can only watch tasks themselves unless they have `ALLOCATE_TASKS`.
 
-**Default-deny gate** (`access/AccessGatePolicy.java`): restricted people reach only `/api/projects`, `/api/tasks`, `/api/notifications` (except announce), `/api/dashboard/summary`, `/api/search`, `/api/gantt` (reads, plus moving a task's dates), `/api/activity-logs` (reads, except export, integrity check and summary), `/api/meeting-assistant` (with the capability, except the Fireflies account list and import), `/api/team`, `/api/categories` and `/api/custom-fields` (reads), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else returns 403 `ACCESS_RESTRICTED`. Add an area to the allowlist only after scoping it, with a test.
+**Default-deny gate** (`access/AccessGatePolicy.java`): restricted people reach only `/api/projects`, `/api/tasks`, `/api/docs`, `/api/notifications` (except announce), `/api/dashboard/summary`, `/api/search`, `/api/gantt` (reads, plus moving a task's dates), `/api/activity-logs` (reads, except export, integrity check and summary), `/api/meeting-assistant` (with the capability, except the Fireflies account list and import), `/api/team`, `/api/categories` and `/api/custom-fields` (reads), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else returns 403 `ACCESS_RESTRICTED`. Add an area to the allowlist only after scoping it, with a test.
 
 Project budgets, spend and revenue are removed from responses unless the profile has `VIEW_FINANCIALS`.
 
 While access control is on, workspace live events carry no titles or names (a "something changed" ping), for everyone in the workspace.
 
-**Still closed to restricted people** (scoping each needs its own design): docs, goals, sprints, KPIs, reports, analytics, portfolio and ROI views, decisions, the older Meetings area, channels, automations, integrations, AI features, import/export, time tracking.
+**Documents** follow a workspace setting (Access Control → Overview → *How documents are shared*):
+
+| Setting | Who sees a document |
+|---|---|
+| `BOTH` (default) | Each document chooses: **departments** (members of its departments, plus its creator and people it is shared with) or **private** (its creator and people it is shared with). |
+| `DEPARTMENTS` | By department only. Per-person sharing isn't offered or honoured. |
+| `PRIVATE_SHARED` | Only the creator and the people the document is shared with. Departments aren't offered or honoured. |
+
+A document's creator always sees and manages it. A department admin manages documents of their departments. Only unrestricted people (the owner, an ALL-scope profile) can make a document visible to the **whole workspace**; once someone has, everyone can read it but only its creator or a manager can edit it. A person who can see a document can edit it, comment, view its history and join its live editing; only the creator or a manager can change who sees it, delete it, publish it or delete versions.
+
+Applies to: the document list, search, recent and favourites, opening, editing, moving, duplicating, comments, version history, publishing, tags, and the live collaboration socket (checked on subscribe and on every edit, with short-lived caching so revoking access takes effect within about 30 seconds).
+
+**Documents that existed before access control** have no audience, so once people are restricted only their creator (and anyone they were shared with) sees them. Access Control → Overview → *Documents made before access control* gives all of them an audience in one step (departments, whole workspace, or creators only). Documents created while access control is off are treated the same way.
+
+Also fixed for everyone: the docs list, search, recent and favourites took the workspace from the URL instead of the verified request, and a new document could name another workspace in its body. Both now use the verified workspace.
+
+**Still closed to restricted people** (scoping each needs its own design): goals, sprints, KPIs, reports, analytics, portfolio and ROI views, decisions, the older Meetings area, channels, automations, integrations, AI features, import/export, time tracking.
 
 ## Setting up a company
 
@@ -74,7 +90,8 @@ Org setup never creates admins; make those by hand.
 
 ## Known limits
 
-* Docs have no department concept and no enforcement today (even "private" docs are workspace-wide), so they stay closed to restricted people until docs get their own visibility design. Docs that must stay confidential should not be kept in a workspace where unrestricted members can open them.
+* Unrestricted members (including legacy members with no profile) see every document. Keep genuinely confidential material (HR, pay) in a separate workspace.
+* A document's child pages are checked one by one; a visible page under a hidden parent shows at the top level.
 * Task attachment downloads are by unguessable file name and are not checked against the task.
 * API-key callers are not restricted.
 * The legacy `/api/user-groups` API lets any non-viewer edit groups; department membership should be managed through Access Control.
