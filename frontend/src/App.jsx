@@ -270,6 +270,7 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
           <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
           <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
+          <NavLink to="/docs" onClick={onNav}>📄 Docs</NavLink>
           {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
           <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
         </div>

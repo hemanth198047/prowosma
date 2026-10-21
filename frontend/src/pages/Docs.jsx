@@ -7,6 +7,8 @@ import { getDecisionsByDoc } from "../api/decisions";
 import { getTasks } from "../api/tasks";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../components/ToastContext";
+import DocAccessModal from "../components/DocAccessModal";
+import { useAccess } from "../hooks/useAccess";
 
 import "../styles/pages/docs.css";
 // ═══════════════════════════════════════════════════════
@@ -1875,6 +1877,8 @@ export default function Docs() {
   const [showVersions, setShowVersions] = useState(false);
   const [docDecisions, setDocDecisions]   = useState([]);
   const [showPublish, setShowPublish]   = useState(false);
+  const [showDocAccess, setShowDocAccess] = useState(false);
+  const { enabled: accessEnabled } = useAccess();
   const [showTagPanel, setShowTagPanel] = useState(false);
   const [showSlashLegend, setShowSlashLegend] = useState(false);
 
@@ -2263,6 +2267,12 @@ export default function Docs() {
                       Live
                     </div>
                   )}
+                  {/* Who can see this doc (departments / sharing), shown once access control is on */}
+                  {accessEnabled && activeDoc && activeDoc.id !== "__demo__" && (
+                    <button className="docs-history-btn" onClick={() => setShowDocAccess(true)} title="Who can see this document">
+                      👥 Access
+                    </button>
+                  )}
                   {/* A-8: Publish toggle */}
                   <button className={`docs-history-btn${activeDoc?.visibility === "PUBLIC" ? " docs-btn-published" : ""}`}
                     onClick={() => setShowPublish(v => !v)} title="Publish settings">
@@ -2354,6 +2364,17 @@ export default function Docs() {
               </div>{/* /docs-blocks-wrap */}
               </div>{/* /docs-editor-body */}
 
+              {showDocAccess && activeDoc && (
+                <DocAccessModal
+                  doc={activeDoc}
+                  onClose={() => setShowDocAccess(false)}
+                  onSaved={(d) => {
+                    if (!d) return;
+                    setAllDocs(prev => prev.map(x => x.id === d.id ? { ...x, audience: d.audience, departmentIds: d.departmentIds, sharedWith: d.sharedWith } : x));
+                    setActiveDoc(x => x ? { ...x, audience: d.audience, departmentIds: d.departmentIds, sharedWith: d.sharedWith } : x);
+                  }}
+                />
+              )}
               {/* A-8: Publish panel */}
               {showPublish && (
                 <div className="doc-publish-panel">

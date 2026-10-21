@@ -23,6 +23,9 @@ export const deleteDepartment = (id) => client.delete(`/admin/access/departments
 export const getAccessMembers = () => client.get("/admin/access/members", { _noCache: true });
 export const updateAccessMember = (id, body) => client.put(`/admin/access/members/${id}`, body);
 
+// Give every document made before access control an audience (admin).
+export const assignLegacyDocs = (audience, departmentIds = []) => client.post("/admin/access/docs/legacy", { audience, departmentIds });
+
 export const runOrgSetup = (plan, { dryRun = true, sendInvitations = false } = {}) =>
   client.post(`/admin/access/org-setup?dryRun=${dryRun}&sendInvitations=${sendInvitations}`, plan);
 

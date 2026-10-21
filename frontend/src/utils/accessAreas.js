@@ -5,7 +5,7 @@
  */
 export const RESTRICTED_LANDING = "/tasks";
 
-const ALLOWED_PREFIXES = ["/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/search", "/team", "/profile"];
+const ALLOWED_PREFIXES = ["/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/search", "/team", "/profile"];
 // Needs the USE_MEETING_ASSISTANT capability on the person's access profile.
 const MEETING_PREFIX = "/meeting-assistant";
 

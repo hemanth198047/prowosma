@@ -8,7 +8,7 @@ import {
   getAccessSettings, updateAccessSettings,
   getAccessProfiles, createAccessProfile, updateAccessProfile, deleteAccessProfile,
   getDepartments, createDepartment, updateDepartment, setDepartmentMembers, deleteDepartment,
-  getAccessMembers, updateAccessMember, runOrgSetup,
+  getAccessMembers, updateAccessMember, runOrgSetup, assignLegacyDocs,
 } from "../api/access";
 
 const unwrap = (res) => (Array.isArray(res?.data) ? res.data : res?.data?.content || []);
@@ -23,6 +23,11 @@ const VISIBILITY_LABELS = {
   DEPARTMENTS: "Selected departments",
   MEMBERS_ONLY: "Named people only",
 };
+const DOC_MODE_LABELS = {
+  BOTH: "Both — each document chooses: departments, or only the people it is shared with",
+  DEPARTMENTS: "By department only",
+  PRIVATE_SHARED: "Only the creator and the people a document is shared with",
+};
 const CAPABILITY_LABELS = {
   CREATE_PROJECT: "Create projects",
   CREATE_TASK: "Create tasks",
@@ -33,7 +38,51 @@ const CAPABILITY_LABELS = {
 };
 
 /* ── Overview: switch, defaults, project roles ─────────────────────────── */
-function OverviewTab({ settings, profiles, reload, notify }) {
+function LegacyDocsCard({ departments, notify }) {
+  const [audience, setAudience] = useState("DEPARTMENTS");
+  const [ids, setIds] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const apply = async () => {
+    setBusy(true);
+    try {
+      const res = await assignLegacyDocs(audience, audience === "DEPARTMENTS" ? ids : []);
+      notify(`${res.data?.updated ?? 0} document(s) updated`, "success");
+    } catch (e) { notify(apiErrorMessage(e, "Could not update the documents"), "error"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <section aria-label="Documents made before access control" className="card" style={{ marginTop: 20, padding: 12 }}>
+      <h2 style={{ marginTop: 0, fontSize: "1.1em" }}>Documents made before access control</h2>
+      <p style={{ opacity: 0.75 }}>
+        Until a document has an audience, only its creator (and people it's shared with) can see it once people are restricted.
+        Give all such documents an audience in one step; anything that already has one is left alone.
+      </p>
+      <div className="form-group">
+        <label htmlFor="ac-legacy-aud">Make them visible to</label>
+        <select id="ac-legacy-aud" value={audience} onChange={(e) => setAudience(e.target.value)}>
+          <option value="DEPARTMENTS">Selected departments</option>
+          <option value="WORKSPACE">Everyone in the workspace</option>
+          <option value="PRIVATE">Only their creators</option>
+        </select>
+      </div>
+      {audience === "DEPARTMENTS" && (
+        <fieldset className="form-group" style={{ border: 0, padding: 0 }}>
+          <legend>Departments</legend>
+          {departments.map((d) => (
+            <label key={d.id} style={{ display: "inline-block", marginRight: 12 }}>
+              <input type="checkbox" checked={ids.includes(d.id)} onChange={() => setIds((x) => (x.includes(d.id) ? x.filter((y) => y !== d.id) : [...x, d.id]))} /> {d.name}
+            </label>
+          ))}
+          {departments.length === 0 && <span style={{ opacity: 0.7 }}>Create departments first.</span>}
+        </fieldset>
+      )}
+      <button className="btn-secondary" onClick={apply} disabled={busy || (audience === "DEPARTMENTS" && ids.length === 0)}>{busy ? "Updating…" : "Apply to older documents"}</button>
+    </section>
+  );
+}
+
+function OverviewTab({ settings, profiles, departments, reload, notify }) {
+  const [docMode, setDocMode] = useState(settings.docAccessMode || "BOTH");
   const [enabled, setEnabled] = useState(!!settings.accessControlEnabled);
   const [defaultProfile, setDefaultProfile] = useState(settings.defaultAccessProfileId || "");
   const [visibility, setVisibility] = useState(settings.defaultProjectVisibility || "WORKSPACE");
@@ -48,6 +97,7 @@ function OverviewTab({ settings, profiles, reload, notify }) {
         accessControlEnabled: enabled,
         defaultAccessProfileId: defaultProfile || null,
         defaultProjectVisibility: visibility,
+        docAccessMode: docMode,
         projectRoleSlots: slots.filter((s) => s.label.trim()).map((s) => ({ key: s.key || "", label: s.label.trim() })),
       });
       setWarnings(res.data?.warnings || []);
@@ -88,6 +138,14 @@ function OverviewTab({ settings, profiles, reload, notify }) {
       </div>
 
       <div className="form-group">
+        <label htmlFor="ac-doc-mode">How documents are shared</label>
+        <select id="ac-doc-mode" value={docMode} onChange={(e) => setDocMode(e.target.value)}>
+          {Object.entries(DOC_MODE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <p style={{ opacity: 0.75, margin: "4px 0 0" }}>Decides what people can choose when they share a document, and what is honoured. A workspace owner or unrestricted admin sees every document either way.</p>
+      </div>
+
+      <div className="form-group">
         <span id="ac-slots-label">Project responsibilities</span>
         <p style={{ opacity: 0.75, margin: "4px 0" }}>The named roles every project can assign to a person (for example Creative Lead). Define what fits your business.</p>
         {slots.map((s, i) => (
@@ -104,6 +162,7 @@ function OverviewTab({ settings, profiles, reload, notify }) {
 
       {warnings.map((w) => <p key={w} role="status" style={{ color: "var(--warning)" }}>⚠️ {w}</p>)}
       <button className="btn-primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save settings"}</button>
+      <LegacyDocsCard departments={departments} notify={notify} />
     </section>
   );
 }
@@ -429,7 +488,7 @@ export default function AccessControl() {
             ))}
           </div>
           <div role="tabpanel" id={`ac-panel-${tab}`} aria-labelledby={`ac-tab-${tab}`}>
-            {tab === "overview" && <OverviewTab key={overviewKey} settings={data.settings} profiles={data.profiles} reload={load} notify={notify} />}
+            {tab === "overview" && <OverviewTab key={overviewKey} settings={data.settings} profiles={data.profiles} departments={data.departments} reload={load} notify={notify} />}
             {tab === "profiles" && <ProfilesTab profiles={data.profiles} settings={data.settings} reload={load} notify={notify} />}
             {tab === "departments" && <DepartmentsTab departments={data.departments} members={data.members} reload={load} notify={notify} />}
             {tab === "people" && <PeopleTab members={data.members} profiles={data.profiles} departments={data.departments} reload={load} notify={notify} />}

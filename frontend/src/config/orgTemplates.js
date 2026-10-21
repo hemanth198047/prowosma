@@ -16,6 +16,7 @@ export const EXAMPLE_ORG_SETUP = {
     { key: "CLIENT_OWNER", label: "Client owner" },
     { key: "DELIVERY_LEAD", label: "Delivery lead" },
   ],
+  docAccessMode: "BOTH",
   defaultProfile: "Assigned Work Only",
   defaultProjectVisibility: "DEPARTMENTS",
   members: [

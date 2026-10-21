@@ -3,12 +3,12 @@ import { isPathAllowedForRestricted, RESTRICTED_LANDING } from "../../utils/acce
 
 describe("isPathAllowedForRestricted", () => {
   it("allows the scoped areas and their sub-pages", () => {
-    for (const p of ["/tasks", "/kanban", "/calendar", "/gantt", "/search", "/projects", "/projects/p1", "/team", "/profile"]) {
+    for (const p of ["/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/docs/abc", "/search", "/projects", "/projects/p1", "/team", "/profile"]) {
       expect(isPathAllowedForRestricted(p)).toBe(true);
     }
   });
   it("refuses everything not yet scoped", () => {
-    for (const p of ["/", "/dashboard", "/reports", "/docs", "/goals", "/analytics", "/admin", "/access-control", "/tasksX", "/projects-archive", "/meetings"]) {
+    for (const p of ["/", "/dashboard", "/reports", "/goals", "/analytics", "/admin", "/access-control", "/tasksX", "/projects-archive", "/meetings"]) {
       expect(isPathAllowedForRestricted(p)).toBe(false);
     }
   });

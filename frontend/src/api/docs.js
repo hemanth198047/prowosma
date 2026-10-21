@@ -13,6 +13,8 @@ export const toggleFavorite = (id)           => client.post(`/docs/${id}/favorit
 export const getFavorites   = (wsId)         => client.get(`/docs/favorites?workspaceId=${wsId}`);
 export const getDocVersions = (id)           => client.get(`/docs/${id}/versions`);
 export const restoreVersion = (id, ver)      => client.post(`/docs/${id}/versions/${ver}/restore`);
+// Who can see the doc: audience (PRIVATE | DEPARTMENTS | WORKSPACE), departmentIds, sharedWith (emails)
+export const updateDocAccess = (id, body) => client.put(`/docs/${id}/access`, body);
 // A-8: Publishing
 export const setDocVisibility = (id, visibility) => client.patch(`/docs/${id}/publish`, { visibility });
 // A-12: Tags & category
