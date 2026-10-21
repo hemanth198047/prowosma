@@ -23,6 +23,8 @@ import EntityActivityTab from "../components/EntityActivityTab";
 import { useAuth } from "../hooks/useAuth";
 import { getMeetingsForProject } from "../api/meetings";
 import { apiErrorMessage } from "../utils/apiError";
+import { useAccess } from "../hooks/useAccess";
+import ProjectAccessModal from "../components/ProjectAccessModal";
 
 const COLORS = [
   "var(--brand-500)",
@@ -702,6 +704,8 @@ function ProjectCard({
   const [expanded, setExpanded] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
+  const [showAccess, setShowAccess] = useState(false);
+  const { enabled: accessEnabled } = useAccess();
 
   return (
     <div
@@ -757,6 +761,9 @@ function ProjectCard({
               🎯 Linked to goal
             </div>
           )}
+          {showAccess && (
+            <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
+          )}
           <p className="project-desc">{p.description}</p>
           <div className="progress-bar">
             <div
@@ -778,6 +785,16 @@ function ProjectCard({
                 >
                   ✏️
                 </button>
+                {accessEnabled && (
+                  <button
+                    className="btn-icon"
+                    onClick={(e) => { e.stopPropagation(); setShowAccess(true); }}
+                    title="Who can see this project"
+                    aria-label={`Access for ${p.name}`}
+                  >
+                    🔐
+                  </button>
+                )}
                 <button className="btn-icon" title="Clone project"
                   onClick={async(e)=>{ e.stopPropagation();
                     const name = prompt("Name for the cloned project:", p.name+" (Copy)");
@@ -891,7 +908,7 @@ export default function Projects() {
     const [projRes, catRes, goalRes] = await Promise.all([
       getProjects({ size: 200 }),
       getCategories(),
-      getGoals(),
+      getGoals().catch(() => ({ data: [] })),   // department access has no goals area
     ]);
     setProjects(unwrapList(projRes));
     setCategories(unwrapList(catRes));
@@ -922,7 +939,7 @@ export default function Projects() {
       const [projRes, catRes, goalRes] = await Promise.all([
         getProjects({ size: 200 }),
         getCategories({ size: 200 }),
-        getGoals(),
+        getGoals().catch(() => ({ data: [] })),   // department access has no goals area
       ]);
       const allProjects = unwrapList(projRes);
       setProjects(allProjects);

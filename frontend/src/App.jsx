@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink, Link, Navigate, useLocation } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 const Tasks = lazy(() => import("./pages/Tasks"));
@@ -61,6 +61,7 @@ const MeetingPlatforms = lazy(() => import("./pages/MeetingPlatforms"));
 const GoogleMeetCallback = lazy(() => import("./pages/GoogleMeetCallback"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 const AISettings = lazy(() => import("./pages/AISettings"));
+const AccessControl = lazy(() => import("./pages/AccessControl"));
 // ThemeSwitcher (named color themes), FontSwitcher, and DesignSwitcher (50
 // built-in skins + a custom color-picker) removed — a product with a fixed,
 // deliberate visual identity doesn't let every viewer swap it out at
@@ -87,6 +88,9 @@ import { useRole } from "./hooks/useRole";
 import AcceptInvite from "./pages/AcceptInvite";
 import Auth0Callback from "./pages/Auth0Callback";
 import { RoleProvider } from "./context/RoleContext.jsx";
+import { AccessProvider } from "./context/AccessContext.jsx";
+import { useAccess } from "./hooks/useAccess";
+import { isPathAllowedForRestricted, RESTRICTED_LANDING } from "./utils/accessAreas";
 import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 const Docs = lazy(() => import("./pages/Docs"));
@@ -223,11 +227,13 @@ export default function App() {
       <GlobalLoadingBar />
       <AuthProvider>
         <RoleProvider>
+          <AccessProvider>
           <ToastProvider>
           <ConfirmProvider>
             <AppShell />
           </ConfirmProvider>
           </ToastProvider>
+          </AccessProvider>
         </RoleProvider>
       </AuthProvider>
     </BrowserRouter>
@@ -252,6 +258,24 @@ function SidebarGroup({ label, icon, children, defaultOpen = true }) {
 
 // ── Main sidebar navigation ───────────────────────────────────
 function SidebarNav({ onNav, badges }) {
+  const { restricted } = useAccess();
+  if (restricted) {
+    // Department / assigned-work access: only the areas that are scoped to them. The API refuses the rest.
+    return (
+      <>
+        <WorkspaceSwitcher />
+        <div className="sidebar-quicklinks">
+          <NavLink to="/tasks" onClick={onNav}>✅ My Tasks</NavLink>
+          <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
+          <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
+        </div>
+        <div style={{ flex: 1 }} />
+        <div className="sidebar-bottom-links">
+          <NavLink to="/profile" onClick={onNav}>👤 Profile</NavLink>
+        </div>
+      </>
+    );
+  }
   return (
     <>
       <WorkspaceSwitcher />
@@ -328,6 +352,7 @@ function SidebarNav({ onNav, badges }) {
         </CanDo>
         <CanDo action="adminOnly">
           <NavLink to="/admin"     onClick={onNav}>🛡 Admin Centre</NavLink>
+          <NavLink to="/access-control" onClick={onNav}>🔐 Access Control</NavLink>
         </CanDo>
         <NavLink to="/white-label" onClick={onNav}>🎨 White-label</NavLink>
         <NavLink to="/jira-board/settings" onClick={onNav}>⚙️ Jira Settings</NavLink>
@@ -361,6 +386,7 @@ function AppShell() {
   }, []);
 
   const { user } = useAuth();
+  const { restricted, loading: accessLoading } = useAccess();
 
   // Pages that render full-screen OUTSIDE the app shell: no sidebar/topbar,
   // and — just as important — none of the shell's authenticated background
@@ -424,7 +450,8 @@ function AppShell() {
   useEffect(() => {
     // Signed out, or on a public full-screen page: there is nothing to badge,
     // and an unauthenticated call here 401s (see isStandalonePage above).
-    if (!user || isStandalonePage) return;
+    // A restricted person (department access) has no dashboard summary to badge: the API refuses it.
+    if (!user || isStandalonePage || accessLoading || restricted) return;
     const fetchBadges = async () => {
       try {
         const res = await getDashboardSummary();
@@ -441,7 +468,7 @@ function AppShell() {
     fetchBadges();
     const interval = setInterval(fetchBadges, 60000);
     return () => clearInterval(interval);
-  }, [user, isStandalonePage]);
+  }, [user, isStandalonePage, accessLoading, restricted]);
 
   const isDashboard   = location.pathname === "/" || location.pathname === "/dashboard";
   const isDocs        = location.pathname.startsWith("/docs");
@@ -542,18 +569,18 @@ function AppShell() {
                 </div>
                 {/* Centre: search */}
                 <div className="topbar-search-wrap">
-                  <Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
+                  {!restricted && (<Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <span className="topbar-search-placeholder">Search anything…</span>
                     <span className="topbar-search-kbd">⌘K</span>
-                  </Link>
+                  </Link>)}
                 </div>
                 {/* Right cluster */}
                 <div className="topbar-right-cluster">
                   <LiveClock />
                   <ConnectionStatus />
-                  <AIStatus />
-                  <NotificationBell />
+                  {!restricted && <AIStatus />}
+                  {!restricted && <NotificationBell />}
                   <HelpGuide />
                   <ThemeToggle />
                   <div className="topbar-divider-v" />
@@ -562,11 +589,11 @@ function AppShell() {
                   <UserMenu />
                 </div>
               </div>}
-              <ChatBot />
-              <LiveActivityFeed />
+              {!restricted && <ChatBot />}
+              {!restricted && <LiveActivityFeed />}
               <PWAInstallBanner />
               <OnboardingChecklist />
-              {showPalette && (
+              {showPalette && !restricted && (
                 <CommandPalette
                   onClose={() => setShowPalette(false)}
                   onAction={(action) => {
@@ -582,6 +609,13 @@ function AppShell() {
               <main className={`main-content${isDocs ? " no-padding" : isDashboard ? " no-padding db-shell" : " page-scrollable"}`}>
                 <Breadcrumb />
                 <Suspense fallback={<PageSkeleton />}>
+              {restricted && location.pathname !== "/" && !isPathAllowedForRestricted(location.pathname) ? (
+                <div className="empty-state" role="status">
+                  <h2>Not part of your access</h2>
+                  <p>This area isn't available with your current access level. You can use your tasks, the projects you're on, and the member list.</p>
+                  <Link to={RESTRICTED_LANDING}>Go to my tasks</Link>
+                </div>
+              ) : (
               <Routes>
                   <Route path="/docs" element={<ProtectedRoute><Docs /></ProtectedRoute>} />
                   <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
@@ -593,7 +627,7 @@ function AppShell() {
                     path="/"
                     element={
                       <ProtectedRoute>
-                        <Dashboard />
+                        {restricted ? <Navigate to={RESTRICTED_LANDING} replace /> : <Dashboard />}
                       </ProtectedRoute>
                     }
                   />
@@ -694,6 +728,7 @@ function AppShell() {
                     }
                   />
                   <Route path="/admin" element={<ProtectedRoute adminOnly><AdminCenter /></ProtectedRoute>} />
+                  <Route path="/access-control" element={<ProtectedRoute adminOnly><AccessControl /></ProtectedRoute>} />
                   <Route path="/licensing"   element={<ProtectedRoute><Licensing /></ProtectedRoute>} />
                   <Route path="/white-label" element={<ProtectedRoute><WhiteLabel /></ProtectedRoute>} />
                   <Route path="/executive" element={<ProtectedRoute><ExecutiveDashboard /></ProtectedRoute>} />
@@ -839,6 +874,7 @@ function AppShell() {
                     }
                   />
                 </Routes>
+              )}
               </Suspense>
               </main>
             </div>
