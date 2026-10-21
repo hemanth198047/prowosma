@@ -197,3 +197,8 @@ tasks.named('jar') {
 }
 
 // Apache POI for Excel import/export (added for ImportExport feature)
+
+// Show every deprecated / unchecked API use (not just a one-line note), so they can be found and removed.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
+}

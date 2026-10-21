@@ -253,17 +253,17 @@ public class InvitationService {
     /** Applies the profile / designation / departments recorded on the invitation. Anything that no longer exists is skipped. */
     private void applyPreassignment(Invitation inv, TeamMember member) {
         if (!hasPreassignment(inv)) return;
-        String org = inv.getWorkspaceId();
+        String wsId = inv.getWorkspaceId();
         try {
             if (inv.getAccessProfileId() != null && !inv.getAccessProfileId().isBlank()
-                    && accessProfileRepository.findByIdAndOrganizationId(inv.getAccessProfileId(), org).isPresent()) {
+                    && accessProfileRepository.findByIdAndOrganizationId(inv.getAccessProfileId(), wsId).isPresent()) {
                 member.setAccessProfileId(inv.getAccessProfileId());
             }
             if (inv.getDesignation() != null && !inv.getDesignation().isBlank()) member.setTitle(inv.getDesignation());
             if (inv.getDepartmentIds() != null) {
                 for (String gid : inv.getDepartmentIds()) {
                     userGroupRepository.findById(gid).ifPresent(g -> {
-                        if (!org.equals(g.getOrganizationId()) || !"DEPARTMENT".equals(g.getType())) return;
+                        if (!wsId.equals(g.getOrganizationId()) || !"DEPARTMENT".equals(g.getType())) return;
                         if (g.getMemberEmails() == null) g.setMemberEmails(new java.util.ArrayList<>());
                         boolean present = g.getMemberEmails().stream().anyMatch(e -> e != null && e.equalsIgnoreCase(member.getEmail()));
                         if (!present) { g.getMemberEmails().add(member.getEmail()); g.setUpdatedAt(LocalDateTime.now()); userGroupRepository.save(g); }

@@ -64,7 +64,7 @@ public class VisibilityService {
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();
         if (ra == null) return AccessScope.unrestricted();
         Object cached = ra.getAttribute(ATTR, RequestAttributes.SCOPE_REQUEST);
-        if (cached instanceof AccessScope s) return s;
+        if (cached instanceof AccessScope hit) return hit;
         AccessScope s;
         try {
             s = resolve();

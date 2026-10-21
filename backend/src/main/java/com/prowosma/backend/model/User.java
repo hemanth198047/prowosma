@@ -43,12 +43,15 @@ public class User {
      * 5.2), since matchStep alone would otherwise accept the same
      * intercepted code again within its ~90s validity window.
      */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private long twoFactorLastStep = -1;
 
     /** Wrong second-factor codes since the last correct one — see auth.LockoutPolicy. Reset to 0 on success. */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private int twoFactorFailedAttempts = 0;
 
     /** Set once twoFactorFailedAttempts hits the limit; null when not locked — see auth.LockoutPolicy. */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private java.time.Instant twoFactorLockedUntil;
 
     /**
@@ -98,6 +101,7 @@ public class User {
     private String  socialId;              // provider-specific user ID
 
     // ── Email OTP MFA ─────────────────────────────────────────
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String  emailOtpCode;
     private LocalDateTime emailOtpExpiry;
 
@@ -106,11 +110,13 @@ public class User {
     private java.util.List<String> backupCodes = new java.util.ArrayList<>();  // hashed
 
     // ── Refresh tokens ────────────────────────────────────────
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String  refreshToken;
     private LocalDateTime refreshTokenExpiry;
 
     // ── Guest / external ─────────────────────────────────────
     private boolean isGuest = false;       // true = limited external collaborator
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String  guestToken;            // token for passwordless guest access
     private LocalDateTime guestTokenExpiry;
 

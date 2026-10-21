@@ -30,6 +30,6 @@ public class RateLimitWindow {
     private long epochMinute;
     private int count;
 
-    @Indexed(expireAfterSeconds = 120)
+    @Indexed(expireAfter = "120s")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

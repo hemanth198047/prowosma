@@ -21,7 +21,12 @@ class SessionStatusTest {
         assertThat(SessionStatus.CANCELLED.canTransitionTo(SessionStatus.SCHEDULED)).isFalse();
         assertThat(SessionStatus.COMPLETED.canTransitionTo(SessionStatus.PROCESSING)).isFalse();
         assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.SCHEDULED)).isTrue();
-        assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.PROCESSING)).isFalse();
+        // A failed meeting can be retried, rescued with a hand-supplied transcript, or regenerated (see SessionStatus):
+        assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.TRANSCRIPT_RECEIVED)).isTrue();
+        assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.PROCESSING)).isTrue();
+        // ...but it never jumps straight to a finished state
+        assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.READY_FOR_REVIEW)).isFalse();
+        assertThat(SessionStatus.FAILED.canTransitionTo(SessionStatus.COMPLETED)).isFalse();
     }
 
     @Test void statesCannotBeSkipped() {

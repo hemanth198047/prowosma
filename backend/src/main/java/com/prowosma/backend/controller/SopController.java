@@ -25,7 +25,7 @@ public class SopController {
     private final WorkspaceContext workspaceContext;
     private final com.prowosma.backend.service.VisibilityService visibility;
 
-    private static final java.util.function.Function<Sop, List<String>> PEOPLE = x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner(), x.getUserEmail());
+    private static final java.util.function.Function<Sop, List<String>> PEOPLE = x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner());
     private static final java.util.function.Function<Sop, List<String>> NO_PROJECTS = x -> new java.util.ArrayList<String>();
 
     /** The SOP, or 404 when the caller may not see it. */
