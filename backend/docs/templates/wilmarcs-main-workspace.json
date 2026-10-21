@@ -1,0 +1,51 @@
+{
+  "profiles": [
+    { "name": "Department Admin", "description": "Runs a department: sees its projects, manages their access, approves work.",
+      "scope": "MY_DEPARTMENTS", "departmentAdmin": true,
+      "capabilities": ["CREATE_PROJECT", "CREATE_TASK", "ALLOCATE_TASKS", "APPROVE"] },
+    { "name": "Operations Manager", "description": "Schedules production and allocates tasks across the projects they are named on or that belong to their department.",
+      "scope": "MY_DEPARTMENTS", "departmentAdmin": false,
+      "capabilities": ["CREATE_PROJECT", "CREATE_TASK", "ALLOCATE_TASKS"] },
+    { "name": "Department Member", "description": "Works inside their department's projects and the projects they are named on.",
+      "scope": "MY_DEPARTMENTS", "departmentAdmin": false,
+      "capabilities": ["CREATE_TASK"] },
+    { "name": "Assigned Work Only", "description": "Sees only the tasks assigned to them, and the projects those tasks sit in.",
+      "scope": "ASSIGNED_ONLY", "departmentAdmin": false, "capabilities": [] }
+  ],
+  "departments": [
+    { "name": "Management" },
+    { "name": "Marketing & Sales" },
+    { "name": "Creative & Preproduction" },
+    { "name": "Production & Operations" },
+    { "name": "Post-production" }
+  ],
+  "roleSlots": [
+    { "key": "BUSINESS_OWNER", "label": "Business / Client Servicing Owner" },
+    { "key": "CREATIVE_LEAD", "label": "Creative Lead" },
+    { "key": "PRODUCTION_LEAD", "label": "Production Lead" },
+    { "key": "POST_PRODUCTION_OWNER", "label": "Post-production Owner" }
+  ],
+  "defaultProfile": "Assigned Work Only",
+  "defaultProjectVisibility": "DEPARTMENTS",
+  "members": [
+    { "name": "Deepak", "email": "", "designation": "Business Head", "profile": "Department Admin",
+      "departments": ["Management", "Marketing & Sales"] },
+    { "name": "Suman", "email": "", "designation": "Marketing & Business Development", "profile": "Department Member",
+      "departments": ["Marketing & Sales"] },
+    { "name": "Alphonsa", "email": "", "designation": "Marketing / BD Intern", "profile": "Assigned Work Only",
+      "departments": ["Marketing & Sales"] },
+    { "name": "Ansad", "email": "", "designation": "Creative Director", "profile": "Department Admin",
+      "departments": ["Creative & Preproduction", "Production & Operations", "Post-production"] },
+    { "name": "Kashyap", "email": "", "designation": "Scriptwriter & Client Communications", "profile": "Department Member",
+      "departments": ["Creative & Preproduction"] },
+    { "name": "Adhil", "email": "", "designation": "Creative Operations & Production Coordinator", "profile": "Operations Manager",
+      "departments": ["Production & Operations"] },
+    { "name": "Hafeez", "email": "", "designation": "Video Editor", "profile": "Assigned Work Only",
+      "departments": ["Post-production"] },
+    { "name": "Anugrah", "email": "", "designation": "Video Editor", "profile": "Assigned Work Only",
+      "departments": ["Post-production"] },
+    { "name": "Nandu", "email": "", "designation": "Video Editor & AI R&D", "profile": "Department Member",
+      "departments": ["Post-production"] }
+  ],
+  "enableAccessControl": false
+}

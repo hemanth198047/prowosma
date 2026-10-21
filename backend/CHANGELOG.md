@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Department and project access control, phase 1 (projects, tasks, live feed): see `docs/DEPARTMENT_ACCESS.md`. Off until an admin enables it.
+- Fix: `PATCH /api/tasks/{id}` now persists project, sprint, type, severity, SLA, assignees and custom fields (they were dropped).
+- Fix: `/api/projects/roots` and sub-project lists are now limited to the caller's workspace.
+
 All notable changes from the enterprise-readiness backlog engagement, in the order they were
 completed. Each entry links to the doc with full detail.
 

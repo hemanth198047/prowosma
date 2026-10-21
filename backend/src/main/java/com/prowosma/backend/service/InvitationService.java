@@ -30,6 +30,8 @@ public class InvitationService {
     private final PasswordEncoder       passwordEncoder;
     private final EmailService          emailService;
     private final ActivityLogService    activityLogService;
+    private final com.prowosma.backend.repository.AccessProfileRepository accessProfileRepository;
+    private final com.prowosma.backend.repository.UserGroupRepository     userGroupRepository;
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
@@ -37,6 +39,13 @@ public class InvitationService {
     // ── Create & send invitation ──────────────────────────────
     public Invitation invite(String workspaceId, String email,
                              String role, String invitedByEmail) {
+        return invite(workspaceId, email, role, invitedByEmail, null, null, null);
+    }
+
+    /** As above, optionally recording the access profile, designation and departments to apply when it is accepted. */
+    public Invitation invite(String workspaceId, String email,
+                             String role, String invitedByEmail,
+                             String accessProfileId, String designation, List<String> departmentIds) {
         // Check for existing pending invite
         invitationRepository
                 .findByEmailAndWorkspaceIdAndStatus(email, workspaceId, "PENDING")
@@ -73,6 +82,9 @@ public class InvitationService {
         inv.setInvitedByEmail(orFallback(invitedByEmail, "system"));
         inv.setCreatedAt(LocalDateTime.now());
         inv.setExpiresAt(LocalDateTime.now().plusDays(7));
+        inv.setAccessProfileId(accessProfileId);
+        inv.setDesignation(designation);
+        if (departmentIds != null) inv.setDepartmentIds(new java.util.ArrayList<>(departmentIds));
 
         Invitation saved = invitationRepository.save(inv);
         sendInviteEmail(saved);
@@ -183,6 +195,7 @@ public class InvitationService {
                 member.setOrganizationId(inv.getWorkspaceId());
                 member.setColor("#" + String.format("%06x",
                         (inv.getEmail().hashCode() & 0xffffff) | 0x400000));
+                applyPreassignment(inv, member);
                 teamMemberRepository.save(member);
             } else {
                 TeamMember member = existing.get();
@@ -190,6 +203,10 @@ public class InvitationService {
                 // TeamMember) is never touched by an invitation accept.
                 if (!"OWNER".equals(member.getRole()) && !invitedRole.equals(member.getRole())) {
                     member.setRole(invitedRole);
+                    teamMemberRepository.save(member);
+                }
+                if (!"OWNER".equals(member.getRole()) && hasPreassignment(inv)) {
+                    applyPreassignment(inv, member);
                     teamMemberRepository.save(member);
                 }
             }
@@ -225,6 +242,38 @@ public class InvitationService {
         result.put("role",          inv.getRole() != null ? inv.getRole() : "MEMBER");
         result.put("workspace",     ws != null ? ws : new java.util.HashMap<>());
         return result;
+    }
+
+    private static boolean hasPreassignment(Invitation inv) {
+        return (inv.getAccessProfileId() != null && !inv.getAccessProfileId().isBlank())
+                || (inv.getDesignation() != null && !inv.getDesignation().isBlank())
+                || (inv.getDepartmentIds() != null && !inv.getDepartmentIds().isEmpty());
+    }
+
+    /** Applies the profile / designation / departments recorded on the invitation. Anything that no longer exists is skipped. */
+    private void applyPreassignment(Invitation inv, TeamMember member) {
+        if (!hasPreassignment(inv)) return;
+        String org = inv.getWorkspaceId();
+        try {
+            if (inv.getAccessProfileId() != null && !inv.getAccessProfileId().isBlank()
+                    && accessProfileRepository.findByIdAndOrganizationId(inv.getAccessProfileId(), org).isPresent()) {
+                member.setAccessProfileId(inv.getAccessProfileId());
+            }
+            if (inv.getDesignation() != null && !inv.getDesignation().isBlank()) member.setTitle(inv.getDesignation());
+            if (inv.getDepartmentIds() != null) {
+                for (String gid : inv.getDepartmentIds()) {
+                    userGroupRepository.findById(gid).ifPresent(g -> {
+                        if (!org.equals(g.getOrganizationId()) || !"DEPARTMENT".equals(g.getType())) return;
+                        if (g.getMemberEmails() == null) g.setMemberEmails(new java.util.ArrayList<>());
+                        boolean present = g.getMemberEmails().stream().anyMatch(e -> e != null && e.equalsIgnoreCase(member.getEmail()));
+                        if (!present) { g.getMemberEmails().add(member.getEmail()); g.setUpdatedAt(LocalDateTime.now()); userGroupRepository.save(g); }
+                    });
+                }
+            }
+        } catch (Exception e) {
+            // Never block someone from joining because the pre-assignment couldn't be applied; an admin can set it by hand.
+            org.slf4j.LoggerFactory.getLogger(InvitationService.class).warn("Could not apply pre-assignment for {}: {}", inv.getEmail(), e.toString());
+        }
     }
 
     // ── Cancel invitation ─────────────────────────────────────

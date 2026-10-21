@@ -84,4 +84,16 @@ public class Project {
     private String sourceMeetingId;
     private String sourceMeetingTitle;
     private String sourceProposalKey;   // stable id of the proposed project — makes creation duplicate-proof
+
+    // ── Department / project access (see access/AccessScope) ──────────────────
+    /** WORKSPACE | DEPARTMENTS | MEMBERS_ONLY. Null on projects created before access control: treated as WORKSPACE. */
+    private String visibility;
+    /** Ids of the DEPARTMENT groups that own this project. */
+    private java.util.List<String> departmentIds = new java.util.ArrayList<>();
+    /** Extra people (emails) who work on the project regardless of department. */
+    private java.util.List<String> memberEmails = new java.util.ArrayList<>();
+    /** Project role slots defined by the workspace (e.g. CREATIVE_LEAD): slot key -> person's email. */
+    private java.util.Map<String, String> roleAssignments = new java.util.HashMap<>();
+    /** People who approve work on this project (emails). */
+    private java.util.List<String> approverEmails = new java.util.ArrayList<>();
 }

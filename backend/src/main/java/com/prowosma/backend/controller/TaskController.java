@@ -131,7 +131,9 @@ public class TaskController {
             existing.setCustomFieldValues(v != null ? v : new java.util.HashMap<>());
         }
 
-        return taskService.update(id, existing);
+        taskService.assertPatchAllowed(existing);          // 403 before anything is saved
+        taskService.update(id, existing);
+        return taskService.applyPatchedFields(existing);   // project / assignees / SLA / ... which update() does not copy
     }
 
     @DeleteMapping("/{id}")

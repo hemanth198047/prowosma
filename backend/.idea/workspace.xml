@@ -4,20 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="323a7d8f-9fdc-476d-8fff-209303bc4f9a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
+    <list default="true" id="323a7d8f-9fdc-476d-8fff-209303bc4f9a" name="Changes" comment="Security Hardened">
       <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/JwtUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/RoleGuardFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/RoleGuardFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/AIController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AIService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AIService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AISettingsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/AISettingsService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/CHANGELOG.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MongoIndexConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/config/MongoIndexConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/ProjectController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/ProjectController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/TaskController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/controller/TaskController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/Invitation.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/Invitation.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/Project.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/Project.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/TeamMember.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/TeamMember.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/UserGroup.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/UserGroup.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/WorkspaceConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/model/WorkspaceConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/repository/UserGroupRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/repository/UserGroupRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/InvitationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/InvitationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/ProjectService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/ProjectService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/RealtimeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/RealtimeService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/prowosma/backend/service/TaskService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,26 +52,85 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "hemanth198047"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;hemanth198047&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/hemanth198047/prowosma.git",
-    "accountId": "cd7196df-55cb-4ae5-9565-3d9de36acccb"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/hemanth198047/prowosma.git&quot;,
+    &quot;accountId&quot;: &quot;cd7196df-55cb-4ae5-9565-3d9de36acccb&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 6
-}]]></component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.264614195647446" />
+      <entry key="MS500" value="2.0955477821212627" />
+      <entry key="S2" value="3.20376605610176" />
+      <entry key="S5" value="3.639926492751587" />
+      <entry key="S10" value="3.8121494804047322" />
+      <entry key="S30" value="3.935555582180351" />
+      <entry key="S60" value="3.9675433931830035" />
+      <entry key="M2" value="3.983712641029264" />
+      <entry key="M5" value="3.993470824280224" />
+      <entry key="M10" value="3.9967330352009798" />
+      <entry key="M15" value="3.9978214948937585" />
+      <entry key="M30" value="3.9989104830688222" />
+      <entry key="H1" value="3.999455175422777" />
+      <entry key="H2" value="3.9997275711813396" />
+      <entry key="H4" value="3.9998637814578895" />
+      <entry key="D1" value="3.9999772963356284" />
+      <entry key="W1" value="3.9999967566053174" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.1751233953466091" />
+      <entry key="MS500" value="2.0470823840829655" />
+      <entry key="S2" value="3.172387564060002" />
+      <entry key="S5" value="3.6240368763950137" />
+      <entry key="S10" value="3.8035323907429577" />
+      <entry key="S30" value="3.9325213495547295" />
+      <entry key="S60" value="3.9660052155009384" />
+      <entry key="M2" value="3.982938222877514" />
+      <entry key="M5" value="3.993159769715837" />
+      <entry key="M10" value="3.996577292675671" />
+      <entry key="M15" value="3.9977176186603307" />
+      <entry key="M30" value="3.9988585209976315" />
+      <entry key="H1" value="3.999429188396148" />
+      <entry key="H2" value="3.9997145761699655" />
+      <entry key="H4" value="3.99985728357765" />
+      <entry key="D1" value="3.9999762133035643" />
+      <entry key="W1" value="3.999996601885177" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="3Kgv7PrcsaDWwe5NHcYhmSwBRMU" />
   <component name="ProjectViewState">
     <option name="autoscrollFromSource" value="true" />
@@ -76,18 +138,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "nodejs_package_manager_path": "npm"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="ProwosmaBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="prowosma-backend.main" />
@@ -117,5 +184,9 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Security Hardened" />
+    <option name="LAST_COMMIT_MESSAGE" value="Security Hardened" />
   </component>
 </project>

@@ -25,23 +25,51 @@ public class TaskService {
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
     private final WorkspaceContext workspaceContext;
+    private final VisibilityService visibility;
 
     public List<Task> getByProjectId(String projectId) {
+        if (visibility.isRestricted()) return visibility.visibleTasks(workspaceContext.getWorkspaceId(), null, projectId);
         return taskRepository.findByProjectId(projectId);
     }
     public List<Task> getAll() {
+        if (visibility.isRestricted()) return visibility.visibleTasks(workspaceContext.getWorkspaceId(), null, null);
         return taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
     }
-    public List<Task> getByStatus(String status) { return taskRepository.findByStatus(status); }
-    public List<Task> search(String keyword) { return taskRepository.findByTitleContainingIgnoreCase(keyword); }
+    public List<Task> getByStatus(String status) {
+        if (visibility.isRestricted()) return visibility.visibleTasks(workspaceContext.getWorkspaceId(), status, null);
+        return taskRepository.findByStatus(status);
+    }
+    public List<Task> search(String keyword) {
+        List<Task> found = taskRepository.findByTitleContainingIgnoreCase(keyword);
+        if (!visibility.isRestricted()) return found;
+        return found.stream().filter(t -> workspaceContext.getWorkspaceId() != null
+                && workspaceContext.getWorkspaceId().equals(t.getOrganizationId()) && visibility.canSeeTask(t))
+                .collect(java.util.stream.Collectors.toList());
+    }
     public Task getById(String id) {
-        return taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found: " + id));
+        Task t = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found: " + id));
+        visibility.requireTaskVisible(t);
+        return t;
     }
 
     public Task create(Task task) {
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setOrganizationId(workspaceContext.getWorkspaceId());
+        if (task.getCreatedBy() == null || task.getCreatedBy().isBlank()) {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) task.setCreatedBy(auth.getName());
+        }
+        if (visibility.isRestricted()) {
+            visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_CREATE_TASK);
+            // the project must be one the caller can see (404 otherwise, same as an unknown project)
+            if (task.getProjectId() != null && !task.getProjectId().isBlank()) projectService.getById(task.getProjectId());
+            // handing work to somebody else is a separate capability from creating it
+            var scope = visibility.current();
+            boolean assignsOthers = task.getAssigneeIds() != null && task.getAssigneeIds().stream()
+                    .anyMatch(a -> a != null && !a.equals(scope.memberId()));
+            if (assignsOthers) visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_ALLOCATE_TASKS);
+        }
         Task saved = taskRepository.save(task);
 
         // Everything below is a side effect of a task that's already
@@ -75,6 +103,39 @@ public class TaskService {
                 "TASK", saved.getId(), saved.getTitle(), null,
                 "New task created: " + saved.getTitle());
         return saved;
+    }
+
+    /**
+     * Throws unless the caller may make the assignment / project move carried by {@code patched}
+     * (a copy of the stored task with the PATCH applied). Call before persisting.
+     */
+    public void assertPatchAllowed(Task patched) {
+        if (!visibility.isRestricted()) return;
+        Task stored = getById(patched.getId());
+        java.util.Set<String> before = new java.util.HashSet<>(stored.getAssigneeIds() == null ? List.of() : stored.getAssigneeIds());
+        java.util.Set<String> after  = new java.util.HashSet<>(patched.getAssigneeIds() == null ? List.of() : patched.getAssigneeIds());
+        if (!before.equals(after)) visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_ALLOCATE_TASKS);
+        String newProject = patched.getProjectId();
+        if (newProject != null && !newProject.isBlank() && !newProject.equals(stored.getProjectId())) projectService.getById(newProject);
+    }
+
+    /**
+     * Persists the fields update() does not copy (project, sprint, type, severity, SLA target, assignees,
+     * custom fields) from a PATCHed copy. update() reloads the task and copies only six fields, so these
+     * changes would otherwise be dropped even though the PATCH answers 200.
+     */
+    public Task applyPatchedFields(Task patched) {
+        assertPatchAllowed(patched);
+        Task stored = getById(patched.getId());
+        stored.setProjectId(patched.getProjectId());
+        stored.setSprintId(patched.getSprintId());
+        stored.setType(patched.getType());
+        stored.setSeverity(patched.getSeverity());
+        stored.setSlaHours(patched.getSlaHours());
+        stored.setAssigneeIds(patched.getAssigneeIds());
+        stored.setCustomFieldValues(patched.getCustomFieldValues());
+        stored.setUpdatedAt(LocalDateTime.now());
+        return taskRepository.save(stored);
     }
 
     public Task update(String id, Task updated) {
@@ -135,7 +196,7 @@ public class TaskService {
         return saved;
     }
 
-    public List<Task> getByProject(String projectId) { return taskRepository.findByProjectId(projectId); }
+    public List<Task> getByProject(String projectId) { return getByProjectId(projectId); }
 
     public Task updateRaw(String id, Task updated) {
         updated.setUpdatedAt(LocalDateTime.now());
@@ -144,6 +205,7 @@ public class TaskService {
 
     public void delete(String id) {
         Task task = getById(id);
+        visibility.requireCanDeleteTask(task);
         activityLogService.logFull("TASK", id, task.getTitle(),
                 "TASK_DELETED", task.getTitle(), null, null,
                 task.getProjectId(), id, null);
@@ -291,9 +353,10 @@ public class TaskService {
         Task task = getById(id);
         java.util.List<Task> blockedBy = new java.util.ArrayList<>();
         if (task.getBlockedByTaskIds() != null)
-            task.getBlockedByTaskIds().forEach(bid -> taskRepository.findById(bid).ifPresent(blockedBy::add));
+            task.getBlockedByTaskIds().forEach(bid -> taskRepository.findById(bid).filter(visibility::canSeeTask).ifPresent(blockedBy::add));
         List<Task> blocking = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
                 .filter(t -> t.getBlockedByTaskIds() != null && t.getBlockedByTaskIds().contains(id))
+                .filter(visibility::canSeeTask)
                 .collect(java.util.stream.Collectors.toList());
         boolean isBlocked = blockedBy.stream().anyMatch(t -> !"DONE".equals(t.getStatus()));
         java.util.Map<String, Object> result = new java.util.HashMap<>();
@@ -325,6 +388,9 @@ public class TaskService {
             org.springframework.data.domain.PageRequest pr,
             String status, String projectId) {
         String orgId = workspaceContext.getWorkspaceId();
+        if (visibility.isRestricted()) {
+            return com.prowosma.backend.util.PagedResponse.of(visibility.visibleTasksPage(orgId, status, projectId, pr));
+        }
         if (projectId != null && !projectId.isBlank()) {
             return com.prowosma.backend.util.PagedResponse.of(
                     taskRepository.findByProjectId(projectId, pr));
@@ -340,6 +406,10 @@ public class TaskService {
     public com.prowosma.backend.util.PagedResponse<Task> getByProjectPaged(
             String projectId,
             org.springframework.data.domain.PageRequest pr) {
+        if (visibility.isRestricted()) {
+            return com.prowosma.backend.util.PagedResponse.of(
+                    visibility.visibleTasksPage(workspaceContext.getWorkspaceId(), null, projectId, pr));
+        }
         return com.prowosma.backend.util.PagedResponse.of(
                 taskRepository.findByProjectId(projectId, pr));
     }

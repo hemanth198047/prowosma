@@ -33,6 +33,7 @@ public class ProjectController {
     private final OwnershipService ownershipService;
     private final ProjectRepository projectRepository;
     private final WorkspaceContext  ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     @Operation(summary = "Get All Projects — paginated",
@@ -48,18 +49,12 @@ public class ProjectController {
                 Sort.by("createdAt").descending());
 
         String orgId = ws.getWorkspaceId();
-        System.out.println("[ProjectController] getAll orgId=" + orgId + " size=" + pr.getPageSize());
         if (orgId == null || orgId.isBlank()) {
             return PagedResponse.of(org.springframework.data.domain.Page.empty(pr));
         }
-        if (status != null && !status.isBlank()) {
-            var result = projectRepository.findByOrganizationIdAndStatus(
-                    orgId, status.toUpperCase(), pr);
-            return PagedResponse.of(result);
-        }
-        var result = projectRepository.findByOrganizationId(orgId, pr);
-        System.out.println("[ProjectController] found " + result.getTotalElements() + " projects");
-        return PagedResponse.of(result);
+        var result = projectService.getAllPaged(pr, status);
+        return PagedResponse.of(new org.springframework.data.domain.PageImpl<>(
+                visibility.redact(result.getContent()), pr, result.getTotalElements()));
     }
 
     @GetMapping("/{id}")
@@ -73,7 +68,7 @@ public class ProjectController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public Project getById(@PathVariable String id) {
-        return projectService.getById(id);
+        return visibility.redact(projectService.getById(id));
     }
 
     @PostMapping
@@ -88,7 +83,7 @@ public class ProjectController {
     })
     public Project create(@Valid @RequestBody Project project, Authentication auth) {
         if (auth != null) project.setCreatedBy(auth.getName());
-        return projectService.create(project);
+        return visibility.redact(projectService.create(project));
     }
 
     @PutMapping("/{id}")
@@ -116,7 +111,22 @@ public class ProjectController {
             // by seeing if createdBy is set and doesn't match current user
             // We let it through for now and handle via service
         }
-        return projectService.update(id, project);
+        return visibility.redact(projectService.update(id, project));
+    }
+
+    /**
+     * Who can see this project and who is named on it. Body (all optional, omitted = unchanged):
+     * visibility, departmentIds, memberEmails, roleAssignments (slot key to email), approverEmails.
+     */
+    @PutMapping("/{id}/access")
+    @SuppressWarnings("unchecked")
+    public Project updateAccess(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        return visibility.redact(projectService.updateAccess(id,
+                (String) body.get("visibility"),
+                (List<String>) body.get("departmentIds"),
+                (List<String>) body.get("memberEmails"),
+                (Map<String, String>) body.get("roleAssignments"),
+                (List<String>) body.get("approverEmails")));
     }
 
     @DeleteMapping("/{id}")
@@ -171,7 +181,8 @@ public class ProjectController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public List<Project> getSubProjects(@PathVariable String id) {
-        return projectService.getSubProjects(id);
+        projectService.getById(id);
+        return visibility.redact(projectService.getSubProjects(id));
     }
 
     @GetMapping("/roots")
@@ -185,7 +196,7 @@ public class ProjectController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public List<Project> getRootProjects() {
-        return projectService.getRootProjects();
+        return visibility.redact(projectService.getRootProjects());
     }
 
     // ── Budget tracking ───────────────────────────────────────────
@@ -242,8 +253,7 @@ public class ProjectController {
             @PathVariable String id,
             @RequestBody Map<String, String> body,
             Authentication auth) {
-        Project source = projectRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        Project source = projectService.getById(id);
         Project copy = new Project();
         copy.setName(body.getOrDefault("name", source.getName() + " (Copy)"));
         copy.setDescription(source.getDescription());
@@ -255,7 +265,13 @@ public class ProjectController {
         copy.setLinkedGoalId(source.getLinkedGoalId());
         copy.setCreatedAt(java.time.LocalDateTime.now());
         copy.setUpdatedAt(java.time.LocalDateTime.now());
-        return projectRepository.save(copy);
+        copy.setVisibility(source.getVisibility());
+        copy.setDepartmentIds(new java.util.ArrayList<>(source.getDepartmentIds()));
+        copy.setMemberEmails(new java.util.ArrayList<>(source.getMemberEmails()));
+        copy.setApproverEmails(new java.util.ArrayList<>(source.getApproverEmails()));
+        copy.setRoleAssignments(new java.util.HashMap<>(source.getRoleAssignments()));
+        visibility.prepareNewProject(copy);   // same rules as creating a project: capability, visibility, valid people
+        return visibility.redact(projectRepository.save(copy));
     }
 
 }

@@ -22,14 +22,32 @@ public class ProjectService {
     private final NotificationService notificationService;
     private final RealtimeService realtimeService;
     private final WorkspaceContext workspaceContext;
+    private final VisibilityService visibility;
 
     public List<Project> getAll() {
-        return projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
+        return visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId()));
+    }
+
+    /** One page of the caller's projects, newest first. Unrestricted callers get exactly the database page they always did. */
+    public org.springframework.data.domain.Page<Project> getAllPaged(org.springframework.data.domain.PageRequest pr, String status) {
+        String orgId = workspaceContext.getWorkspaceId();
+        if (!visibility.isRestricted()) {
+            return (status != null && !status.isBlank())
+                    ? projectRepository.findByOrganizationIdAndStatus(orgId, status.toUpperCase(), pr)
+                    : projectRepository.findByOrganizationId(orgId, pr);
+        }
+        List<Project> mine = visibility.filterProjects(projectRepository.findByOrganizationId(orgId)).stream()
+                .filter(p -> status == null || status.isBlank() || status.equalsIgnoreCase(p.getStatus()))
+                .sorted(java.util.Comparator.comparing(Project::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .collect(java.util.stream.Collectors.toList());
+        return visibility.pageOf(mine, pr);
     }
 
     public Project getById(String id) {
-        return projectRepository.findById(id)
+        Project p = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+        visibility.requireProjectVisible(p);
+        return p;
     }
 
     public Project create(Project project) {
@@ -43,6 +61,7 @@ public class ProjectService {
                 if (auth != null) project.setCreatedBy(auth.getName());
             } catch (Exception ignored) {}
         }
+        visibility.prepareNewProject(project);
         Project saved = projectRepository.save(project);
         activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
                 "PROJECT_CREATED", null, saved.getName(), null,
@@ -57,6 +76,7 @@ public class ProjectService {
 
     public Project update(String id, Project updated) {
         Project existing = getById(id);
+        visibility.requireCanEditProject(existing);
         String oldName   = existing.getName();
         String oldStatus = existing.getStatus();
         LocalDateTime oldDue = existing.getDueDate();
@@ -95,8 +115,23 @@ public class ProjectService {
         return saved;
     }
 
+    /** Changes who can see the project and who is named on it. Separate from update(), which never touches these fields. */
+    public Project updateAccess(String id, String visibilityValue, List<String> departmentIds,
+                                List<String> memberEmails, java.util.Map<String, String> roles, List<String> approvers) {
+        Project existing = getById(id);
+        visibility.requireCanManageProject(existing);
+        visibility.applyAccessChange(existing, visibilityValue, departmentIds, memberEmails, roles, approvers);
+        existing.setUpdatedAt(LocalDateTime.now());
+        Project saved = projectRepository.save(existing);
+        activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
+                "PROJECT_ACCESS_CHANGED", null, saved.getVisibility(), null,
+                saved.getId(), null, null);
+        return saved;
+    }
+
     public void delete(String id) {
         Project project = getById(id);
+        visibility.requireCanManageProject(project);
         activityLogService.logFull("PROJECT", id, project.getName(),
                 "PROJECT_DELETED", project.getName(), null, null,
                 id, null, null);
@@ -109,14 +144,19 @@ public class ProjectService {
     }
 
     public List<Project> getSubProjects(String parentId) {
-        return projectRepository.findByParentProjectId(parentId);
+        String org = workspaceContext.getWorkspaceId();
+        return visibility.filterProjects(projectRepository.findByParentProjectId(parentId).stream()
+                .filter(p -> org != null && org.equals(p.getOrganizationId())).collect(java.util.stream.Collectors.toList()));
     }
 
     public List<Project> getRootProjects() {
-        return projectRepository.findByParentProjectIdIsNull();
+        String org = workspaceContext.getWorkspaceId();
+        return visibility.filterProjects(projectRepository.findByParentProjectIdIsNull().stream()
+                .filter(p -> org != null && org.equals(p.getOrganizationId())).collect(java.util.stream.Collectors.toList()));
     }
 
     public int getProgress(String id) {
+        getById(id); // existence + visibility; progress of a project the caller can't see is not theirs to learn
         var tasks       = taskRepository.findByProjectId(id);
         var subProjects = projectRepository.findByParentProjectId(id);
         int total = tasks.size();
@@ -247,7 +287,7 @@ public class ProjectService {
 
     public java.util.Map<String, Object> getPortfolioRoi() {
         String orgId = workspaceContext.getWorkspaceId();
-        java.util.List<com.prowosma.backend.model.Project> projects = projectRepository.findByOrganizationId(orgId);
+        java.util.List<com.prowosma.backend.model.Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(orgId));
         double totalInvest = 0, totalRevenue = 0, totalBudget = 0;
         int positiveRoi = 0;
         java.util.List<java.util.Map<String, Object>> breakdown = new java.util.ArrayList<>();

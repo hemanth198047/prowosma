@@ -14,6 +14,8 @@ public class UserGroup {
     private String name;              // e.g. "Engineering", "Design Leads"
     private String description;
     private String color = "#6366f1";
+    /** DEPARTMENT groups take part in access decisions (who sees which project); TEAM groups are just a label. */
+    private String type = "TEAM";
     private List<String> memberEmails = new ArrayList<>();
     private List<String> permissions  = new ArrayList<>(); // ["VIEW_ALL","CREATE_PROJECT","MANAGE_TEAM"]
     private String createdBy;

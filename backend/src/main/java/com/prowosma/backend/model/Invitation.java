@@ -25,4 +25,9 @@ public class Invitation {
     /* ── Extended fields required by InvitationService ── */
     private String workspaceName;   // denormalised workspace name for email templates
     private String invitedByEmail;  // explicit email field used by service (vs invitedBy)
+
+    /* ── Optional pre-assignment, applied when the invitation is accepted (department access model) ── */
+    private String accessProfileId;                                  // AccessProfile to give the new member
+    private String designation;                                      // job title to record
+    private java.util.List<String> departmentIds = new java.util.ArrayList<>(); // DEPARTMENT groups to join
 }

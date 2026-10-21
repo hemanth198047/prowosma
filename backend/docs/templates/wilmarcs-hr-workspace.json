@@ -1,0 +1,13 @@
+{
+  "profiles": [
+    { "name": "HR Administrator", "description": "Full access inside this workspace only. This workspace holds HR, compensation and finance records.",
+      "scope": "ALL", "departmentAdmin": false, "capabilities": [] }
+  ],
+  "departments": [],
+  "defaultProfile": "HR Administrator",
+  "defaultProjectVisibility": "WORKSPACE",
+  "members": [
+    { "name": "Adithya (C2W)", "email": "", "designation": "External HR Partner", "profile": "HR Administrator", "departments": [] }
+  ],
+  "enableAccessControl": false
+}

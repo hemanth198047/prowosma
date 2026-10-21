@@ -38,6 +38,8 @@ public class MongoIndexConfig {
             ensure("tasks", idx().on("organizationId", ASC).on("sprintId",    ASC));
             ensure("tasks", idx().on("organizationId", ASC).on("createdAt",   DESC));
             ensure("tasks", idx().on("organizationId", ASC).on("priority",    ASC));
+            ensure("tasks", idx().on("organizationId", ASC).on("assigneeIds", ASC));   // department access: "my tasks"
+            ensure("access_profiles", idx().on("organizationId", ASC).on("name", ASC));
             ensure("tasks", idx().on("parentTaskId",   ASC));                          // subtask lookup
             ensure("tasks", idx().on("linkedGoalId",   ASC));                          // goal→task link
             ensure("tasks", idx().on("title",          ASC));                          // title search

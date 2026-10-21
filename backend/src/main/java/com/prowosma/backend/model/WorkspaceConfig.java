@@ -79,5 +79,21 @@ public class WorkspaceConfig {
     private boolean dlpAutoRedact        = false;
     private boolean dlpNotifyOnViolation = true;
 
+    // ── Department / project access control ───────────────────────────────────
+    /** Off by default: nothing changes for a workspace until an admin switches this on. */
+    private boolean accessControlEnabled = false;
+    /** Profile applied to members who have none of their own. Null = such members are unrestricted (legacy). */
+    private String defaultAccessProfileId;
+    /** Visibility given to a new project that does not choose one: WORKSPACE | DEPARTMENTS | MEMBERS_ONLY. */
+    private String defaultProjectVisibility = "WORKSPACE";
+    /** The named responsibilities a project can assign to people, e.g. Creative Lead. Defined per workspace. */
+    private java.util.List<RoleSlot> projectRoleSlots = new java.util.ArrayList<>();
+
+    @Data
+    public static class RoleSlot {
+        private String key;     // stable id, e.g. CREATIVE_LEAD
+        private String label;   // shown in the UI, e.g. "Creative Lead"
+    }
+
     private LocalDateTime updatedAt = LocalDateTime.now();
 }
