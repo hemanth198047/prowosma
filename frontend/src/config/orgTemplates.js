@@ -6,7 +6,7 @@
 export const EXAMPLE_ORG_SETUP = {
   profiles: [
     { name: "Department Admin", description: "Runs a department: sees its projects and manages their access.", scope: "MY_DEPARTMENTS", departmentAdmin: true,
-      capabilities: ["CREATE_PROJECT", "CREATE_TASK", "ALLOCATE_TASKS", "APPROVE", "USE_MEETING_ASSISTANT"] },
+      capabilities: ["CREATE_PROJECT", "CREATE_TASK", "ALLOCATE_TASKS", "APPROVE", "USE_MEETING_ASSISTANT", "MANAGE_PLANNING"] },
     { name: "Department Member", description: "Works inside their department's projects.", scope: "MY_DEPARTMENTS", departmentAdmin: false,
       capabilities: ["CREATE_TASK", "USE_MEETING_ASSISTANT"] },
     { name: "Assigned Work Only", description: "Sees only the tasks assigned to them.", scope: "ASSIGNED_ONLY", departmentAdmin: false, capabilities: [] },

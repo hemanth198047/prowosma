@@ -23,6 +23,23 @@ public final class AccessGatePolicy {
             "/api/access/options",
             "/api/notifications",
             "/api/docs",
+            // planning and reporting areas (each one scoped to what the person may see; see docs/DEPARTMENT_ACCESS.md)
+            "/api/goals",
+            "/api/sprints",
+            "/api/epics",
+            "/api/releases",
+            "/api/raid",
+            "/api/changes",
+            "/api/decisions",
+            "/api/channels",
+            "/api/initiatives",
+            "/api/programmes",
+            "/api/standup",
+            "/api/sops",
+            "/api/reports",
+            "/api/analytics",
+            "/api/ai",
+            "/api/time/report",
             "/api/projects",
             "/api/tasks",
             "/api/auth",
@@ -68,6 +85,11 @@ public final class AccessGatePolicy {
     }
 
     /** Project sub-paths that expose money; they need the VIEW_FINANCIALS capability. */
+    /** Prefixes whose WRITES (anything but GET) need the planning capability; the server also checks each record. */
+    private static final List<String> PLANNING_WRITES = List.of(
+            "/api/goals", "/api/sprints", "/api/epics", "/api/releases", "/api/raid", "/api/changes", "/api/decisions",
+            "/api/initiatives", "/api/programmes", "/api/sops");
+
     private static final List<String> FINANCIAL_SEGMENTS = List.of("expenses", "budget", "revenue", "roi", "roi-settings");
 
     public static boolean isAllowed(String path, String method, AccessScope scope) {
@@ -77,6 +99,7 @@ public final class AccessGatePolicy {
         String m = method == null ? "GET" : method.toUpperCase(Locale.ROOT);
         if (m.equals("OPTIONS")) return true;
 
+        if (!m.equals("GET") && matchesAny(path, PLANNING_WRITES) && !scope.has(AccessConstants.CAP_MANAGE_PLANNING)) return false;
         for (String denied : ALWAYS_DENIED) if (matchesPrefix(path, denied)) return false;
 
         boolean meeting = matchesPrefix(path, MEETING_ASSISTANT) && scope.has(AccessConstants.CAP_USE_MEETING_ASSISTANT);

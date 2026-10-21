@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
 public class AnalyticsController {
+    private final com.prowosma.backend.service.VisibilityService visibility;
+    private final com.prowosma.backend.service.GoalService goalService;
 
     private final TaskRepository        taskRepository;
     private final ProjectRepository     projectRepository;
@@ -35,9 +37,9 @@ public class AnalyticsController {
     @GetMapping
     public Map<String, Object> getAll() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task>    tasks    = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> projects = projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Goal>    goals    = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task>    tasks    = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Goal>    goals    = goalService.getAll();
         LocalDateTime now      = LocalDateTime.now();
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -121,6 +123,13 @@ public class AnalyticsController {
         return kpis;
     }
 
+    private long countVisibleTasks(String orgId, boolean completed, LocalDateTime from, LocalDateTime to) {
+        return visibility.visibleTasks(orgId, null, null).stream().filter(t -> {
+            LocalDateTime d = completed ? ("DONE".equals(t.getStatus()) ? t.getUpdatedAt() : null) : t.getCreatedAt();
+            return d != null && !d.isBefore(from) && d.isBefore(to);
+        }).count();
+    }
+
     // ── Velocity — tasks completed per week for last 8 weeks ──
     private List<Map<String, Object>> buildVelocity(String orgId, LocalDateTime now) {
         List<Map<String, Object>> weeks = new ArrayList<>();
@@ -130,9 +139,12 @@ public class AnalyticsController {
             LocalDateTime weekStart = base.with(java.time.temporal.TemporalAdjusters.previousOrSame(
                     java.time.DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime weekEnd   = weekStart.plusWeeks(1);
-            long completed = activityLogRepository.countByOrganizationIdAndActionAndCreatedAtBetween(
+            // The activity log counts the whole workspace; a restricted person's trend is built from the tasks they can see.
+            long completed = visibility.isRestricted() ? countVisibleTasks(orgId, true, weekStart, weekEnd)
+                    : activityLogRepository.countByOrganizationIdAndActionAndCreatedAtBetween(
                     orgId, "TASK_COMPLETED", weekStart, weekEnd);
-            long created   = activityLogRepository.countByOrganizationIdAndActionAndCreatedAtBetween(
+            long created   = visibility.isRestricted() ? countVisibleTasks(orgId, false, weekStart, weekEnd)
+                    : activityLogRepository.countByOrganizationIdAndActionAndCreatedAtBetween(
                     orgId, "TASK_CREATED", weekStart, weekEnd);
             Map<String, Object> w = new LinkedHashMap<>();
             w.put("week",      weekStart.format(fmt));
@@ -290,7 +302,7 @@ public class AnalyticsController {
     @GetMapping("/workload")
     public List<Map<String, Object>> getWorkload() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         var members = teamMemberRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
         LocalDateTime now = LocalDateTime.now();
 
@@ -354,9 +366,9 @@ public class AnalyticsController {
     @GetMapping("/portfolio")
     public Map<String, Object> getPortfolio() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task>    tasks    = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> projects = projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Goal>    goals    = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task>    tasks    = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Goal>    goals    = goalService.getAll();
         LocalDateTime now      = LocalDateTime.now();
 
         List<Map<String, Object>> projectData = new ArrayList<>();
@@ -427,7 +439,7 @@ public class AnalyticsController {
     // ── Critical Path (item 5) ────────────────────────────────────
     @GetMapping("/critical-path/{projectId}")
     public Map<String, Object> getCriticalPath(@PathVariable String projectId) {
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent())
             .stream().filter(t -> projectId.equals(t.getProjectId())).toList();
 
         if (tasks.isEmpty()) return Map.of("criticalPath", List.of(), "totalDuration", 0);

@@ -15,9 +15,12 @@ import java.util.List;
 public class StandupController {
     private final StandupRepository repo;
     private final WorkspaceContext  ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping  public List<StandupEntry> getAll() {
-        return repo.findByOrganizationIdOrderByCreatedAtDesc(ws.getWorkspaceId());
+        // the team's stand-up is theirs to read; a restricted person sees only their own entries
+        return visibility.filterLinked(repo.findByOrganizationIdOrderByCreatedAtDesc(ws.getWorkspaceId()),
+                x -> com.prowosma.backend.service.VisibilityService.people(x.getAuthorEmail()), x -> new java.util.ArrayList<String>());
     }
 
     @PostMapping public StandupEntry create(@RequestBody StandupEntry e, Authentication auth) {

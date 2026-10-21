@@ -10,7 +10,8 @@
         "CREATE_TASK",
         "ALLOCATE_TASKS",
         "APPROVE",
-        "USE_MEETING_ASSISTANT"
+        "USE_MEETING_ASSISTANT",
+        "MANAGE_PLANNING"
       ]
     },
     {
@@ -22,7 +23,8 @@
         "CREATE_PROJECT",
         "CREATE_TASK",
         "ALLOCATE_TASKS",
-        "USE_MEETING_ASSISTANT"
+        "USE_MEETING_ASSISTANT",
+        "MANAGE_PLANNING"
       ]
     },
     {

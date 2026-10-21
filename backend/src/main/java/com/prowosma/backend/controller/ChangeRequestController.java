@@ -15,6 +15,7 @@ import java.util.Map;
 public class ChangeRequestController {
     private final ChangeRequestRepository repo;
     private final WorkspaceContext        ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public PagedResponse<ChangeRequest> getAll(
@@ -24,11 +25,12 @@ public class ChangeRequestController {
         var all = repo.findByOrganizationId(ws.getWorkspaceId());
         if (projectId != null)
             all = all.stream().filter(c -> projectId.equals(c.getProjectId())).toList();
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getRequestedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())), page, Math.min(size, 200));
     }
 
     @PostMapping
     public ChangeRequest create(@RequestBody ChangeRequest c, Authentication auth) {
+        visibility.requireMayCreateLinked(c.getProjectId());
         c.setOrganizationId(ws.getWorkspaceId());
         c.setCreatedBy(auth.getName()); c.setRequestedBy(auth.getName());
         c.setCreatedAt(LocalDateTime.now()); c.setUpdatedAt(LocalDateTime.now());
@@ -38,6 +40,7 @@ public class ChangeRequestController {
     @PutMapping("/{id}")
     public ChangeRequest update(@PathVariable String id, @RequestBody ChangeRequest patch) {
         return repo.findById(id).map(c -> {
+            visibility.requireLinkedWrite(c, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getRequestedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             if (patch.getTitle()             != null) c.setTitle(patch.getTitle());
             if (patch.getDescription()       != null) c.setDescription(patch.getDescription());
             if (patch.getImpact()            != null) c.setImpact(patch.getImpact());
@@ -65,6 +68,7 @@ public class ChangeRequestController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        repo.deleteById(id); return ResponseEntity.ok(Map.of("message","Deleted"));
+        repo.findById(id).ifPresent(c -> { visibility.requireLinkedWrite(c, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getRequestedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())); repo.delete(c); });
+        return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 }

@@ -39,9 +39,11 @@ public final class AccessConstants {
     public static final String CAP_APPROVE = "APPROVE";
     public static final String CAP_VIEW_FINANCIALS = "VIEW_FINANCIALS";
     public static final String CAP_USE_MEETING_ASSISTANT = "USE_MEETING_ASSISTANT";
+    /** Create, change and delete planning records: goals, sprints, epics, releases, risks, decisions, change requests, programmes, meetings. */
+    public static final String CAP_MANAGE_PLANNING = "MANAGE_PLANNING";
     public static final List<String> ALL_CAPABILITIES = List.of(
             CAP_CREATE_PROJECT, CAP_CREATE_TASK, CAP_ALLOCATE_TASKS,
-            CAP_APPROVE, CAP_VIEW_FINANCIALS, CAP_USE_MEETING_ASSISTANT);
+            CAP_APPROVE, CAP_VIEW_FINANCIALS, CAP_USE_MEETING_ASSISTANT, CAP_MANAGE_PLANNING);
 
     // ── Documents ───────────────────────────────────────────────────────────────
     /** Creator and the people the doc is shared with. */

@@ -16,6 +16,7 @@ import java.util.stream.*;
 @RequestMapping("/api/time")
 @RequiredArgsConstructor
 public class TimeTrackingController {
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     private final TaskRepository        taskRepository;
     private final ProjectRepository     projectRepository;
@@ -34,10 +35,13 @@ public class TimeTrackingController {
         LocalDateTime fromDate = from != null ? LocalDateTime.parse(from) : LocalDateTime.now().minusDays(30);
         LocalDateTime toDate   = to   != null ? LocalDateTime.parse(to)   : LocalDateTime.now();
 
-        List<Task> tasks = projectId != null
+        List<Task> tasks = visibility.filterTasks((projectId != null
                 ? taskRepository.findByProjectId(projectId)
                 : taskRepository.findByOrganizationId(orgId,
-                    org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+                    org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
+                .filter(t -> orgId != null && orgId.equals(t.getOrganizationId())).collect(Collectors.toList()));
+        // hourly rates and amounts are money: shown only to people whose profile may see financials
+        final boolean money = visibility.current().has(com.prowosma.backend.access.AccessConstants.CAP_VIEW_FINANCIALS);
 
         // Flatten all time logs with task/project context
         List<Map<String, Object>> entries = new ArrayList<>();
@@ -57,8 +61,8 @@ public class TimeTrackingController {
                 e.put("hours",       Math.round(tl.getMinutes() / 60.0 * 100.0) / 100.0);
                 e.put("description", tl.getDescription());
                 e.put("billable",    tl.isBillable());
-                e.put("hourlyRate",  tl.getHourlyRate());
-                e.put("amount",      Math.round(tl.getMinutes() / 60.0 * tl.getHourlyRate() * 100.0) / 100.0);
+                e.put("hourlyRate",  money ? tl.getHourlyRate() : 0.0);
+                e.put("amount",      money ? Math.round(tl.getMinutes() / 60.0 * tl.getHourlyRate() * 100.0) / 100.0 : 0.0);
                 e.put("loggedBy",    tl.getLoggedBy());
                 e.put("loggedAt",    tl.getLoggedAt());
                 e.put("taskId",      task.getId());

@@ -19,10 +19,11 @@ public class DecisionController {
     private final DecisionRepository repo;
     private final AIService          aiService;
     private final WorkspaceContext   ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public List<Decision> getAll() {
-        return repo.findByOrganizationIdOrderByCreatedAtDesc(ws.getWorkspaceId());
+        return visibility.filterLinked(repo.findByOrganizationIdOrderByCreatedAtDesc(ws.getWorkspaceId()), x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getLinkedProjectIds()));
     }
 
     /**
@@ -40,13 +41,14 @@ public class DecisionController {
      */
     @GetMapping("/doc/{docId}")
     public List<Decision> getByDoc(@PathVariable String docId) {
-        return repo.findByDocIdOrderByCreatedAtDesc(docId).stream()
+        return visibility.filterLinked(repo.findByDocIdOrderByCreatedAtDesc(docId).stream()
                 .filter(d -> ws.getWorkspaceId() != null && ws.getWorkspaceId().equals(d.getOrganizationId()))
-                .toList();
+                .toList(), x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getLinkedProjectIds()));
     }
 
     @PostMapping
     public Decision create(@RequestBody Decision d, Authentication auth) {
+        visibility.requireMayCreateLinked(d.getLinkedProjectIds());
         d.setOrganizationId(ws.getWorkspaceId());
         d.setCreatedBy(auth.getName());
         d.setCreatedAt(LocalDateTime.now()); d.setUpdatedAt(LocalDateTime.now());
@@ -63,6 +65,7 @@ public class DecisionController {
     @PutMapping("/{id}")
     public Decision update(@PathVariable String id, @RequestBody Decision patch) {
         return repo.findById(id).map(d -> {
+            visibility.requireLinkedWrite(d, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getLinkedProjectIds()));
             if (patch.getTitle()         != null) d.setTitle(patch.getTitle());
             if (patch.getContext()       != null) d.setContext(patch.getContext());
             if (patch.getDecision()      != null) d.setDecision(patch.getDecision());
@@ -79,12 +82,13 @@ public class DecisionController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        repo.deleteById(id); return ResponseEntity.ok(Map.of("message","Deleted"));
+        repo.findById(id).ifPresent(d -> { visibility.requireLinkedWrite(d, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getLinkedProjectIds())); repo.delete(d); });
+        return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 
     @PostMapping("/{id}/ai-analyse")
     public Map<String, String> aiAnalyse(@PathVariable String id) {
-        Decision d = repo.findById(id).orElseThrow();
+        Decision d = visibility.requireLinked(repo.findById(id).orElseThrow(), x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getLinkedProjectIds()));
         try {
             String prompt = "You are a decision intelligence advisor. Analyse this decision for: "
                 + "1) hidden risks, 2) better alternatives, 3) second-order effects, "

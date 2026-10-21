@@ -218,6 +218,73 @@ public class VisibilityService {
 
     public List<Project> redact(List<Project> list) { return list.stream().map(this::redact).collect(Collectors.toList()); }
 
+    // ── records linked to people and projects ───────────────────────────────────
+
+    /** Emails recorded on a record; nulls are fine. */
+    public static List<String> people(String... emails) { return new ArrayList<>(Arrays.asList(emails)); }
+
+    /** Project ids a record is linked to; nulls are fine. */
+    public static List<String> projectsOf(String... ids) { return new ArrayList<>(Arrays.asList(ids)); }
+
+    public static List<String> projectsOf(Collection<String> ids) { return ids == null ? new ArrayList<>() : new ArrayList<>(ids); }
+
+    public boolean canSeeLinkedRecord(List<String> people, List<String> projectIds) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return true;
+        return canSeeLinkedRecord(entityVisibility(), s, people, projectIds);
+    }
+
+    private boolean canSeeLinkedRecord(EntityVisibility ev, AccessScope s, List<String> people, List<String> projectIds) {
+        boolean any = false;
+        if (projectIds != null) for (String pid : projectIds) if (pid != null && !pid.isBlank() && ev.canSee("PROJECT", pid)) { any = true; break; }
+        return s.canSeeLinked(people, any);
+    }
+
+    /** The records the caller may see (one set of project lookups for the whole list). */
+    public <T> List<T> filterLinked(List<T> items, java.util.function.Function<T, List<String>> people, java.util.function.Function<T, List<String>> projects) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return items;
+        EntityVisibility ev = entityVisibility();
+        return items.stream().filter(i -> canSeeLinkedRecord(ev, s, people.apply(i), projects.apply(i))).collect(Collectors.toList());
+    }
+
+    /** The record, or 404 when the caller may not see it (answered as not found). */
+    public <T> T requireLinked(T item, java.util.function.Function<T, List<String>> people, java.util.function.Function<T, List<String>> projects) {
+        if (item == null || !canSeeLinkedRecord(people.apply(item), projects.apply(item)))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found");
+        return item;
+    }
+
+    /** Visible AND the caller may change planning records. */
+    public <T> T requireLinkedWrite(T item, java.util.function.Function<T, List<String>> people, java.util.function.Function<T, List<String>> projects) {
+        requireLinked(item, people, projects);
+        requireCapability(CAP_MANAGE_PLANNING);
+        return item;
+    }
+
+    /** For creating a record: needs the planning capability, and the project it names (if any) must be one the caller can see. */
+    public void requireMayCreateLinked(String projectId) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return;
+        requireCapability(CAP_MANAGE_PLANNING);
+        if (projectId != null && !projectId.isBlank() && !entityVisibility().canSee("PROJECT", projectId))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found");
+    }
+
+    /** As above for a record that names several projects: every one must be visible to the caller. */
+    public void requireMayCreateLinked(Collection<String> projectIds) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return;
+        requireCapability(CAP_MANAGE_PLANNING);
+        if (projectIds != null) for (String pid : projectIds) requireProjectIdVisible(pid);
+    }
+
+    /** 404 unless the project exists and the caller may see it (a blank id is fine: no project). */
+    public void requireProjectIdVisible(String projectId) {
+        if (!current().isRestricted() || projectId == null || projectId.isBlank()) return;
+        if (!entityVisibility().canSee("PROJECT", projectId)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found");
+    }
+
     // ── documents ───────────────────────────────────────────────────────────────
 
     public DocFacts facts(Doc d) { return DocFacts.of(d.getCreatedBy(), d.getAudience(), d.getDepartmentIds(), d.getSharedWith()); }
@@ -602,7 +669,8 @@ public class VisibilityService {
         m.put("departmentAdmin", s.isDepartmentAdmin());
         m.put("capabilities", s.isRestricted() ? s.capabilities() : ALL_CAPABILITIES);
         // Pages the restricted caller can use in this phase (everything else is refused by the API).
-        List<String> areas = new ArrayList<>(List.of("dashboard", "projects", "tasks", "team", "gantt", "notifications", "activity", "search", "docs"));
+        List<String> areas = new ArrayList<>(List.of("dashboard", "projects", "tasks", "team", "gantt", "notifications", "activity", "search", "docs",
+                "goals", "sprints", "epics", "releases", "raid", "changes", "decisions", "channels", "initiatives", "programmes", "standup", "sops", "reports", "analytics", "ai", "time"));
         if (s.has(CAP_USE_MEETING_ASSISTANT)) areas.add("meeting-assistant");
         m.put("allowedAreas", s.isRestricted() ? areas : null);
         return m;

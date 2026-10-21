@@ -158,10 +158,13 @@ class AccessScopeTest {
         assertFalse(AccessGatePolicy.isAllowed("/api/team", "POST", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/workspaces", "GET", editor));
         assertFalse(AccessGatePolicy.isAllowed("/api/workspaces/w1/members", "GET", editor));
-        for (String p : List.of("/api/dashboard/sprints", "/api/dashboard/meeting-pulse", "/api/reports/x", "/api/analytics",
-                "/api/meeting-assistant/sessions",
-                "/api/ai/chat", "/api/goals", "/api/kpis", "/api/user-groups", "/api/import", "/api/time/x", "/api/tasksX",
-                "/api/push/subscribe", "/api/meetings", "/api/sprints", "/api/roi", "/api/searchX", "/api/ganttX")) {
+        for (String p : List.of("/api/dashboard/sprints", "/api/dashboard/meeting-pulse",
+                "/api/meeting-assistant/sessions", "/api/kpis", "/api/user-groups", "/api/import", "/api/import-export", "/api/tasksX",
+                "/api/push/subscribe", "/api/meetings", "/api/meeting-action-items", "/api/roi", "/api/scenarios", "/api/automations",
+                "/api/integrations", "/api/bpm", "/api/deployments", "/api/expertise", "/api/api-keys", "/api/webhooks", "/api/billing",
+                "/api/security/sessions/all", "/api/admin/access/settings", "/api/reminders/send-now", "/api/dlp", "/api/risk",
+                "/api/searchX", "/api/ganttX", "/api/time/invoices", "/api/time/invoices/generate", "/api/workspaces/w1/stats",
+                "/api/workspace/roles", "/api/goalsX", "/api/aiX", "/api/reportsX", "/api/analyticsX")) {
             assertFalse(AccessGatePolicy.isAllowed(p, "GET", editor), p);
         }
     }
@@ -327,5 +330,50 @@ class AccessScopeTest {
         assertEquals("?", normalizeAudience("public"));
         assertTrue(isValidAudience("workspace"));
         assertFalse(isValidAudience("public"));
+    }
+
+    // ── linked records ──────────────────────────────────────────────────────────
+
+    @Test void aLinkedRecordIsSeenByItsMakerOrThroughAVisibleProject() {
+        AccessScope k = kashyap(DOC_MODE_BOTH);
+        assertTrue(k.canSeeLinked(java.util.Arrays.asList(null, "KASHYAP@x.com"), false));   // made by them, case-insensitive
+        assertTrue(k.canSeeLinked(List.of("someone@x.com"), true));                          // belongs to a project they can see
+        assertFalse(k.canSeeLinked(List.of("someone@x.com"), false));                        // neither
+        assertFalse(k.canSeeLinked(java.util.Arrays.asList((String) null), false));
+        assertFalse(k.canSeeLinked(null, false));
+        assertTrue(AccessScope.unrestricted().canSeeLinked(List.of(), false));
+    }
+
+    @Test void planningIsACapabilityNotAGivenForAnyRestrictedProfile() {
+        assertFalse(kashyap(DOC_MODE_BOTH).has(CAP_MANAGE_PLANNING));
+        AccessScope planner = AccessScope.of("a@x.com", "m1", MODE_DEPARTMENTS, CREATIVE, false, Set.of(CAP_MANAGE_PLANNING), "Planner");
+        assertTrue(planner.has(CAP_MANAGE_PLANNING));
+        assertTrue(ALL_CAPABILITIES.contains(CAP_MANAGE_PLANNING));
+    }
+
+    @Test void planningAndReportingAreasAreOpenForReadingToRestrictedCallers() {
+        AccessScope editor = assignedOnly("e@x.com", "m7");
+        for (String p : List.of("/api/goals", "/api/goals/g1", "/api/sprints", "/api/sprints/s1/tasks", "/api/epics", "/api/releases",
+                "/api/raid", "/api/changes", "/api/decisions", "/api/channels", "/api/channels/c1/messages", "/api/initiatives",
+                "/api/programmes", "/api/standup", "/api/sops", "/api/reports/summary", "/api/analytics", "/api/ai/intelligence/risks",
+                "/api/ai/chat", "/api/time/report")) {
+            assertTrue(AccessGatePolicy.isAllowed(p, "GET", editor), p);
+        }
+    }
+
+    @Test void changingPlanningRecordsNeedsThePlanningCapability() {
+        AccessScope without = assignedOnly("e@x.com", "m7");
+        AccessScope planner = AccessScope.of("a@x.com", "m1", MODE_DEPARTMENTS, CREATIVE, true,
+                Set.of(CAP_MANAGE_PLANNING), "Planner");
+        for (String p : List.of("/api/goals", "/api/sprints/s1", "/api/epics/e1", "/api/releases", "/api/raid", "/api/changes/c1",
+                "/api/decisions", "/api/initiatives", "/api/programmes/p1/milestones", "/api/sops/s1/publish")) {
+            assertFalse(AccessGatePolicy.isAllowed(p, "POST", without), p);
+            assertFalse(AccessGatePolicy.isAllowed(p, "DELETE", without), p);
+            assertTrue(AccessGatePolicy.isAllowed(p, "POST", planner), p);
+        }
+        // chat, stand-up entries and AI helpers are not planning records
+        assertTrue(AccessGatePolicy.isAllowed("/api/channels/c1/messages", "POST", without));
+        assertTrue(AccessGatePolicy.isAllowed("/api/standup", "POST", without));
+        assertTrue(AccessGatePolicy.isAllowed("/api/ai/chat", "POST", without));
     }
 }

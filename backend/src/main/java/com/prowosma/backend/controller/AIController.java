@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
 public class AIController {
+    private final com.prowosma.backend.service.VisibilityService visibility;
+    private final com.prowosma.backend.service.GoalService goalService;
 
     private final AIService aiService;
     private final AISettingsService aiSettingsService;
@@ -105,7 +107,7 @@ public class AIController {
     public Map<String, Object> prioritizeTasks(@RequestBody Map<String, Object> body) {
         if (!aiService.isEnabled("prioritization"))
             return Map.of("error", "Prioritization Engine is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> !"DONE".equals(t.getStatus())).toList();
         if (tasks.isEmpty()) return Map.of("message", "No tasks to prioritize");
         StringBuilder taskList = new StringBuilder();
@@ -132,7 +134,7 @@ public class AIController {
     public Map<String, Object> getDailyDigest() {
         if (!aiService.isEnabled("daily_digest"))
             return Map.of("error", "Daily Digest is not enabled");
-        List<Task> allTasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> allTasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         List<Task> overdue = allTasks.stream()
                 .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now())
                         && !"DONE".equals(t.getStatus())).toList();
@@ -185,7 +187,7 @@ public class AIController {
     public Map<String, Object> schedule(@RequestBody Map<String, Object> body) {
         if (!aiService.isEnabled("scheduling"))
             return Map.of("error", "Smart Scheduling is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> !"DONE".equals(t.getStatus())).collect(Collectors.toList());
         String workHours = (String) body.getOrDefault("workHours", "9-17");
         String startDate = (String) body.getOrDefault("startDate",
@@ -212,9 +214,9 @@ public class AIController {
     public Map<String, Object> weeklyPlan() {
         if (!aiService.isEnabled("weekly_planning"))
             return Map.of("error", "Weekly Planning is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> !"DONE".equals(t.getStatus())).toList();
-        List<Project> projects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         StringBuilder context = new StringBuilder();
         context.append("Active Tasks: ").append(tasks.size()).append("\n");
         tasks.stream().limit(20).forEach(t -> context.append("- ")
@@ -256,7 +258,7 @@ public class AIController {
     public Map<String, Object> standup() {
         if (!aiService.isEnabled("standup"))
             return Map.of("error", "Daily Standup is not enabled");
-        List<Task> allTasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> allTasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         List<Task> inProgress = allTasks.stream()
                 .filter(t -> "IN_PROGRESS".equals(t.getStatus())).toList();
         List<Task> done = allTasks.stream()
@@ -290,7 +292,7 @@ public class AIController {
     public Map<String, Object> detectDependencies() {
         if (!aiService.isEnabled("dependency_detection"))
             return Map.of("error", "Dependency Detection is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> !"DONE".equals(t.getStatus())).toList();
         if (tasks.size() < 2) return Map.of("dependencies", List.of(), "message", "Need at least 2 tasks");
         StringBuilder taskList = new StringBuilder();
@@ -311,10 +313,10 @@ public class AIController {
     public Map<String, Object> detectRisks() {
         if (!aiService.isEnabled("risk_detection"))
             return Map.of("error", "Risk Detection is not enabled");
-        List<Task> overdue = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> overdue = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now())
                         && !"DONE".equals(t.getStatus())).toList();
-        List<Project> projects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         StringBuilder context = new StringBuilder();
         context.append("Overdue tasks: ").append(overdue.size()).append("\n");
         context.append("Total projects: ").append(projects.size()).append("\n");
@@ -372,7 +374,7 @@ public class AIController {
     public Map<String, Object> focusMode() {
         if (!aiService.isEnabled("focus_mode"))
             return Map.of("error", "Focus Mode is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> !"DONE".equals(t.getStatus())).toList();
         StringBuilder taskList = new StringBuilder();
         tasks.stream().limit(20).forEach(t -> taskList.append("- ").append(t.getTitle())
@@ -413,7 +415,7 @@ public class AIController {
     public Map<String, Object> burnoutCheck() {
         if (!aiService.isEnabled("burnout_detection"))
             return Map.of("error", "Burnout Detection is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         long overdue = tasks.stream().filter(t -> t.getDueDate() != null
                 && t.getDueDate().isBefore(LocalDateTime.now())
                 && !"DONE".equals(t.getStatus())).count();
@@ -442,9 +444,9 @@ public class AIController {
         if (!aiService.isEnabled("knowledge_assistant"))
             return Map.of("error", "Knowledge Assistant is not enabled");
         String question = body.get("question");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> projects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Goal> goals = goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Goal> goals = goalService.getAll();
         String context = String.format(
                 "Projects: %d, Tasks: %d (Done: %d), Goals: %d",
                 projects.size(), tasks.size(),
@@ -467,8 +469,8 @@ public class AIController {
             return Map.of("error", "Chat Assistant is not enabled");
         String message = (String) body.get("message");
         List<Map<String, String>> history = (List<Map<String, String>>) body.getOrDefault("history", List.of());
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> projects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         String context = String.format("Projects: %d, Tasks: %d", projects.size(), tasks.size());
         // Extract userName from top-level OR from nested context map
         String userName = (String) body.getOrDefault("userName", null);
@@ -506,8 +508,8 @@ public class AIController {
     public Map<String, Object> predictRisks() {
         if (!aiService.isEnabled("predictive_planning"))
             return Map.of("error", "Predictive Planning is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> projects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         long overdueCount = tasks.stream().filter(t -> t.getDueDate() != null
                 && t.getDueDate().isBefore(LocalDateTime.now())
                 && !"DONE".equals(t.getStatus())).count();
@@ -533,7 +535,7 @@ public class AIController {
     public Map<String, Object> teamInsights() {
         if (!aiService.isEnabled("team_insights"))
             return Map.of("error", "Team Insights is not enabled");
-        List<Task> tasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         Map<String, Long> byAssignee = new java.util.HashMap<>();
         tasks.forEach(t -> {
             if (t.getAssigneeIds() != null) {
@@ -612,9 +614,9 @@ public class AIController {
     @GetMapping("/executive-summary")
     public Map<String, Object> executiveSummary() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<com.prowosma.backend.model.Project> projects = projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<com.prowosma.backend.model.Task>    tasks    = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<com.prowosma.backend.model.Goal>    goals    = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<com.prowosma.backend.model.Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<com.prowosma.backend.model.Task>    tasks    = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<com.prowosma.backend.model.Goal>    goals    = goalService.getAll();
 
         long total     = tasks.size();
         long done      = tasks.stream().filter(t -> "DONE".equals(t.getStatus())).count();
@@ -671,7 +673,7 @@ public class AIController {
     @GetMapping("/predict-delays")
     public Map<String, Object> predictDelays() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
         List<Map<String, Object>> atRisk = new ArrayList<>();
@@ -707,7 +709,7 @@ public class AIController {
     @GetMapping("/goal-failure-prediction")
     public Map<String, Object> goalFailurePrediction() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Goal> goals = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Goal> goals = goalService.getAll();
 
         List<Map<String, Object>> predictions = new ArrayList<>();
         for (Goal g : goals) {
@@ -761,7 +763,7 @@ public class AIController {
     @GetMapping("/daily-priorities")
     public Map<String, Object> dailyPriorities() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
         // Score each task: overdue(+30) high-priority(+20) due-today(+15) in-progress(+10) blocked(-20)
@@ -808,7 +810,7 @@ public class AIController {
     @GetMapping("/process-mining")
     public Map<String, Object> processMining() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
         // Calculate avg days in each stage by looking at task age vs status
@@ -863,8 +865,8 @@ public class AIController {
     @GetMapping("/goal-recommendations")
     public Map<String, Object> goalRecommendations() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Goal> goals = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Goal> goals = goalService.getAll();
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
 
         if (goals.isEmpty()) return Map.of("recommendations", List.of(),
             "message", "Create some goals first to get AI recommendations.");
@@ -910,13 +912,13 @@ public class AIController {
         String orgId = workspaceContext.getWorkspaceId();
         String query = q.toLowerCase().trim();
 
-        List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
             .filter(t -> t.getTitle() != null && (
                 t.getTitle().toLowerCase().contains(query) ||
                 (t.getDescription() != null && t.getDescription().toLowerCase().contains(query))))
             .limit(10).collect(java.util.stream.Collectors.toList());
 
-        List<Goal> goals = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Goal> goals = goalService.getAll().stream()
             .filter(g -> g.getTitle() != null && g.getTitle().toLowerCase().contains(query))
             .limit(5).collect(java.util.stream.Collectors.toList());
 

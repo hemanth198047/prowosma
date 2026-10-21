@@ -28,17 +28,19 @@ public class InitiativeController {
 
     private final InitiativeRepository repo;
     private final WorkspaceContext     ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public PagedResponse<Initiative> getAll(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
         var all = repo.findByOrganizationId(ws.getWorkspaceId());
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds())), page, Math.min(size, 200));
     }
 
     @PostMapping
     public Initiative create(@RequestBody Initiative i, Authentication auth) {
+        visibility.requireMayCreateLinked((String) null);
         i.setOrganizationId(ws.getWorkspaceId());
         i.setCreatedBy(auth.getName());
         i.setCreatedAt(LocalDateTime.now());
@@ -49,6 +51,7 @@ public class InitiativeController {
     @PutMapping("/{id}")
     public Initiative update(@PathVariable String id, @RequestBody Initiative patch) {
         return repo.findById(id).map(i -> {
+            visibility.requireLinkedWrite(i, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds()));
             if (patch.getName()               != null) i.setName(patch.getName());
             if (patch.getDescription()        != null) i.setDescription(patch.getDescription());
             if (patch.getStrategicRationale() != null) i.setStrategicRationale(patch.getStrategicRationale());
@@ -70,7 +73,7 @@ public class InitiativeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable String id) {
-        repo.deleteById(id);
+        repo.findById(id).ifPresent(i -> { visibility.requireLinkedWrite(i, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds())); repo.delete(i); });
         return ResponseEntity.ok(Map.of("message", "Deleted"));
     }
 }

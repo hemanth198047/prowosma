@@ -23,6 +23,16 @@ public class SopController {
 
     private final SopRepository    sopRepository;
     private final WorkspaceContext workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
+
+    private static final java.util.function.Function<Sop, List<String>> PEOPLE = x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner(), x.getUserEmail());
+    private static final java.util.function.Function<Sop, List<String>> NO_PROJECTS = x -> new java.util.ArrayList<String>();
+
+    /** The SOP, or 404 when the caller may not see it. */
+    private Sop visibleSop(Sop s) { return visibility.requireLinked(s, PEOPLE, NO_PROJECTS); }
+
+    /** The SOP for changing: visible, and the caller may change planning records. */
+    private Sop writableSop(Sop s) { return visibility.requireLinkedWrite(s, PEOPLE, NO_PROJECTS); }
 
     @GetMapping
     public PagedResponse<Sop> getAll(
@@ -37,22 +47,23 @@ public class SopController {
         else if (category != null) all = sopRepository.findByWorkspaceIdAndCategoryOrderByUpdatedAtDesc(wsId, category);
         else if (status   != null) all = sopRepository.findByWorkspaceIdAndStatusOrderByUpdatedAtDesc(wsId, status);
         else                       all = sopRepository.findByWorkspaceIdOrderByUpdatedAtDesc(wsId);
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, PEOPLE, NO_PROJECTS), page, Math.min(size, 200));
     }
 
     @GetMapping("/{id}")
     public Sop getById(@PathVariable String id) {
-        return sopRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SOP not found: " + id));
+        return visibleSop(sopRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SOP not found: " + id)));
     }
 
     @GetMapping("/categories")
     public List<Sop> getCategories() {
-        return sopRepository.findDistinctCategoryByWorkspaceId(workspaceContext.getWorkspaceId());
+        return visibility.filterLinked(sopRepository.findDistinctCategoryByWorkspaceId(workspaceContext.getWorkspaceId()), PEOPLE, NO_PROJECTS);
     }
 
     @PostMapping
     public Sop create(@RequestBody Sop sop, Authentication auth) {
+        visibility.requireMayCreateLinked((String) null);
         sop.setWorkspaceId(workspaceContext.getWorkspaceId());
         sop.setCreatedBy(auth.getName());
         sop.setStatus("DRAFT");
@@ -66,6 +77,7 @@ public class SopController {
     @PutMapping("/{id}")
     public Sop update(@PathVariable String id, @RequestBody Map<String, Object> patch) {
         return sopRepository.findById(id).map(s -> {
+            writableSop(s);
             if (patch.containsKey("title"))          s.setTitle((String) patch.get("title"));
             if (patch.containsKey("description"))    s.setDescription((String) patch.get("description"));
             if (patch.containsKey("category"))       s.setCategory((String) patch.get("category"));
@@ -85,6 +97,7 @@ public class SopController {
     @PostMapping("/{id}/publish")
     public Sop publish(@PathVariable String id) {
         return sopRepository.findById(id).map(s -> {
+            writableSop(s);
             s.setStatus("ACTIVE");
             // version is int (primitive), safe to use directly
             s.setVersion(s.getVersion() + 1);
@@ -96,6 +109,7 @@ public class SopController {
     @PostMapping("/{id}/mark-reviewed")
     public Sop markReviewed(@PathVariable String id, Authentication auth) {
         return sopRepository.findById(id).map(s -> {
+            writableSop(s);
             s.setLastReviewedAt(LocalDateTime.now());
             s.setLastReviewedBy(auth.getName());
             s.setUpdatedAt(LocalDateTime.now());
@@ -106,6 +120,7 @@ public class SopController {
     @PostMapping("/{id}/duplicate")
     public Sop duplicate(@PathVariable String id, Authentication auth) {
         return sopRepository.findById(id).map(s -> {
+            visibleSop(s); visibility.requireMayCreateLinked((String) null);
             Sop copy = new Sop();
             copy.setWorkspaceId(s.getWorkspaceId());
             copy.setTitle(s.getTitle() + " (Copy)");
@@ -124,7 +139,7 @@ public class SopController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable String id) {
-        sopRepository.deleteById(id);
+        sopRepository.findById(id).ifPresent(s -> { writableSop(s); sopRepository.delete(s); });
         return ResponseEntity.ok(Map.of("message", "SOP deleted"));
     }
 }

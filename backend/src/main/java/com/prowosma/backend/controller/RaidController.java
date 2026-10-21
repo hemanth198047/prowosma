@@ -23,6 +23,7 @@ import java.util.Map;
 public class RaidController {
     private final RaidRepository raidRepository;
     private final WorkspaceContext workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public PagedResponse<RaidEntry> getAll(
@@ -33,11 +34,12 @@ public class RaidController {
         var all = projectId != null
             ? raidRepository.findByOrganizationIdAndProjectId(orgId, projectId)
             : raidRepository.findByOrganizationId(orgId);
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())), page, Math.min(size, 200));
     }
 
     @PostMapping
     public RaidEntry create(@RequestBody RaidEntry entry, Authentication auth) {
+        visibility.requireMayCreateLinked(entry.getProjectId());
         entry.setOrganizationId(workspaceContext.getWorkspaceId());
         entry.setCreatedBy(auth.getName());
         entry.setCreatedAt(LocalDateTime.now());
@@ -49,6 +51,7 @@ public class RaidController {
     @PutMapping("/{id}")
     public RaidEntry update(@PathVariable String id, @RequestBody RaidEntry patch) {
         return raidRepository.findById(id).map(e -> {
+            visibility.requireLinkedWrite(e, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             if (patch.getTitle()       != null) e.setTitle(patch.getTitle());
             if (patch.getDescription() != null) e.setDescription(patch.getDescription());
             if (patch.getOwner()       != null) e.setOwner(patch.getOwner());
@@ -63,7 +66,7 @@ public class RaidController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        raidRepository.deleteById(id);
+        raidRepository.findById(id).ifPresent(e -> { visibility.requireLinkedWrite(e, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())); raidRepository.delete(e); });
         return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 }

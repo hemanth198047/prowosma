@@ -35,7 +35,7 @@ The workspace owner is never restricted. Rules live in `access/AccessScope.java`
 * **Fireflies:** a restricted person can send the notetaker to their own meeting. "Load my recent Fireflies meetings" and "Import" list the whole company's Fireflies account, so they stay owner/admin only.
 * **Watchers:** adding someone as a watcher lets them see the task, so a restricted person can only watch tasks themselves unless they have `ALLOCATE_TASKS`.
 
-**Default-deny gate** (`access/AccessGatePolicy.java`): restricted people reach only `/api/projects`, `/api/tasks`, `/api/docs`, `/api/notifications` (except announce), `/api/dashboard/summary`, `/api/search`, `/api/gantt` (reads, plus moving a task's dates), `/api/activity-logs` (reads, except export, integrity check and summary), `/api/meeting-assistant` (with the capability, except the Fireflies account list and import), `/api/team`, `/api/categories` and `/api/custom-fields` (reads), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else returns 403 `ACCESS_RESTRICTED`. Add an area to the allowlist only after scoping it, with a test.
+**Default-deny gate** (`access/AccessGatePolicy.java`): restricted people reach only `/api/projects`, `/api/tasks`, `/api/docs`, the planning/reporting areas above, `/api/notifications` (except announce), `/api/dashboard/summary`, `/api/search`, `/api/gantt` (reads, plus moving a task's dates), `/api/activity-logs` (reads, except export, integrity check and summary), `/api/meeting-assistant` (with the capability, except the Fireflies account list and import), `/api/team`, `/api/categories` and `/api/custom-fields` (reads), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else returns 403 `ACCESS_RESTRICTED`. Add an area to the allowlist only after scoping it, with a test.
 
 Project budgets, spend and revenue are removed from responses unless the profile has `VIEW_FINANCIALS`.
 
@@ -57,7 +57,25 @@ Applies to: the document list, search, recent and favourites, opening, editing, 
 
 Also fixed for everyone: the docs list, search, recent and favourites took the workspace from the URL instead of the verified request, and a new document could name another workspace in its body. Both now use the verified workspace.
 
-**Still closed to restricted people** (scoping each needs its own design): goals, sprints, KPIs, reports, analytics, portfolio and ROI views, decisions, the older Meetings area, channels, automations, integrations, AI features, import/export, time tracking.
+**Planning, knowledge and reporting areas** use one rule. A record is visible to a restricted person if they made it or own it, **or** it belongs to a project they can see. Otherwise it is hidden (and answered as "not found").
+
+| Area | Visible when |
+|---|---|
+| Epics, releases, RAID (risks), change requests, sprints | made/owned by them, or in a visible project |
+| Goals | made/owned by them, or linked to a visible project |
+| Decisions | made/owned by them, or linked to a visible project |
+| Initiatives, programmes | made/owned by them, or any of their projects is visible |
+| Channels (and their messages) | they made it, they are a member, or its project is visible |
+| Stand-up | their own entries only |
+| SOPs | made or owned by them only (SOPs have no department or project link yet; see limits) |
+
+**Changing** these records (create, edit, delete) needs the `MANAGE_PLANNING` capability. Posting in a channel you can see and adding your stand-up entry do not. Creating a record in a project requires that the project is visible to you. Adding a task to a sprint requires that the task is visible.
+
+**Reports, analytics, the AI assistant and AI intelligence** are computed from the tasks, projects, goals and sprints the person can see, so counts, charts, risk lists and anything sent to the AI model contain nothing else. The weekly trend in Analytics is built from visible tasks instead of the whole-workspace activity log. The **time report** covers visible tasks; hourly rates and amounts are zero unless the profile has `VIEW_FINANCIALS`.
+
+**Closed to restricted people by design** (workspace-wide configuration, money, or cross-team data): integrations, automations, webhooks, API keys, billing, SSO/SCIM, DLP, security, user groups, import and import/export, invoices, ROI, scenarios, KPIs, deployments, expertise, risk planning, reminders, workspace statistics. The owner and unrestricted admins keep full access.
+
+**Not scoped yet:** the older Meetings area and its action items and continuity views (the Meeting Assistant replaces them), and BPM. They stay closed to restricted people.
 
 ## Setting up a company
 
@@ -91,6 +109,9 @@ Org setup never creates admins; make those by hand.
 ## Known limits
 
 * Unrestricted members (including legacy members with no profile) see every document. Keep genuinely confidential material (HR, pay) in a separate workspace.
+* SOPs have no department or project link, so a restricted person sees only SOPs they made or own. Company-wide SOPs need a sharing model like documents have.
+* Records created before access control that nobody made or own (no creator) and sit in no project are hidden from restricted people.
+* Some pages still call closed endpoints for secondary widgets (for example invoices on the Time page) and may show an error for that widget.
 * A document's child pages are checked one by one; a visible page under a hidden parent shows at the top level.
 * Task attachment downloads are by unguessable file name and are not checked against the task.
 * API-key callers are not restricted.

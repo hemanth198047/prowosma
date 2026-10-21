@@ -15,6 +15,7 @@ import java.util.*;
 public class EpicController {
     private final EpicRepository repo;
     private final WorkspaceContext ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
     @GetMapping public PagedResponse<Epic> getAll(
             @RequestParam(required = false) String projectId,
             @RequestParam(defaultValue = "0")  int page,
@@ -22,15 +23,17 @@ public class EpicController {
         var all = repo.findByOrganizationId(ws.getWorkspaceId());
         if (projectId != null)
             all = all.stream().filter(e -> projectId.equals(e.getProjectId())).toList();
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())), page, Math.min(size, 200));
     }
     @PostMapping public Epic create(@RequestBody Epic e, Authentication auth) {
+        visibility.requireMayCreateLinked(e.getProjectId());
         e.setOrganizationId(ws.getWorkspaceId()); e.setCreatedBy(auth.getName());
         e.setCreatedAt(LocalDateTime.now()); e.setUpdatedAt(LocalDateTime.now());
         return repo.save(e);
     }
     @PutMapping("/{id}") public Epic update(@PathVariable String id, @RequestBody Epic patch) {
         return repo.findById(id).map(e -> {
+            visibility.requireLinkedWrite(e, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             if (patch.getName()       != null) e.setName(patch.getName());
             if (patch.getDescription()!= null) e.setDescription(patch.getDescription());
             if (patch.getStatus()     != null) e.setStatus(patch.getStatus());
@@ -41,6 +44,7 @@ public class EpicController {
         }).orElseThrow();
     }
     @DeleteMapping("/{id}") public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        repo.deleteById(id); return ResponseEntity.ok(Map.of("message","Deleted"));
+        repo.findById(id).ifPresent(e -> { visibility.requireLinkedWrite(e, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())); repo.delete(e); });
+        return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 }

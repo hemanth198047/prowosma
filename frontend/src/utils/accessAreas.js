@@ -5,7 +5,12 @@
  */
 export const RESTRICTED_LANDING = "/tasks";
 
-const ALLOWED_PREFIXES = ["/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/search", "/team", "/profile"];
+const ALLOWED_PREFIXES = [
+  "/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/search", "/team", "/profile",
+  // planning, knowledge and insight areas (each scoped on the server to what the person may see)
+  "/goals", "/sprints", "/epics", "/releases", "/roadmap", "/change-requests", "/portfolio-plus", "/decisions",
+  "/channels", "/sops", "/reports", "/analytics", "/time-tracking", "/ai", "/ai-intelligence",
+];
 // Needs the USE_MEETING_ASSISTANT capability on the person's access profile.
 const MEETING_PREFIX = "/meeting-assistant";
 

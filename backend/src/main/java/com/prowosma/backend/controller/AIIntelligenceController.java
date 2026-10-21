@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 @Tag(name = "AI Intelligence", description = "Proactive AI-generated workspace insights")
 @RequiredArgsConstructor
 public class AIIntelligenceController {
+    private final com.prowosma.backend.service.VisibilityService visibility;
+    private final com.prowosma.backend.service.GoalService goalService;
+    private final com.prowosma.backend.service.SprintService sprintService;
 
     private final TaskRepository    taskRepository;
     private final GoalRepository    goalRepository;
@@ -39,12 +42,12 @@ public class AIIntelligenceController {
     @GetMapping("/sprint-risks")
     public List<Map<String, Object>> getSprintRisks() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Sprint> activeSprints = sprintRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Sprint> activeSprints = sprintService.getAll().stream()
             .filter(s -> "ACTIVE".equals(s.getStatus())).collect(Collectors.toList());
 
         List<Map<String, Object>> risks = new ArrayList<>();
         for (Sprint sprint : activeSprints) {
-            List<Task> tasks = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+            List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
                 .filter(t -> sprint.getId().equals(t.getSprintId())).collect(Collectors.toList());
             if (tasks.isEmpty()) continue;
 
@@ -82,7 +85,7 @@ public class AIIntelligenceController {
         String orgId = workspaceContext.getWorkspaceId();
         LocalDateTime now = LocalDateTime.now();
 
-        List<Task> overdue = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> overdue = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
             .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
                       && !"DONE".equals(t.getStatus()))
             .sorted(Comparator.comparing(Task::getDueDate))
@@ -115,7 +118,7 @@ public class AIIntelligenceController {
     @GetMapping("/goal-trajectory")
     public List<Map<String, Object>> getGoalTrajectory() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Goal> goals = goalRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Goal> goals = goalService.getAll().stream()
             .filter(g -> "ACTIVE".equals(g.getStatus())).collect(Collectors.toList());
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -142,7 +145,7 @@ public class AIIntelligenceController {
     @GetMapping("/bottlenecks")
     public List<Map<String, Object>> detectBottlenecks() {
         String orgId = workspaceContext.getWorkspaceId();
-        List<Task> active = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> active = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
             .filter(t -> !"DONE".equals(t.getStatus())).collect(Collectors.toList());
 
         Map<String, Long> load = new HashMap<>();
@@ -170,7 +173,7 @@ public class AIIntelligenceController {
     public List<Map<String, Object>> getRecommendations() {
         String orgId = workspaceContext.getWorkspaceId();
         List<Map<String, Object>> recs = new ArrayList<>();
-        List<Task> all = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> all = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
 
         long overdue = all.stream().filter(t -> t.getDueDate() != null
             && t.getDueDate().isBefore(LocalDateTime.now()) && !"DONE".equals(t.getStatus())).count();
@@ -209,7 +212,7 @@ public class AIIntelligenceController {
     public Map<String, Object> generateChangelog(@RequestParam(defaultValue = "7") int days) {
         String orgId = workspaceContext.getWorkspaceId();
         LocalDateTime since = LocalDateTime.now().minusDays(days);
-        List<Task> recent = taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
+        List<Task> recent = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
             .filter(t -> t.getUpdatedAt() != null && t.getUpdatedAt().isAfter(since))
             .collect(Collectors.toList());
 

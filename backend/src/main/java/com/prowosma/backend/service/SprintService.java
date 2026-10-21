@@ -22,17 +22,23 @@ public class SprintService {
     private final TaskRepository   taskRepository;
     private final WorkspaceContext workspaceContext;
     private final ActivityLogService activityLogService;
+    private final VisibilityService visibility;
+
+    private static final java.util.function.Function<Sprint, List<String>> PEOPLE = s -> VisibilityService.people(s.getCreatedBy());
+    private static final java.util.function.Function<Sprint, List<String>> PROJECTS = s -> VisibilityService.projectsOf(s.getProjectId());
 
     public List<Sprint> getAll() {
-        return sprintRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
+        return visibility.filterLinked(sprintRepository.findByOrganizationId(workspaceContext.getWorkspaceId()), PEOPLE, PROJECTS);
     }
 
     public Sprint getById(String id) {
-        return sprintRepository.findById(id)
+        Sprint s = sprintRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Sprint not found: " + id));
+        return visibility.requireLinked(s, PEOPLE, PROJECTS);
     }
 
     public Sprint create(Sprint sprint, String author) {
+        visibility.requireMayCreateLinked(sprint.getProjectId());
         sprint.setOrganizationId(workspaceContext.getWorkspaceId());
         sprint.setCreatedBy(author);
         sprint.setCreatedAt(LocalDateTime.now());
@@ -45,6 +51,8 @@ public class SprintService {
 
     public Sprint update(String id, Sprint patch) {
         Sprint existing = getById(id);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
+        if (patch.getProjectId() != null) visibility.requireProjectIdVisible(patch.getProjectId());
         if (patch.getName()      != null) existing.setName(patch.getName());
         if (patch.getGoal()      != null) existing.setGoal(patch.getGoal());
         if (patch.getStatus()    != null) existing.setStatus(patch.getStatus());
@@ -57,6 +65,7 @@ public class SprintService {
 
     public void delete(String id) {
         Sprint s = getById(id);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
         activityLogService.log("SPRINT", id, s.getName(), "DELETED", s.getName(), null, null);
         sprintRepository.deleteById(id);
     }
@@ -65,6 +74,9 @@ public class SprintService {
 
     public Sprint addTask(String sprintId, String taskId) {
         Sprint sprint = getById(sprintId);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
+        taskRepository.findById(taskId).filter(visibility::canSeeTask)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Task not found"));
         if (!sprint.getTaskIds().contains(taskId))
             sprint.getTaskIds().add(taskId);
         sprint.setUpdatedAt(LocalDateTime.now());
@@ -76,6 +88,7 @@ public class SprintService {
 
     public Sprint removeTask(String sprintId, String taskId) {
         Sprint sprint = getById(sprintId);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
         sprint.getTaskIds().remove(taskId);
         sprint.setUpdatedAt(LocalDateTime.now());
         Sprint saved = sprintRepository.save(sprint);
@@ -89,7 +102,7 @@ public class SprintService {
         Sprint sprint = getById(sprintId);
         if (sprint.getTaskIds() == null || sprint.getTaskIds().isEmpty())
             return Collections.emptyList();
-        return taskRepository.findAllById(sprint.getTaskIds());
+        return visibility.filterTasks(taskRepository.findAllById(sprint.getTaskIds()));
     }
 
     // ── C-2: Burndown data ────────────────────────────────────────
@@ -149,6 +162,7 @@ public class SprintService {
 
     public Sprint saveRetrospective(String sprintId, Sprint.Retrospective retro, String author) {
         Sprint sprint = getById(sprintId);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
         retro.setCompletedBy(author);
         retro.setCompletedAt(LocalDateTime.now());
         sprint.setRetrospective(retro);
@@ -159,6 +173,12 @@ public class SprintService {
         return saved;
     }
     public PagedResponse<Sprint> getAllPaged(PageRequest pr) {
+        if (visibility.isRestricted()) {
+            var mine = getAll().stream()
+                    .sorted(java.util.Comparator.comparing(Sprint::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                    .collect(java.util.stream.Collectors.toList());
+            return PagedResponse.of(visibility.pageOf(mine, pr));
+        }
         return PagedResponse.of(
                 sprintRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), pr));
     }

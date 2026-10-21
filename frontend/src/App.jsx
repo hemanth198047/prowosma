@@ -270,7 +270,21 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
           <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
           <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
+          <NavLink to="/goals" onClick={onNav}>🎯 Goals</NavLink>
+          <NavLink to="/sprints" onClick={onNav}>🏃 Sprints</NavLink>
+          <NavLink to="/epics" onClick={onNav}>🗃 Epics</NavLink>
+          <NavLink to="/releases" onClick={onNav}>🚀 Releases</NavLink>
+          <NavLink to="/roadmap" onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
+          <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
+          <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>
           <NavLink to="/docs" onClick={onNav}>📄 Docs</NavLink>
+          <NavLink to="/sops" onClick={onNav}>📖 SOPs</NavLink>
+          <NavLink to="/decisions" onClick={onNav}>🧠 Decisions</NavLink>
+          <NavLink to="/channels" onClick={onNav}>💬 Channels</NavLink>
+          <NavLink to="/reports" onClick={onNav}>📋 Reports</NavLink>
+          <NavLink to="/analytics" onClick={onNav}>📈 Analytics</NavLink>
+          <NavLink to="/time-tracking" onClick={onNav}>⏱ Time</NavLink>
+          <NavLink to="/ai" onClick={onNav}>🤖 AI Assistant</NavLink>
           {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
           <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
         </div>

@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor
 public class ReportController {
+    private final com.prowosma.backend.service.VisibilityService visibility;
+    private final com.prowosma.backend.service.GoalService goalService;
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
@@ -34,9 +36,9 @@ public class ReportController {
         LocalDateTime toDate = to != null ?
                 LocalDateTime.parse(to) : LocalDateTime.now();
 
-        List<Task> allTasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Project> allProjects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
-        List<Goal> allGoals = goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+        List<Task> allTasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Project> allProjects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+        List<Goal> allGoals = goalService.getAll();
 
         List<Task> periodTasks = allTasks.stream()
                 .filter(t -> t.getCreatedAt() != null &&

@@ -155,6 +155,23 @@ public final class AccessScope {
         return out;
     }
 
+    // ── records linked to people and projects (goals, sprints, releases, risks, decisions, meetings ...) ──
+
+    /**
+     * A record is visible when the caller made it or owns it, or when it belongs to a project the caller can see.
+     * A record with neither (no project, someone else's) is hidden.
+     *
+     * @param people             the emails recorded on it (creator, owner, author, requester ...)
+     * @param anyLinkedProjectVisible whether at least one project it is linked to is visible to the caller
+     */
+    public boolean canSeeLinked(java.util.Collection<String> people, boolean anyLinkedProjectVisible) {
+        if (!isRestricted()) return true;
+        if (!email.isEmpty() && people != null) {
+            for (String p : people) if (email.equals(norm(p))) return true;
+        }
+        return anyLinkedProjectVisible;
+    }
+
     // ── documents ───────────────────────────────────────────────────────────────
 
     private boolean docSharingOn() { return !DOC_MODE_DEPARTMENTS.equals(docMode); }

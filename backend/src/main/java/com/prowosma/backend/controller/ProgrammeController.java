@@ -16,17 +16,23 @@ import java.util.UUID;
 public class ProgrammeController {
     private final ProgrammeRepository repo;
     private final WorkspaceContext    ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public PagedResponse<Programme> getAll(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
+        if (visibility.isRestricted()) {
+            var mine = repo.findByOrganizationId(ws.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent();
+            return PagedResponse.ofList(visibility.filterLinked(mine, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds())), page, Math.min(size, 200));
+        }
         return PagedResponse.of(repo.findByOrganizationId(ws.getWorkspaceId(),
             org.springframework.data.domain.PageRequest.of(page, Math.min(size, 200))));
     }
 
     @PostMapping
     public Programme create(@RequestBody Programme p, Authentication auth) {
+        visibility.requireMayCreateLinked((String) null);
         p.setOrganizationId(ws.getWorkspaceId());
         p.setCreatedBy(auth.getName());
         p.setCreatedAt(LocalDateTime.now()); p.setUpdatedAt(LocalDateTime.now());
@@ -36,6 +42,7 @@ public class ProgrammeController {
     @PutMapping("/{id}")
     public Programme update(@PathVariable String id, @RequestBody Programme patch) {
         return repo.findById(id).map(p -> {
+            visibility.requireLinkedWrite(p, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds()));
             if (patch.getName()       != null) p.setName(patch.getName());
             if (patch.getDescription()!= null) p.setDescription(patch.getDescription());
             if (patch.getStatus()     != null) p.setStatus(patch.getStatus());
@@ -51,6 +58,7 @@ public class ProgrammeController {
     public Programme addMilestone(@PathVariable String id,
                                   @RequestBody Programme.ProgrammeMilestone m) {
         return repo.findById(id).map(p -> {
+            visibility.requireLinkedWrite(p, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds()));
             if (m.getId() == null || m.getId().isEmpty()) m.setId(UUID.randomUUID().toString());
             p.getMilestones().add(m);
             p.setUpdatedAt(LocalDateTime.now());
@@ -61,6 +69,7 @@ public class ProgrammeController {
     @PatchMapping("/{id}/milestones/{mId}/toggle")
     public Programme toggleMilestone(@PathVariable String id, @PathVariable String mId) {
         return repo.findById(id).map(p -> {
+            visibility.requireLinkedWrite(p, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds()));
             p.getMilestones().stream().filter(m -> mId.equals(m.getId()))
                 .findFirst().ifPresent(m -> m.setCompleted(!m.isCompleted()));
             p.setUpdatedAt(LocalDateTime.now());
@@ -70,6 +79,7 @@ public class ProgrammeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        repo.deleteById(id); return ResponseEntity.ok(Map.of("message","Deleted"));
+        repo.findById(id).ifPresent(q -> { visibility.requireLinkedWrite(q, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectIds())); repo.delete(q); });
+        return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 }

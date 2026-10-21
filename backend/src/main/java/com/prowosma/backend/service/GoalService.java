@@ -22,16 +22,42 @@ public class GoalService {
     private final RealtimeService realtimeService;
     private final WorkspaceContext workspaceContext;
     private final FileStorageService fileStorageService;
+    private final VisibilityService visibility;
+    private final com.prowosma.backend.repository.ProjectRepository projectRepository;
+
+    // A goal is seen by whoever made or owns it, or through a project that is linked to it and visible to them.
+    private static final java.util.function.Function<Goal, List<String>> PEOPLE = g -> VisibilityService.people(g.getCreatedBy(), g.getOwner());
+
+    private java.util.function.Function<Goal, List<String>> projectsOfGoal() {
+        java.util.Map<String, List<String>> byGoal = new java.util.HashMap<>();
+        for (com.prowosma.backend.model.Project p : projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId()))
+            if (p.getLinkedGoalId() != null) byGoal.computeIfAbsent(p.getLinkedGoalId(), k -> new java.util.ArrayList<>()).add(p.getId());
+        return g -> byGoal.getOrDefault(g.getId(), new java.util.ArrayList<>());
+    }
+
+    private List<Goal> visible(List<Goal> goals) {
+        return visibility.isRestricted() ? visibility.filterLinked(goals, PEOPLE, projectsOfGoal()) : goals;
+    }
+
+    /** The goal for changing: visible, and the caller may change planning records. */
+    private Goal writable(String id) {
+        Goal g = getById(id);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_MANAGE_PLANNING);
+        return g;
+    }
 
     public List<Goal> getAll() {
-        return goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
+        return visible(goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId()));
     }
 
     public Goal getById(String id) {
-        return goalRepository.findById(id).orElseThrow(() -> new RuntimeException("Goal not found"));
+        Goal g = goalRepository.findById(id).orElseThrow(() -> new RuntimeException("Goal not found"));
+        if (!visibility.isRestricted()) return g;
+        return visibility.requireLinked(g, PEOPLE, projectsOfGoal());
     }
 
     public Goal create(Goal goal) {
+        visibility.requireMayCreateLinked((String) null);
         goal.setCreatedAt(LocalDateTime.now());
         goal.setUpdatedAt(LocalDateTime.now());
         goal.setOrganizationId(workspaceContext.getWorkspaceId());
@@ -46,7 +72,7 @@ public class GoalService {
     }
 
     public Goal update(String id, Goal updated) {
-        Goal existing = getById(id);
+        Goal existing = writable(id);
         String oldTitle = existing.getTitle();
         existing.setTitle(updated.getTitle());
         existing.setDescription(updated.getDescription());
@@ -66,7 +92,7 @@ public class GoalService {
     }
 
     public void delete(String id) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         activityLogService.logFull("GOAL", id, goal.getTitle(),
                 "GOAL_DELETED", goal.getTitle(), null, null,
                 null, null, id);
@@ -74,7 +100,7 @@ public class GoalService {
     }
 
     public Goal updateProgress(String id, int progress) {
-        Goal existing = getById(id);
+        Goal existing = writable(id);
         int oldProgress = existing.getProgress();
         existing.setProgress(Math.min(100, Math.max(0, progress)));
         if (existing.getProgress() == 100) existing.setStatus("ACHIEVED");
@@ -99,7 +125,7 @@ public class GoalService {
     }
 
     public Goal addSubGoal(String id, SubGoal subGoal) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         if (goal.getSubGoals() == null) goal.setSubGoals(new java.util.ArrayList<>());
         goal.getSubGoals().add(subGoal);
         goal.setUpdatedAt(LocalDateTime.now());
@@ -110,7 +136,7 @@ public class GoalService {
     }
 
     public Goal updateSubGoal(String id, String subGoalId, SubGoal updated) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.getSubGoals().stream().filter(sg -> sg.getId().equals(subGoalId)).findFirst()
                 .ifPresent(sg -> {
                     sg.setTitle(updated.getTitle());
@@ -122,14 +148,14 @@ public class GoalService {
     }
 
     public Goal deleteSubGoal(String id, String subGoalId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.getSubGoals().removeIf(sg -> sg.getId().equals(subGoalId));
         goal.setUpdatedAt(LocalDateTime.now());
         return goalRepository.save(goal);
     }
 
     public Goal addStep(String id, String subGoalId, Step step) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.getSubGoals().stream().filter(sg -> sg.getId().equals(subGoalId)).findFirst()
                 .ifPresent(sg -> {
                     if (sg.getSteps() == null) sg.setSteps(new java.util.ArrayList<>());
@@ -140,7 +166,7 @@ public class GoalService {
     }
 
     public Goal toggleStep(String id, String subGoalId, String stepId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         final String[] stepTitle = {null};
         final boolean[] nowDone  = {false};
         goal.getSubGoals().stream().filter(sg -> sg.getId().equals(subGoalId)).findFirst()
@@ -170,7 +196,7 @@ public class GoalService {
     }
 
     public Goal deleteStep(String id, String subGoalId, String stepId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.getSubGoals().stream().filter(sg -> sg.getId().equals(subGoalId)).findFirst()
                 .ifPresent(sg -> sg.getSteps().removeIf(s -> s.getId().equals(stepId)));
         updateGoalProgressFromSubGoals(goal);
@@ -189,7 +215,7 @@ public class GoalService {
     // ── Step Comments ─────────────────────────────────────────
     public Goal addStepComment(String id, String subGoalId, String stepId,
                                com.prowosma.backend.model.Comment comment) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getComments() == null) step.setComments(new java.util.ArrayList<>());
         step.getComments().add(comment);
@@ -198,7 +224,7 @@ public class GoalService {
     }
 
     public Goal deleteStepComment(String id, String subGoalId, String stepId, String commentId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getComments() != null)
             step.getComments().removeIf(c -> c.getId().equals(commentId));
@@ -210,7 +236,7 @@ public class GoalService {
     public Goal addStepAttachment(String id, String subGoalId, String stepId,
                                   org.springframework.web.multipart.MultipartFile file,
                                   String uploadedBy) throws java.io.IOException {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getAttachments() == null) step.setAttachments(new java.util.ArrayList<>());
         String fileName = fileStorageService.store(file);
@@ -226,7 +252,7 @@ public class GoalService {
     }
 
     public Goal deleteStepAttachment(String id, String subGoalId, String stepId, String attachmentId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getAttachments() != null)
             step.getAttachments().removeIf(a -> a.getId().equals(attachmentId));
@@ -237,7 +263,7 @@ public class GoalService {
     // ── Step Dependencies ─────────────────────────────────────
     public Goal addStepDependency(String id, String subGoalId, String stepId, String blockedByStepId) {
         if (stepId.equals(blockedByStepId)) throw new RuntimeException("Step cannot depend on itself");
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getBlockedByStepIds() == null) step.setBlockedByStepIds(new java.util.ArrayList<>());
         if (!step.getBlockedByStepIds().contains(blockedByStepId))
@@ -247,7 +273,7 @@ public class GoalService {
     }
 
     public Goal removeStepDependency(String id, String subGoalId, String stepId, String blockedByStepId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         Step step = findStep(goal, subGoalId, stepId);
         if (step.getBlockedByStepIds() != null)
             step.getBlockedByStepIds().remove(blockedByStepId);
@@ -272,24 +298,26 @@ public class GoalService {
     // ═══════════════════════════════════════════════════════════
 
     public List<Goal> getRootGoals() {
-        return goalRepository.findByOrganizationIdAndParentGoalIdIsNull(workspaceContext.getWorkspaceId());
+        return visible(goalRepository.findByOrganizationIdAndParentGoalIdIsNull(workspaceContext.getWorkspaceId()));
     }
 
     public List<Goal> getChildGoals(String parentGoalId) {
-        return goalRepository.findByParentGoalId(parentGoalId);
+        return visible(goalRepository.findByParentGoalId(parentGoalId).stream()
+                .filter(g -> workspaceContext.getWorkspaceId() != null && workspaceContext.getWorkspaceId().equals(g.getOrganizationId()))
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     public List<Goal> getByLevel(String level) {
-        return goalRepository.findByOrganizationIdAndLevel(workspaceContext.getWorkspaceId(), level);
+        return visible(goalRepository.findByOrganizationIdAndLevel(workspaceContext.getWorkspaceId(), level));
     }
 
     public List<Goal> getByQuarter(String quarter) {
-        return goalRepository.findByOrganizationIdAndQuarter(workspaceContext.getWorkspaceId(), quarter);
+        return visible(goalRepository.findByOrganizationIdAndQuarter(workspaceContext.getWorkspaceId(), quarter));
     }
 
     /** Returns the full goal tree: each root goal with its children resolved */
     public java.util.Map<String, Object> getGoalTree() {
-        List<Goal> all = goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId());
+        List<Goal> all = visible(goalRepository.findByOrganizationId(workspaceContext.getWorkspaceId()));
         // build id→goal map
         java.util.Map<String, Goal> map = new java.util.LinkedHashMap<>();
         for (Goal g : all) map.put(g.getId(), g);
@@ -318,7 +346,7 @@ public class GoalService {
     // ═══════════════════════════════════════════════════════════
 
     public Goal updateConfidence(String id, int confidence, String note, String author) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.setConfidence(Math.min(100, Math.max(0, confidence)));
         Goal.ConfidenceEntry entry = new Goal.ConfidenceEntry();
         entry.setValue(confidence);
@@ -340,7 +368,7 @@ public class GoalService {
     // ═══════════════════════════════════════════════════════════
 
     public Goal addCheckIn(String id, Goal.CheckIn checkIn, String author) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         checkIn.setId(java.util.UUID.randomUUID().toString());
         checkIn.setAuthor(author);
         checkIn.setProgressSnapshot(goal.getProgress());
@@ -356,7 +384,7 @@ public class GoalService {
     }
 
     public Goal deleteCheckIn(String id, String checkInId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         if (goal.getCheckIns() != null)
             goal.getCheckIns().removeIf(c -> checkInId.equals(c.getId()));
         goal.setUpdatedAt(java.time.LocalDateTime.now());
@@ -368,7 +396,7 @@ public class GoalService {
     // ═══════════════════════════════════════════════════════════
 
     public Goal addKeyResult(String id, Goal.KeyResult kr) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         kr.setId(java.util.UUID.randomUUID().toString());
         kr.setUpdatedAt(java.time.LocalDateTime.now());
         if (goal.getKeyResults() == null) goal.setKeyResults(new java.util.ArrayList<>());
@@ -379,7 +407,7 @@ public class GoalService {
     }
 
     public Goal updateKeyResult(String id, String krId, Goal.KeyResult patch) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         goal.getKeyResults().stream()
             .filter(kr -> krId.equals(kr.getId())).findFirst()
             .ifPresent(kr -> {
@@ -400,7 +428,7 @@ public class GoalService {
     }
 
     public Goal deleteKeyResult(String id, String krId) {
-        Goal goal = getById(id);
+        Goal goal = writable(id);
         if (goal.getKeyResults() != null)
             goal.getKeyResults().removeIf(kr -> krId.equals(kr.getId()));
         syncProgressFromKeyResults(goal);

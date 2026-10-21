@@ -34,6 +34,7 @@ const CAPABILITY_LABELS = {
   ALLOCATE_TASKS: "Assign tasks to others",
   APPROVE: "Approve work",
   VIEW_FINANCIALS: "See budgets and revenue",
+  MANAGE_PLANNING: "Create and change goals, sprints, epics, releases, risks, decisions, change requests, programmes and SOPs",
   USE_MEETING_ASSISTANT: "Use the meeting assistant, including Fireflies (their own meetings only)",
 };
 

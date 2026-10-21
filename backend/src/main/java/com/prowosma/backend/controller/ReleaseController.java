@@ -19,7 +19,7 @@ public class ReleaseController {
     private final org.springframework.context.ApplicationContext applicationContext;
     private final ReleaseRepository repo;
     private final WorkspaceContext  ws;
-    private ReleaseRepository releaseRepository;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public PagedResponse<Release> getAll(
@@ -29,11 +29,12 @@ public class ReleaseController {
         var all = repo.findByOrganizationId(ws.getWorkspaceId());
         if (projectId != null)
             all = all.stream().filter(r -> projectId.equals(r.getProjectId())).toList();
-        return PagedResponse.ofList(all, page, Math.min(size, 200));
+        return PagedResponse.ofList(visibility.filterLinked(all, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())), page, Math.min(size, 200));
     }
 
     @PostMapping
     public Release create(@RequestBody Release r, Authentication auth) {
+        visibility.requireMayCreateLinked(r.getProjectId());
         r.setOrganizationId(ws.getWorkspaceId());
         r.setCreatedBy(auth.getName());
         r.setCreatedAt(LocalDateTime.now());
@@ -44,6 +45,7 @@ public class ReleaseController {
     @PutMapping("/{id}")
     public Release update(@PathVariable String id, @RequestBody Release patch) {
         return repo.findById(id).map(r -> {
+            visibility.requireLinkedWrite(r, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             if (patch.getVersion()      != null) r.setVersion(patch.getVersion());
             if (patch.getName()         != null) r.setName(patch.getName());
             if (patch.getDescription()  != null) r.setDescription(patch.getDescription());
@@ -60,7 +62,7 @@ public class ReleaseController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String,String>> delete(@PathVariable String id) {
-        repo.deleteById(id);
+        repo.findById(id).ifPresent(r -> { visibility.requireLinkedWrite(r, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId())); repo.delete(r); });
         return ResponseEntity.ok(Map.of("message","Deleted"));
     }
 
@@ -69,7 +71,8 @@ public class ReleaseController {
             @PathVariable String id,
             @RequestBody(required = false) java.util.Map<String, Object> body) {
 
-        return releaseRepository.findById(id).map(release -> {
+        return repo.findById(id).map(release -> {
+            visibility.requireLinkedWrite(release, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             com.prowosma.backend.repository.TaskRepository taskRepo =
                 applicationContext.getBean(com.prowosma.backend.repository.TaskRepository.class);
             com.prowosma.backend.service.AIService ai =
@@ -79,7 +82,7 @@ public class ReleaseController {
             java.util.List<String> taskTitles = new java.util.ArrayList<>();
             if (release.getTaskIds() != null) {
                 release.getTaskIds().forEach(tid ->
-                    taskRepo.findById(tid).ifPresent(t -> taskTitles.add(t.getTitle())));
+                    taskRepo.findById(tid).filter(visibility::canSeeTask).ifPresent(t -> taskTitles.add(t.getTitle())));   // titles of tasks the caller can't see never go into the AI prompt
             }
 
             String context = "Release: " + release.getVersion() + " — " + release.getName()
@@ -99,7 +102,7 @@ public class ReleaseController {
                     + taskTitles.stream().map(t -> "- " + t).collect(java.util.stream.Collectors.joining("\n")));
             }
             release.setUpdatedAt(java.time.LocalDateTime.now());
-            return releaseRepository.save(release);
+            return repo.save(release);
         }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Release not found"));
     }
 
@@ -107,12 +110,13 @@ public class ReleaseController {
     public com.prowosma.backend.model.Release addCommits(
             @PathVariable String id,
             @RequestBody java.util.Map<String, Object> body) {
-        return releaseRepository.findById(id).map(r -> {
+        return repo.findById(id).map(r -> {
+            visibility.requireLinkedWrite(r, x -> com.prowosma.backend.service.VisibilityService.people(x.getCreatedBy(), x.getOwner()), x -> com.prowosma.backend.service.VisibilityService.projectsOf(x.getProjectId()));
             @SuppressWarnings("unchecked")
             java.util.List<String> msgs = (java.util.List<String>) body.get("commitMessages");
             if (msgs != null) r.setCommitMessages(msgs);
             r.setUpdatedAt(java.time.LocalDateTime.now());
-            return releaseRepository.save(r);
+            return repo.save(r);
         }).orElseThrow();
     }
 
