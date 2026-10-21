@@ -148,11 +148,11 @@ function OverviewTab({ settings, profiles, departments, reload, notify }) {
 
       <div className="form-group">
         <span id="ac-slots-label">Project responsibilities</span>
-        <p style={{ opacity: 0.75, margin: "4px 0" }}>The named roles every project can assign to a person (for example Creative Lead). Define what fits your business.</p>
+        <p style={{ opacity: 0.75, margin: "4px 0" }}>The named roles every project can assign to a person (for example Project Lead). Define what fits your business.</p>
         {slots.map((s, i) => (
           <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6 }}>
             <input
-              aria-label={`Project role ${i + 1}`} value={s.label} placeholder="e.g. Creative Lead"
+              aria-label={`Project role ${i + 1}`} value={s.label} placeholder="e.g. Project Lead"
               onChange={(e) => setSlots((all) => all.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
             />
             <button className="btn-icon" aria-label={`Remove project role ${i + 1}`} onClick={() => setSlots((all) => all.filter((_, j) => j !== i))}>✕</button>
@@ -297,7 +297,7 @@ function DepartmentsTab({ departments, members, reload, notify }) {
     <section aria-label="Departments">
       <p style={{ opacity: 0.75 }}>Departments decide which projects a person sees. Being in a department is separate from their job title and from owning a project.</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <input aria-label="New department name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Post-production" />
+        <input aria-label="New department name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Operations" />
         <button className="btn-primary" onClick={add}>+ Add department</button>
       </div>
       {departments.map((d) => (
@@ -345,7 +345,7 @@ function PeopleTab({ members, profiles, departments, reload, notify }) {
               <td><strong>{m.name}</strong><div style={{ opacity: 0.7 }}>{m.email} · {m.role}</div></td>
               <td>
                 <input
-                  aria-label={`Designation for ${m.name}`} defaultValue={m.designation || ""} placeholder="e.g. Video Editor"
+                  aria-label={`Designation for ${m.name}`} defaultValue={m.designation || ""} placeholder="e.g. Coordinator"
                   onBlur={(e) => { if (e.target.value !== (m.designation || "")) save(m, { designation: e.target.value }); }}
                 />
               </td>

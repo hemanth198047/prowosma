@@ -88,13 +88,13 @@ public class WorkspaceConfig {
     private String defaultProjectVisibility = "WORKSPACE";
     /** How documents are shared: DEPARTMENTS (by department only), PRIVATE_SHARED (creator and people it is shared with), BOTH (each doc chooses). */
     private String docAccessMode = "BOTH";
-    /** The named responsibilities a project can assign to people, e.g. Creative Lead. Defined per workspace. */
+    /** The named responsibilities a project can assign to people, e.g. Project Lead. Defined per workspace. */
     private java.util.List<RoleSlot> projectRoleSlots = new java.util.ArrayList<>();
 
     @Data
     public static class RoleSlot {
         private String key;     // stable id, e.g. CREATIVE_LEAD
-        private String label;   // shown in the UI, e.g. "Creative Lead"
+        private String label;   // shown in the UI, e.g. "Project Lead"
     }
 
     private LocalDateTime updatedAt = LocalDateTime.now();
