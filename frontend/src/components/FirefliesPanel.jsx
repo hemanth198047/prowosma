@@ -3,6 +3,7 @@
  * transcript Fireflies already has. Works with any account, personal Gmail included. Shown only when an admin has set Fireflies up.
  */
 import { useState } from "react";
+import { useAccess } from "../hooks/useAccess";
 import { useToast } from "./ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import { detectPlatform, SUPPORTED_TEXT, PLATFORM_NAMES, INSTANT_MEETING_TIPS } from "../utils/conferenceLink";
@@ -11,6 +12,7 @@ import { sendFirefliesNotetaker, getFirefliesRecent, importFirefliesTranscript }
 const when = (iso) => { if (!iso) return ""; const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(); };
 
 export default function FirefliesPanel({ onCreated }) {
+  const { restricted } = useAccess();
   const { show: toast } = useToast();
   const [link, setLink] = useState("");
   const [title, setTitle] = useState("");
@@ -107,6 +109,8 @@ export default function FirefliesPanel({ onCreated }) {
         <button type="button" className="ma-btn primary" disabled={busy} onClick={send}>{busy ? "Sending…" : "Send notetaker"}</button>
       </div>
 
+      {/* Fireflies' recent list is the whole company account, so people with department access never see it. */}
+      {!restricted && (
       <details className="ma-record-upload">
         <summary>Already have a meeting in Fireflies? Import it</summary>
         <div className="ma-upload-recording">
@@ -137,6 +141,7 @@ export default function FirefliesPanel({ onCreated }) {
           )}
         </div>
       </details>
+      )}
     </section>
   );
 }

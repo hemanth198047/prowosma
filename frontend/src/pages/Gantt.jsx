@@ -306,7 +306,7 @@ export default function Gantt() {
     setLoading(true);
     try {
       const [taskRes, projRes, goalRes] = await Promise.all([
-        client.get("/tasks/gantt"), getProjects(), getGoals(),
+        client.get("/tasks/gantt"), getProjects(), getGoals().catch(() => ({ data: [] })),
       ]);
       setTasks(unwrapList(taskRes));
       setProjects(unwrapList(projRes));

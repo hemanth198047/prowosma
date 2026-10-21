@@ -29,7 +29,7 @@ const CAPABILITY_LABELS = {
   ALLOCATE_TASKS: "Assign tasks to others",
   APPROVE: "Approve work",
   VIEW_FINANCIALS: "See budgets and revenue",
-  USE_MEETING_ASSISTANT: "Use the meeting assistant (coming to restricted profiles in the next release)",
+  USE_MEETING_ASSISTANT: "Use the meeting assistant, including Fireflies (their own meetings only)",
 };
 
 /* ── Overview: switch, defaults, project roles ─────────────────────────── */

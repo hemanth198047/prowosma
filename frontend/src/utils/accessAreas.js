@@ -5,8 +5,13 @@
  */
 export const RESTRICTED_LANDING = "/tasks";
 
-const ALLOWED_PREFIXES = ["/projects", "/tasks", "/team", "/profile"];
+const ALLOWED_PREFIXES = ["/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/search", "/team", "/profile"];
+// Needs the USE_MEETING_ASSISTANT capability on the person's access profile.
+const MEETING_PREFIX = "/meeting-assistant";
 
-export function isPathAllowedForRestricted(pathname = "/") {
-  return ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+const under = (pathname, prefix) => pathname === prefix || pathname.startsWith(prefix + "/");
+
+export function isPathAllowedForRestricted(pathname = "/", capabilities = []) {
+  if (under(pathname, MEETING_PREFIX)) return capabilities.includes("USE_MEETING_ASSISTANT");
+  return ALLOWED_PREFIXES.some((p) => under(pathname, p));
 }

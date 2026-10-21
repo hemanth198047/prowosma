@@ -258,7 +258,7 @@ function SidebarGroup({ label, icon, children, defaultOpen = true }) {
 
 // ── Main sidebar navigation ───────────────────────────────────
 function SidebarNav({ onNav, badges }) {
-  const { restricted } = useAccess();
+  const { restricted, can } = useAccess();
   if (restricted) {
     // Department / assigned-work access: only the areas that are scoped to them. The API refuses the rest.
     return (
@@ -266,7 +266,11 @@ function SidebarNav({ onNav, badges }) {
         <WorkspaceSwitcher />
         <div className="sidebar-quicklinks">
           <NavLink to="/tasks" onClick={onNav}>✅ My Tasks</NavLink>
+          <NavLink to="/kanban" onClick={onNav}>🗂 Kanban</NavLink>
+          <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
           <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
+          <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
+          {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
           <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
         </div>
         <div style={{ flex: 1 }} />
@@ -386,7 +390,7 @@ function AppShell() {
   }, []);
 
   const { user } = useAuth();
-  const { restricted, loading: accessLoading } = useAccess();
+  const { restricted, loading: accessLoading, capabilities: accessCapabilities, can } = useAccess();
 
   // Pages that render full-screen OUTSIDE the app shell: no sidebar/topbar,
   // and — just as important — none of the shell's authenticated background
@@ -450,8 +454,8 @@ function AppShell() {
   useEffect(() => {
     // Signed out, or on a public full-screen page: there is nothing to badge,
     // and an unauthenticated call here 401s (see isStandalonePage above).
-    // A restricted person (department access) has no dashboard summary to badge: the API refuses it.
-    if (!user || isStandalonePage || accessLoading || restricted) return;
+    // Wait until we know whether this person is restricted; the summary is scoped to what they may see.
+    if (!user || isStandalonePage || accessLoading) return;
     const fetchBadges = async () => {
       try {
         const res = await getDashboardSummary();
@@ -468,7 +472,7 @@ function AppShell() {
     fetchBadges();
     const interval = setInterval(fetchBadges, 60000);
     return () => clearInterval(interval);
-  }, [user, isStandalonePage, accessLoading, restricted]);
+  }, [user, isStandalonePage, accessLoading]);
 
   const isDashboard   = location.pathname === "/" || location.pathname === "/dashboard";
   const isDocs        = location.pathname.startsWith("/docs");
@@ -569,7 +573,7 @@ function AppShell() {
                 </div>
                 {/* Centre: search */}
                 <div className="topbar-search-wrap">
-                  {!restricted && (<Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
+                  {(<Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <span className="topbar-search-placeholder">Search anything…</span>
                     <span className="topbar-search-kbd">⌘K</span>
@@ -580,7 +584,7 @@ function AppShell() {
                   <LiveClock />
                   <ConnectionStatus />
                   {!restricted && <AIStatus />}
-                  {!restricted && <NotificationBell />}
+                  <NotificationBell />
                   <HelpGuide />
                   <ThemeToggle />
                   <div className="topbar-divider-v" />
@@ -593,7 +597,7 @@ function AppShell() {
               {!restricted && <LiveActivityFeed />}
               <PWAInstallBanner />
               <OnboardingChecklist />
-              {showPalette && !restricted && (
+              {showPalette && (
                 <CommandPalette
                   onClose={() => setShowPalette(false)}
                   onAction={(action) => {
@@ -609,7 +613,7 @@ function AppShell() {
               <main className={`main-content${isDocs ? " no-padding" : isDashboard ? " no-padding db-shell" : " page-scrollable"}`}>
                 <Breadcrumb />
                 <Suspense fallback={<PageSkeleton />}>
-              {restricted && location.pathname !== "/" && !isPathAllowedForRestricted(location.pathname) ? (
+              {restricted && location.pathname !== "/" && !isPathAllowedForRestricted(location.pathname, accessCapabilities) ? (
                 <div className="empty-state" role="status">
                   <h2>Not part of your access</h2>
                   <p>This area isn't available with your current access level. You can use your tasks, the projects you're on, and the member list.</p>

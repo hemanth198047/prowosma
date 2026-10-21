@@ -18,7 +18,7 @@ export default function Calendar() {
     const [taskRes, projRes, goalRes] = await Promise.all([
       getTasks(),
       getProjects(),
-      getGoals(),
+      getGoals().catch(() => ({ data: [] })),   // department access has no goals area
     ]);
 
     const taskEvents = taskRes.data
