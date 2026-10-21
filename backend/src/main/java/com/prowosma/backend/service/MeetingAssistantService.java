@@ -47,6 +47,7 @@ public class MeetingAssistantService {
     private final WorkspaceRepository workspaceRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final ProjectRepository projectRepository;
+    private final VisibilityService visibility;
     private final ActivityLogService activityLog;
     private final MeetingSessionStore store;
     private final MeetingTranscriptService transcripts;
@@ -98,14 +99,17 @@ public class MeetingAssistantService {
 
     /** Attendance never grants access: only the requester, admins, explicit shares, or workspace-wide visibility. */
     private boolean canAccess(MeetingSession s, String email, String role) {
-        if (isAdmin(role)) return true;
+        // A restricted (department / assigned-work) profile never gets blanket access: not through an admin role,
+        // and not through "visible to the whole workspace". Their own meetings and ones shared with them only.
+        boolean restricted = visibility.isRestricted();
+        if (isAdmin(role) && !restricted) return true;
         if (email != null && email.equalsIgnoreCase(s.getRequestedBy())) return true;
         if (s.getSharedWith() != null && s.getSharedWith().stream().anyMatch(e -> e.equalsIgnoreCase(email))) return true;
-        return "WORKSPACE".equals(s.getVisibility()) && !"NONE".equals(role);
+        return !restricted && "WORKSPACE".equals(s.getVisibility()) && !"NONE".equals(role);
     }
 
     private boolean canManage(MeetingSession s, String email, String role) {
-        return isAdmin(role) || (email != null && email.equalsIgnoreCase(s.getRequestedBy()));
+        return (isAdmin(role) && !visibility.isRestricted()) || (email != null && email.equalsIgnoreCase(s.getRequestedBy()));
     }
 
     // ── settings ──────────────────────────────────────────────────────────────
@@ -479,7 +483,7 @@ public class MeetingAssistantService {
         String projectMode = "DETECT";
         if (req.projectId() != null && !req.projectId().isBlank()) {
             Project p = projectRepository.findById(req.projectId())
-                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .filter(x -> org.equals(x.getOrganizationId()) && visibility.canSeeProject(x))
                     .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
             projectId = p.getId();
             projectMode = "SELECTED";
@@ -781,7 +785,7 @@ public class MeetingAssistantService {
         String projectMode = "DETECT";
         if (projectId != null && !projectId.isBlank()) {
             Project p = projectRepository.findById(projectId)
-                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .filter(x -> org.equals(x.getOrganizationId()) && visibility.canSeeProject(x))
                     .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
             projId = p.getId();
             projectMode = "SELECTED";
@@ -877,7 +881,7 @@ public class MeetingAssistantService {
         String projectMode = "DETECT";
         if (projectId != null && !projectId.isBlank()) {
             Project p = projectRepository.findById(projectId)
-                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .filter(x -> org.equals(x.getOrganizationId()) && visibility.canSeeProject(x))
                     .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
             projId = p.getId();
             projectMode = "SELECTED";
@@ -1001,7 +1005,7 @@ public class MeetingAssistantService {
         String projectMode = "DETECT";
         if (projectId != null && !projectId.isBlank()) {
             Project p = projectRepository.findById(projectId)
-                    .filter(x -> org.equals(x.getOrganizationId()))
+                    .filter(x -> org.equals(x.getOrganizationId()) && visibility.canSeeProject(x))
                     .orElseThrow(() -> err(HttpStatus.BAD_REQUEST, "PROJECT_NOT_FOUND", "That project wasn't found in this workspace."));
             projId = p.getId();
             projectMode = "SELECTED";

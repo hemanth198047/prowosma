@@ -23,6 +23,17 @@ public class ActivityLogController {
     private final ActivityLogRepository activityLogRepository;
     private final WorkspaceContext      workspaceContext;
     private final com.prowosma.backend.service.ActivityLogService activityLogService;
+    private final com.prowosma.backend.service.VisibilityService visibility;
+
+    /** Restricted callers see entries about tasks and projects they can see. Everything else (team, workspace, goals ...) is hidden. */
+    private boolean canSeeLog(com.prowosma.backend.service.VisibilityService.EntityVisibility ev, ActivityLog log) {
+        if (!ev.restricted()) return true;
+        if (log.getTaskId() != null && !log.getTaskId().isBlank()) return ev.canSee("TASK", log.getTaskId());
+        String t = log.getEntityType() == null ? "" : log.getEntityType().trim().toUpperCase(Locale.ROOT);
+        if (t.equals("TASK") || t.equals("PROJECT")) return ev.canSee(t, log.getEntityId());
+        if (log.getProjectId() != null && !log.getProjectId().isBlank()) return ev.canSee("PROJECT", log.getProjectId());
+        return false;
+    }
 
     @GetMapping
     public PagedResponse<ActivityLog> getAll(
@@ -32,6 +43,15 @@ public class ActivityLogController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         String orgId = workspaceContext.getWorkspaceId();
         PageRequest pr = PageRequest.of(page, Math.min(limit, 200));
+        if (visibility.isRestricted()) {
+            // filter the newest entries, then page what is left (a database page would be filtered after the fact and come up short)
+            var ev = visibility.entityVisibility();
+            List<ActivityLog> source = (from != null && to != null)
+                    ? activityLogRepository.findByOrganizationIdAndCreatedAtBetweenOrderByCreatedAtDesc(orgId, from, to)
+                    : activityLogRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId, PageRequest.of(0, 2000));
+            List<ActivityLog> mine = source.stream().filter(l -> canSeeLog(ev, l)).toList();
+            return PagedResponse.ofList(mine, page, Math.min(limit, 200));
+        }
         if (from != null && to != null) {
             var dated = activityLogRepository.findByOrganizationIdAndCreatedAtBetweenOrderByCreatedAtDesc(orgId, from, to);
             return PagedResponse.ofList(dated, page, Math.min(limit, 200));
@@ -44,6 +64,7 @@ public class ActivityLogController {
     @GetMapping("/{id}")
     public ActivityLog getById(@PathVariable String id) {
         return activityLogRepository.findById(id)
+                .filter(l -> canSeeLog(visibility.entityVisibility(), l))
                 .orElseThrow(() -> new RuntimeException("Activity log not found: " + id));
     }
 
@@ -58,8 +79,10 @@ public class ActivityLogController {
     @GetMapping("/entity/{entityType}/{entityId}")
     public List<ActivityLog> getByEntity(@PathVariable String entityType, @PathVariable String entityId) {
         String orgId = workspaceContext.getWorkspaceId();
+        var ev = visibility.entityVisibility();
         return activityLogService.getByEntity(entityType, entityId).stream()
                 .filter(log -> orgId != null && orgId.equals(log.getOrganizationId()))
+                .filter(log -> canSeeLog(ev, log))
                 .toList();
     }
 

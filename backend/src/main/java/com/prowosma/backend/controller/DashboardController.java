@@ -30,6 +30,7 @@ public class DashboardController {
     private final com.prowosma.backend.service.MeetingContinuityService meetingContinuityService;
     private final com.prowosma.backend.service.MeetingActionItemService meetingActionItemService;
     private final WorkspaceContext  workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     /**
      * Phase 1 — critical KPIs only.
@@ -49,9 +50,12 @@ public class DashboardController {
 
         CompletableFuture.allOf(tasksFuture, projectsFuture, goalsFuture).join();
 
-        var tasks    = taskRepository.findByOrganizationId(orgId);
-        var projects = projectRepository.findByOrganizationId(orgId);
-        var goals    = goalRepository.findByOrganizationId(orgId);
+        // Restricted callers (department / assigned-work access) get numbers about what they can see only.
+        // Goals are not scoped yet, so they are left out for them.
+        final boolean restricted = visibility.isRestricted();
+        var tasks    = restricted ? visibility.visibleTasks(orgId, null, null) : taskRepository.findByOrganizationId(orgId);
+        var projects = restricted ? visibility.filterProjects(projectRepository.findByOrganizationId(orgId)) : projectRepository.findByOrganizationId(orgId);
+        var goals    = restricted ? java.util.List.<com.prowosma.backend.model.Goal>of() : goalRepository.findByOrganizationId(orgId);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -108,7 +112,9 @@ public class DashboardController {
         var projectsWithProgress = projects.stream()
             .filter(p -> "ACTIVE".equalsIgnoreCase(p.getStatus()))
             .map(p -> {
-                var tasks_for_proj = taskRepository.findByProjectId(p.getId());
+                var tasks_for_proj = restricted
+                    ? tasks.stream().filter(t -> p.getId().equals(t.getProjectId())).collect(Collectors.toList())
+                    : taskRepository.findByProjectId(p.getId());
                 long total_t = tasks_for_proj.size();
                 long done_t  = tasks_for_proj.stream()
                     .filter(t -> "DONE".equals(t.getStatus())).count();

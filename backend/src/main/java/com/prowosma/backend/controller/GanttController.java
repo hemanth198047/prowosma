@@ -20,8 +20,11 @@ public class GanttController {
 
     private final TaskRepository   taskRepository;
     private final WorkspaceContext workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     private List<Task> tasksForProject(String orgId, String projectId) {
+        // Restricted callers only get the tasks they may see
+        if (visibility.isRestricted()) return visibility.visibleTasks(orgId, null, projectId);
         // TaskRepository has findByOrganizationId + findByProjectId — combine with filter
         if (projectId != null) {
             return taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent().stream()
@@ -63,6 +66,7 @@ public class GanttController {
         Optional<Task> opt = taskRepository.findById(id);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         Task task = opt.get();
+        visibility.requireTaskVisible(task);   // a task the caller can't see is answered as not found
         if (body.containsKey("startDate") && body.get("startDate") != null)
             task.setStartDate(LocalDateTime.parse(body.get("startDate")));
         if (body.containsKey("dueDate") && body.get("dueDate") != null)

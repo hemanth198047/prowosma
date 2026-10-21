@@ -60,6 +60,7 @@ public class MeetingActionService {
     private static final Set<String> PRIORITIES = Set.of("LOW", "MEDIUM", "HIGH");
 
     private final MongoTemplate mongo;
+    private final VisibilityService visibility;
     private final MeetingSessionStore store;
     private final MeetingJobService jobs;
     private final LlmClient llm;
@@ -287,7 +288,11 @@ public class MeetingActionService {
         c.org = s.getOrganizationId();
         for (TeamMember m : mongo.find(new Query(Criteria.where("organizationId").is(c.org)), TeamMember.class))
             if (m.getName() != null && !m.getName().isBlank()) c.directory.add(new Person(m.getId(), m.getName(), m.getEmail(), m.getRole()));
-        for (Project p : mongo.find(new Query(Criteria.where("organizationId").is(c.org)), Project.class))
+        // Only the projects the person who started this meeting may see: this list names projects to the AI model
+        // and decides where actions can be filed, and it runs in a background job, so the scope is looked up by person.
+        List<Project> candidateProjects = mongo.find(new Query(Criteria.where("organizationId").is(c.org)), Project.class);
+        candidateProjects = visibility.filterProjectsFor(visibility.scopeFor(s.getRequestedBy(), c.org), c.org, candidateProjects);
+        for (Project p : candidateProjects)
             if (p.getName() != null && !p.getName().isBlank()) c.projects.add(new Proj(p.getId(), p.getName(), p.getStatus()));
         if ("SELECTED".equals(s.getProjectMode()) && s.getProjectId() != null)
             c.selected = c.projects.stream().filter(p -> p.id().equals(s.getProjectId())).findFirst().orElse(null);

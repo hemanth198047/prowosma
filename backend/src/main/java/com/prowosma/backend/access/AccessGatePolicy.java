@@ -21,6 +21,7 @@ public final class AccessGatePolicy {
     private static final List<String> ANY_METHOD = List.of(
             "/api/access/me",
             "/api/access/options",
+            "/api/notifications",
             "/api/projects",
             "/api/tasks",
             "/api/auth",
@@ -33,10 +34,37 @@ public final class AccessGatePolicy {
     private static final List<String> GET_ONLY = List.of(
             "/api/team",
             "/api/categories",
-            "/api/custom-fields");
+            "/api/custom-fields",
+            "/api/search",
+            "/api/gantt",
+            "/api/activity-logs");
 
     /** Exactly this path, no sub-paths (the workspace list; its sub-resources hold workspace-wide data). */
-    private static final List<String> GET_EXACT = List.of("/api/workspaces");
+    private static final List<String> GET_EXACT = List.of("/api/workspaces", "/api/dashboard/summary");
+
+    /**
+     * The meeting assistant (Fireflies, uploads, recordings, action extraction). Needs the USE_MEETING_ASSISTANT
+     * capability. Its sessions are private to their owner and whoever they share them with.
+     */
+    private static final String MEETING_ASSISTANT = "/api/meeting-assistant";
+
+    /**
+     * Inside otherwise-allowed areas, these stay closed to restricted callers:
+     *  - Fireflies "recent" / "import" list and import the connected Fireflies ACCOUNT's meetings, which belong to the whole company;
+     *  - the activity log's CSV export, integrity check and workspace summary are workspace-wide.
+     */
+    private static final List<String> ALWAYS_DENIED = List.of(
+            "/api/meeting-assistant/fireflies/recent",
+            "/api/meeting-assistant/fireflies/import",
+            "/api/notifications/announce",       // an announcement goes to the whole workspace
+            "/api/activity-logs/export",
+            "/api/activity-logs/verify-integrity",
+            "/api/activity-logs/summary");
+
+    /** Moving a task's dates on the Gantt chart (the task itself is checked by the server). */
+    private static boolean isGanttDatePatch(String path, String method) {
+        return method.equals("PATCH") && path.matches("^/api/gantt/tasks/[^/]+/dates$");
+    }
 
     /** Project sub-paths that expose money; they need the VIEW_FINANCIALS capability. */
     private static final List<String> FINANCIAL_SEGMENTS = List.of("expenses", "budget", "revenue", "roi", "roi-settings");
@@ -48,7 +76,10 @@ public final class AccessGatePolicy {
         String m = method == null ? "GET" : method.toUpperCase(Locale.ROOT);
         if (m.equals("OPTIONS")) return true;
 
-        boolean listed = matchesAny(path, ANY_METHOD) || (m.equals("GET") && (matchesAny(path, GET_ONLY) || GET_EXACT.contains(stripTrailingSlash(path))));
+        for (String denied : ALWAYS_DENIED) if (matchesPrefix(path, denied)) return false;
+
+        boolean meeting = matchesPrefix(path, MEETING_ASSISTANT) && scope.has(AccessConstants.CAP_USE_MEETING_ASSISTANT);
+        boolean listed = meeting || isGanttDatePatch(path, m) || matchesAny(path, ANY_METHOD) || (m.equals("GET") && (matchesAny(path, GET_ONLY) || GET_EXACT.contains(stripTrailingSlash(path))));
         if (!listed) return false;
 
         if (matchesPrefix(path, "/api/projects") && !scope.has(AccessConstants.CAP_VIEW_FINANCIALS)) {

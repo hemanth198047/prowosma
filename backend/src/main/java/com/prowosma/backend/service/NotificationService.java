@@ -13,6 +13,21 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final WorkspaceContext workspaceContext;
+    private final VisibilityService visibility;
+
+    /** Restricted callers only see notifications about tasks and projects they can see (system notices are hidden). */
+    private List<Notification> visible(List<Notification> in) {
+        if (!visibility.isRestricted()) return in;
+        var ev = visibility.entityVisibility();
+        return in.stream().filter(n -> isAnnouncement(n) || ev.canSee(n.getEntityType(), n.getEntityId())).collect(java.util.stream.Collectors.toList());
+    }
+
+    /** Workspace announcements are meant for everyone, so they stay visible. */
+    private static boolean isAnnouncement(Notification n) { return "ANNOUNCEMENT".equals(n.getCategory()); }
+
+    private boolean canSee(Notification n) {
+        return !visibility.isRestricted() || isAnnouncement(n) || visibility.entityVisibility().canSee(n.getEntityType(), n.getEntityId());
+    }
 
     public void create(String title, String message, String type,
                        String entityType, String entityId) {
@@ -45,23 +60,25 @@ public class NotificationService {
         // who simply left out the X-Workspace-Id header.
         String orgId = workspaceContext.getWorkspaceId();
         if (orgId == null) return List.of();
-        return notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId);
+        return visible(notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId));
     }
 
     public List<Notification> getUnread() {
         String orgId = workspaceContext.getWorkspaceId();
         if (orgId == null) return List.of();
-        return notificationRepository.findByOrganizationIdAndReadFalse(orgId);
+        return visible(notificationRepository.findByOrganizationIdAndReadFalse(orgId));
     }
 
     public long getUnreadCount() {
         String orgId = workspaceContext.getWorkspaceId();
         if (orgId == null) return 0L;
+        if (visibility.isRestricted()) return getUnread().size();
         return notificationRepository.countByOrganizationIdAndReadFalse(orgId);
     }
 
     public Notification markRead(String id) {
         Notification n = notificationRepository.findById(id)
+                .filter(this::canSee)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
         n.setRead(true);
         return notificationRepository.save(n);
@@ -71,12 +88,16 @@ public class NotificationService {
         // Only this workspace's notifications (this used to mark EVERY workspace's as read).
         String orgId = workspaceContext.getWorkspaceId();
         if (orgId == null) return;
-        List<Notification> unread = notificationRepository.findByOrganizationIdAndReadFalse(orgId);
+        List<Notification> unread = visible(notificationRepository.findByOrganizationIdAndReadFalse(orgId));
         unread.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unread);
     }
 
     public void delete(String id) {
+        if (visibility.isRestricted()) {
+            notificationRepository.findById(id).filter(this::canSee).ifPresent(notificationRepository::delete);
+            return;
+        }
         notificationRepository.deleteById(id);
     }
 
@@ -84,13 +105,13 @@ public class NotificationService {
         // Only this workspace's notifications (this used to delete EVERY workspace's).
         String orgId = workspaceContext.getWorkspaceId();
         if (orgId == null) return;
-        notificationRepository.deleteAll(notificationRepository.findByOrganizationId(orgId));
+        notificationRepository.deleteAll(visible(notificationRepository.findByOrganizationId(orgId)));
     }
 
     // ── Smart Inbox (item 6) ────────────────────────────────────
 
     public void snooze(String id, String until) {
-        notificationRepository.findById(id).ifPresent(n -> {
+        notificationRepository.findById(id).filter(this::canSee).ifPresent(n -> {
             try {
                 n.setSnoozedUntil(java.time.LocalDateTime.parse(until));
             } catch (Exception e) {
@@ -102,7 +123,7 @@ public class NotificationService {
     }
 
     public void togglePin(String id) {
-        notificationRepository.findById(id).ifPresent(n -> {
+        notificationRepository.findById(id).filter(this::canSee).ifPresent(n -> {
             n.setPinned(!n.isPinned());
             notificationRepository.save(n);
         });
@@ -111,7 +132,7 @@ public class NotificationService {
     public void bulkMarkRead(java.util.List<String> ids) {
         if (ids == null || ids.isEmpty()) return;
         String orgId = workspaceContext.getWorkspaceId();
-        notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId)
+        visible(notificationRepository.findByOrganizationIdOrderByCreatedAtDesc(orgId))
             .stream().filter(n -> ids.contains(n.getId())).forEach(n -> {
                 n.setRead(true);
                 notificationRepository.save(n);
@@ -126,8 +147,8 @@ public class NotificationService {
         String orgId = workspaceContext.getWorkspaceId();
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
-        java.util.List<Notification> all = notificationRepository
-            .findByOrganizationIdOrderByCreatedAtDesc(orgId)
+        java.util.List<Notification> all = visible(notificationRepository
+            .findByOrganizationIdOrderByCreatedAtDesc(orgId))
             .stream()
             .filter(n -> n.getSnoozedUntil() == null || n.getSnoozedUntil().isBefore(now))
             .toList();
@@ -150,8 +171,8 @@ public class NotificationService {
         result.put("total",   all.size());
         result.put("unread",  unread);
         result.put("pinned",  pinned);
-        result.put("snoozed", notificationRepository
-            .findByOrganizationIdOrderByCreatedAtDesc(orgId)
+        result.put("snoozed", visible(notificationRepository
+            .findByOrganizationIdOrderByCreatedAtDesc(orgId))
             .stream().filter(n -> n.getSnoozedUntil() != null && n.getSnoozedUntil().isAfter(now)).count());
         return result;
     }

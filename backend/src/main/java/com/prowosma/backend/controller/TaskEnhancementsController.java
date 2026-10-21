@@ -16,10 +16,26 @@ public class TaskEnhancementsController {
     private final TaskRepository      taskRepo;
     private final NotificationService notifService;
     private final WorkspaceContext    ws;
+    private final com.prowosma.backend.service.VisibilityService visibility;
+
+    /** The task, or 404 if it doesn't exist or the caller may not see it. Every by-id operation below starts here. */
+    private Task visible(String id) {
+        Task t = taskRepo.findById(id).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Task not found"));
+        visibility.requireTaskVisible(t);
+        return t;
+    }
+
+    /** Changing who watches a task changes who can see it, so doing it for someone else needs the allocate capability. */
+    private void requireMayChangeWatcher(String email, Authentication auth) {
+        if (!visibility.isRestricted()) return;
+        if (auth != null && email != null && email.equalsIgnoreCase(auth.getName())) return;
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_ALLOCATE_TASKS);
+    }
 
     @PostMapping("/{id}/subtasks")
     public Task addSubtask(@PathVariable String id, @RequestBody Task sub, Authentication auth) {
-        Task parent = taskRepo.findById(id).orElseThrow();
+        Task parent = visible(id);
+        visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_CREATE_TASK);
         sub.setOrganizationId(ws.getWorkspaceId());
         sub.setParentTaskId(id);
         sub.setProjectId(parent.getProjectId());
@@ -40,13 +56,15 @@ public class TaskEnhancementsController {
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
         // Scoped to parentTaskId — no full-org scan
-        var all = taskRepo.findByParentTaskId(id); // indexed lookup, no org scan
+        visible(id);                                          // the parent must be visible to the caller
+        var all = visibility.filterTasks(taskRepo.findByParentTaskId(id).stream()
+                .filter(t -> ws.getWorkspaceId() != null && ws.getWorkspaceId().equals(t.getOrganizationId())).toList());
         return PagedResponse.ofList(all, page, Math.min(size, 200));
     }
 
     @PatchMapping("/{id}/checklist")
     public Task updateChecklist(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (body.containsKey("checklist")) {
                 @SuppressWarnings("unchecked")
                 List<Map<String,Object>> items = (List<Map<String,Object>>) body.get("checklist");
@@ -68,7 +86,7 @@ public class TaskEnhancementsController {
 
     @PostMapping("/{id}/checklist")
     public Task addChecklistItem(@PathVariable String id, @RequestBody Task.ChecklistItem item) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (t.getChecklist() == null) t.setChecklist(new ArrayList<>());
             t.getChecklist().add(item);
             t.setUpdatedAt(LocalDateTime.now());
@@ -78,7 +96,7 @@ public class TaskEnhancementsController {
 
     @PatchMapping("/{id}/checklist/{itemId}/toggle")
     public Task toggleChecklistItem(@PathVariable String id, @PathVariable String itemId) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (t.getChecklist() != null)
                 t.getChecklist().stream().filter(i -> itemId.equals(i.getId())).findFirst()
                     .ifPresent(i -> i.setChecked(!i.isChecked()));
@@ -88,8 +106,9 @@ public class TaskEnhancementsController {
     }
 
     @PostMapping("/{id}/watchers/{email}")
-    public Task addWatcher(@PathVariable String id, @PathVariable String email) {
-        return taskRepo.findById(id).map(t -> {
+    public Task addWatcher(@PathVariable String id, @PathVariable String email, Authentication auth) {
+        requireMayChangeWatcher(email, auth);
+        return Optional.of(visible(id)).map(t -> {
             if (t.getWatcherIds() == null) t.setWatcherIds(new ArrayList<>());
             if (!t.getWatcherIds().contains(email)) t.getWatcherIds().add(email);
             t.setUpdatedAt(LocalDateTime.now());
@@ -98,8 +117,9 @@ public class TaskEnhancementsController {
     }
 
     @DeleteMapping("/{id}/watchers/{email}")
-    public Task removeWatcher(@PathVariable String id, @PathVariable String email) {
-        return taskRepo.findById(id).map(t -> {
+    public Task removeWatcher(@PathVariable String id, @PathVariable String email, Authentication auth) {
+        requireMayChangeWatcher(email, auth);
+        return Optional.of(visible(id)).map(t -> {
             if (t.getWatcherIds() != null) t.getWatcherIds().remove(email);
             t.setUpdatedAt(LocalDateTime.now());
             return taskRepo.save(t);
@@ -108,12 +128,12 @@ public class TaskEnhancementsController {
 
     @PostMapping("/{id}/relationships")
     public Task addRelationship(@PathVariable String id, @RequestBody Task.TaskRelationship rel) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (t.getRelationships() == null) t.setRelationships(new ArrayList<>());
             t.getRelationships().add(rel);
             // If BLOCKS: also add BLOCKED_BY on target
             if ("BLOCKS".equals(rel.getType())) {
-                taskRepo.findById(rel.getTargetTaskId()).ifPresent(target -> {
+                taskRepo.findById(rel.getTargetTaskId()).filter(visibility::canSeeTask).ifPresent(target -> {
                     Task.TaskRelationship reverse = new Task.TaskRelationship();
                     reverse.setType("BLOCKED_BY"); reverse.setTargetTaskId(id);
                     if (target.getRelationships() == null) target.setRelationships(new ArrayList<>());
@@ -129,7 +149,7 @@ public class TaskEnhancementsController {
 
     @DeleteMapping("/{id}/relationships/{relId}")
     public Task removeRelationship(@PathVariable String id, @PathVariable String relId) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (t.getRelationships() != null)
                 t.setRelationships(t.getRelationships().stream().filter(r->!relId.equals(r.getId())).toList());
             t.setUpdatedAt(LocalDateTime.now());
@@ -139,7 +159,7 @@ public class TaskEnhancementsController {
 
     @PatchMapping("/{id}/sla")
     public Task setSla(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (body.containsKey("slaHours")) {
                 int hours = ((Number) body.get("slaHours")).intValue();
                 t.setSlaHours(hours);
@@ -153,7 +173,7 @@ public class TaskEnhancementsController {
 
     @PatchMapping("/{id}/goal-link")
     public Task linkGoal(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return taskRepo.findById(id).map(t -> {
+        return Optional.of(visible(id)).map(t -> {
             if (body.containsKey("linkedGoalId")) t.setLinkedGoalId((String)body.get("linkedGoalId"));
             if (body.containsKey("goalContributionWeight"))
                 t.setGoalContributionWeight(((Number)body.get("goalContributionWeight")).intValue());

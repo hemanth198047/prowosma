@@ -25,14 +25,23 @@ The workspace owner is never restricted. Rules live in `access/AccessScope.java`
 * A member with **no profile** is unrestricted unless a *default profile* is set. Set a restrictive default before switching on, so people who join later start limited.
 * Anything unknown (a deleted profile, a project with an unrecognised visibility) is treated as the most restrictive option.
 
-## What is enforced in this release (phase 1)
+## What is enforced (phases 1 and 2)
 
-Projects, tasks (including comments, attachments, dependencies, time logs), the live feed, and the member list.
-Restricted people reach **only** these API areas (`access/AccessGatePolicy.java`): `/api/projects`, `/api/tasks`, `/api/team` (read), `/api/categories` and `/api/custom-fields` (read), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else (dashboard, search, reports, analytics, Gantt, goals, docs, meetings and the meeting assistant, notifications, activity log, AI, import/export …) returns 403 `ACCESS_RESTRICTED` until it is scoped. Add an area to the allowlist only after scoping it, with a test.
+**Scoped to what the person may see:** projects, tasks (comments, attachments, dependencies, subtasks, checklists, watchers, relationships, time logs), the dashboard summary, notifications, the activity log, search (projects and tasks only), the Gantt chart, and the meeting assistant (including Fireflies).
+
+* **Notifications and the activity log** show only entries about tasks and projects the person can see. Workspace announcements stay visible. System notices and entries about the team, goals and so on are hidden.
+* **Search** returns projects and tasks they can see; other kinds of result are left out for restricted people. (It was also searching other workspaces' records; that is fixed for everyone.)
+* **Meeting assistant:** needs the `USE_MEETING_ASSISTANT` capability. A restricted person sees only their own meetings and ones shared with them (not "visible to the whole workspace", and an Admin role does not widen it). Project suggestions for a meeting only come from projects the person who started it can see, so other departments' project names never reach the AI model. Tasks and projects created from a meeting follow the normal rules: creating needs `CREATE_TASK` / `CREATE_PROJECT`, and giving tasks to other people needs `ALLOCATE_TASKS`.
+* **Fireflies:** a restricted person can send the notetaker to their own meeting. "Load my recent Fireflies meetings" and "Import" list the whole company's Fireflies account, so they stay owner/admin only.
+* **Watchers:** adding someone as a watcher lets them see the task, so a restricted person can only watch tasks themselves unless they have `ALLOCATE_TASKS`.
+
+**Default-deny gate** (`access/AccessGatePolicy.java`): restricted people reach only `/api/projects`, `/api/tasks`, `/api/notifications` (except announce), `/api/dashboard/summary`, `/api/search`, `/api/gantt` (reads, plus moving a task's dates), `/api/activity-logs` (reads, except export, integrity check and summary), `/api/meeting-assistant` (with the capability, except the Fireflies account list and import), `/api/team`, `/api/categories` and `/api/custom-fields` (reads), `/api/workspaces` (list), `/api/auth`, `/api/users/me`, `/api/access/me`, `/api/access/options`. Everything else returns 403 `ACCESS_RESTRICTED`. Add an area to the allowlist only after scoping it, with a test.
 
 Project budgets, spend and revenue are removed from responses unless the profile has `VIEW_FINANCIALS`.
 
 While access control is on, workspace live events carry no titles or names (a "something changed" ping), for everyone in the workspace.
+
+**Still closed to restricted people** (scoping each needs its own design): docs, goals, sprints, KPIs, reports, analytics, portfolio and ROI views, decisions, the older Meetings area, channels, automations, integrations, AI features, import/export, time tracking.
 
 ## Setting up a company
 
@@ -65,7 +74,8 @@ Org setup never creates admins; make those by hand.
 
 ## Known limits
 
-* Restricted profiles cannot use the meeting assistant (including Fireflies), dashboards, search, docs, notifications or the activity log yet. The owner and unrestricted admins can.
+* Docs have no department concept and no enforcement today (even "private" docs are workspace-wide), so they stay closed to restricted people until docs get their own visibility design. Docs that must stay confidential should not be kept in a workspace where unrestricted members can open them.
+* Task attachment downloads are by unguessable file name and are not checked against the task.
 * API-key callers are not restricted.
 * The legacy `/api/user-groups` API lets any non-viewer edit groups; department membership should be managed through Access Control.
 * Realtime for documents (`/topic/doc/*`) is unchanged.

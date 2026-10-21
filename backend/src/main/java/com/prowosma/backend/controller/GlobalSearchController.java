@@ -23,6 +23,7 @@ public class GlobalSearchController {
     private final MeetingRepository  meetingRepository;
     private final MeetingActionItemRepository meetingActionItemRepository;
     private final WorkspaceContext   workspaceContext;
+    private final com.prowosma.backend.service.VisibilityService visibility;
 
     @GetMapping
     public Map<String, Object> search(
@@ -39,8 +40,8 @@ public class GlobalSearchController {
 
         // Tasks — TaskRepository has findByTitleContainingIgnoreCase (no orgId variant)
         if (type == null || "task".equals(type)) {
-            taskRepository.findByTitleContainingIgnoreCase(q).stream()
-                .filter(t -> orgId.equals(t.getOrganizationId()))
+            visibility.filterTasks(taskRepository.findByTitleContainingIgnoreCase(q).stream()
+                .filter(t -> orgId.equals(t.getOrganizationId())).toList()).stream()
                 .limit(limit)
                 .forEach(t -> results.add(Map.of(
                     "id", t.getId(), "title", t.getTitle(),
@@ -51,8 +52,8 @@ public class GlobalSearchController {
 
         // Projects — ProjectRepository has findByNameContainingIgnoreCase
         if (type == null || "project".equals(type)) {
-            projectRepository.findByNameContainingIgnoreCase(q).stream()
-                .filter(p -> orgId.equals(p.getOrganizationId()))
+            visibility.filterProjects(projectRepository.findByNameContainingIgnoreCase(q).stream()
+                .filter(p -> orgId.equals(p.getOrganizationId())).toList()).stream()
                 .limit(limit)
                 .forEach(p -> results.add(Map.of(
                     "id", p.getId(), "title", p.getName(),
@@ -62,7 +63,7 @@ public class GlobalSearchController {
         }
 
         // Goals — GoalRepository has findByTitleContainingIgnoreCase
-        if (type == null || "goal".equals(type)) {
+        if (!visibility.isRestricted() && (type == null || "goal".equals(type))) {
             goalRepository.findByTitleContainingIgnoreCase(q).stream()
                 .filter(g -> orgId.equals(g.getOrganizationId()))
                 .limit(limit)
@@ -74,7 +75,7 @@ public class GlobalSearchController {
         }
 
         // Docs — DocRepository has findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse
-        if (type == null || "doc".equals(type)) {
+        if (!visibility.isRestricted() && (type == null || "doc".equals(type))) {
             docRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseAndDeletedFalse(orgId, q).stream()
                 .limit(limit)
                 .forEach(d -> results.add(Map.of(
@@ -85,7 +86,7 @@ public class GlobalSearchController {
         }
 
         // Decisions — DecisionRepository has findByWorkspaceIdAndTitleContainingIgnoreCaseOrderByCreatedAtDesc
-        if (type == null || "decision".equals(type)) {
+        if (!visibility.isRestricted() && (type == null || "decision".equals(type))) {
             decisionRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(orgId, q).stream()
                 .limit(limit)
                 .forEach(d -> results.add(Map.of(
@@ -96,7 +97,7 @@ public class GlobalSearchController {
         }
 
         // Meetings
-        if (type == null || "meeting".equals(type)) {
+        if (!visibility.isRestricted() && (type == null || "meeting".equals(type))) {
             meetingRepository.findByWorkspaceIdAndTitleContainingIgnoreCaseOrderByMeetingDateDesc(orgId, q).stream()
                 .limit(limit)
                 .forEach(m -> results.add(Map.of(
@@ -109,7 +110,7 @@ public class GlobalSearchController {
         // Meeting action items — no title-search repository method exists yet,
         // so filter the org's items in-memory (consistent with this
         // controller's existing organizationId-filter approach for tasks).
-        if (type == null || "meeting-action-item".equals(type)) {
+        if (!visibility.isRestricted() && (type == null || "meeting-action-item".equals(type))) {
             meetingActionItemRepository.findByOrganizationId(orgId).stream()
                 .filter(a -> a.getTitle() != null && a.getTitle().toLowerCase().contains(ql))
                 .limit(limit)

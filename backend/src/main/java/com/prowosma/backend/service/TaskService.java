@@ -61,6 +61,9 @@ public class TaskService {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) task.setCreatedBy(auth.getName());
         }
         if (visibility.isRestricted()) {
+            // the creator decides who may delete the task, so a restricted caller can't name somebody else
+            var who = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (who != null && who.isAuthenticated()) task.setCreatedBy(who.getName());
             visibility.requireCapability(com.prowosma.backend.access.AccessConstants.CAP_CREATE_TASK);
             // the project must be one the caller can see (404 otherwise, same as an unknown project)
             if (task.getProjectId() != null && !task.getProjectId().isBlank()) projectService.getById(task.getProjectId());

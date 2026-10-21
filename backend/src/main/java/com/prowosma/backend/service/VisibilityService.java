@@ -87,11 +87,28 @@ public class VisibilityService {
             return AccessScope.unrestricted();
         }
         if (org == null || org.isBlank()) return AccessScope.unrestricted();
+        return resolveFor(auth.getName(), org);
+    }
 
+    /**
+     * The scope of a named person, for work that runs outside their request (a background job acting
+     * for the person who started it). No person (blank email) means the system: unrestricted. A lookup
+     * error restricts rather than widens.
+     */
+    public AccessScope scopeFor(String email, String org) {
+        if (email == null || email.isBlank() || org == null || org.isBlank()) return AccessScope.unrestricted();
+        try {
+            return resolveFor(email, org);
+        } catch (RuntimeException e) {
+            log.error("Access scope for a background job could not be resolved; restricting it: {}", e.toString());
+            return AccessScope.of(email, null, MODE_ASSIGNED, Set.of(), false, Set.of(), "unresolved");
+        }
+    }
+
+    private AccessScope resolveFor(String email, String org) {
         WorkspaceConfig cfg = configRepository.findByWorkspaceId(org).orElse(null);
         if (cfg == null || !cfg.isAccessControlEnabled()) return AccessScope.unrestricted();
 
-        String email = auth.getName();
         boolean owner = workspaceRepository.findById(org)
                 .map(w -> w.getOwnerEmail() != null && w.getOwnerEmail().equalsIgnoreCase(email)).orElse(false);
         if (owner) return AccessScope.unrestricted();
@@ -165,6 +182,13 @@ public class VisibilityService {
         return projects.stream().filter(p -> s.canSeeProject(facts(p), linked.contains(p.getId()))).collect(Collectors.toList());
     }
 
+    /** The projects a given scope may see, for code that is not running in the person's own request. */
+    public List<Project> filterProjectsFor(AccessScope s, String org, List<Project> projects) {
+        if (!s.isRestricted() || projects.isEmpty()) return projects;
+        Set<String> linked = linkedProjectIds(s, org);
+        return projects.stream().filter(p -> s.canSeeProject(facts(p), linked.contains(p.getId()))).collect(Collectors.toList());
+    }
+
     /** Pages an already-filtered, already-ordered list. */
     public <T> Page<T> pageOf(List<T> all, Pageable pageable) {
         int from = (int) Math.min(pageable.getOffset(), all.size());
@@ -208,6 +232,63 @@ public class VisibilityService {
 
     public void requireTaskVisible(Task t) {
         if (!canSeeTask(t)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found");
+    }
+
+    /**
+     * Answers "may the caller see this task / project?" for many items (notifications, activity entries)
+     * without a database round trip each time: projects are loaded once, answers are remembered.
+     */
+    public EntityVisibility entityVisibility() { return new EntityVisibility(current(), workspaceContext.getWorkspaceId()); }
+
+    public final class EntityVisibility {
+        private final AccessScope scope;
+        private final String org;
+        private Map<String, ProjectFacts> projects;
+        private Set<String> linked;
+        private final Map<String, Boolean> answers = new HashMap<>();
+
+        private EntityVisibility(AccessScope scope, String org) { this.scope = scope; this.org = org; }
+
+        public boolean restricted() { return scope.isRestricted(); }
+
+        /** TASK and PROJECT only; any other kind of entity is hidden from restricted callers. */
+        public boolean canSee(String entityType, String entityId) {
+            if (!scope.isRestricted()) return true;
+            if (entityType == null || entityId == null || entityId.isBlank()) return false;
+            String type = entityType.trim().toUpperCase(Locale.ROOT);
+            return answers.computeIfAbsent(type + ":" + entityId, k -> compute(type, entityId));
+        }
+
+        private boolean compute(String type, String id) {
+            if (projects == null) {
+                projects = new HashMap<>();
+                projectRepository.findByOrganizationId(org).forEach(p -> projects.put(p.getId(), facts(p)));
+                linked = linkedProjectIds(scope, org);
+            }
+            if ("PROJECT".equals(type)) {
+                ProjectFacts pf = projects.get(id);
+                return pf != null && scope.canSeeProject(pf, linked.contains(id));
+            }
+            if ("TASK".equals(type)) {
+                Task t = mongoTemplate.findById(id, Task.class);
+                if (t == null || !org.equals(t.getOrganizationId())) return false;
+                ProjectFacts pf = t.getProjectId() == null ? null : projects.get(t.getProjectId());
+                return scope.canSeeTask(facts(t), pf);
+            }
+            return false;
+        }
+    }
+
+    /** Tasks from an arbitrary list that the caller may see (workspace-checked, project facts loaded once). */
+    public List<Task> filterTasks(List<Task> tasks) {
+        AccessScope s = current();
+        if (!s.isRestricted()) return tasks;
+        String org = workspaceContext.getWorkspaceId();
+        Map<String, ProjectFacts> pf = new HashMap<>();
+        projectRepository.findByOrganizationId(org).forEach(p -> pf.put(p.getId(), facts(p)));
+        return tasks.stream().filter(t -> org != null && org.equals(t.getOrganizationId()))
+                .filter(t -> s.canSeeTask(facts(t), t.getProjectId() == null ? null : pf.get(t.getProjectId())))
+                .collect(Collectors.toList());
     }
 
     /** Deleting is for the task's creator or someone who manages its project. */
@@ -427,7 +508,9 @@ public class VisibilityService {
         m.put("departmentAdmin", s.isDepartmentAdmin());
         m.put("capabilities", s.isRestricted() ? s.capabilities() : ALL_CAPABILITIES);
         // Pages the restricted caller can use in this phase (everything else is refused by the API).
-        m.put("allowedAreas", s.isRestricted() ? List.of("projects", "tasks", "team") : null);
+        List<String> areas = new ArrayList<>(List.of("dashboard", "projects", "tasks", "team", "gantt", "notifications", "activity", "search"));
+        if (s.has(CAP_USE_MEETING_ASSISTANT)) areas.add("meeting-assistant");
+        m.put("allowedAreas", s.isRestricted() ? areas : null);
         return m;
     }
 }

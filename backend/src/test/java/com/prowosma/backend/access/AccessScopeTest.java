@@ -158,9 +158,10 @@ class AccessScopeTest {
         assertFalse(AccessGatePolicy.isAllowed("/api/team", "POST", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/workspaces", "GET", editor));
         assertFalse(AccessGatePolicy.isAllowed("/api/workspaces/w1/members", "GET", editor));
-        for (String p : List.of("/api/dashboard/summary", "/api/search/global", "/api/reports/x", "/api/analytics",
-                "/api/activity-logs", "/api/notifications", "/api/gantt", "/api/docs", "/api/meeting-assistant/sessions",
-                "/api/ai/chat", "/api/goals", "/api/kpis", "/api/user-groups", "/api/import", "/api/time/x", "/api/tasksX")) {
+        for (String p : List.of("/api/dashboard/sprints", "/api/dashboard/meeting-pulse", "/api/reports/x", "/api/analytics",
+                "/api/docs", "/api/meeting-assistant/sessions",
+                "/api/ai/chat", "/api/goals", "/api/kpis", "/api/user-groups", "/api/import", "/api/time/x", "/api/tasksX",
+                "/api/push/subscribe", "/api/meetings", "/api/sprints", "/api/roi", "/api/searchX", "/api/ganttX")) {
             assertFalse(AccessGatePolicy.isAllowed(p, "GET", editor), p);
         }
     }
@@ -181,5 +182,51 @@ class AccessScopeTest {
     @Test void gateNeverAffectsUnrestrictedCallersOrNonApiPaths() {
         assertTrue(AccessGatePolicy.isAllowed("/api/dashboard/summary", "GET", AccessScope.unrestricted()));
         assertTrue(AccessGatePolicy.isAllowed("/ws/info", "GET", assignedOnly("e@x.com", "m7")));
+    }
+
+    private static AccessScope withMeetingCap() {
+        return AccessScope.of("k@x.com", "m2", MODE_DEPARTMENTS, CREATIVE, false, Set.of(CAP_CREATE_TASK, CAP_USE_MEETING_ASSISTANT), "Department Member");
+    }
+
+    @Test void phaseTwoAreasAreOpenToRestrictedCallers() {
+        AccessScope editor = assignedOnly("e@x.com", "m7");
+        assertTrue(AccessGatePolicy.isAllowed("/api/dashboard/summary", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/notifications", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/notifications/inbox", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/notifications/n1/read", "PATCH", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/search", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/search/global", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/gantt", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/gantt/conflicts", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/gantt/tasks/t1/dates", "PATCH", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/activity-logs", "GET", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/activity-logs/entity/task/t1", "GET", editor));
+    }
+
+    @Test void workspaceWideOperationsInsideThoseAreasStayClosed() {
+        AccessScope editor = assignedOnly("e@x.com", "m7");
+        assertFalse(AccessGatePolicy.isAllowed("/api/gantt/shift", "POST", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/gantt", "PATCH", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/gantt/tasks/t1/dates", "PUT", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/notifications/announce", "POST", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/activity-logs/export/csv", "GET", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/activity-logs/verify-integrity", "GET", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/activity-logs/summary", "GET", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/dashboard/summary", "POST", editor));
+        assertFalse(AccessGatePolicy.isAllowed("/api/search", "DELETE", editor));
+    }
+
+    @Test void meetingAssistantNeedsTheCapabilityAndNeverExposesTheCompanyFirefliesAccount() {
+        AccessScope without = deptMember("k@x.com", "m2", CREATIVE);
+        AccessScope with = withMeetingCap();
+        assertFalse(AccessGatePolicy.isAllowed("/api/meeting-assistant/sessions", "GET", without));
+        assertTrue(AccessGatePolicy.isAllowed("/api/meeting-assistant/sessions", "GET", with));
+        assertTrue(AccessGatePolicy.isAllowed("/api/meeting-assistant/fireflies/notetaker", "POST", with));
+        assertTrue(AccessGatePolicy.isAllowed("/api/meeting-assistant/sessions/s1/create", "POST", with));
+        assertFalse(AccessGatePolicy.isAllowed("/api/meeting-assistant/fireflies/recent", "GET", with));
+        assertFalse(AccessGatePolicy.isAllowed("/api/meeting-assistant/fireflies/import", "POST", with));
+        assertFalse(AccessGatePolicy.isAllowed("/api/admin/meeting-assistant/settings", "GET", with));
+        assertFalse(AccessGatePolicy.isAllowed("/api/meeting-assistantX", "GET", with));
+        assertTrue(AccessGatePolicy.isAllowed("/api/meeting-assistant/fireflies/recent", "GET", AccessScope.unrestricted()));
     }
 }
