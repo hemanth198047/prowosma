@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccess } from "../hooks/useAccess";
 import {
   getDashboardSummary,
 } from "../api/dashboard";
@@ -524,6 +525,7 @@ function TaskRow({ task, navigate }) {
 export default function Dashboard() {
   const { user, activeWorkspace } = useAuth();
   const navigate  = useNavigate();
+  const { can }   = useAccess();
   const [summary,     setSummary]     = useState(null);
   const [dashTasks,   setDashTasks]   = useState({ active: [], overdue: [], today: [] });
   const [dashTaskTab, setDashTaskTab] = useState("active");
@@ -691,6 +693,22 @@ export default function Dashboard() {
           {workTiles.map(t => <HubTile key={t.to} {...t} navigate={navigate} />)}
         </div>
       </div>
+
+      {/* MEETING ASSISTANT — a visible way in for people who do not know it exists */}
+      {can("USE_MEETING_ASSISTANT") && (
+        <div className="db-card">
+          <div className="db-card-header">
+            <span className="db-card-title">🤖 MEETING ASSISTANT</span>
+            <button className="db-link" onClick={() => navigate("/meeting-assistant")}>Open →</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, color: "var(--gray-500)" }}>
+              Turn a meeting into a summary, minutes and tasks — paste a transcript, upload a recording, or send a notetaker.
+            </span>
+            <button className="btn-primary" onClick={() => navigate("/meeting-assistant")}>Start with a meeting</button>
+          </div>
+        </div>
+      )}
 
       {/* DAILY MEETING PULSE — self-contained, non-blocking, renders nothing until its own fetch resolves */}
       <MeetingPulseCard />

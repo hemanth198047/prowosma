@@ -352,7 +352,7 @@ export default function MeetingAssistant() {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState(null); // answer for one specific link: { url, ok, data }
   const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(() => new URLSearchParams(window.location.search).get("project") || "");
   const [when, setWhen] = useState("now");
   const [scheduled, setScheduled] = useState("");
   const [simulated, setSimulated] = useState(false);

@@ -705,7 +705,7 @@ function ProjectCard({
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
-  const { enabled: accessEnabled } = useAccess();
+  const { enabled: accessEnabled, can } = useAccess();
 
   return (
     <div
@@ -785,6 +785,16 @@ function ProjectCard({
                 >
                   ✏️
                 </button>
+                {can("USE_MEETING_ASSISTANT") && (
+                  <button
+                    className="btn-icon"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/meeting-assistant?project=${encodeURIComponent(p.id)}`); }}
+                    title="Analyse a meeting for this project"
+                    aria-label={`Analyse a meeting for ${p.name}`}
+                  >
+                    🤖
+                  </button>
+                )}
                 {accessEnabled && (
                   <button
                     className="btn-icon"

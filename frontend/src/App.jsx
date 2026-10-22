@@ -269,6 +269,7 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/kanban" onClick={onNav}>🗂 Kanban</NavLink>
           <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
           <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
+          {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
           <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
           <NavLink to="/goals" onClick={onNav}>🎯 Goals</NavLink>
           <NavLink to="/sprints" onClick={onNav}>🏃 Sprints</NavLink>
@@ -285,7 +286,6 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/analytics" onClick={onNav}>📈 Analytics</NavLink>
           <NavLink to="/time-tracking" onClick={onNav}>⏱ Time</NavLink>
           <NavLink to="/ai" onClick={onNav}>🤖 AI Assistant</NavLink>
-          {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
           <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
         </div>
         <div style={{ flex: 1 }} />
@@ -303,6 +303,11 @@ function SidebarNav({ onNav, badges }) {
         <NavLink to="/" end onClick={onNav} className="sidebar-quicklink">
           <span>📊</span><span>Dashboard</span>
         </NavLink>
+        {can("USE_MEETING_ASSISTANT") && (
+          <NavLink to="/meeting-assistant" onClick={onNav} className="sidebar-quicklink">
+            <span>🤖</span><span>Meeting Assistant</span>
+          </NavLink>
+        )}
       </div>
 
       <SidebarGroup label="Work" icon="⚡">
@@ -328,7 +333,6 @@ function SidebarNav({ onNav, badges }) {
       <SidebarGroup label="Knowledge" icon="📚" defaultOpen={false}>
         <NavLink to="/docs"      onClick={onNav}>📄 Docs</NavLink>
         <NavLink to="/meetings"  onClick={onNav}>🎙 Meetings</NavLink>
-        <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>
         <NavLink to="/sops"      onClick={onNav}>📖 SOPs</NavLink>
       </SidebarGroup>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useAccess } from "../hooks/useAccess";
 import {
   getMeetings, createMeeting, updateMeeting, deleteMeeting,
   extractMeeting, markActionConverted,
@@ -617,6 +618,8 @@ export default function Meetings() {
   const confirm = useConfirm();
   const wsId    = activeWorkspace?.id;
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { can } = useAccess();
 
   const [meetings,  setMeetings]  = useState([]);
   const [projects,  setProjects]  = useState([]);
@@ -728,6 +731,12 @@ export default function Meetings() {
         title="Meeting Notes"
         description="Record meetings, extract action items with AI, and convert them to tasks."
         icon="📝"
+        action={can("USE_MEETING_ASSISTANT") && (
+          <button className="btn-primary" onClick={() => navigate("/meeting-assistant")}
+            title="Get a summary, minutes and tasks from a transcript, recording or notetaker">
+            🤖 Try the Meeting Assistant
+          </button>
+        )}
       />
 
       {/* Stats */}

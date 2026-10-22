@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccess } from "../hooks/useAccess";
 import { getTasks } from "../api/tasks";
 import { getProjects } from "../api/projects";
 
@@ -12,6 +13,7 @@ const PAGES = [
   { id: "go-dashboard",   icon: "📊", label: "Go to Dashboard",        path: "/",               group: "Navigate" },
   { id: "go-tasks",       icon: "✅", label: "Go to Tasks",            path: "/tasks",           group: "Navigate" },
   { id: "go-projects",    icon: "📁", label: "Go to Projects",         path: "/projects",        group: "Navigate" },
+  { id: "go-meeting-assistant", icon: "🤖", label: "Go to Meeting Assistant", path: "/meeting-assistant", group: "Navigate", needs: "USE_MEETING_ASSISTANT" },
   { id: "go-goals",       icon: "🎯", label: "Go to Goals",            path: "/goals",           group: "Navigate" },
   { id: "go-kanban",      icon: "🗂️", label: "Go to Kanban",           path: "/kanban",          group: "Navigate" },
   { id: "go-calendar",    icon: "📅", label: "Go to Calendar",         path: "/calendar",        group: "Navigate" },
@@ -31,6 +33,7 @@ const ACTIONS = [
   { id: "new-task",    icon: "✅", label: "Create New Task",    action: "new-task",    group: "Actions" },
   { id: "new-project", icon: "📁", label: "Create New Project", action: "new-project", group: "Actions" },
   { id: "new-goal",    icon: "🎯", label: "Create New Goal",    action: "new-goal",    group: "Actions" },
+  { id: "new-meeting-summary", icon: "🎙", label: "Analyse a Meeting (summary, minutes, tasks)", path: "/meeting-assistant", group: "Actions", needs: "USE_MEETING_ASSISTANT" },
 ];
 
 // ── Fuzzy match ───────────────────────────────────────────────
@@ -68,6 +71,7 @@ function highlight(text, query) {
 
 export default function CommandPalette({ onClose, onAction }) {
   const navigate  = useNavigate();
+  const { can }   = useAccess();
   const inputRef  = useRef(null);
   const listRef   = useRef(null);
   const [query, setQuery]     = useState("");
@@ -85,8 +89,8 @@ export default function CommandPalette({ onClose, onAction }) {
   // Build result list
   const results = (() => {
     const all = [
-      ...ACTIONS,
-      ...PAGES,
+      ...ACTIONS.filter(a => !a.needs || can(a.needs)),
+      ...PAGES.filter(p => !p.needs || can(p.needs)),
       ...tasks.slice(0, 100).map(t => ({
         id: `task-${t.id}`, icon: t.status === "DONE" ? "✅" : t.status === "IN_PROGRESS" ? "🔄" : "⬜",
         label: t.title,
