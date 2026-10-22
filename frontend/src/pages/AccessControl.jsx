@@ -4,6 +4,7 @@ import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { apiErrorMessage } from "../utils/apiError";
 import { EXAMPLE_ORG_SETUP } from "../config/orgTemplates";
+import OrgSetupWizard from "../components/OrgSetupWizard";
 import {
   getAccessSettings, updateAccessSettings,
   getAccessProfiles, createAccessProfile, updateAccessProfile, deleteAccessProfile,
@@ -375,7 +376,7 @@ function PeopleTab({ members, profiles, departments, reload, notify }) {
 }
 
 /* ── Organisation setup (apply a whole structure) ──────────────────────── */
-function OrgSetupTab({ reload, notify }) {
+function OrgSetupAdvanced({ reload, notify }) {
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -440,13 +441,32 @@ function OrgSetupTab({ reload, notify }) {
   );
 }
 
+/* The guided setup is what people use. The file import stays available, out of the way, for consultants. */
+function OrgSetupTab({ data, reload, notify, openOverview }) {
+  return (
+    <>
+      <p style={{ opacity: 0.75, marginTop: 0 }}>
+        Answer a few questions and we'll set up your departments, who can see what, and who is on your team. You can come back and run this again at any time.
+      </p>
+      <OrgSetupWizard
+        profiles={data.profiles} departments={data.departments} members={data.members} settings={data.settings}
+        reload={reload} notify={notify} onOpenOverview={openOverview}
+      />
+      <details style={{ marginTop: 24 }}>
+        <summary style={{ cursor: "pointer", opacity: 0.7 }}>Advanced: import a setup file instead</summary>
+        <OrgSetupAdvanced reload={reload} notify={notify} />
+      </details>
+    </>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "profiles", label: "Access profiles" },
   { id: "departments", label: "Departments" },
   { id: "people", label: "People" },
-  { id: "setup", label: "Organisation setup" },
+  { id: "setup", label: "Set up my organisation" },
 ];
 
 export default function AccessControl() {
@@ -459,7 +479,11 @@ export default function AccessControl() {
   const load = useCallback(async () => {
     try {
       const [s, p, d, m] = await Promise.all([getAccessSettings(), getAccessProfiles(), getDepartments(), getAccessMembers()]);
-      setData({ settings: s.data, profiles: unwrap(p), departments: unwrap(d), members: unwrap(m) });
+      const next = { settings: s.data, profiles: unwrap(p), departments: unwrap(d), members: unwrap(m) };
+      setData((prev) => {
+        if (!prev && next.departments.length === 0 && next.profiles.length === 0) setTab("setup"); // first visit, nothing set up yet
+        return next;
+      });
       setLoadError("");
     } catch (e) { setLoadError(apiErrorMessage(e, "Could not load access settings")); }
   }, []);
@@ -493,7 +517,7 @@ export default function AccessControl() {
             {tab === "profiles" && <ProfilesTab profiles={data.profiles} settings={data.settings} reload={load} notify={notify} />}
             {tab === "departments" && <DepartmentsTab departments={data.departments} members={data.members} reload={load} notify={notify} />}
             {tab === "people" && <PeopleTab members={data.members} profiles={data.profiles} departments={data.departments} reload={load} notify={notify} />}
-            {tab === "setup" && <OrgSetupTab reload={load} notify={notify} />}
+            {tab === "setup" && <OrgSetupTab data={data} reload={load} notify={notify} openOverview={() => setTab("overview")} />}
           </div>
         </>
       )}

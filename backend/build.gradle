@@ -202,3 +202,19 @@ tasks.named('jar') {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
 }
+
+// Tests must behave the same on every machine. They must not pick up a developer's local .env file or the application's
+// settings from OS environment variables (a real MONGODB_URI, ENCRYPTION_KEY, VAPID keys ... silently change what the
+// tests see: 2FA, push, env-file and meeting tests then fail only on that machine).
+tasks.withType(Test).configureEach {
+    systemProperty 'spring.config.import', ''
+    doFirst {
+        def example = file('.env.example')
+        if (example.exists()) {
+            example.eachLine { line ->
+                def m = (line =~ /^\s*#?\s*([A-Z][A-Z0-9_]+)=/)
+                if (m.find()) environment.remove(m.group(1))
+            }
+        }
+    }
+}

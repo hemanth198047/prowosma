@@ -89,10 +89,10 @@ describe("AccessControl", () => {
     await waitFor(() => expect(api.updateAccessMember).toHaveBeenCalledWith("m1", { accessProfileId: "pr1" }));
   });
 
-  it("previews an organisation setup without applying it, and reports bad JSON plainly", async () => {
+  it("the advanced file import still previews without applying, and reports bad JSON plainly", async () => {
     render(<AccessControl />);
     await screen.findByText("Overview");
-    fireEvent.click(screen.getByRole("tab", { name: "Organisation setup" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Set up my organisation" })); // the file import now lives under "Advanced" on that tab
     const box = await screen.findByLabelText("Structure (JSON)");
     fireEvent.change(box, { target: { value: "{ not json" } });
     fireEvent.click(screen.getByText("Preview changes"));
