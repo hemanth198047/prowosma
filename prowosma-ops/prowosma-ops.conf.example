@@ -1,0 +1,50 @@
+# /opt/prowosma-ops/prowosma-ops.conf   (chmod 600 — it holds a GitHub token)
+
+# ── GitHub ───────────────────────────────────────────────────────────────
+# Use https URLs. For private repos create a fine-grained personal access token
+# (GitHub → Settings → Developer settings) with: Repository access = your repos,
+# Permissions → Contents: Read-only.  One token can cover both repos.
+BACKEND_REPO="https://github.com/YOUR-ORG/prowosma-backend.git"
+BACKEND_BRANCH="main"
+BACKEND_SUBDIR=""            # set if the backend lives in a sub-folder of the repo (e.g. "backend")
+
+FRONTEND_REPO="https://github.com/YOUR-ORG/prowosma-frontend.git"
+FRONTEND_BRANCH="main"
+FRONTEND_SUBDIR=""           # e.g. "frontend" if both are in one repo (use the same URL for both)
+
+GIT_TOKEN="github_pat_xxxxxxxxxxxxxxxx"
+
+# ── How the app runs on this server ──────────────────────────────────────
+RUNTIME="systemd"            # systemd = jar run by a systemd service + nginx serving static files
+                             # docker  = containers started with docker compose
+
+# systemd mode
+BACKEND_SERVICE="prowosma-backend"
+BACKEND_JAR_LINK="/opt/prowosma/backend/app.jar"   # the path your systemd unit runs; it becomes a symlink
+FRONTEND_WEBROOT="/var/www/prowosma"               # the folder nginx serves; it becomes a symlink
+FRONTEND_DIST="dist"                               # build output folder ("dist" for Vite)
+RELOAD_NGINX="true"
+
+# First deploy only: allow an existing real file/folder at the two paths above to be
+# moved into a "legacy" release (nothing is deleted; it becomes your first rollback target).
+ADOPT_EXISTING="false"
+
+# docker mode (your compose file must use image: prowosma-backend:latest / prowosma-frontend:latest)
+COMPOSE_FILE="/opt/prowosma/docker-compose.yml"
+BACKEND_IMAGE="prowosma-backend"
+FRONTEND_IMAGE="prowosma-frontend"
+FRONTEND_SERVICE="prowosma-frontend"   # in docker mode BACKEND_SERVICE is the compose service name
+
+# ── Checks ───────────────────────────────────────────────────────────────
+HEALTH_URL="http://127.0.0.1:8080/api/health/ready"   # backend port as seen from the server itself
+HEALTH_TIMEOUT="120"                                  # seconds to wait for the backend after restart
+FRONTEND_CHECK_URL=""                                 # optional, e.g. https://app.example.com/
+
+# ── Safety ───────────────────────────────────────────────────────────────
+BACKUP_CMD="/opt/prowosma/backup-db.sh"   # run before every backend deploy
+BACKUP_REQUIRED="true"                    # abort the deploy if the backup fails
+RUN_TESTS="false"                         # true = run the test suite as part of each build (slower)
+KEEP_RELEASES="5"
+
+# Optional: Slack / Teams / Discord incoming-webhook URL for deploy messages
+NOTIFY_WEBHOOK=""

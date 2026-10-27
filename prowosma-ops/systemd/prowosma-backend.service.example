@@ -1,0 +1,17 @@
+# Only needed if you don't already have a systemd unit for the backend.
+# Check first:  systemctl cat prowosma-backend    (or run: prowosma-ops discover)
+[Unit]
+Description=Prowosma backend
+After=network.target mongod.service
+
+[Service]
+User=prowosma
+WorkingDirectory=/opt/prowosma/backend
+EnvironmentFile=/opt/prowosma/backend/.env
+ExecStart=/usr/bin/java -Xms256m -Xmx1g -jar /opt/prowosma/backend/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

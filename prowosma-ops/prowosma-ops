@@ -1,0 +1,464 @@
+#!/usr/bin/env bash
+# prowosma-ops — pull from GitHub, build, deploy and restart Prowosma (backend + frontend)
+# Usage: prowosma-ops help
+set -Eeuo pipefail
+
+VERSION="1.0.0"
+OPS_DIR="${PROWOSMA_OPS_DIR:-/opt/prowosma-ops}"
+CONF="${PROWOSMA_OPS_CONF:-$OPS_DIR/prowosma-ops.conf}"
+APP_ROOT=/opt/prowosma
+
+# ───────────────────────── config ─────────────────────────
+if [ -f "$CONF" ]; then
+  # shellcheck disable=SC1090
+  . "$CONF"
+fi
+: "${DATA_DIR:=$OPS_DIR/data}"
+: "${RUNTIME:=systemd}"                       # systemd | docker
+: "${BACKEND_REPO:=}"; : "${BACKEND_BRANCH:=main}"; : "${BACKEND_SUBDIR:=}"
+: "${FRONTEND_REPO:=}"; : "${FRONTEND_BRANCH:=main}"; : "${FRONTEND_SUBDIR:=}"
+: "${GIT_TOKEN:=}"
+: "${BACKEND_SERVICE:=prowosma-backend}"      # systemd unit, or compose service name in docker mode
+: "${BACKEND_JAR_LINK:=$APP_ROOT/backend/app.jar}"
+: "${FRONTEND_WEBROOT:=/var/www/prowosma}"
+: "${FRONTEND_DIST:=dist}"
+: "${FRONTEND_ENV_FILE:=$OPS_DIR/frontend.env}"
+: "${RELOAD_NGINX:=true}"
+: "${HEALTH_URL:=http://127.0.0.1:8080/api/health/ready}"
+: "${HEALTH_TIMEOUT:=120}"
+: "${FRONTEND_CHECK_URL:=}"
+: "${RUN_TESTS:=false}"
+: "${BACKUP_CMD:=$APP_ROOT/backup-db.sh}"
+: "${BACKUP_REQUIRED:=true}"
+: "${KEEP_RELEASES:=5}"
+: "${NOTIFY_WEBHOOK:=}"
+: "${ADOPT_EXISTING:=false}"
+: "${COMPOSE_FILE:=$APP_ROOT/docker-compose.yml}"
+: "${BACKEND_IMAGE:=prowosma-backend}"
+: "${FRONTEND_IMAGE:=prowosma-frontend}"
+: "${FRONTEND_SERVICE:=prowosma-frontend}"
+
+STATE_DIR="$DATA_DIR/state"; REL_DIR="$DATA_DIR/releases"; LOG_FILE="$DATA_DIR/logs/ops.log"
+
+# ───────────────────────── helpers ─────────────────────────
+log()    { local m; m="[$(date '+%F %T')] $*"; echo "$m"; mkdir -p "$DATA_DIR/logs"; echo "$m" >> "$LOG_FILE"; }
+notify() {
+  [ -n "$NOTIFY_WEBHOOK" ] || return 0
+  local t; t=$(printf '%s' "$*" | tr -d '"\\' | tr '\n' ' ')
+  curl -fsS -m 10 -H 'Content-Type: application/json' -d "{\"text\":\"$t\",\"content\":\"$t\"}" "$NOTIFY_WEBHOOK" >/dev/null 2>&1 || true
+}
+die()    { log "ERROR: $*"; notify "Prowosma deploy FAILED on $(hostname): $*"; exit 1; }
+need()   { command -v "$1" >/dev/null 2>&1 || die "'$1' is not installed"; }
+state_get() { cat "$STATE_DIR/$1" 2>/dev/null || true; }
+state_set() { mkdir -p "$STATE_DIR"; printf '%s' "$2" > "$STATE_DIR/$1"; }
+need_config() { [ -f "$CONF" ] || die "config not found: $CONF (copy prowosma-ops.conf.example and edit it)"; }
+
+setup_git_auth() {
+  if [ -n "$GIT_TOKEN" ]; then   # passed through the environment so it never shows in 'ps'
+    export GIT_CONFIG_COUNT=1
+    export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
+    export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
+  fi
+  export GIT_TERMINAL_PROMPT=0
+}
+
+comp_repo()   { if [ "$1" = backend ]; then echo "$BACKEND_REPO";   else echo "$FRONTEND_REPO";   fi; }
+comp_branch() { if [ "$1" = backend ]; then echo "$BACKEND_BRANCH"; else echo "$FRONTEND_BRANCH"; fi; }
+comp_subdir() { if [ "$1" = backend ]; then echo "$BACKEND_SUBDIR"; else echo "$FRONTEND_SUBDIR"; fi; }
+
+# Fetch the repo into the local cache and resolve the commit to deploy -> SRC_DIR, SRC_SHA
+sync_source() {
+  local comp=$1 ref=${2:-} repo branch
+  repo=$(comp_repo "$comp"); branch=$(comp_branch "$comp")
+  SRC_DIR="$DATA_DIR/src/$comp"
+  mkdir -p "$DATA_DIR/src"
+  if [ ! -d "$SRC_DIR/.git" ]; then
+    log "[$comp] first run: cloning $repo"
+    git clone --quiet "$repo" "$SRC_DIR" || die "[$comp] git clone failed (check repo URL and GIT_TOKEN)"
+  fi
+  git -C "$SRC_DIR" fetch --quiet --prune --tags origin || die "[$comp] git fetch failed"
+  if [ -n "$ref" ]; then
+    SRC_SHA=$(git -C "$SRC_DIR" rev-parse --verify --quiet "origin/$ref^{commit}" \
+           || git -C "$SRC_DIR" rev-parse --verify --quiet "$ref^{commit}") || die "[$comp] ref '$ref' not found"
+  else
+    SRC_SHA=$(git -C "$SRC_DIR" rev-parse --verify --quiet "origin/$branch^{commit}") || die "[$comp] branch '$branch' not found"
+  fi
+}
+
+checkout_source() {
+  git -C "$SRC_DIR" checkout --quiet --force --detach "$SRC_SHA" || die "checkout failed"
+  git -C "$SRC_DIR" clean -fdxq -e node_modules || true
+}
+
+wait_healthy() {
+  local url=$1 timeout=${2:-$HEALTH_TIMEOUT} end
+  [ -n "$url" ] || return 0
+  end=$((SECONDS + timeout))
+  while [ "$SECONDS" -lt "$end" ]; do
+    curl -fsS -m 5 -o /dev/null "$url" 2>/dev/null && return 0
+    sleep 3
+  done
+  return 1
+}
+
+# Point <path> at <target>. A real file/dir already at <path> is moved into a 'legacy' release (only if ADOPT_EXISTING=true).
+ensure_link() {
+  local comp=$1 path=$2 target=$3 leaf=$4
+  if [ -e "$path" ] && [ ! -L "$path" ]; then
+    [ "$ADOPT_EXISTING" = true ] || die "[$comp] '$path' exists and is not managed by prowosma-ops. Set ADOPT_EXISTING=true in the config to let it be moved into a 'legacy' release (nothing is deleted)."
+    local legacy="$REL_DIR/$comp/00000000-legacy"
+    [ ! -e "$legacy" ] || legacy="$legacy-$(date +%s)"
+    mkdir -p "$legacy"; mv "$path" "$legacy/$leaf"
+    log "[$comp] adopted existing $path -> $legacy/$leaf"
+  fi
+  mkdir -p "$(dirname "$path")"
+  ln -sfn "$target" "$path.new" && mv -Tf "$path.new" "$path"
+}
+
+preflight_link() { # fail early (before building / backing up) if a live path is unmanaged and not adoptable
+  local comp=$1 path=$2
+  if [ -e "$path" ] && [ ! -L "$path" ] && [ "$ADOPT_EXISTING" != true ]; then
+    die "[$comp] '$path' exists and is not managed by prowosma-ops. Set ADOPT_EXISTING=true in the config to let it be moved into a 'legacy' release (nothing is deleted)."
+  fi
+}
+
+current_release() { # prints the release directory the live symlink points to
+  local comp=$1 link
+  if [ "$comp" = backend ]; then link=$BACKEND_JAR_LINK; else link=$FRONTEND_WEBROOT; fi
+  [ -L "$link" ] || return 0
+  if [ "$comp" = backend ]; then dirname "$(readlink -f "$link")"; else dirname "$(readlink -f "$link")"; fi
+}
+prev_release() {
+  local comp=$1 cur
+  cur=$(basename "$(current_release "$comp")" 2>/dev/null || true)
+  [ -d "$REL_DIR/$comp" ] || return 0
+  ls -1 "$REL_DIR/$comp" | sort | awk -v c="$cur" '$0==c{print p; exit} {p=$0}'
+}
+prune_releases() {
+  local comp=$1 cur i=0 r
+  [ -d "$REL_DIR/$comp" ] || return 0
+  cur=$(basename "$(current_release "$comp")" 2>/dev/null || true)
+  while IFS= read -r r; do
+    i=$((i + 1)); [ "$i" -le "$KEEP_RELEASES" ] && continue
+    [ "$r" = "$cur" ] && continue
+    case "$r" in 00000000-legacy*) continue ;; esac
+    rm -rf "${REL_DIR:?}/$comp/$r"
+  done < <(ls -1 "$REL_DIR/$comp" | sort -r)
+}
+
+run_backup() {
+  [ "$NO_BACKUP" = true ] && { log "backup skipped (--no-backup)"; return 0; }
+  if [ -n "$BACKUP_CMD" ] && [ -x "$BACKUP_CMD" ]; then
+    log "running database backup: $BACKUP_CMD"
+    if ! "$BACKUP_CMD" >> "$LOG_FILE" 2>&1; then
+      [ "$BACKUP_REQUIRED" = true ] && die "database backup failed - deploy aborted (BACKUP_REQUIRED=true; use --no-backup to override)"
+      log "WARNING: backup failed, continuing"
+    fi
+  else
+    log "WARNING: no backup script at '$BACKUP_CMD' - continuing without a backup"
+  fi
+}
+
+# ───────────────────────── backend ─────────────────────────
+build_backend_jar() { # echoes jar path
+  local dir=$1 jar=""
+  pushd "$dir" >/dev/null || die "backend dir not found: $dir"
+  if [ -f gradlew ]; then
+    chmod +x gradlew
+    local ex="-x test"; [ "$RUN_TESTS" = true ] && ex=""
+    # shellcheck disable=SC2086
+    ./gradlew --no-daemon -q clean bootJar $ex >&2 || { popd >/dev/null; die "gradle build failed"; }
+    jar=$(find build/libs -maxdepth 1 -name '*.jar' ! -name '*-plain.jar' -printf '%T@ %p\n' | sort -rn | head -n1 | cut -d' ' -f2-)
+  elif [ -f mvnw ] || [ -f pom.xml ]; then
+    local mvn=./mvnw; [ -f mvnw ] && chmod +x mvnw || mvn=mvn
+    local ex="-DskipTests"; [ "$RUN_TESTS" = true ] && ex=""
+    # shellcheck disable=SC2086
+    $mvn -B -q clean package $ex >&2 || { popd >/dev/null; die "maven build failed"; }
+    jar=$(find target -maxdepth 1 -name '*.jar' ! -name '*.original' ! -name '*-sources.jar' ! -name '*-javadoc.jar' -printf '%T@ %p\n' | sort -rn | head -n1 | cut -d' ' -f2-)
+  else
+    popd >/dev/null; die "no gradlew / mvnw / pom.xml in $dir"
+  fi
+  popd >/dev/null
+  [ -n "$jar" ] || die "build produced no jar"
+  echo "$dir/$jar"
+}
+
+backend_activate_native() {
+  local rel=$1
+  ensure_link backend "$BACKEND_JAR_LINK" "$rel/app.jar" app.jar
+  systemctl restart "$BACKEND_SERVICE" || return 1
+}
+backend_activate_docker() {
+  docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate "$BACKEND_SERVICE"
+}
+
+deploy_backend() {
+  local sha=$1 short=${1:0:8} id prev rel jar
+  checkout_source
+  local dir="$SRC_DIR"; [ -n "$BACKEND_SUBDIR" ] && dir="$SRC_DIR/$BACKEND_SUBDIR"
+  id="$(date +%Y%m%d-%H%M%S)-$short"
+
+  if [ "$RUNTIME" = docker ]; then
+    log "[backend] building docker image $BACKEND_IMAGE:$short"
+    docker build -q -t "$BACKEND_IMAGE:$short" "$dir" >/dev/null || die "[backend] docker build failed"
+    run_backup
+    docker tag "$BACKEND_IMAGE:latest" "$BACKEND_IMAGE:previous" 2>/dev/null || true
+    docker tag "$BACKEND_IMAGE:$short" "$BACKEND_IMAGE:latest"
+    log "[backend] restarting container"
+    backend_activate_docker || log "[backend] compose up reported an error"
+    if wait_healthy "$HEALTH_URL"; then
+      state_set backend.sha "$short"; state_set backend.bad ""
+      log "[backend] OK - $short is live"
+    else
+      log "[backend] health check FAILED - rolling back to previous image"
+      docker tag "$BACKEND_IMAGE:previous" "$BACKEND_IMAGE:latest" 2>/dev/null || true
+      backend_activate_docker || true
+      state_set backend.bad "$short"
+      die "[backend] $short failed its health check; previous image restored"
+    fi
+    return 0
+  fi
+
+  preflight_link backend "$BACKEND_JAR_LINK"
+  log "[backend] building jar from $short"
+  jar=$(build_backend_jar "$dir")
+  rel="$REL_DIR/backend/$id"; mkdir -p "$rel"; cp "$jar" "$rel/app.jar"
+  run_backup
+  prev=$(current_release backend)
+  log "[backend] switching to $id and restarting $BACKEND_SERVICE"
+  backend_activate_native "$rel" || log "[backend] restart reported an error"
+  if wait_healthy "$HEALTH_URL"; then
+    state_set backend.sha "$short"; state_set backend.bad ""
+    log "[backend] OK - $short is live"
+    prune_releases backend
+  else
+    log "[backend] health check FAILED at $HEALTH_URL"
+    state_set backend.bad "$short"
+    if [ -n "$prev" ] && [ -f "$prev/app.jar" ]; then
+      log "[backend] rolling back to $(basename "$prev")"
+      backend_activate_native "$prev" || true
+      wait_healthy "$HEALTH_URL" 60 && log "[backend] previous version is healthy again" || log "[backend] WARNING: previous version is NOT healthy either - check: journalctl -u $BACKEND_SERVICE"
+    fi
+    die "[backend] $short failed its health check; rolled back (see: prowosma-ops logs backend)"
+  fi
+}
+
+# ───────────────────────── frontend ─────────────────────────
+reload_nginx() {
+  [ "$RELOAD_NGINX" = true ] || return 0
+  if command -v nginx >/dev/null 2>&1 && nginx -t >/dev/null 2>&1; then systemctl reload nginx || true; fi
+}
+
+docker_build_args() { # turn frontend.env into --build-arg flags
+  [ -f "$FRONTEND_ENV_FILE" ] || return 0
+  grep -Ev '^\s*(#|$)' "$FRONTEND_ENV_FILE" | sed 's/^export //' | while IFS= read -r l; do printf -- '--build-arg\n%s\n' "$l"; done
+}
+
+deploy_frontend() {
+  local sha=$1 short=${1:0:8} id rel prev
+  checkout_source
+  local dir="$SRC_DIR"; [ -n "$FRONTEND_SUBDIR" ] && dir="$SRC_DIR/$FRONTEND_SUBDIR"
+  id="$(date +%Y%m%d-%H%M%S)-$short"
+
+  if [ "$RUNTIME" = docker ] && [ "${FRONTEND_MODE:-docker}" = docker ]; then
+    log "[frontend] building docker image $FRONTEND_IMAGE:$short"
+    local args=(); mapfile -t args < <(docker_build_args)
+    docker build -q -t "$FRONTEND_IMAGE:$short" ${args[@]+"${args[@]}"} "$dir" >/dev/null || die "[frontend] docker build failed"
+    docker tag "$FRONTEND_IMAGE:latest" "$FRONTEND_IMAGE:previous" 2>/dev/null || true
+    docker tag "$FRONTEND_IMAGE:$short" "$FRONTEND_IMAGE:latest"
+    docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate "$FRONTEND_SERVICE" || die "[frontend] compose up failed"
+    state_set frontend.sha "$short"; log "[frontend] OK - $short is live"
+    return 0
+  fi
+
+  need node; need npm
+  preflight_link frontend "$FRONTEND_WEBROOT"
+  log "[frontend] building $short (npm)"
+  pushd "$dir" >/dev/null || die "frontend dir not found"
+  ( set -a; [ ! -f "$FRONTEND_ENV_FILE" ] || . "$FRONTEND_ENV_FILE"; set +a
+    { if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi; } && npm run build
+  ) >&2 || { popd >/dev/null; die "[frontend] build failed"; }
+  popd >/dev/null
+  [ -f "$dir/$FRONTEND_DIST/index.html" ] || die "[frontend] no $FRONTEND_DIST/index.html after build (set FRONTEND_DIST?)"
+  rel="$REL_DIR/frontend/$id"; mkdir -p "$rel"; cp -a "$dir/$FRONTEND_DIST" "$rel/www"
+  prev=$(current_release frontend)
+  ensure_link frontend "$FRONTEND_WEBROOT" "$rel/www" www
+  reload_nginx
+  if [ -n "$FRONTEND_CHECK_URL" ] && ! wait_healthy "$FRONTEND_CHECK_URL" 30; then
+    log "[frontend] check failed at $FRONTEND_CHECK_URL"
+    state_set frontend.bad "$short"
+    if [ -n "$prev" ] && [ -d "$prev/www" ]; then ensure_link frontend "$FRONTEND_WEBROOT" "$prev/www" www; reload_nginx; log "[frontend] rolled back to $(basename "$prev")"; fi
+    die "[frontend] $short failed its check; rolled back"
+  fi
+  state_set frontend.sha "$short"; state_set frontend.bad ""
+  log "[frontend] OK - $short is live"
+  prune_releases frontend
+}
+
+# ───────────────────────── commands ─────────────────────────
+cmd_deploy() {
+  local target=all FORCE=false REF="" DRY=false AUTO=false; NO_BACKUP=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      backend|frontend|all) target=$1 ;;
+      --force) FORCE=true ;; --ref) REF=${2:?--ref needs a value}; shift ;;
+      --no-backup) NO_BACKUP=true ;; --dry-run) DRY=true ;; --auto) AUTO=true ;;
+      *) die "unknown option: $1" ;;
+    esac; shift
+  done
+  need_config; need git; need curl; need flock; setup_git_auth
+  mkdir -p "$DATA_DIR" "$STATE_DIR"
+  exec 9>"$DATA_DIR/lock"
+  if ! flock -n 9; then [ "$AUTO" = true ] && exit 0; die "another prowosma-ops operation is running"; fi
+  if [ "$AUTO" = true ] && [ -f "$DATA_DIR/PAUSE" ]; then exit 0; fi
+
+  local comps=(); case "$target" in all) comps=(backend frontend) ;; *) comps=("$target") ;; esac
+  local c repo sha short deployed bad changed=false
+  for c in "${comps[@]}"; do
+    repo=$(comp_repo "$c")
+    [ -n "$repo" ] || { [ "$AUTO" = true ] || log "[$c] no repo configured - skipped"; continue; }
+    sync_source "$c" "$REF"; sha=$SRC_SHA; short=${sha:0:8}
+    deployed=$(state_get "$c.sha"); bad=$(state_get "$c.bad")
+    if [ "$FORCE" != true ] && [ "$short" = "$deployed" ]; then [ "$AUTO" = true ] || log "[$c] already up to date ($short)"; continue; fi
+    if [ "$FORCE" != true ] && [ "$short" = "$bad" ]; then [ "$AUTO" = true ] || log "[$c] $short previously failed - skipped (push a fix, or use --force)"; continue; fi
+    if [ "$DRY" = true ]; then log "[$c] would deploy $short (live: ${deployed:-none})"; continue; fi
+    if [ "$changed" = false ]; then changed=true; notify "Prowosma deploy started on $(hostname)"; fi
+    SRC_SHA=$sha
+    if [ "$c" = backend ]; then deploy_backend "$sha"; else deploy_frontend "$sha"; fi
+  done
+  [ "$changed" = true ] && { log "deploy finished"; notify "Prowosma deploy finished on $(hostname)"; }
+  return 0
+}
+
+cmd_rollback() {
+  local target=${1:-all} comps=() c prev
+  need_config; need flock; mkdir -p "$DATA_DIR" "$STATE_DIR"
+  exec 9>"$DATA_DIR/lock"; flock -n 9 || die "another prowosma-ops operation is running"
+  case "$target" in all) comps=(backend frontend) ;; backend|frontend) comps=("$target") ;; *) die "usage: rollback [backend|frontend|all]" ;; esac
+  for c in "${comps[@]}"; do
+    if [ "$RUNTIME" = docker ]; then
+      docker image inspect "$([ "$c" = backend ] && echo "$BACKEND_IMAGE" || echo "$FRONTEND_IMAGE"):previous" >/dev/null 2>&1 || { log "[$c] no previous image"; continue; }
+      local img svc; if [ "$c" = backend ]; then img=$BACKEND_IMAGE; svc=$BACKEND_SERVICE; else img=$FRONTEND_IMAGE; svc=$FRONTEND_SERVICE; fi
+      state_set "$c.bad" "$(state_get "$c.sha")"
+      docker tag "$img:previous" "$img:latest"; docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate "$svc"
+      log "[$c] rolled back to previous image"; continue
+    fi
+    prev=$(prev_release "$c")
+    [ -n "$prev" ] || { log "[$c] no previous release to roll back to"; continue; }
+    state_set "$c.bad" "$(state_get "$c.sha")"
+    state_set "$c.sha" "${prev: -8}"
+    if [ "$c" = backend ]; then
+      backend_activate_native "$REL_DIR/backend/$prev"
+      wait_healthy "$HEALTH_URL" 90 && log "[backend] rolled back to $prev - healthy" || log "[backend] rolled back to $prev - WARNING not healthy yet"
+    else
+      ensure_link frontend "$FRONTEND_WEBROOT" "$REL_DIR/frontend/$prev/www" www; reload_nginx
+      log "[frontend] rolled back to $prev"
+    fi
+  done
+  log "Auto-deploy will skip the version you rolled back from until a newer commit is pushed."
+}
+
+cmd_status() {
+  need_config; setup_git_auth
+  local c repo branch dep rem cur bad
+  echo "prowosma-ops $VERSION   runtime=$RUNTIME   $(date '+%F %T')"
+  [ -f "$DATA_DIR/PAUSE" ] && echo "AUTO-DEPLOY: PAUSED (prowosma-ops resume)" || echo "AUTO-DEPLOY: active (if the timer is enabled)"
+  for c in backend frontend; do
+    repo=$(comp_repo "$c"); [ -n "$repo" ] || { echo "$c: not configured"; continue; }
+    branch=$(comp_branch "$c"); dep=$(state_get "$c.sha"); rem="?"; bad=$(state_get "$c.bad")
+    if [ -d "$DATA_DIR/src/$c/.git" ]; then
+      git -C "$DATA_DIR/src/$c" fetch --quiet origin 2>/dev/null || true
+      rem=$(git -C "$DATA_DIR/src/$c" rev-parse --short=8 "origin/$branch" 2>/dev/null || echo "?")
+    fi
+    cur=$(basename "$(current_release "$c" 2>/dev/null)" 2>/dev/null || true)
+    printf '%-9s branch=%-10s live=%-9s github=%-9s %s  release=%s\n' "$c" "$branch" "${dep:-none}" "$rem" "$(if [ "$dep" = "$rem" ]; then echo up-to-date; elif [ "$bad" = "$rem" ]; then echo 'SKIPPED (failed earlier - push a fix)'; else echo 'UPDATE AVAILABLE'; fi)" "${cur:-n/a}"
+  done
+  if [ "$RUNTIME" = docker ]; then docker compose -f "$COMPOSE_FILE" ps 2>/dev/null || true
+  else echo "backend service: $(systemctl is-active "$BACKEND_SERVICE" 2>/dev/null || true)"; fi
+  if curl -fsS -m 5 -o /dev/null "$HEALTH_URL" 2>/dev/null; then echo "health: OK ($HEALTH_URL)"; else echo "health: FAILING ($HEALTH_URL)"; fi
+}
+
+cmd_logs() {
+  need_config
+  case "${1:-backend}" in
+    backend) if [ "$RUNTIME" = docker ]; then docker compose -f "$COMPOSE_FILE" logs -f --tail 100 "$BACKEND_SERVICE"; else journalctl -u "$BACKEND_SERVICE" -f -n 100; fi ;;
+    nginx)   tail -n 100 -f /var/log/nginx/error.log ;;
+    ops)     tail -n 100 -f "$LOG_FILE" ;;
+    *) die "usage: logs [backend|nginx|ops]" ;;
+  esac
+}
+
+cmd_check() {
+  need_config; setup_git_auth
+  local ok=true t
+  p() { printf '  %-5s %s\n' "$1" "$2"; [ "$1" = FAIL ] && ok=false || true; }
+  echo "Checking prerequisites..."
+  for t in git curl flock base64; do command -v "$t" >/dev/null && p OK "$t" || p FAIL "$t missing"; done
+  if [ "$RUNTIME" = docker ]; then command -v docker >/dev/null && p OK docker || p FAIL "docker missing"
+  else
+    command -v java >/dev/null && p OK "java: $(java -version 2>&1 | head -n1)" || p WARN "java not found (needed to build the backend)"
+    command -v systemctl >/dev/null && p OK systemctl || p FAIL "systemctl missing"
+    systemctl cat "$BACKEND_SERVICE" >/dev/null 2>&1 && p OK "service $BACKEND_SERVICE exists" || p FAIL "service '$BACKEND_SERVICE' not found (see systemd/prowosma-backend.service.example)"
+  fi
+  command -v node >/dev/null && p OK "node $(node -v)" || p WARN "node not found (needed to build the frontend)"
+  local c repo
+  for c in backend frontend; do
+    repo=$(comp_repo "$c"); [ -n "$repo" ] || { p WARN "$c repo not set"; continue; }
+    git ls-remote --exit-code "$repo" "refs/heads/$(comp_branch "$c")" >/dev/null 2>&1 && p OK "$c: can read $repo ($(comp_branch "$c"))" || p FAIL "$c: cannot read $repo / branch $(comp_branch "$c") (token?)"
+  done
+  if [ "$RUNTIME" != docker ]; then
+    for t in "$BACKEND_JAR_LINK" "$FRONTEND_WEBROOT"; do
+      if [ -L "$t" ]; then p OK "$t is managed (symlink)"
+      elif [ -e "$t" ]; then [ "$ADOPT_EXISTING" = true ] && p OK "$t exists - will be adopted into a legacy release" || p WARN "$t exists and is not managed: set ADOPT_EXISTING=true to adopt it on first deploy"
+      else p OK "$t does not exist yet (will be created)"; fi
+    done
+  fi
+  [ -x "$BACKUP_CMD" ] && p OK "backup script $BACKUP_CMD" || p WARN "backup script not executable: $BACKUP_CMD"
+  free -m | awk '/Mem:/{ if ($2 < 3000) print "  WARN  only " $2 " MB RAM: builds may need swap (see README)" }'
+  $ok && echo "All required checks passed." || { echo "Some checks FAILED."; return 1; }
+}
+
+cmd_discover() {
+  echo "=== host ==="; uname -a; free -m | head -2; df -h / | tail -1
+  echo; echo "=== tools ==="; for t in java node npm mvn gradle docker nginx git mongod; do printf '%-8s' "$t"; (command -v "$t" >/dev/null && { "$t" --version 2>&1 || "$t" -version 2>&1; } | head -n1) || echo "-"; done
+  echo; echo "=== services ==="; systemctl list-units --type=service --no-pager 2>/dev/null | grep -Ei 'prowosma|java|nginx|mongo|caddy|apache|docker' || true
+  echo; echo "=== docker ==="; docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}' 2>/dev/null || echo "(docker not available)"
+  echo; echo "=== listening ports ==="; ss -ltnp 2>/dev/null | head -25
+  echo; echo "=== $APP_ROOT ==="; ls -la "$APP_ROOT" 2>/dev/null; ls -la "$APP_ROOT/releases" 2>/dev/null | head -15; ls -la "$APP_ROOT/backend" 2>/dev/null | head -15
+  echo; echo "=== git remotes under $APP_ROOT ==="; find "$APP_ROOT" -maxdepth 3 -name .git -type d 2>/dev/null | while read -r g; do echo "$(dirname "$g"): $(git -C "$(dirname "$g")" remote -v 2>/dev/null | head -1 | sed -E 's#//[^@/]*@#//***@#')"; done
+  echo; echo "=== nginx ==="; grep -RhsE 'server_name|root |proxy_pass|listen ' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | sed 's/^ *//' | head -30
+  echo; echo "=== backend unit files ==="; systemctl cat prowosma-backend 2>/dev/null | sed -E 's/(PASSWORD|SECRET|KEY|TOKEN|URI)=.*/\1=***hidden***/I' | head -30 || true
+}
+
+cmd_help() {
+cat <<H
+prowosma-ops $VERSION
+
+  prowosma-ops deploy [backend|frontend|all] [--force] [--ref <branch|tag|sha>] [--no-backup] [--dry-run]
+  prowosma-ops status                 what is live vs what is on GitHub
+  prowosma-ops rollback [backend|frontend|all]
+  prowosma-ops logs [backend|nginx|ops]
+  prowosma-ops pause | resume         stop / start the automatic deploy timer's work
+  prowosma-ops check                  verify prerequisites and GitHub access
+  prowosma-ops discover               print how this server is set up (safe, read-only)
+  prowosma-ops auto                   used by the systemd timer (quiet unless something changed)
+H
+}
+
+main() {
+  local cmd=${1:-help}; shift || true
+  case "$cmd" in
+    deploy)   cmd_deploy "$@" ;;
+    auto)     cmd_deploy all --auto "$@" ;;
+    status)   cmd_status ;;
+    rollback) cmd_rollback "$@" ;;
+    logs)     cmd_logs "$@" ;;
+    check)    cmd_check ;;
+    discover) cmd_discover ;;
+    pause)    mkdir -p "$DATA_DIR"; touch "$DATA_DIR/PAUSE"; echo "auto-deploy paused" ;;
+    resume)   rm -f "$DATA_DIR/PAUSE"; echo "auto-deploy resumed" ;;
+    version|--version) echo "$VERSION" ;;
+    help|-h|--help|*) cmd_help ;;
+  esac
+}
+main "$@"

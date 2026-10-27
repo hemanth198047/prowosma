@@ -1,0 +1,9 @@
+[Unit]
+Description=Prowosma auto-deploy (checks GitHub, deploys if there is a new commit)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/prowosma-ops auto
+TimeoutStartSec=1800
+Nice=10
