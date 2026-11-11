@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "./ToastContext";
+import { AlertTriangle } from "lucide-react";
+import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
@@ -284,8 +286,10 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
         )}
       </td>
 
-      {/* Due date */}
+      {/* Due date — overdue open tasks get the Dashboard's red date and warning icon */}
       <td style={cellStyle}>
+        <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {isTaskOverdue(task) && <AlertTriangle size={11} color={OVERDUE_COLOR} aria-hidden="true" style={{ flexShrink: 0 }} />}
         <input
           type="date"
           value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
@@ -318,8 +322,10 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           // Due dates are for work still ahead — a date input with no
           // floor let any past date through with nothing stopping it.
           min={new Date().toISOString().slice(0, 10)}
-          style={{ ...inputStyle, cursor: "pointer" }}
+          aria-label={isTaskOverdue(task) ? "Due date (overdue)" : "Due date"}
+          style={{ ...inputStyle, cursor: "pointer", ...(isTaskOverdue(task) ? { color: OVERDUE_COLOR, fontWeight: 600 } : {}) }}
         />
+        </span>
       </td>
 
       {/* Tags */}

@@ -29,6 +29,8 @@ import TaskDrawer from "../components/TaskDrawer";
 import "../styles/pages/tasks.css";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import { AlertTriangle } from "lucide-react";
+import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -849,7 +851,11 @@ export default function Tasks() {
             })}
           </span>
         )}
-        {t.dueDate && <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>}
+        {t.dueDate && (isTaskOverdue(t)
+          ? <span className="task-meta" style={{ marginTop: "2px", color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(t.dueDate).toLocaleDateString()}
+            </span>
+          : <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>)}
         {t.tags?.length > 0 && (
           <div className="task-meta" style={{ marginTop: "2px" }}>
             {t.tags.map(tag => <span key={tag} className="task-tag">{tag}</span>)}

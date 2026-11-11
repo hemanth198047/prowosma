@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/kanban.css";
+import { AlertTriangle } from "lucide-react";
+import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 // C-4: WIP limits per column
 const COLUMNS = [
   { id:"TODO",        label:"To Do",       color:"var(--brand-500)", bg:"var(--brand-50)", wipLimit:null },
@@ -42,7 +44,11 @@ function TaskCard({ task, getProjectName, isDragging }) {
       {task.description && <div className="kanban-card-desc">{task.description}</div>}
       <div className="kanban-card-meta">
         {task.projectId && <span className="kanban-card-project">📁 {getProjectName(task.projectId)}</span>}
-        {task.dueDate && <span className="kanban-card-date">📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
+        {task.dueDate && (isTaskOverdue(task)
+          ? <span className="kanban-card-date" style={{ color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(task.dueDate).toLocaleDateString()}
+            </span>
+          : <span className="kanban-card-date">📅 {new Date(task.dueDate).toLocaleDateString()}</span>)}
         {task.storyPoints && <span className="kanban-card-points">{task.storyPoints}pt</span>}
       </div>
       <div className="kanban-card-footer">
