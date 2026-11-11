@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 
 import "../styles/pages/time.css";
+import { statusText } from "../utils/statusText";
 function fmt(minutes) {
   if (!minutes) return "0h";
   const h = Math.floor(minutes / 60), m = minutes % 60;
@@ -103,7 +104,7 @@ function InvoiceModal({ invoice, onClose, onStatusChange }) {
           <span className="tt-status-badge" style={{
             background: STATUS_COLORS[status] + "22",
             color: STATUS_COLORS[status],
-          }}>{status}</span>
+          }}>{statusText(status)}</span>
         </div>
 
         {/* Line items */}
@@ -384,7 +385,7 @@ export default function TimeTracking() {
                   <div className="tt-invoice-card-right">
                     <span className="tt-status-badge"
                       style={{ background: STATUS_COLORS[inv.status] + "22", color: STATUS_COLORS[inv.status] }}>
-                      {inv.status}
+                      {statusText(inv.status)}
                     </span>
                     <span className="tt-invoice-total">{currency(inv.total)}</span>
                     <button className="btn-secondary"

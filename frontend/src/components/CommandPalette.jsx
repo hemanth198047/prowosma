@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useAccess } from "../hooks/useAccess";
 import { getTasks } from "../api/tasks";
 import { getProjects } from "../api/projects";
+import { statusText } from "../utils/statusText";
 
 // ── Static commands ───────────────────────────────────────────
 const PAGES = [
@@ -94,7 +95,7 @@ export default function CommandPalette({ onClose, onAction }) {
       ...tasks.slice(0, 100).map(t => ({
         id: `task-${t.id}`, icon: t.status === "DONE" ? "✅" : t.status === "IN_PROGRESS" ? "🔄" : "⬜",
         label: t.title,
-        sub:   t.status?.replace("_"," "),
+        sub:   statusText(t.status),
         path:  `/tasks?highlight=${t.id}`,
         group: "Tasks",
       })),

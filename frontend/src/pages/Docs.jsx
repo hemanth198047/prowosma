@@ -11,6 +11,7 @@ import DocAccessModal from "../components/DocAccessModal";
 import { useAccess } from "../hooks/useAccess";
 
 import "../styles/pages/docs.css";
+import { statusText } from "../utils/statusText";
 // ═══════════════════════════════════════════════════════
 // BLOCK SYSTEM
 // ═══════════════════════════════════════════════════════
@@ -94,7 +95,7 @@ function TaskPicker({ onSelect, onClose, allTasks }) {
                   <span className="doc-task-picker-dot"
                     style={{ background: statusColor[t.status] || "var(--brand-500)" }} />
                   <span className="doc-task-picker-title">{t.title}</span>
-                  <span className="doc-task-picker-status">{t.status?.replace("_"," ")}</span>
+                  <span className="doc-task-picker-status">{statusText(t.status)}</span>
                 </button>
               ))
           }
@@ -298,7 +299,7 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
         <div className="doc-task-embed-meta">
           <span className="doc-task-embed-status"
             style={{ color: statusColor[task.status] }}>
-            {task.status?.replace("_"," ")}
+            {statusText(task.status)}
           </span>
           {task.priority && (
             <span className="doc-task-embed-priority"

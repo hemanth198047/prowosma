@@ -38,6 +38,7 @@ import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/goals.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 const STATUSES  = ["ACTIVE", "ACHIEVED", "PAUSED"];
 const LEVELS    = ["COMPANY", "TEAM", "INDIVIDUAL"];
 const QUARTERS  = ["Q1 2025","Q2 2025","Q3 2025","Q4 2025","Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
@@ -567,7 +568,7 @@ function SubGoalCard({ goalId, subGoal, onEdit, onDelete, onUpdateGoal }) {
           />
           <span className="subgoal-title">{subGoal.title}</span>
           <span className={`badge badge-${subGoal.status?.toLowerCase()}`}>
-            {subGoal.status}
+            {statusText(subGoal.status)}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1115,7 +1116,7 @@ function ChildGoalsPanel({ goal, allGoals, onRequestAdd }) {
           <span className="goal-child-pct">{child.progress}%</span>
           <span className="goal-child-status"
             style={{ color: child.status === "ACHIEVED" ? "var(--success)" : child.status === "PAUSED" ? "var(--warning)" : "var(--brand-500)" }}>
-            {child.status}
+            {statusText(child.status)}
           </span>
         </div>
       ))}
@@ -1312,7 +1313,7 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
               <span className="goal-dep-title">{g.title}</span>
               <span className="goal-dep-status"
                 style={{ color: g.status==="ACHIEVED"?"var(--success)":g.status==="PAUSED"?"var(--gray-500)":"var(--warning)" }}>
-                {g.status}
+                {statusText(g.status)}
               </span>
               <button className="btn-icon" title="Remove dependency"
                 onClick={() => removeDep(g.id)}>✕</button>
@@ -1328,7 +1329,7 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
             <div key={g.id} className="goal-dep-row goal-dep-row-blocks">
               <div className="goal-dep-conf" style={{ background: confColor(g) }} />
               <span className="goal-dep-title">{g.title}</span>
-              <span className="goal-dep-status">{g.status}</span>
+              <span className="goal-dep-status">{statusText(g.status)}</span>
             </div>
           ))}
         </div>
@@ -1481,7 +1482,7 @@ function ScorecardView({ goals }) {
                   <td className="scorecard-meta">{g.checkIns?.length || 0}</td>
                   <td>
                     <span className={`scorecard-status-badge scorecard-status-${g.status?.toLowerCase()}`}>
-                      {g.status}
+                      {statusText(g.status)}
                     </span>
                   </td>
                 </tr>
@@ -1558,7 +1559,7 @@ function QuarterlyView({ goals, allGoals, onRequestAdd }) {
                       </span>
                       <span className="quarterly-goal-title">{g.title}</span>
                       <span className={`quarterly-status scorecard-status-${g.status?.toLowerCase()}`}>
-                        {g.status}
+                        {statusText(g.status)}
                       </span>
                     </div>
                     {g.owner && <div className="quarterly-owner">👤 {g.owner}</div>}
@@ -1651,7 +1652,7 @@ function GoalCard({
       <div className="goal-card-header">
         <h3>{goal.title}</h3>
         <span className={`badge badge-${goal.status?.toLowerCase()}`}>
-          {goal.status}
+          {statusText(goal.status)}
         </span>
       </div>
 

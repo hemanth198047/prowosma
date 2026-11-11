@@ -141,6 +141,38 @@
   background: #fef3c7;
   color: #92400e;
 }
+/* Statuses that previously had no pill style and showed as plain text
+   (e.g. a project ON_HOLD or COMPLETED). Same palette as the pills above:
+   blue = active/open, green = done, violet = not started, amber = in flight,
+   orange = paused, red = needs attention, grey = closed/inactive. */
+.badge-completed, .badge-closed, .badge-approved, .badge-on_track, .badge-released, .badge-resolved {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-planning, .badge-draft, .badge-backlog, .badge-not_started, .badge-pending {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.badge-in_review, .badge-review, .badge-testing {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-on_hold, .badge-paused, .badge-behind {
+  background: #ffedd5;
+  color: #9a3412;
+}
+.badge-at_risk, .badge-blocked, .badge-overdue, .badge-rejected, .badge-off_track {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badge-cancelled, .badge-canceled, .badge-archived {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+.badge-open, .badge-scheduled {
+  background: #e0f2fe;
+  color: #0369a1;
+}
 
 /*  Card Actions  */
 .card-actions {

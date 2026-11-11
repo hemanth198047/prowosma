@@ -36,6 +36,7 @@ import CanDo from "../components/CanDo";
 import { useAuth } from "../hooks/useAuth";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 
 const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
@@ -650,7 +651,7 @@ export default function Team() {
                             color: statusColor[t.status],
                           }}
                         >
-                          {t.status}
+                          {statusText(t.status)}
                         </span>
                         <button
                           className="btn-secondary"
@@ -724,7 +725,7 @@ export default function Team() {
                       color: statusColor[t.status],
                     }}
                   >
-                    {t.status}
+                    {statusText(t.status)}
                   </span>
                   <button
                     className="btn-primary"

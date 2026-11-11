@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getDependencies, addDependency, removeDependency } from "../api/tasks";
+import { statusText } from "../utils/statusText";
 
 const statusColor = {
   TODO: "#6366f1",
@@ -123,7 +124,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                     <button
                       className="btn-icon"
@@ -162,7 +163,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                   </div>
                 ))}
@@ -204,7 +205,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                   </div>
                 ))}

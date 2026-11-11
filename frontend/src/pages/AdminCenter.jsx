@@ -10,6 +10,7 @@ import { getPendingInvites, sendInvitation, cancelInvitation, resendInvitation }
 import { getProjects } from "../api/projects";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -812,7 +813,7 @@ function Billing() {
             <div className="admin-billing-plan-name">{summary.planName}</div>
             <div className="admin-billing-seats">
               {summary.seatsUsed} of {summary.seatLimit < 0 ? "∞" : summary.seatLimit} seats used
-              {summary.status && summary.status !== "none" && ` · ${summary.status}`}
+              {summary.status && summary.status !== "none" && ` · ${statusText(summary.status)}`}
               {summary.cancelAtPeriodEnd && " · cancels at period end"}
             </div>
             {summary.currentPeriodEnd && (
@@ -873,7 +874,7 @@ function Billing() {
             <div key={inv.stripeInvoiceId} className="admin-invoice-row">
               <span>{inv.created ? new Date(inv.created).toLocaleDateString() : "—"}</span>
               <span>${(inv.amountPaid / 100).toFixed(2)}</span>
-              <span className="admin-invoice-status">{inv.status}</span>
+              <span className="admin-invoice-status">{statusText(inv.status)}</span>
               {inv.hostedInvoiceUrl && <a href={inv.hostedInvoiceUrl} target="_blank" rel="noopener noreferrer"
                 className="btn-link" style={{ fontSize: "11px" }}>View</a>}
             </div>
@@ -1904,7 +1905,7 @@ function WorkspaceProjects() {
                 background: (PROJECT_STATUS_COLOR[p.status] || "var(--gray-400)") + "22",
                 color: PROJECT_STATUS_COLOR[p.status] || "var(--gray-400)",
               }}>
-                {p.status?.replace("_", " ") || "—"}
+                {statusText(p.status) || "—"}
               </span>
             </div>
           ))

@@ -28,6 +28,7 @@ import TaskDrawer from "../components/TaskDrawer";
 
 import "../styles/pages/tasks.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -316,7 +317,7 @@ function StatusDropdown({ task, onUpdate }) {
           setOpen((o) => !o);
         })?.(e); } }}
       >
-        {task.status.replace("_", " ")}
+        {statusText(task.status)}
         <span style={{ fontSize: "10px", marginLeft: "4px" }}>▼</span>
       </div>
       {open && (
@@ -1185,7 +1186,7 @@ export default function Tasks() {
                       style={{ fontSize: "10px", padding: "2px 8px",
                         background: project.status === "ACTIVE" ? "rgba(5,150,105,0.12)" : "var(--gray-100)",
                         color: project.status === "ACTIVE" ? "#15803d" : "var(--gray-600)" }}>
-                      {project.status}
+                      {statusText(project.status)}
                     </span>
                   )}
                 </div>
@@ -1283,7 +1284,7 @@ export default function Tasks() {
                     onClick={() => toggleGoalExpanded(goal.id)} style={{ cursor: "pointer" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => toggleGoalExpanded(goal.id))?.(e); } }}>
                     <span className="goal-steps-icon">{"🎯"}</span>
                     <span className="goal-steps-title">{goal.title}</span>
-                    <span className={"goal-steps-status " + goal.status.toLowerCase()}>{goal.status}</span>
+                    <span className={"goal-steps-status " + goal.status.toLowerCase()}>{statusText(goal.status)}</span>
                     <div className="goal-steps-progress-bar">
                       <div className="goal-steps-progress-fill" style={{ width: (goal.progress || 0) + "%" }} />
                     </div>

@@ -25,6 +25,7 @@ import { getMeetingsForProject } from "../api/meetings";
 import { apiErrorMessage } from "../utils/apiError";
 import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
+import { statusText, statusClass } from "../utils/statusText";
 
 const COLORS = [
   "var(--brand-500)",
@@ -741,8 +742,8 @@ function ProjectCard({
                 {p.name}
               </button>
             </h3>
-            <span className={`badge badge-${p.status?.toLowerCase()}`}>
-              {p.status}
+            <span className={`badge badge-${statusClass(p.status)}`}>
+              {statusText(p.status)}
             </span>
           </div>
           {cat && (

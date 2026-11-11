@@ -13,6 +13,7 @@ import { useAuth } from "../hooks/useAuth";
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/jira-board.css";
+import { statusText } from "../utils/statusText";
 const getEpics    = () => client.get("/epics").catch(()=>({data:[]}));
 const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
@@ -1119,7 +1120,7 @@ export default function JiraBoard() {
         <select className="jb-filter-select" value={filterSprint}
           onChange={e=>setFilterSprint(e.target.value)}>
           <option value="active">Active{activeSprint?` — ${activeSprint.name}`:""}</option>
-          {sprints.map(s=><option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}
+          {sprints.map(s=><option key={s.id} value={s.id}>{s.name} ({statusText(s.status)})</option>)}
         </select>
         {/* Filters */}
         <select className="jb-filter-select" value={filterProject}
@@ -1161,7 +1162,7 @@ export default function JiraBoard() {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span className="jb-sprint-name">{displayedSprint.name}</span>
             <span className={"jb-sprint-badge jb-sprint-"+displayedSprint.status.toLowerCase()}>
-              {displayedSprint.status}
+              {statusText(displayedSprint.status)}
             </span>
             {displayedSprint.endDate && (
               <span style={{fontSize:11,color:"#94a3b8"}}>
@@ -1238,7 +1239,7 @@ export default function JiraBoard() {
                 <div className="jb-backlog-section-header">
                   <span className="jb-sprint-name">{sprint.name}</span>
                   <span className={"jb-sprint-badge jb-sprint-"+sprint.status.toLowerCase()}>
-                    {sprint.status}
+                    {statusText(sprint.status)}
                   </span>
                   <span className="jb-backlog-count">{st.length} issues · {sp} SP</span>
                   <span style={{flex:1}}/>

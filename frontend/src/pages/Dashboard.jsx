@@ -22,6 +22,7 @@ import {
 import MeetingPulseCard from "../components/MeetingPulseCard";
 
 import "../styles/pages/dashboard.css";
+import { statusText, statusClass } from "../utils/statusText";
 
 /* ── icon map — one consistent line-icon language instead of emoji ── */
 const ICONS = {
@@ -262,7 +263,7 @@ function GoalCard({ g, navigate }) {
       <div className="cc3-item-card-top">
         <span className="cc3-item-dot" style={{ background: "#8b5cf6" }} />
         <span className="cc3-item-name">{g.title}</span>
-        <span className={`badge badge-${g.status?.toLowerCase()}`} style={{ fontSize:9, padding:"1px 6px" }}>{g.status}</span>
+        <span className={`badge badge-${statusClass(g.status)}`} style={{ fontSize:9, padding:"1px 6px" }}>{statusText(g.status)}</span>
       </div>
       <div className="cc3-item-bar">
         <div className="cc3-item-fill" style={{ width:`${pct}%`, background: color }} />
@@ -516,7 +517,7 @@ function TaskRow({ task, navigate }) {
         fontWeight: 700, flexShrink: 0,
         background: statusColor + "22", color: statusColor,
       }}>
-        {task.status?.replace("_", " ")}
+        {statusText(task.status)}
       </span>
     </div>
   );

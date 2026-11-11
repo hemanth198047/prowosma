@@ -4,6 +4,7 @@ import { getBillingSummary, startCheckout, openBillingPortal, startTrial } from 
 
 import "../styles/pages/licensing.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 /* ══════════════════════════════════════════════════════════════════
    PLAN DEFINITIONS — every feature in the application
    ══════════════════════════════════════════════════════════════════ */
@@ -526,7 +527,7 @@ export default function Licensing() {
           <div>
             <strong>Current plan: {summary.planName}</strong>
             {" — "}{summary.seatsUsed} / {summary.seatLimit < 0 ? "∞" : summary.seatLimit} seats used
-            {summary.status && summary.status !== "none" && ` · ${summary.status}`}
+            {summary.status && summary.status !== "none" && ` · ${statusText(summary.status)}`}
             {summary.cancelAtPeriodEnd && " · cancels at period end"}
             {!summary.stripeConfigured && (
               <span style={{color:"#b45309"}}> · Payments aren't configured on this server yet</span>
