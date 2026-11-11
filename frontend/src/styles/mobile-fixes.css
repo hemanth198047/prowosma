@@ -308,3 +308,80 @@
   .workload-stats { grid-template-columns: 1fr !important; }
   .workspace-avatar-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── Tablet (769–1023px, e.g. iPad portrait) ──────────────────────────────
+   The fixed 256px sidebar plus the top bar's right-hand cluster made the page
+   ~1,430px wide on an 820px screen, so everything scrolled sideways. Here the
+   sidebar becomes the same slide-out menu phones already use (opened with the
+   top bar's existing sidebar button), and the content is allowed to shrink.
+   Desktop (1024px+) and phones (768px and below) are unchanged. */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl);
+  }
+  .sidebar-top:has(.menu-close:only-child) { display: flex; }
+  .content-wrapper { margin-left: 0; }
+  .overlay { display: block; }
+  .content-wrapper,
+  .main-content,
+  .topbar { min-width: 0; }
+  /* make room in the top bar: the clock and the name beside the avatar are
+     the least essential items; the avatar menu still shows the name */
+  .topbar .live-clock,
+  .topbar .user-name { display: none; }
+  .topbar-right-cluster { flex-shrink: 1; min-width: 0; }
+  /* search keeps its button (and ⌘K still works); only the placeholder text goes */
+  .topbar-search-wrap { flex: 0 0 auto; min-width: 0; }
+  .topbar-search-placeholder,
+  .topbar-search-kbd { display: none; }
+}
+@media (min-width: 769px) and (max-width: 859px) {
+  .topbar-logo-txt { display: none; }   /* logo icon stays */
+}
+
+/* ── Laptops narrower than 1440px (1024–1439px) ───────────────────────────
+   The top bar needs ~1,175px for all its items, and the content area wasn't
+   allowed to shrink below that, so every screen narrower than 1440px became
+   1,431px wide and scrolled sideways (1280 and 1366 laptops included).
+   Let the content shrink, and only as space runs out drop the least essential
+   top-bar text. Nothing changes at 1440px and above. */
+@media (max-width: 1439px) {
+  .content-wrapper,
+  .main-content,
+  .topbar { min-width: 0; }
+  .topbar-search-wrap { min-width: 0; }
+  .topbar-search-btn { min-width: 0; overflow: hidden; }
+}
+@media (max-width: 1365px) {
+  .topbar .user-name { display: none; }        /* avatar + role stay */
+}
+@media (max-width: 1199px) {
+  .topbar .live-clock { display: none; }
+  .topbar-search-wrap { flex: 0 0 auto; }
+  .topbar-search-placeholder,
+  .topbar-search-kbd { display: none; }        /* search icon button stays; ⌘K still works */
+}
+@media (max-width: 1099px) {
+  .topbar-logo-txt { display: none; }          /* logo icon stays */
+}
+
+/* ── Phones: Getting Started no longer sits on top of the chat button ───────
+   Same widget, moved to the bottom-left and sized to its content, so the
+   assistant button (bottom-right) and the page stay usable. */
+@media (max-width: 768px) {
+  .onboarding-widget {
+    left: 12px;
+    right: auto;
+    bottom: 16px;
+    width: auto;
+    max-width: calc(100vw - 104px);
+  }
+  .onboarding-widget .onboarding-panel {
+    width: min(320px, calc(100vw - 24px));
+  }
+}

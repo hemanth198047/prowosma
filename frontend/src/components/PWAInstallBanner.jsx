@@ -13,7 +13,20 @@ export default function PWAInstallBanner() {
   useEffect(() => {
     if (isInstalled) return;
     const dismissed = localStorage.getItem('pwa-banner-dismissed') === 'true';
-    if (!dismissed) {
+    // On phones the prompt covers the whole screen, so don't greet someone
+    // with it on their very first visit: count visits (one per browser
+    // session) and offer it from the second visit on. Desktop is unchanged.
+    const isPhone = window.matchMedia?.("(max-width: 768px)")?.matches;
+    let visits = 1;
+    try {
+      visits = Number(localStorage.getItem('pwa-visit-count') || 0);
+      if (!sessionStorage.getItem('pwa-visit-counted')) {
+        visits += 1;
+        localStorage.setItem('pwa-visit-count', String(visits));
+        sessionStorage.setItem('pwa-visit-counted', '1');
+      }
+    } catch { /* storage unavailable: behave as before */ visits = 2; }
+    if (!dismissed && (!isPhone || visits >= 2)) {
       const t = setTimeout(() => setVisible(true), 1500);
       return () => clearTimeout(t);
     }

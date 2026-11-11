@@ -274,7 +274,6 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/goals" onClick={onNav}>🎯 Goals</NavLink>
           <NavLink to="/sprints" onClick={onNav}>🏃 Sprints</NavLink>
           <NavLink to="/epics" onClick={onNav}>🗃 Epics</NavLink>
-          <NavLink to="/releases" onClick={onNav}>🚀 Releases</NavLink>
           <NavLink to="/roadmap" onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
           <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
           <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>

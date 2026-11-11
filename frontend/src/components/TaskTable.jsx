@@ -82,20 +82,24 @@ export default function TaskTable({
 
   return (
     <div style={{ overflowX: "auto", border: "1px solid var(--card-border)", borderRadius: "var(--radius-lg)", background: "var(--surface-1)", boxShadow: "var(--elevation-1)" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      {/* Fixed layout so each column keeps its set width and "IN PROGRESS" /
+          "MEDIUM" are never cut off (the browser used to squeeze them). The
+          Title column takes the remaining space; below minWidth the table
+          scrolls inside this frame instead of truncating values. */}
+      <table style={{ width: "100%", minWidth: 1100, tableLayout: "fixed", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
           <tr style={{ background: "var(--gray-50)", borderBottom: "2px solid var(--border)" }}>
-            <Th style={{ width: 32 }}>
+            <Th style={{ width: 36 }}>
               <input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
-            <Th style={{ minWidth: 220 }} sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Title</Th>
-            <Th style={{ width: 130 }}    sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
-            <Th style={{ width: 100 }}    sortKey="priority" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Priority</Th>
-            <Th style={{ width: 160 }}    sortKey="project"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Project</Th>
-            <Th style={{ width: 150 }}    sortKey="assignee" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Assignees</Th>
-            <Th style={{ width: 140 }}    sortKey="dueDate"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Due Date</Th>
-            <Th style={{ width: 180 }}>Tags</Th>
-            <Th style={{ width: 70 }}></Th>
+            <Th style={{}} sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Title</Th>
+            <Th style={{ width: 150 }}    sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
+            <Th style={{ width: 112 }}    sortKey="priority" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Priority</Th>
+            <Th style={{ width: 176 }}    sortKey="project"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Project</Th>
+            <Th style={{ width: 110 }}    sortKey="assignee" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Assignees</Th>
+            <Th style={{ width: 136 }}    sortKey="dueDate"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Due Date</Th>
+            <Th style={{ width: 140 }}>Tags</Th>
+            <Th style={{ width: 52 }}></Th>
           </tr>
         </thead>
         <tbody>
@@ -240,6 +244,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
       <td style={cellStyle}>
         <select
           value={task.projectId || ""}
+          title={projects.find((p) => p.id === task.projectId)?.name || undefined}
           onChange={(e) => save({ projectId: e.target.value || null })}
           disabled={busyField === "projectId"}
           style={{ ...inputStyle, cursor: "pointer" }}

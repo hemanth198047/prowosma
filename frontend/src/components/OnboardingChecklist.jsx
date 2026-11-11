@@ -117,7 +117,11 @@ export default function OnboardingChecklist() {
     // Load saved completed state
     const saved = localStorage.getItem(completedKey);
     if (saved) setCompleted(JSON.parse(saved));
-    // Auto-open after short delay
+    // Auto-open after short delay — except on phones, where the open panel
+    // covered most of the screen (including the page's main action). There it
+    // stays as its small toggle, which opens it on tap.
+    const isPhone = window.matchMedia?.("(max-width: 768px)")?.matches;
+    if (isPhone) return;
     const t = setTimeout(() => setOpen(true), 2000);
     return () => clearTimeout(t);
   }, [activeWorkspace?.id, storageKey, completedKey]);
