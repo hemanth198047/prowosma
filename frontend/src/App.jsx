@@ -6,7 +6,6 @@ const Tasks = lazy(() => import("./pages/Tasks"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Categories = lazy(() => import("./pages/Categories"));
 import Breadcrumb from "./components/Breadcrumb";
-import SidebarBadge from "./components/SidebarBadge";
 import GlobalLoadingBar from "./components/GlobalLoadingBar";
 const Search = lazy(() => import("./pages/Search"));
 import "./App.css";
@@ -83,6 +82,8 @@ const TimeTracking = lazy(() => import("./pages/TimeTracking"));
 import ProfileSettings from "./pages/ProfileSettings";
 const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
 import CanDo from "./components/CanDo";
+import { ChevronDown, PanelLeft, Search as SearchIcon, User as UserIcon, Smartphone, CircleCheck, LogOut, Menu } from "lucide-react";
+import { PRIMARY_LINKS, NAV_SECTIONS, RESTRICTED_LINKS, FOOTER_LINKS } from "./config/navigation";
 import RoleBadge from "./components/RoleBadge";
 import { useRole } from "./hooks/useRole";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -143,47 +144,43 @@ function UserMenu() {
 
   return (
     <div style={{ position: "relative" }} ref={ref}>
-      <div className="user-avatar-btn" onClick={() => setOpen((o) => !o)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setOpen((o) => !o))?.(e); } }}>
-        <div className="user-avatar">{initials}</div>
+      <button type="button" className="user-avatar-btn" aria-haspopup="menu" aria-expanded={open}
+        aria-label={`Account: ${user.name}`} onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
+        <span className="user-avatar" aria-hidden="true">{initials}</span>
         <span className="user-name">{user.name}</span>
-        <RoleBadge role={role} />
-        <span style={{ fontSize: "10px", color: "#aaa" }}>▼</span>
-      </div>
+        <ChevronDown size={14} aria-hidden="true" style={{ color: "var(--text-3)" }} />
+      </button>
       {open && (
-        <div className="user-menu-dropdown">
+        <div className="user-menu-dropdown" role="menu">
           <div className="user-menu-info">
             <div style={{ fontWeight: 600 }}>{user.name}</div>
-            <div style={{ fontSize: "12px", color: "#888" }}>{user.email}</div>
+            <div className="user-menu-email">{user.email}</div>
+            <div className="user-menu-role"><RoleBadge role={role} /></div>
           </div>
           <div className="user-menu-divider" />
-          <button
-            className="user-menu-item"
-            onClick={() => { navigate("/profile"); setOpen(false); }}
-          >
-            👤 Profile & Security
+          <button type="button" role="menuitem" className="user-menu-item"
+            onClick={() => { navigate("/profile"); setOpen(false); }}>
+            <UserIcon aria-hidden="true" /> Profile &amp; security
           </button>
           {!isInstalled && (
-            <button
-              className="user-menu-item"
+            <button type="button" role="menuitem" className="user-menu-item"
               onClick={() => {
                 setOpen(false);
                 window.dispatchEvent(new CustomEvent('prowosma:show-install'));
-              }}
-            >
-              📱 Install App
+              }}>
+              <Smartphone aria-hidden="true" /> Install app
             </button>
           )}
           {isInstalled && (
-            <div className="user-menu-item" style={{ color: "#10b981", cursor: "default" }}>
-              ✅ App Installed
+            <div className="user-menu-item is-static">
+              <CircleCheck aria-hidden="true" /> App installed
             </div>
           )}
           <div className="user-menu-divider" />
-          <button
-            className="user-menu-item"
-            onClick={() => { logoutUser(); navigate("/login"); setOpen(false); }}
-          >
-            🚪 Sign Out
+          <button type="button" role="menuitem" className="user-menu-item"
+            onClick={() => { logoutUser(); navigate("/login"); setOpen(false); }}>
+            <LogOut aria-hidden="true" /> Sign out
           </button>
         </div>
       )}
@@ -241,157 +238,104 @@ export default function App() {
 }
 
 
-// ── Collapsible sidebar group ─────────────────────────────────
-function SidebarGroup({ label, icon, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen);
+// ── Sidebar navigation ────────────────────────────────────────
+// Driven by config/navigation.js. Same routes and the same visibility
+// rules as before (capability, CanDo action); grouped by job instead of
+// by feature, with one line-icon set instead of emoji.
+const NAV_OPEN_KEY = "prowosma_nav_open";
+
+function readOpenSections() {
+  try { return JSON.parse(localStorage.getItem(NAV_OPEN_KEY) || "null") || {}; }
+  catch { return {}; }
+}
+
+function NavItem({ item, onNav, badges }) {
+  const Icon = item.icon;
+  const count = item.badge ? badges?.[item.badge] : 0;
   return (
-    <div className="sidebar-group">
-      <button className="sidebar-group-header" onClick={() => setOpen(v => !v)}>
-        <span className="sidebar-group-icon">{icon}</span>
-        <span className="sidebar-group-label">{label}</span>
-        <span className="sidebar-group-chevron">{open ? "▾" : "▸"}</span>
-      </button>
-      {open && <div className="sidebar-group-items">{children}</div>}
-    </div>
+    <NavLink to={item.to} end={item.end} onClick={onNav} className="nav-link">
+      <Icon aria-hidden="true" />
+      <span className="nav-link-label">{item.label}</span>
+      {count > 0 && (
+        <span className="nav-count" aria-label={`${count} overdue`}>{count > 99 ? "99+" : count}</span>
+      )}
+    </NavLink>
   );
 }
 
-// ── Main sidebar navigation ───────────────────────────────────
 function SidebarNav({ onNav, badges }) {
   const { restricted, can } = useAccess();
+  const location = useLocation();
+  const [openMap, setOpenMap] = useState(readOpenSections);
+
+  const visible = (item) => !item.capability || can(item.capability);
+  const withGate = (item) => {
+    const link = <NavItem key={item.to} item={item} onNav={onNav} badges={badges} />;
+    return item.action ? <CanDo key={item.to} action={item.action}>{link}</CanDo> : link;
+  };
+
+  const isOpen = (section) => {
+    // The section holding the current page is always open.
+    const holdsActive = section.items.some(
+      (it) => location.pathname === it.to || location.pathname.startsWith(it.to + "/"));
+    if (holdsActive) return true;
+    return openMap[section.id] ?? section.defaultOpen;
+  };
+  const toggle = (section) => {
+    setOpenMap((prev) => {
+      const next = { ...prev, [section.id]: !isOpen(section) };
+      try { localStorage.setItem(NAV_OPEN_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+      return next;
+    });
+  };
+
+  const brand = (
+    <div className="nav-brand">
+      <img src="/logo-icon.png" alt="" />
+      <span>Prowosma</span>
+    </div>
+  );
+
   if (restricted) {
     // Department / assigned-work access: only the areas that are scoped to them. The API refuses the rest.
     return (
       <>
+        {brand}
         <WorkspaceSwitcher />
-        <div className="sidebar-quicklinks">
-          <NavLink to="/tasks" onClick={onNav}>✅ My Tasks</NavLink>
-          <NavLink to="/kanban" onClick={onNav}>🗂 Kanban</NavLink>
-          <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
-          <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
-          {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
-          <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
-          <NavLink to="/goals" onClick={onNav}>🎯 Goals</NavLink>
-          <NavLink to="/sprints" onClick={onNav}>🏃 Sprints</NavLink>
-          <NavLink to="/epics" onClick={onNav}>🗃 Epics</NavLink>
-          <NavLink to="/releases" onClick={onNav}>🚀 Releases</NavLink>
-          <NavLink to="/roadmap" onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
-          <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
-          <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>
-          <NavLink to="/docs" onClick={onNav}>📄 Docs</NavLink>
-          <NavLink to="/sops" onClick={onNav}>📖 SOPs</NavLink>
-          <NavLink to="/decisions" onClick={onNav}>🧠 Decisions</NavLink>
-          <NavLink to="/channels" onClick={onNav}>💬 Channels</NavLink>
-          <NavLink to="/reports" onClick={onNav}>📋 Reports</NavLink>
-          <NavLink to="/analytics" onClick={onNav}>📈 Analytics</NavLink>
-          <NavLink to="/time-tracking" onClick={onNav}>⏱ Time</NavLink>
-          <NavLink to="/ai" onClick={onNav}>🤖 AI Assistant</NavLink>
-          <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
+        <div className="nav">
+          {RESTRICTED_LINKS.filter(visible).map(withGate)}
         </div>
-        <div style={{ flex: 1 }} />
-        <div className="sidebar-bottom-links">
-          <NavLink to="/profile" onClick={onNav}>👤 Profile</NavLink>
-        </div>
+        <div className="nav-footer">{FOOTER_LINKS.map(withGate)}</div>
       </>
     );
   }
+
   return (
     <>
+      {brand}
       <WorkspaceSwitcher />
-
-      <div className="sidebar-quicklinks">
-        <NavLink to="/" end onClick={onNav} className="sidebar-quicklink">
-          <span>📊</span><span>Dashboard</span>
-        </NavLink>
-        {can("USE_MEETING_ASSISTANT") && (
-          <NavLink to="/meeting-assistant" onClick={onNav} className="sidebar-quicklink">
-            <span>🤖</span><span>Meeting Assistant</span>
-          </NavLink>
-        )}
+      <div className="nav">
+        <div className="nav-section">{PRIMARY_LINKS.filter(visible).map(withGate)}</div>
+        {NAV_SECTIONS.map((section) => {
+          const open = isOpen(section);
+          const listId = `nav-${section.id}`;
+          return (
+            <div className="nav-section" key={section.id}>
+              <button type="button" className="nav-section-btn" aria-expanded={open}
+                aria-controls={listId} onClick={() => toggle(section)}>
+                <span>{section.label}</span>
+                <ChevronDown size={14} aria-hidden="true" />
+              </button>
+              {open && (
+                <div id={listId} className="nav-section-items">
+                  {section.items.filter(visible).map(withGate)}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-
-      <SidebarGroup label="Work" icon="⚡">
-        <NavLink to="/projects" onClick={onNav} style={{ display: "flex", alignItems: "center" }}>
-          📁 Projects
-          <SidebarBadge count={badges?.overdueProjects} />
-        </NavLink>
-        <NavLink to="/tasks"    onClick={onNav} style={{ display: "flex", alignItems: "center" }}>
-          ✅ Tasks
-          <SidebarBadge count={badges?.overdueTasksOnly} />
-        </NavLink>
-        <NavLink to="/goals"    onClick={onNav}>🎯 Goals</NavLink>
-        <NavLink to="/kanban"      onClick={onNav}>🗂 Kanban</NavLink>
-        <NavLink to="/jira-board"  onClick={onNav}>📌 Jira Board</NavLink>
-        <NavLink to="/epics"    onClick={onNav}>🗃 Epics</NavLink>
-        <NavLink to="/deployments" onClick={onNav}>🚀 Deployments</NavLink>
-        <NavLink to="/knowledge-graph" onClick={onNav}>🕸 Knowledge Graph</NavLink>
-        <NavLink to="/sprints"  onClick={onNav}>🏃 Sprints</NavLink>
-        <NavLink to="/gantt"    onClick={onNav}>📅 Gantt</NavLink>
-        <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Knowledge" icon="📚" defaultOpen={false}>
-        <NavLink to="/docs"      onClick={onNav}>📄 Docs</NavLink>
-        <NavLink to="/meetings"  onClick={onNav}>🎙 Meetings</NavLink>
-        <NavLink to="/sops"      onClick={onNav}>📖 SOPs</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Insights" icon="📊" defaultOpen={false}>
-        <NavLink to="/analytics"    onClick={onNav}>📈 Analytics</NavLink>
-        <NavLink to="/portfolio"    onClick={onNav}>📦 Portfolio</NavLink>
-        <NavLink to="/roadmap"      onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
-        <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
-        <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>
-        <NavLink to="/kpis"         onClick={onNav}>📊 KPI Tracker</NavLink>
-        <NavLink to="/executive"    onClick={onNav}>📊 Executive</NavLink>
-        <NavLink to="/roi"          onClick={onNav}>💰 ROI Engine</NavLink>
-        <NavLink to="/scenarios"    onClick={onNav}>🔮 Scenarios</NavLink>
-        <NavLink to="/decisions"    onClick={onNav}>🧠 Decisions</NavLink>
-        <NavLink to="/reports"      onClick={onNav}>📋 Reports</NavLink>
-        <NavLink to="/time-tracking" onClick={onNav}>⏱ Time & Billing</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Automate" icon="⚙️" defaultOpen={false}>
-        <NavLink to="/bpm"          onClick={onNav}>🔀 BPM Studio</NavLink>
-        <NavLink to="/automations"  onClick={onNav}>⚡ Automations</NavLink>
-        <NavLink to="/import-export" onClick={onNav}>📦 Import / Export</NavLink>
-        <NavLink to="/integrations" onClick={onNav}>🔌 Integrations</NavLink>
-        <NavLink to="/import"       onClick={onNav}>📥 Import</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Collaborate" icon="💬" defaultOpen={false}>
-        <NavLink to="/channels"    onClick={onNav}>💬 Channels</NavLink>
-      </SidebarGroup>
-      <SidebarGroup label="Team" icon="👥" defaultOpen={false}>
-        <NavLink to="/team"     onClick={onNav}>👥 Members</NavLink>
-        <NavLink to="/activity" onClick={onNav}>📋 Activity Log</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Configure" icon="🔧" defaultOpen={false}>
-        <NavLink to="/categories"   onClick={onNav}>🏷 Categories</NavLink>
-        <NavLink to="/custom-fields" onClick={onNav}>⚙️ Custom Fields</NavLink>
-        <CanDo action="manageSettings">
-          <NavLink to="/workspace-settings" onClick={onNav}>🏢 Workspace</NavLink>
-        </CanDo>
-        <CanDo action="adminOnly">
-          <NavLink to="/admin"     onClick={onNav}>🛡 Admin Centre</NavLink>
-          <NavLink to="/access-control" onClick={onNav}>🔐 Access Control</NavLink>
-        </CanDo>
-        <NavLink to="/white-label" onClick={onNav}>🎨 White-label</NavLink>
-        <NavLink to="/jira-board/settings" onClick={onNav}>⚙️ Jira Settings</NavLink>
-        <NavLink to="/developer" onClick={onNav}>🛠 Developer</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="AI" icon="🤖" defaultOpen={false}>
-        <NavLink to="/ai"             onClick={onNav}>🤖 AI Assistant</NavLink>
-        <NavLink to="/ai-intelligence" onClick={onNav}>🧠 AI Intelligence</NavLink>
-        <NavLink to="/ai-settings"    onClick={onNav}>✨ AI Settings</NavLink>
-      </SidebarGroup>
-
-      <div style={{ flex: 1 }} />
-      <div className="sidebar-bottom-links">
-        <NavLink to="/profile" onClick={onNav}>👤 Profile</NavLink>
-      </div>
+      <div className="nav-footer">{FOOTER_LINKS.map(withGate)}</div>
     </>
   );
 }
@@ -551,7 +495,7 @@ function AppShell() {
 
   return (
     <div className="app">
-      {!isLoginPage && <nav className={`sidebar ${menuOpen ? "open" : ""}`}>
+      {!isLoginPage && <nav className={`sidebar ${menuOpen ? "open" : ""}`} aria-label="Main">
               <div className="sidebar-top">
                 <button
                   className="menu-close"
@@ -570,48 +514,40 @@ function AppShell() {
 
             <div className="content-wrapper">
               {!isLoginPage && <div className="mobile-header">
-                <button className="menu-btn" onClick={() => setMenuOpen(true)}>
-                  ☰
+                <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+                  <Menu size={20} aria-hidden="true" />
                 </button>
                 <div className="mobile-logo">
                   <img src="/logo-icon.png" alt="" className="logo-icon" />
                   <span>Prowosma</span>
                 </div>
               </div>}
-              {!isLoginPage && <div className="topbar">
-                {/* Left: sidebar toggle + logo */}
+              {!isLoginPage && <header className="topbar">
                 <button className="topbar-sidebar-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="Toggle sidebar">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <path d="M9 3v18"/>
-                  </svg>
+                  <PanelLeft size={18} aria-hidden="true" />
                 </button>
-                <div className="topbar-logo-row">
-                  <img src="/logo-icon.png" alt="" className="topbar-logo-img" />
-                  <span className="topbar-logo-txt">Prowosma</span>
-                </div>
-                {/* Centre: search */}
                 <div className="topbar-search-wrap">
-                  {(<Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <span className="topbar-search-placeholder">Search anything…</span>
-                    <span className="topbar-search-kbd">⌘K</span>
-                  </Link>)}
+                  <Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
+                    <SearchIcon size={15} aria-hidden="true" />
+                    <span className="topbar-search-placeholder">Search projects, tasks, docs…</span>
+                    <kbd className="topbar-search-kbd">⌘K</kbd>
+                  </Link>
                 </div>
-                {/* Right cluster */}
                 <div className="topbar-right-cluster">
-                  <LiveClock />
-                  <ConnectionStatus />
-                  {!restricted && <AIStatus />}
+                  {/* Clock, live-connection and AI state: one quiet group, not three separate widgets */}
+                  <div className="topbar-status">
+                    <LiveClock />
+                    <ConnectionStatus />
+                    {!restricted && <AIStatus />}
+                  </div>
                   <NotificationBell />
                   <HelpGuide />
                   <ThemeToggle />
-                  <div className="topbar-divider-v" />
                   <UpgradeCTA />
                   <div className="topbar-divider-v" />
                   <UserMenu />
                 </div>
-              </div>}
+              </header>}
               {!restricted && <ChatBot />}
               {!restricted && <LiveActivityFeed />}
               <PWAInstallBanner />

@@ -49,3 +49,7 @@
    mobile-safe one, without needing !important anywhere it doesn't
    already exist. */
 @import './styles/mobile-fixes.css';
+
+/* Precision Enterprise design foundation — tokens + shared component styles.
+   Imported after everything else so its tokens win; see the file header. */
+@import './styles/foundation.css';

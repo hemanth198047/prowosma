@@ -13,7 +13,11 @@ export default function PWAInstallBanner() {
   useEffect(() => {
     if (isInstalled) return;
     const dismissed = localStorage.getItem('pwa-banner-dismissed') === 'true';
-    if (!dismissed) {
+    // Pop up on its own only on phone-sized screens, where installing is
+    // what people actually do; on desktop it stays one click away in the
+    // account menu ("Install app") instead of covering the page.
+    const phone = window.matchMedia?.("(max-width: 768px)")?.matches;
+    if (!dismissed && phone) {
       const t = setTimeout(() => setVisible(true), 1500);
       return () => clearTimeout(t);
     }

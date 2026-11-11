@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { axe } from "vitest-axe";
+import { MemoryRouter } from "react-router-dom";
 import PageHeader from "../../components/PageHeader";
 
 /**
@@ -15,10 +16,15 @@ describe("PageHeader", () => {
     expect(screen.getByRole("heading", { name: "Change Requests" })).toBeInTheDocument();
   });
 
-  it("renders the icon and description when provided", () => {
+  it("renders the description, and accepts (but no longer draws) the legacy icon prop", () => {
     render(<PageHeader icon="🔧" title="Change Requests" description="Propose and review changes" />);
-    expect(screen.getByText("🔧")).toBeInTheDocument();
+    expect(screen.queryByText("🔧")).not.toBeInTheDocument();
     expect(screen.getByText("Propose and review changes")).toBeInTheDocument();
+  });
+
+  it("shows the section a page belongs to, from the navigation config", () => {
+    render(<MemoryRouter initialEntries={["/roadmap"]}><PageHeader title="Roadmap & RAID" /></MemoryRouter>);
+    expect(screen.getByText("Govern")).toBeInTheDocument();
   });
 
   it("omits the description block entirely when none is given, rather than rendering an empty <p>", () => {

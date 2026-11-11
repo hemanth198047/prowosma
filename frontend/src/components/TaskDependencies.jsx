@@ -1,3 +1,4 @@
+import { Lock, Link2, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getDependencies, addDependency, removeDependency } from "../api/tasks";
 
@@ -83,8 +84,9 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
           setOpen((o) => !o);
         }}
       >
-        {deps.isBlocked ? "🔒" : "🔗"} Deps {total > 0 ? `(${total})` : ""}{" "}
-        {open ? "▲" : "▼"}
+        {deps.isBlocked ? <Lock size={13} aria-hidden="true" /> : <Link2 size={13} aria-hidden="true" />}
+        {deps.isBlocked ? "Blocked" : "Dependencies"}{total > 0 ? ` · ${total}` : ""}
+        <ChevronDown size={12} aria-hidden="true" className={open ? "is-open" : undefined} />
       </button>
 
       {open && (

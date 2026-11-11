@@ -1,4 +1,5 @@
 import { respondApproval } from "../api/automations";
+import { Bell } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -154,8 +155,9 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-wrapper" ref={ref}>
-      <button className="notif-bell-btn" onClick={() => setOpen(o => !o)}>
-        🔔
+      <button className="notif-bell-btn" onClick={() => setOpen(o => !o)}
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} aria-expanded={open}>
+        <Bell size={17} aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="notif-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}

@@ -1,3 +1,4 @@
+import { MessageCircle, X } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -524,7 +525,7 @@ export default function ChatBot() {
         title="Ask me anything (Ctrl+/)"
         aria-label="Open help assistant"
       >
-        <span className="cb-fab-icon">{open?"✕":"💬"}</span>
+        <span className="cb-fab-icon" aria-hidden="true">{open ? <X size={18} /> : <MessageCircle size={18} />}</span>
         {!open&&unread>0&&<span className="cb-fab-badge">{unread}</span>}
         {!open&&<span className="cb-fab-label">Ask me</span>}
       </button>

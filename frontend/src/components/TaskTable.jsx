@@ -1,13 +1,19 @@
 import { useState, useRef, useEffect } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, PanelRightOpen, Trash2 } from "lucide-react";
 import { useToast } from "./ToastContext";
+import { StatusGlyph } from "../ui/Status";
+import { statusMeta, priorityMeta } from "../ui/meta";
+import Avatar from "../ui/Avatar";
+import "../styles/task-table.css";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
-// Same fixed status/priority palette as everywhere else in the app
-// (base.css --viz-*) rather than its own local hex — so "In Progress" is
-// the same color here as on the Dashboard, a Kanban card, etc.
-const statusColor = { TODO: "var(--viz-todo)", IN_PROGRESS: "var(--viz-progress)", DONE: "var(--viz-done)" };
-const priorityColor = { LOW: "var(--viz-done)", MEDIUM: "var(--viz-progress)", HIGH: "var(--viz-overdue)" };
+// Status and priority are shown as the shared glyphs (ui/Status, ui/Priority)
+// plus a plain-language label, so state never depends on colour alone. The
+// stored values (TODO / IN_PROGRESS / DONE, LOW / MEDIUM / HIGH) are unchanged.
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const isOverdue = (t) => !!t.dueDate && t.status !== "DONE" && t.dueDate.slice(0, 10) < todayISO();
 
 /**
  * TaskTable — a real spreadsheet-style, inline-editable grid view.
@@ -81,21 +87,32 @@ export default function TaskTable({
   });
 
   return (
-    <div style={{ overflowX: "auto", border: "1px solid var(--card-border)", borderRadius: "var(--radius-lg)", background: "var(--surface-1)", boxShadow: "var(--elevation-1)" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+    <div className="tt-wrap">
+      <table className="tt">
+        <colgroup>
+          <col style={{ width: 40 }} />
+          <col />
+          <col style={{ width: 140 }} />
+          <col style={{ width: 112 }} />
+          <col style={{ width: 168 }} />
+          <col style={{ width: 104 }} />
+          <col style={{ width: 150 }} />
+          <col style={{ width: 132 }} />
+          <col style={{ width: 44 }} />
+        </colgroup>
         <thead>
-          <tr style={{ background: "var(--gray-50)", borderBottom: "2px solid var(--border)" }}>
-            <Th style={{ width: 32 }}>
-              <input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
+          <tr>
+            <Th>
+              <input type="checkbox" aria-label="Select all tasks" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
-            <Th style={{ minWidth: 220 }} sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Title</Th>
-            <Th style={{ width: 130 }}    sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
-            <Th style={{ width: 100 }}    sortKey="priority" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Priority</Th>
-            <Th style={{ width: 160 }}    sortKey="project"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Project</Th>
-            <Th style={{ width: 150 }}    sortKey="assignee" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Assignees</Th>
-            <Th style={{ width: 140 }}    sortKey="dueDate"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Due Date</Th>
-            <Th style={{ width: 180 }}>Tags</Th>
-            <Th style={{ width: 70 }}></Th>
+            <Th sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Task</Th>
+            <Th sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
+            <Th sortKey="priority" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Priority</Th>
+            <Th sortKey="project"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Project</Th>
+            <Th sortKey="assignee" activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Assignees</Th>
+            <Th sortKey="dueDate"  activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Due</Th>
+            <Th>Tags</Th>
+            <Th><span className="ui-sr-only">Actions</span></Th>
           </tr>
         </thead>
         <tbody>
@@ -114,7 +131,7 @@ export default function TaskTable({
             />
           ))}
           {tasks.length === 0 && (
-            <tr><td colSpan={9} style={{ textAlign: "center", padding: 32, color: "var(--gray-400)" }}>No tasks found.</td></tr>
+            <tr><td colSpan={9} className="tt-empty">No tasks match these filters.</td></tr>
           )}
         </tbody>
       </table>
@@ -126,29 +143,24 @@ export default function TaskTable({
 // sortKey (Tags, the checkbox/action columns) just renders as a plain,
 // unclickable label, since sorting by a free-text tag list or a column
 // of action buttons isn't a meaningful operation.
-function Th({ children, style, sortKey, activeSort, sortDir, onSort }) {
+function Th({ children, sortKey, activeSort, sortDir, onSort }) {
   const sortable = !!sortKey;
   const isActive = sortable && activeSort === sortKey;
+  const ariaSort = isActive ? (sortDir === "asc" ? "ascending" : "descending") : sortable ? "none" : undefined;
+  if (!sortable) return <th scope="col">{children}</th>;
+  const Icon = isActive ? (sortDir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
   return (
-    <th
-      onClick={sortable ? () => onSort(sortKey) : undefined}
-      style={{
-        textAlign: "left", padding: "10px 10px", fontSize: 11, fontWeight: 700,
-        color: isActive ? "var(--brand-600)" : "var(--gray-400)",
-        textTransform: "uppercase", letterSpacing: 0.4,
-        cursor: sortable ? "pointer" : "default",
-        userSelect: "none",
-        ...style,
-      }}
-    >
-      {children}
-      {sortable && (
-        <span style={{ marginLeft: 4, opacity: isActive ? 1 : 0.3, fontSize: 10 }}>
-          {isActive ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
-        </span>
-      )}
+    <th scope="col" aria-sort={ariaSort}>
+      <button type="button" className={"tt-sort" + (isActive ? " is-active" : "")} onClick={() => onSort(sortKey)}>
+        {children}
+        <Icon size={12} aria-hidden="true" />
+      </button>
     </th>
   );
+}
+
+function projectNameOf(projects, id) {
+  return projects.find((p) => p.id === id)?.name || "No project";
 }
 
 function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onToggleSelect, onUpdate, onDelete, onOpenDrawer }) {
@@ -182,105 +194,118 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
     save({ assigneeIds: next });
   };
 
-  const cellStyle = { padding: "6px 10px", borderBottom: "1px solid var(--border)", verticalAlign: "middle" };
-  const inputStyle = { width: "100%", padding: "5px 7px", border: "1px solid transparent", borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "transparent", boxSizing: "border-box" };
+  const overdue = isOverdue(task);
+  const rowClass = "tt-row" + (highlighted ? " is-highlighted" : selected ? " is-selected" : "");
 
   return (
-    <tr style={{ background: highlighted ? "color-mix(in srgb, var(--warning) 12%, transparent)" : selected ? "var(--brand-50)" : "transparent" }}>
-      <td style={cellStyle}>
-        <input type="checkbox" checked={selected} onChange={onToggleSelect} />
+    <tr className={rowClass}>
+      <td>
+        <input type="checkbox" aria-label={`Select ${task.title}`} checked={selected} onChange={onToggleSelect} />
       </td>
 
-      {/* Title — click to edit inline, click the expand icon to open the drawer */}
-      <td style={cellStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {/* Title — click to rename inline; the panel icon opens the details drawer */}
+      <td>
+        <div className="tt-title">
           {editingTitle ? (
             <input
-             
+              className="tt-input"
+              aria-label="Task title"
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
               onBlur={() => { setEditingTitle(false); if (titleDraft.trim() && titleDraft !== task.title) save({ title: titleDraft.trim() }); }}
               onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { setTitleDraft(task.title); setEditingTitle(false); } }}
-              style={{ ...inputStyle, border: "1px solid var(--accent-500)" }}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- the user just asked to edit this field
+              autoFocus
             />
           ) : (
-            <span onClick={() => setEditingTitle(true)} title="Click to rename" style={{ cursor: "text", flex: 1, fontWeight: 500 }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setEditingTitle(true))?.(e); } }}>
+            <span className="tt-title-text" onClick={() => setEditingTitle(true)} title="Click to rename" role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setEditingTitle(true); } }}>
               {task.title}
             </span>
           )}
-          <button className="btn-icon" title="Open details" style={{ fontSize: 13, flexShrink: 0 }} onClick={() => onOpenDrawer(task)}>⤢</button>
+          <button className="tt-icon-btn tt-open" title="Open details" aria-label={`Open details for ${task.title}`} onClick={() => onOpenDrawer(task)}>
+            <PanelRightOpen size={15} aria-hidden="true" />
+          </button>
         </div>
       </td>
 
-      {/* Status */}
-      <td style={cellStyle}>
-        <select
-          value={task.status}
-          onChange={(e) => save({ status: e.target.value })}
-          disabled={busyField === "status"}
-          style={{ ...inputStyle, color: statusColor[task.status], fontWeight: 600, cursor: "pointer" }}
-        >
-          {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-        </select>
+      {/* Status — glyph + label over a native select, so keyboard and screen readers get the real control */}
+      <td>
+        <span className={`tt-pick tt-pick--status ui-tone--${statusMeta(task.status).tone}`}>
+          <StatusGlyph status={task.status} />
+          <select
+            aria-label="Status"
+            value={task.status}
+            onChange={(e) => save({ status: e.target.value })}
+            disabled={busyField === "status"}
+          >
+            {STATUSES.map((s) => <option key={s} value={s}>{statusMeta(s).label}</option>)}
+          </select>
+          <ChevronDown size={13} className="tt-pick-caret" aria-hidden="true" />
+        </span>
       </td>
 
       {/* Priority */}
-      <td style={cellStyle}>
-        <select
-          value={task.priority}
-          onChange={(e) => save({ priority: e.target.value })}
-          disabled={busyField === "priority"}
-          style={{ ...inputStyle, color: priorityColor[task.priority], fontWeight: 600, cursor: "pointer" }}
-        >
-          {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
+      <td>
+        <span className={`tt-pick ui-priority ui-priority--${priorityMeta(task.priority).tone}`}>
+          <span className="ui-priority-mark" aria-hidden="true" />
+          <select
+            aria-label="Priority"
+            value={task.priority}
+            onChange={(e) => save({ priority: e.target.value })}
+            disabled={busyField === "priority"}
+          >
+            {PRIORITIES.map((p) => <option key={p} value={p}>{priorityMeta(p).label}</option>)}
+          </select>
+          <ChevronDown size={13} className="tt-pick-caret" aria-hidden="true" />
+        </span>
       </td>
 
       {/* Project */}
-      <td style={cellStyle}>
-        <select
-          value={task.projectId || ""}
-          onChange={(e) => save({ projectId: e.target.value || null })}
-          disabled={busyField === "projectId"}
-          style={{ ...inputStyle, cursor: "pointer" }}
-        >
-          <option value="">—</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+      <td>
+        <span className="tt-pick tt-pick--plain" title={projectNameOf(projects, task.projectId)}>
+          <select
+            aria-label="Project"
+            value={task.projectId || ""}
+            onChange={(e) => save({ projectId: e.target.value || null })}
+            disabled={busyField === "projectId"}
+          >
+            <option value="">No project</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <ChevronDown size={13} className="tt-pick-caret" aria-hidden="true" />
+        </span>
       </td>
 
       {/* Assignees */}
-      <td style={{ ...cellStyle, position: "relative" }} ref={assigneeRef}>
-        <div onClick={() => setAssigneeMenuOpen((o) => !o)} style={{ display: "flex", gap: 3, alignItems: "center", cursor: "pointer", minHeight: 22 }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setAssigneeMenuOpen((o) => !o))?.(e); } }}>
-          {assignees.length === 0 && <span style={{ color: "var(--gray-400)" }}>+ Add</span>}
-          {assignees.map((m) => (
-            <span key={m.id} title={m.name} style={{
-              width: 20, height: 20, borderRadius: "50%", background: m.color || "var(--brand-500)", color: "#fff",
-              fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center",
-            }}>
-              {m.name.slice(0, 2).toUpperCase()}
+      <td className="tt-assignees" ref={assigneeRef}>
+        <button type="button" className="tt-assignee-btn" aria-haspopup="true" aria-expanded={assigneeMenuOpen}
+          aria-label={assignees.length ? `Assignees: ${assignees.map((m) => m.name).join(", ")}. Change` : "Add assignee"}
+          onClick={() => setAssigneeMenuOpen((o) => !o)}
+          onKeyDown={(e) => { if (e.key === "Escape") setAssigneeMenuOpen(false); }}>
+          {assignees.length === 0 && <span className="tt-add">Add</span>}
+          {assignees.length > 0 && (
+            <span className="ui-avatar-stack">
+              {assignees.slice(0, 3).map((m) => <Avatar key={m.id} name={m.name} email={m.email} size={22} />)}
+              {assignees.length > 3 && <span className="tt-more">+{assignees.length - 3}</span>}
             </span>
-          ))}
-        </div>
+          )}
+        </button>
         {assigneeMenuOpen && (
-          <div style={{
-            position: "absolute", top: "100%", left: 6, marginTop: 2, background: "var(--surface-1)", minWidth: 180,
-            border: "1px solid var(--card-border)", borderRadius: "var(--radius-md)", boxShadow: "var(--elevation-2)",
-            zIndex: 20, maxHeight: 200, overflowY: "auto",
-          }}>
+          <div className="tt-menu">
             {teamMembers.map((m) => (
-              <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", cursor: "pointer", fontSize: 12 }}>
+              <label key={m.id} className="tt-menu-item">
                 <input type="checkbox" checked={(task.assigneeIds || []).includes(m.id)} onChange={() => toggleAssignee(m.id)} />
-                {m.name}
+                <Avatar name={m.name} email={m.email} size={20} />
+                <span>{m.name}</span>
               </label>
             ))}
-            {teamMembers.length === 0 && <div style={{ padding: 10, fontSize: 11, color: "var(--gray-400)" }}>No members</div>}
+            {teamMembers.length === 0 && <div className="tt-menu-empty">No members yet</div>}
           </div>
         )}
       </td>
 
       {/* Due date */}
-      <td style={cellStyle}>
+      <td className={overdue ? "tt-due is-overdue" : "tt-due"}>
         <input
           type="date"
           value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
@@ -313,35 +338,41 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           // Due dates are for work still ahead — a date input with no
           // floor let any past date through with nothing stopping it.
           min={new Date().toISOString().slice(0, 10)}
-          style={{ ...inputStyle, cursor: "pointer" }}
+          aria-label={overdue ? "Due date (overdue)" : "Due date"}
+          className="tt-input tt-date"
         />
+        {overdue && <span className="tt-overdue"><span className="ui-glyph ui-glyph--diamond ui-tone--blocked" aria-hidden="true" />Overdue</span>}
       </td>
 
       {/* Tags */}
-      <td style={cellStyle}>
+      <td>
         {editingTags ? (
           <input
-           
+            className="tt-input"
+            aria-label="Tags, separated by commas"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- the user just asked to edit this field
+            autoFocus
             value={tagsDraft}
             onChange={(e) => setTagsDraft(e.target.value)}
             onBlur={() => { setEditingTags(false); save({ tags: tagsDraft.split(",").map((x) => x.trim()).filter(Boolean) }); }}
             onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
             placeholder="tag1, tag2"
-            style={{ ...inputStyle, border: "1px solid var(--accent-500)" }}
           />
         ) : (
-          <div onClick={() => setEditingTags(true)} style={{ cursor: "text", display: "flex", gap: 4, flexWrap: "wrap", minHeight: 20 }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setEditingTags(true))?.(e); } }}>
-            {(task.tags || []).length === 0 && <span style={{ color: "var(--gray-400)" }}>+ Add</span>}
+          <div className="tt-tags" onClick={() => setEditingTags(true)} aria-label="Edit tags" role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setEditingTags(true))?.(e); } }}>
+            {(task.tags || []).length === 0 && <span className="tt-add">Add</span>}
             {(task.tags || []).map((tag) => (
-              <span key={tag} className="task-tag" style={{ fontSize: 10 }}>{tag}</span>
+              <span key={tag} className="tt-tag">{tag}</span>
             ))}
           </div>
         )}
       </td>
 
       {/* Actions */}
-      <td style={{ ...cellStyle, textAlign: "right" }}>
-        <button className="btn-icon" title="Delete" onClick={() => onDelete(task.id)}>🗑️</button>
+      <td className="tt-actions">
+        <button className="tt-icon-btn tt-delete" title="Delete task" aria-label={`Delete ${task.title}`} onClick={() => onDelete(task.id)}>
+          <Trash2 size={15} aria-hidden="true" />
+        </button>
       </td>
     </tr>
   );

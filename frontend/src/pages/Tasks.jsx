@@ -10,6 +10,11 @@ import { getGoals, toggleStep, deleteStep, addStep, updateSubGoal,
 } from "../api/goals";
 import { getProjects } from "../api/projects";
 import PageHeader from "../components/PageHeader";
+import { Download, Plus, Search, X, Table2, FolderTree, Tag, Rows3, Trash2, PanelRightOpen, Pencil, History, CalendarDays, GitBranch, Eye, ChevronDown, Check } from "lucide-react";
+import Priority from "../ui/Priority";
+import Avatar from "../ui/Avatar";
+import { StatusGlyph } from "../ui/Status";
+import { statusMeta, priorityMeta } from "../ui/meta";
 import IntegrationPanel from "../components/IntegrationPanel";
 import { useToast } from "../components/ToastContext";
 import { useAuth } from "../hooks/useAuth";
@@ -281,11 +286,6 @@ function groupByProject(tasks, projects) {
 function StatusDropdown({ task, onUpdate }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const statusColor = {
-    TODO: "var(--brand-500)",
-    IN_PROGRESS: "var(--warning)",
-    DONE: "var(--success)",
-  };
   const statuses = ["TODO", "IN_PROGRESS", "DONE"];
 
   useEffect(() => {
@@ -301,50 +301,37 @@ function StatusDropdown({ task, onUpdate }) {
 
   return (
     <div style={{ position: "relative" }} ref={ref}>
-      <div
+      <button
+        type="button"
         className="status-quick-btn"
-        style={{
-          background: statusColor[task.status] + "22",
-          color: statusColor[task.status],
-          border: `1px solid ${statusColor[task.status]}`,
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        })?.(e); } }}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={`Status: ${statusMeta(task.status).label}. Change`}
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
       >
-        {task.status.replace("_", " ")}
-        <span style={{ fontSize: "10px", marginLeft: "4px" }}>▼</span>
-      </div>
+        <StatusGlyph status={task.status} />
+        {statusMeta(task.status).label}
+        <ChevronDown size={12} aria-hidden="true" />
+      </button>
       {open && (
         <div className="status-dropdown">
           {statuses.map((s) => (
-            <div
+            <button
+              type="button"
               key={s}
               className={`status-dropdown-item ${task.status === s ? "active" : ""}`}
-              style={{ color: statusColor[s] }}
+              aria-pressed={task.status === s}
               onClick={(e) => {
                 e.stopPropagation();
                 onUpdate(task, s);
                 setOpen(false);
-              }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => {
-                e.stopPropagation();
-                onUpdate(task, s);
-                setOpen(false);
-              })?.(e); } }}
+              }}
             >
-              <div
-                className="task-status-dot"
-                style={{ background: statusColor[s] }}
-              />
-              {s.replace("_", " ")}
-              {task.status === s && (
-                <span style={{ marginLeft: "auto" }}>✓</span>
-              )}
-            </div>
+              <StatusGlyph status={s} />
+              {statusMeta(s).label}
+              {task.status === s && <Check size={14} aria-hidden="true" style={{ marginLeft: "auto" }} />}
+            </button>
           ))}
         </div>
       )}
@@ -780,13 +767,6 @@ export default function Tasks() {
     return true;
   });
 
-  const priorityColor = { LOW: "var(--success)", MEDIUM: "var(--warning)", HIGH: "var(--danger)" };
-  const statusColor = {
-    TODO: "var(--brand-500)",
-    IN_PROGRESS: "var(--warning)",
-    DONE: "var(--success)",
-  };
-
   /* Inner render helper — shared across all 3 view modes */
   const TaskRow = ({ t }) => (
     <div
@@ -800,101 +780,87 @@ export default function Tasks() {
       } : {}}
     >
       <input type="checkbox" className="task-row-checkbox"
+        aria-label={`Select ${t.title}`}
         checked={selectedIds.has(t.id)}
         onChange={() => toggleSelect(t.id)}
         onClick={e => e.stopPropagation()}
       />
-      <div className="task-status-dot"
-        style={{ background: t.blockedByTaskIds?.length > 0 ? "var(--danger)" : statusColor[t.status] }}
-        title={t.blockedByTaskIds?.length > 0 ? "This task has dependencies" : t.status}
-      />
+      <span className="task-row-glyph" title={t.blockedByTaskIds?.length > 0 ? "Blocked by other tasks" : statusMeta(t.status).label}>
+        <StatusGlyph status={t.blockedByTaskIds?.length > 0 ? "BLOCKED" : t.status} />
+        <span className="ui-sr-only">{t.blockedByTaskIds?.length > 0 ? "Blocked by other tasks" : statusMeta(t.status).label}</span>
+      </span>
       <div className="task-info">
-        <div className="task-title">
-          {t.title}
-          <button className="btn-icon" style={{ fontSize: "14px", marginLeft: "6px" }}
-            title="Quick view"
+        <div className="task-row-head">
+          <span className="task-row-title">{t.title}</span>
+          <button className="tt-icon-btn" title="Quick view" aria-label={`Quick view ${t.title}`}
             onClick={() => setDrawerTask(t)}>
-            ⤢
+            <PanelRightOpen size={15} aria-hidden="true" />
           </button>
-          <button className="btn-icon" style={{ fontSize: "14px" }}
-            title="Edit in full form"
+          <button className="tt-icon-btn" title="Edit in full form" aria-label={`Edit ${t.title}`}
             onClick={() => { setEditing({ ...t, dueDate: t.dueDate ? t.dueDate.slice(0,16) : "", tags: t.tags?.join(", ") || "" }); setShowForm(true); }}>
-            ✏️
+            <Pencil size={14} aria-hidden="true" />
           </button>
+        </div>
+        <div className="task-row-meta">
+          <Priority priority={t.priority} />
+          {t.assigneeIds?.length > 0 && (
+            <span className="ui-avatar-stack" aria-label="Assignees">
+              {t.assigneeIds.map((id) => {
+                const m = teamMembers.find((m) => m.id === id);
+                return m ? <Avatar key={id} name={m.name} email={m.email} size={20} /> : null;
+              })}
+            </span>
+          )}
+          {t.dueDate && (
+            <span className={"task-row-due" + (t.status !== "DONE" && t.dueDate.slice(0, 10) < new Date().toISOString().slice(0, 10) ? " is-overdue" : "")}>
+              <CalendarDays size={13} aria-hidden="true" />
+              {new Date(t.dueDate).toLocaleDateString()}
+            </span>
+          )}
+          {t.type && t.type !== "TASK" && <span className="badge">{t.type.charAt(0) + t.type.slice(1).toLowerCase()}</span>}
+          {t.severity && t.severity !== "NONE" && (
+            <span className={"badge" + (t.severity === "CRITICAL" || t.severity === "HIGH" ? " badge-danger" : "")}>
+              Severity: {t.severity.charAt(0) + t.severity.slice(1).toLowerCase()}
+            </span>
+          )}
+          {t.slaStatus && t.slaStatus !== "NONE" && (
+            <span className={"badge" + (t.slaStatus === "BREACHED" ? " badge-danger" : t.slaStatus === "AT_RISK" ? " badge-in_progress" : " badge-done")}>
+              SLA: {t.slaStatus.replace("_", " ").toLowerCase()}
+            </span>
+          )}
+          {(t.subtaskIds||[]).length > 0 && (
+            <span className="task-row-count" title="Subtasks"><GitBranch size={13} aria-hidden="true" />{t.subtaskIds.length}<span className="ui-sr-only"> subtasks</span></span>
+          )}
+          {(t.watcherIds||[]).length > 0 && (
+            <span className="task-row-count" title="Watchers"><Eye size={13} aria-hidden="true" />{t.watcherIds.length}<span className="ui-sr-only"> watchers</span></span>
+          )}
+          {t.tags?.length > 0 && t.tags.map(tag => <span key={tag} className="tt-tag">{tag}</span>)}
+        </div>
+        <div className="task-row-tools">
           <StatusDropdown task={t} onUpdate={handleStatusUpdate} />
           <TaskComments task={t} onRefresh={load} />
           <TimeTracker task={t} onRefresh={load} />
           <FileAttachments task={t} onRefresh={load} />
           <TaskDependencies task={t} allTasks={tasks} onRefresh={load} />
           <button
-            className={`btn-icon task-activity-btn ${activityOpenIds[t.id] ? "active" : ""}`}
-            style={{ fontSize: "12px", padding: "2px 6px" }}
+            className={`tt-icon-btn task-activity-btn ${activityOpenIds[t.id] ? "active" : ""}`}
             title="Activity history"
+            aria-label="Activity history"
+            aria-expanded={!!activityOpenIds[t.id]}
             onClick={() => toggleActivity(t.id)}
-          >📋</button>
+          ><History size={14} aria-hidden="true" /></button>
         </div>
-        {t.assigneeIds?.length > 0 && (
-          <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-            👤{" "}
-            {t.assigneeIds.map((id) => {
-              const m = teamMembers.find((m) => m.id === id);
-              return m ? (
-                <span key={id} style={{ background: m.color || "var(--brand-500)", color: "#fff", borderRadius: "50%",
-                  width: "18px", height: "18px", fontSize: "9px", fontWeight: 700,
-                  display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                  {m.name.slice(0, 2).toUpperCase()}
-                </span>
-              ) : null;
-            })}
-          </span>
-        )}
-        {t.dueDate && <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>}
-        {t.tags?.length > 0 && (
-          <div className="task-meta" style={{ marginTop: "2px" }}>
-            {t.tags.map(tag => <span key={tag} className="task-tag">{tag}</span>)}
-          </div>
-        )}
       </div>
       {activityOpenIds[t.id] && (
         <div className="task-activity-inline">
           <EntityActivityTab entityType="task" entityId={t.id} />
         </div>
       )}
-      <div className="task-badges">
-        <span className="badge" style={{ background: priorityColor[t.priority], color: "#fff" }}>
-          {t.priority}
-        </span>
-        {t.type && t.type !== "TASK" && (
-          <span className="badge" style={{ background:"#6366f118",color:"var(--brand-500)",border:"1px solid #6366f133" }}>
-            {t.type}
-          </span>
-        )}
-        {t.severity && t.severity !== "NONE" && (
-          <span className="badge" style={{
-            background: t.severity==="CRITICAL"?"#7c3aed18":t.severity==="HIGH"?"#ef444418":"#f59e0b18",
-            color: t.severity==="CRITICAL"?"var(--purple)":t.severity==="HIGH"?"var(--danger)":"var(--warning)",
-          }}>⚡{t.severity}</span>
-        )}
-        {t.slaStatus && t.slaStatus !== "NONE" && (
-          <span className="badge" style={{
-            background: t.slaStatus==="BREACHED"?"#ef444418":t.slaStatus==="AT_RISK"?"#f59e0b18":"#10b98118",
-            color: t.slaStatus==="BREACHED"?"var(--danger)":t.slaStatus==="AT_RISK"?"var(--warning)":"var(--success)",
-          }}>SLA:{t.slaStatus}</span>
-        )}
-        {(t.subtaskIds||[]).length > 0 && (
-          <span className="badge" style={{background:"var(--gray-100)",color:"var(--gray-600)"}}>
-            🔀{t.subtaskIds.length}
-          </span>
-        )}
-        {(t.watcherIds||[]).length > 0 && (
-          <span className="badge" style={{background:"var(--gray-100)",color:"var(--gray-600)"}}>
-            👁{t.watcherIds.length}
-          </span>
-        )}
-      </div>
       <LinkedDocsPanel taskId={t.id} allDocs={allDocs} />
       <div className="card-actions">
-        <button className="btn-icon" onClick={() => handleDelete(t.id)}>🗑️</button>
+        <button className="tt-icon-btn tt-delete" title="Delete task" aria-label={`Delete ${t.title}`} onClick={() => handleDelete(t.id)}>
+          <Trash2 size={15} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
@@ -942,72 +908,70 @@ export default function Tasks() {
   return (
     <div>
       <PageHeader
-        icon="✅"
         title="Tasks"
-        description="Track and manage all your tasks"
+        description="Every task across your projects, with owners, priorities and due dates."
         action={
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportCSV}
-            >
-              ⬇️ CSV
+          <>
+            <button className="btn-secondary" onClick={handleExportCSV}>
+              <Download size={14} aria-hidden="true" /> Export CSV
             </button>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportPDF}
-            >
-              ⬇️ PDF
+            <button className="btn-secondary" onClick={handleExportPDF}>
+              <Download size={14} aria-hidden="true" /> Export PDF
             </button>
             <button className="btn-primary" onClick={() => setShowForm(true)}>
-              + New Task
+              <Plus size={15} aria-hidden="true" /> New task
             </button>
-          </div>
+          </>
         }
       />
 
-      <div className="tab-bar" style={{ marginBottom: "20px" }}>
-        <button className={"tab-btn" + (mainTab === "projects" ? " tab-active" : "")} onClick={() => setMainTab("projects")}>
-          📁 Project Tasks
+      <div className="tab-bar" role="tablist" style={{ marginBottom: "16px" }}>
+        <button role="tab" aria-selected={mainTab === "projects"} className={"tab-btn" + (mainTab === "projects" ? " tab-active" : "")} onClick={() => setMainTab("projects")}>
+          Project tasks
         </button>
-        <button className={"tab-btn" + (mainTab === "goals" ? " tab-active" : "")} onClick={() => setMainTab("goals")}>
-          🎯 Goal Steps
+        <button role="tab" aria-selected={mainTab === "goals"} className={"tab-btn" + (mainTab === "goals" ? " tab-active" : "")} onClick={() => setMainTab("goals")}>
+          Goal steps
         </button>
       </div>
 
       {mainTab === "projects" && (
-      <><div className="filter-bar">
-        <input
-          style={{ width: "200px" }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Search tasks..."
-        />
+      <><div className="filter-bar ui-toolbar tasks-toolbar">
+        <label className="ui-search">
+          <Search aria-hidden="true" />
+          <span className="ui-sr-only">Search tasks</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks"
+          />
+        </label>
         <select
+          aria-label="Filter by status"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
-          <option value="">All Statuses</option>
+          <option value="">All statuses</option>
           {STATUSES.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{statusMeta(s).label}</option>
           ))}
         </select>
         <select
+          aria-label="Filter by priority"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
         >
-          <option value="">All Priorities</option>
+          <option value="">All priorities</option>
           {PRIORITIES.map((p) => (
-            <option key={p}>{p}</option>
+            <option key={p} value={p}>{priorityMeta(p).label}</option>
           ))}
         </select>
         <select
+          aria-label="Filter by project"
           value={filterProject}
           onChange={(e) => setFilterProject(e.target.value)}
         >
-          <option value="">All Projects</option>
+          <option value="">All projects</option>
           {projects
             .filter((p) => !p.parentProjectId)
             .map((p) => (
@@ -1024,34 +988,30 @@ export default function Tasks() {
             ))}
         </select>
         <select
+          aria-label="Filter by assignee"
           value={filterAssignee}
           onChange={(e) => setFilterAssignee(e.target.value)}
         >
-          <option value="">All Assignees</option>
+          <option value="">All assignees</option>
           <option value="__unassigned__">Unassigned</option>
           {teamMembers.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
         <select
+          aria-label="Filter by due date"
           value={filterSpecial}
           onChange={(e) => setFilterSpecial(e.target.value)}
         >
-          <option value="">Any Due Date</option>
-          <option value="overdue">⚠️ Overdue</option>
-          <option value="today">📅 Due Today</option>
-          <option value="week">Due This Week</option>
-          <option value="month">Due This Month</option>
-          <option value="nodate">No Due Date</option>
+          <option value="">Any due date</option>
+          <option value="overdue">Overdue</option>
+          <option value="today">Due today</option>
+          <option value="week">Due this week</option>
+          <option value="month">Due this month</option>
+          <option value="nodate">No due date</option>
         </select>
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
+        <span className="ui-spacer" />
+        <div className="ui-segmented" role="group" aria-label="View">
           {/* Overdue/Due Today used to be their own standalone toggle
               buttons here, duplicating what the new "Due Date" dropdown
               above now covers (plus This Week/This Month/No Due Date,
@@ -1062,74 +1022,36 @@ export default function Tasks() {
           {/* Table leads: it's the default and the recommended view for
               comparing tasks side-by-side. The other three stay for when
               grouping matters more than comparison. */}
-          <button
-            className={viewMode === "table" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("table")}
-          >
-            📊 Table
-          </button>
-          <button
-            className={viewMode === "project" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("project")}
-          >
-            📁 By Project
-          </button>
-          <button
-            className={viewMode === "grouped" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("grouped")}
-          >
-            🏷️ By Tag
-          </button>
-          <button
-            className={viewMode === "list" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("list")}
-          >
-            ☰ List
-          </button>
+          {[
+            ["table", "Table", Table2],
+            ["project", "By project", FolderTree],
+            ["grouped", "By tag", Tag],
+            ["list", "List", Rows3],
+          ].map(([mode, label, Icon]) => (
+            <button key={mode} type="button" aria-pressed={viewMode === mode} onClick={() => setViewMode(mode)}>
+              <Icon aria-hidden="true" /> {label}
+            </button>
+          ))}
         </div>
       </div>
 
       {filterSpecial && (
-        <div
-          style={{
-            marginBottom: "12px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span
-            style={{
-              background: filterSpecial === "overdue" ? "#fff5f5" : "#fffbeb",
-              color: filterSpecial === "overdue" ? "var(--danger)" : "var(--warning)",
-              padding: "4px 12px",
-              borderRadius: "20px",
-              fontSize: "12px",
-              fontWeight: 600,
-              border: `1px solid ${filterSpecial === "overdue" ? "#fecaca" : "#fde68a"}`,
-            }}
-          >
-            {filterSpecial === "overdue"
-              ? "⚠️ Showing Overdue Tasks"
-              : "📅 Showing Due Today Tasks"}
+        <div className="ui-toolbar" style={{ marginTop: -4 }}>
+          <span className="ui-chip">
+            {{ overdue: "Overdue", today: "Due today", week: "Due this week", month: "Due this month", nodate: "No due date" }[filterSpecial] || "Due date filter"}
+            <button type="button" aria-label="Clear due date filter" onClick={() => setFilterSpecial("")}>
+              <X size={13} aria-hidden="true" />
+            </button>
           </span>
-          <button
-            className="btn-link"
-            style={{ fontSize: "12px" }}
-            onClick={() => setFilterSpecial("")}
-          >
-            Clear Filter ✕
-          </button>
         </div>
       )}
 
-      {/* ── Bulk action toolbar ── */}
-      {filtered.length > 0 && (
-        <div className="bulk-toolbar">
+      {/* ── Bulk action toolbar ──
+          The table has its own select-all checkbox in its header, so there the
+          bar only appears once something is selected; the other views keep
+          the "Select all" control here. */}
+      {filtered.length > 0 && (viewMode !== "table" || selectedIds.size > 0) && (
+        <div className={"bulk-toolbar" + (selectedIds.size > 0 ? " has-selection" : "")}>
           <label className="bulk-select-all">
             <input type="checkbox"
               checked={selectedIds.size === filtered.length && filtered.length > 0}
@@ -1139,18 +1061,13 @@ export default function Tasks() {
           </label>
           {selectedIds.size > 0 && (
             <div className="bulk-actions">
-              <span style={{ fontSize:"12px", color:"var(--gray-400)", marginRight:"4px" }}>Mark as:</span>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("TODO")}>⬜ Todo</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("IN_PROGRESS")}>🔄 In Progress</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("DONE")}>✅ Done</button>
-              <div style={{ width:"1px", background:"var(--border)", margin:"0 4px" }} />
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px", color:"var(--danger)" }}
-                onClick={handleBulkDelete}>🗑️ Delete ({selectedIds.size})</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={clearSelection}>✕ Clear</button>
+              <span className="bulk-label">Set status</span>
+              <button className="btn-secondary" onClick={() => handleBulkStatus("TODO")}><StatusGlyph status="TODO" /> To do</button>
+              <button className="btn-secondary" onClick={() => handleBulkStatus("IN_PROGRESS")}><StatusGlyph status="IN_PROGRESS" /> In progress</button>
+              <button className="btn-secondary" onClick={() => handleBulkStatus("DONE")}><StatusGlyph status="DONE" /> Done</button>
+              <span className="bulk-divider" aria-hidden="true" />
+              <button className="btn-danger" onClick={handleBulkDelete}><Trash2 size={14} aria-hidden="true" /> Delete {selectedIds.size}</button>
+              <button className="btn-secondary" onClick={clearSelection}>Clear selection</button>
             </div>
           )}
         </div>

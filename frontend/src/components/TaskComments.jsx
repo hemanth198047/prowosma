@@ -1,3 +1,4 @@
+import { MessageSquare, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { addComment, deleteComment, toggleReaction } from "../api/tasks";
 import { useAuth } from "../hooks/useAuth";
@@ -178,10 +179,11 @@ export default function TaskComments({ task, onRefresh }) {
 
   return (
     <div className="task-comments-wrapper" ref={panelRef}>
-      <button className="task-comments-toggle"
+      <button className="task-comments-toggle task-tool-btn" aria-expanded={open}
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
-        💬 {count > 0 ? `${count} Comment${count > 1 ? "s" : ""}` : "Comments"}
-        {" "}{open ? "▲" : "▼"}
+        <MessageSquare size={13} aria-hidden="true" />
+        {count > 0 ? `${count} comment${count > 1 ? "s" : ""}` : "Comments"}
+        <ChevronDown size={12} aria-hidden="true" className={open ? "is-open" : undefined} />
       </button>
 
       {open && (

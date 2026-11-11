@@ -44,10 +44,12 @@ export default function Breadcrumb() {
   if (highlight)
     crumbs.push({ label: "Highlighted Item", icon: "🎯", path: null });
 
-  if (crumbs.length <= 1) return null;
+  // Only worth a row when it adds something: a filter or highlight the page
+  // was opened with. "Home › Tasks" alone repeats the page title below it.
+  if (crumbs.length <= 2) return null;
 
   return (
-    <div className="breadcrumb-bar">
+    <nav className="breadcrumb-bar" aria-label="Breadcrumb">
       {crumbs.map((crumb, i) => (
         <span key={i} className="breadcrumb-item">
           {i > 0 && <span className="breadcrumb-sep">›</span>}
@@ -56,15 +58,15 @@ export default function Breadcrumb() {
               className="breadcrumb-link"
               onClick={() => navigate(crumb.path)}
             >
-              {crumb.icon} {crumb.label}
+              {crumb.label}
             </button>
           ) : (
-            <span className="breadcrumb-current">
-              {crumb.icon} {crumb.label}
+            <span className="breadcrumb-current" aria-current={i === crumbs.length - 1 ? "page" : undefined}>
+              {crumb.label}
             </span>
           )}
         </span>
       ))}
-    </div>
+    </nav>
   );
 }

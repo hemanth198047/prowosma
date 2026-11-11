@@ -117,8 +117,14 @@ export default function OnboardingChecklist() {
     // Load saved completed state
     const saved = localStorage.getItem(completedKey);
     if (saved) setCompleted(JSON.parse(saved));
-    // Auto-open after short delay
-    const t = setTimeout(() => setOpen(true), 2000);
+    // Auto-open once per workspace, and only where there is room beside the
+    // work (wide screens). On laptops/tablets/phones the panel used to open
+    // over the page's own content and primary action on every visit; the
+    // toggle is still there to open it any time.
+    const autoKey = `${storageKey}_autoopened`;
+    const roomy = typeof window !== "undefined" && window.matchMedia?.("(min-width: 1680px)")?.matches;
+    if (!roomy || localStorage.getItem(autoKey) === "true") return;
+    const t = setTimeout(() => { setOpen(true); localStorage.setItem(autoKey, "true"); }, 2000);
     return () => clearTimeout(t);
   }, [activeWorkspace?.id, storageKey, completedKey]);
 

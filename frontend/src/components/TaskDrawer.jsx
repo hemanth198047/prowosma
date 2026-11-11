@@ -1,3 +1,5 @@
+import { Trash2, X } from "lucide-react";
+import { statusMeta } from "../ui/meta";
 import { useState, useEffect, useRef } from "react";
 import DateTimePicker from "./DateTimePicker";
 import CustomFieldValues from "./CustomFieldValues";
@@ -13,8 +15,8 @@ const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const TYPES = ["TASK", "BUG", "STORY", "FEATURE", "IMPROVEMENT", "EPIC"];
 const SEVERITIES = ["NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
-const statusColor = { TODO: "#6366f1", IN_PROGRESS: "#f59e0b", DONE: "#10b981" };
-const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
+// Stored values are unchanged; only the labels people read are friendlier.
+const titleCase = (v) => String(v).charAt(0) + String(v).slice(1).toLowerCase();
 
 /**
  * TaskDrawer — a real slide-over quick-view panel.
@@ -112,9 +114,10 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
       <div
         role="dialog"
         aria-label="Task details"
+        className="task-drawer"
         style={{
           position: "fixed", top: 0, right: 0, bottom: 0, width: "min(520px, 100vw)",
-          background: "var(--card-bg, #fff)", boxShadow: "-8px 0 32px rgba(0,0,0,0.18)",
+          background: "var(--surface-2)", boxShadow: "var(--elevation-3)", borderLeft: "1px solid var(--border)",
           zIndex: 1201, display: "flex", flexDirection: "column",
           animation: "taskDrawerSlideIn 0.2s ease-out",
         }}
@@ -136,7 +139,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
                 style={{ width: "100%", fontSize: 18, fontWeight: 700, padding: "4px 6px", border: "1px solid var(--accent-500)", borderRadius: 6 }}
               />
             ) : (
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, wordBreak: "break-word" }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, wordBreak: "break-word" }}>
                 <button
                   type="button"
                   onClick={() => setEditingTitle(true)}
@@ -154,7 +157,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               <TaskDependencies task={local} allTasks={allTasks} onRefresh={onRefresh} />
             </div>
           </div>
-          <button className="btn-icon" onClick={onClose} title="Close" style={{ fontSize: 18 }}>✕</button>
+          <button className="btn-icon" onClick={onClose} title="Close" aria-label="Close task details"><X size={18} aria-hidden="true" /></button>
         </div>
 
         {/* ── Scrollable body ── */}
@@ -167,9 +170,9 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               <select
                 value={local.status}
                 onChange={(e) => save({ status: e.target.value })}
-                style={{ ...selectStyle, color: statusColor[local.status], fontWeight: 600 }} id={"task-drawer-status"}
+                style={selectStyle} id={"task-drawer-status"}
               >
-                {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                {STATUSES.map((s) => <option key={s} value={s}>{statusMeta(s).label}</option>)}
               </select>
             </div>
             <div style={{ flex: 1 }}>
@@ -177,9 +180,9 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               <select
                 value={local.priority}
                 onChange={(e) => save({ priority: e.target.value })}
-                style={{ ...selectStyle, color: priorityColor[local.priority], fontWeight: 600 }} id={"task-drawer-priority"}
+                style={selectStyle} id={"task-drawer-priority"}
               >
-                {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+                {PRIORITIES.map((p) => <option key={p} value={p}>{titleCase(p)}</option>)}
               </select>
             </div>
           </div>
@@ -193,7 +196,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               onBlur={() => { if (descDraft !== (local.description || "")) save({ description: descDraft }); }}
               rows={4}
               placeholder="Add a description…"
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 8, fontFamily: "inherit", fontSize: 13, resize: "vertical", boxSizing: "border-box" }} id={"task-drawer-description"}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-sm)", fontFamily: "inherit", fontSize: 13, resize: "vertical", boxSizing: "border-box", background: "var(--input-bg)", color: "var(--text-1)" }} id={"task-drawer-description"}
             />
           </div>
 
@@ -247,7 +250,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
           {/* Due date */}
           <div style={{ marginBottom: 16 }}>
             <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
-              <legend style={{ ...fieldLabelStyle, padding: 0 }}>Due Date</legend>
+              <legend style={{ ...fieldLabelStyle, padding: 0 }}>Due date</legend>
               <DateTimePicker value={local.dueDate || ""} onChange={(iso) => save({ dueDate: iso || null })} />
             </fieldset>
           </div>
@@ -271,13 +274,13 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
             <div style={{ flex: 1 }}>
               <label style={fieldLabelStyle} htmlFor={"task-drawer-type"}>Type</label>
               <select value={local.type || "TASK"} onChange={(e) => save({ type: e.target.value })} style={selectStyle} id={"task-drawer-type"}>
-                {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TYPES.map((t) => <option key={t} value={t}>{titleCase(t)}</option>)}
               </select>
             </div>
             <div style={{ flex: 1 }}>
               <label style={fieldLabelStyle} htmlFor={"task-drawer-severity"}>Severity</label>
               <select value={local.severity || "NONE"} onChange={(e) => save({ severity: e.target.value })} style={selectStyle} id={"task-drawer-severity"}>
-                {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {SEVERITIES.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}
               </select>
             </div>
             <div style={{ flex: 1 }}>
@@ -307,19 +310,19 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
         </div>
 
         {/* ── Footer ── */}
-        <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 11, color: "var(--gray-400)" }}>
+        <div className="task-drawer-footer" style={{ padding: "10px 20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <span style={{ fontSize: 12, color: "var(--text-3)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {savingField ? "Saving…" : project ? `In ${project.name}` : "\u00A0"}
           </span>
           <button
-            className="btn-icon"
-            style={{ color: "var(--danger)", fontSize: 13 }}
+            className="btn-danger"
+            style={{ flex: "none" }}
             onClick={async () => {
               const ok = await confirm({ title: "Delete this task?", message: "Permanently delete this task.", danger: true, confirmText: "Delete Task" });
               if (ok) { await onDelete(task.id); onClose(); }
             }}
           >
-            🗑️ Delete Task
+            <Trash2 size={14} aria-hidden="true" /> Delete task
           </button>
         </div>
       </div>
@@ -327,5 +330,5 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
   );
 }
 
-const fieldLabelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 };
-const selectStyle = { width: "100%", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#fff" };
+const fieldLabelStyle = { display: "block", fontSize: 12, fontWeight: 500, color: "var(--text-2)", marginBottom: 4 };
+const selectStyle = { width: "100%", padding: "6px 10px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-sm)", fontSize: 13, boxSizing: "border-box", background: "var(--input-bg)", color: "var(--text-1)" };

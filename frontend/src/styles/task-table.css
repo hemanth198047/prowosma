@@ -1,0 +1,234 @@
+/* Task table — the reference data table for the Precision Enterprise system.
+   Compact 40px rows, fixed column widths so values never truncate mid-word,
+   status/priority as glyph + label, inline controls that look like text until
+   hovered or focused. Scrolls sideways inside its own frame on narrow screens. */
+
+.tt-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+.tt {
+  width: 100%;
+  min-width: 1040px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-13);
+  color: var(--text-1);
+}
+.tt thead th {
+  position: sticky; top: 0; z-index: 1;
+  height: 34px; padding: 0 10px;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: middle;
+  font: 500 var(--fs-12)/1 var(--font-sans);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.tt-sort {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 4px; margin-left: -4px;
+  background: none; border: 0; border-radius: var(--radius-xs);
+  font: inherit; color: inherit;
+}
+.tt-sort svg { opacity: .45; }
+.tt-sort:hover { color: var(--text-1); background: var(--surface-hover); }
+.tt-sort.is-active { color: var(--text-1); }
+.tt-sort.is-active svg { opacity: 1; color: var(--accent); }
+
+.tt tbody td {
+  height: 40px; padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  overflow: hidden;
+}
+.tt tbody tr:last-child td { border-bottom: 0; }
+.tt-row:hover td { background: var(--gray-50); }
+.tt-row.is-selected td { background: var(--surface-selected); }
+.tt-row.is-highlighted td { background: var(--warning-soft); }
+.tt input[type="checkbox"] { width: 15px; height: 15px; margin: 0; vertical-align: middle; cursor: pointer; }
+
+/* Title */
+.tt-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tt-title-text {
+  flex: 1; min-width: 0; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 500; cursor: text; border-radius: var(--radius-xs);
+}
+.tt-title-text:hover { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.tt-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 26px; height: 26px; padding: 0;
+  background: none; border: 0; border-radius: var(--radius-sm);
+  color: var(--text-3);
+}
+.tt-icon-btn:hover { background: var(--surface-hover); color: var(--text-1); }
+.tt-open { opacity: 0; }
+.tt-row:hover .tt-open, .tt-open:focus-visible { opacity: 1; }
+.tt-delete:hover { color: var(--danger-text); background: var(--danger-soft); }
+.tt-actions { text-align: right; }
+.tt-actions .tt-delete { opacity: 0; }
+.tt-row:hover .tt-delete, .tt-delete:focus-visible { opacity: 1; }
+@media (hover: none) { .tt-open, .tt-actions .tt-delete { opacity: 1; } }
+
+/* Inline pickers: a glyph/mark, then a native select drawn as plain text */
+.tt-pick {
+  position: relative; display: flex; align-items: center; gap: 0;
+  height: 28px; width: 100%;
+  border-radius: var(--radius-sm);
+}
+.tt-pick > .ui-glyph, .tt-pick > .ui-priority-mark { position: absolute; left: 6px; pointer-events: none; }
+.tt .tt-pick select {
+  appearance: none; -webkit-appearance: none;
+  width: 100%; height: 28px; min-height: 28px;
+  padding: 0 18px 0 23px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: transparent;
+  font: 400 var(--fs-13)/1 var(--font-sans); color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer;
+}
+.tt .tt-pick--plain select { padding-left: 6px; color: var(--text-2); }
+.tt .tt-pick select:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-1); }
+.tt .tt-pick select:focus { border-color: var(--accent); box-shadow: var(--focus-ring); background: var(--surface-1); }
+.tt .tt-pick select:disabled { opacity: .6; background: transparent; }
+.tt-pick-caret { position: absolute; right: 4px; color: var(--text-3); opacity: 0; pointer-events: none; }
+.tt-pick:hover .tt-pick-caret, .tt-pick:focus-within .tt-pick-caret { opacity: 1; }
+.tt .ui-priority--critical select, .tt .ui-priority--high select { color: var(--text-1); }
+
+/* Assignees */
+.tt-assignees { position: relative; overflow: visible !important; }
+.tt-assignee-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 6px; margin-left: -6px;
+  background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
+  font: inherit; color: var(--text-1);
+}
+.tt-assignee-btn:hover { border-color: var(--border-strong); }
+.tt-more { font: 500 var(--fs-12)/1 var(--font-sans); color: var(--text-3); margin-left: 6px; }
+.tt-add { color: var(--text-3); font-size: var(--fs-13); }
+.tt-add::before { content: "+ "; }
+.tt-menu {
+  position: absolute; top: calc(100% - 4px); left: 4px; z-index: 20;
+  min-width: 220px; max-height: 240px; overflow-y: auto; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--elevation-2);
+}
+.tt-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 8px; border-radius: var(--radius-sm);
+  font-size: var(--fs-13); cursor: pointer;
+}
+.tt-menu-item:hover { background: var(--surface-hover); }
+.tt-menu-empty { padding: 10px; font-size: var(--fs-12); color: var(--text-3); }
+
+/* Due date */
+.tt-due { white-space: nowrap; }
+.tt .tt-input {
+  width: 100%; height: 28px; min-height: 28px; padding: 0 6px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: transparent; font-size: var(--fs-13); color: var(--text-1);
+}
+.tt .tt-input:hover { border-color: var(--border-strong); }
+.tt .tt-input:focus { border-color: var(--accent); box-shadow: var(--focus-ring); background: var(--surface-1); }
+.tt .tt-date { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text-2); cursor: pointer; }
+.tt-due { position: relative; }
+.tt-due.is-overdue .tt-date { color: var(--danger-text); padding-left: 20px; }
+/* overdue: a diamond before the date, with the word for screen readers and on hover */
+.tt-overdue { position: absolute; left: 17px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; pointer-events: none; font-size: 0; }
+.tt-overdue .ui-glyph { --glyph-size: 8px; }
+.tt .tt-date::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
+.tt-row:hover .tt-date::-webkit-calendar-picker-indicator,
+.tt .tt-date:focus::-webkit-calendar-picker-indicator { opacity: .6; }
+[data-theme="dark"] .tt .tt-date::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+/* Tags */
+.tt-tags { display: flex; gap: 4px; align-items: center; min-height: 24px; cursor: text; overflow: hidden; }
+.tt-tag {
+  font: 500 var(--fs-12)/1 var(--font-sans); color: var(--text-2);
+  background: var(--gray-100); border-radius: var(--radius-xs); padding: 4px 6px; white-space: nowrap;
+}
+
+.tt-empty { text-align: center; padding: 32px 16px !important; height: auto !important; color: var(--text-3); }
+
+/* ── Tasks page toolbar and bulk bar ───────────────────────────────────── */
+.tasks-toolbar select { max-width: 180px; }
+.bulk-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  min-height: 40px; padding: 4px 12px; margin: 0 0 8px;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+.bulk-toolbar.has-selection { background: var(--surface-selected); border-color: var(--brand-200); }
+.bulk-select-all { display: inline-flex; align-items: center; gap: 8px; font: 500 var(--fs-13)/1 var(--font-sans); color: var(--text-1); }
+.bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.bulk-actions .btn-secondary, .bulk-actions .btn-danger { height: 28px; padding: 0 10px; font-size: var(--fs-12); }
+.bulk-label { font-size: var(--fs-12); color: var(--text-3); margin-right: 2px; }
+.bulk-divider { width: 1px; height: 18px; background: var(--border-strong); margin: 0 4px; }
+@media (max-width: 768px) {
+  .tasks-toolbar .ui-search, .tasks-toolbar .ui-search input { width: 100%; }
+  .tasks-toolbar select { flex: 1 1 140px; max-width: none; }
+  .tasks-toolbar .ui-spacer { display: none; }
+  .tasks-toolbar .ui-segmented { width: 100%; }
+  .tasks-toolbar .ui-segmented button { flex: 1; justify-content: center; padding: 0 6px; }
+}
+
+[data-theme="dark"] .tt-title-text { color: var(--text-1); }
+
+/* ── List / By project / By tag rows ───────────────────────────────────── */
+.task-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-1); overflow: hidden; }
+.task-list .task-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: start; gap: 4px 12px;
+  padding: 12px 12px 10px; margin: 0;
+  background: var(--surface-1); border: 0; border-bottom: 1px solid var(--border);
+  border-radius: 0; box-shadow: none; transform: none;
+}
+.task-list .task-row:last-child { border-bottom: 0; }
+.task-list .task-row:hover { background: var(--gray-50); box-shadow: none; transform: none; border-color: var(--border); }
+.task-list .task-row.task-row-selected { background: var(--surface-selected); }
+.task-row-checkbox { margin-top: 3px; width: 15px; height: 15px; }
+.task-row-glyph { display: inline-flex; margin-top: 3px; }
+.task-list .task-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.task-row-head { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.task-row-title { font: 500 var(--fs-14)/1.4 var(--font-sans); color: var(--text-1); margin-right: 4px; overflow-wrap: anywhere; }
+.task-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: var(--fs-12); color: var(--text-2); }
+.task-row-due { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-2); }
+.task-row-due svg { color: var(--text-3); }
+.task-row-due.is-overdue { color: var(--danger-text); }
+.task-row-due.is-overdue svg { color: var(--danger); }
+.task-row-count { display: inline-flex; align-items: center; gap: 3px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.task-row-meta .ui-priority { font-size: var(--fs-12); }
+.badge-danger { background: var(--danger-soft); color: var(--danger-text); }
+.task-row-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.task-list .task-row > .card-actions { grid-column: 4; grid-row: 1; margin: 0; }
+.task-list .task-row > .task-activity-inline,
+.task-list .task-row > :not(input):not(.task-row-glyph):not(.task-info):not(.card-actions) { grid-column: 3 / -1; }
+.task-activity-btn.active { background: var(--surface-selected); color: var(--accent); }
+
+/* Status quick button (list rows) */
+.status-quick-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 8px; border-radius: var(--radius-sm);
+  background: var(--surface-1); border: 1px solid var(--border-strong);
+  font: 500 var(--fs-12)/1 var(--font-sans); color: var(--text-1); letter-spacing: 0; text-transform: none;
+}
+.status-quick-btn:hover { border-color: var(--gray-400); background: var(--surface-1); }
+.status-quick-btn svg { color: var(--text-3); }
+.status-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 180px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--elevation-2);
+}
+.status-dropdown-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  height: 32px; padding: 0 8px; background: none; border: 0; border-radius: var(--radius-sm);
+  font: 400 var(--fs-13)/1 var(--font-sans); color: var(--text-1); text-align: left;
+}
+.status-dropdown-item:hover, .status-dropdown-item.active { background: var(--surface-hover); }
+.status-dropdown-item svg { color: var(--accent); }
+@media (hover: none) { .task-list .tt-delete { opacity: 1; } }
+.task-list .tt-delete { opacity: 1; }

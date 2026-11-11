@@ -1,3 +1,4 @@
+import { Paperclip, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   addAttachment,
@@ -76,7 +77,9 @@ export default function FileAttachments({ task, onRefresh }) {
           setOpen((o) => !o);
         }}
       >
-        📎 Files {count > 0 ? `(${count})` : ""} {open ? "▲" : "▼"}
+        <Paperclip size={13} aria-hidden="true" />
+        {count > 0 ? `Files · ${count}` : "Files"}
+        <ChevronDown size={12} aria-hidden="true" className={open ? "is-open" : undefined} />
       </button>
 
       {open && (

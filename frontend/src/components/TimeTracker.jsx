@@ -1,3 +1,4 @@
+import { Timer, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { addTimeLog, deleteTimeLog } from "../api/tasks";
 
@@ -88,9 +89,9 @@ export default function TimeTracker({ task, onRefresh }) {
           setOpen((o) => !o);
         }}
       >
-        ⏱️ Time Tracker{" "}
-        {totalMinutes > 0 ? `(${formatTime(totalMinutes)})` : ""}{" "}
-        {open ? "▲" : "▼"}
+        <Timer size={13} aria-hidden="true" />
+        {totalMinutes > 0 ? `Time · ${formatTime(totalMinutes)}` : "Time"}
+        <ChevronDown size={12} aria-hidden="true" className={open ? "is-open" : undefined} />
       </button>
 
       {open && (
