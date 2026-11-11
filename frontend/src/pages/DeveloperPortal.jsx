@@ -6,6 +6,7 @@ import {
   getApiKeys,  createApiKey,  revokeApiKey,  deleteApiKey,
 } from "../api/developer";
 import "../styles/pages/developer.css";
+import { useConfirm } from "../hooks/useConfirm";
 
 const ALL_EVENTS = [
   "TASK_CREATED", "TASK_UPDATED", "TASK_COMPLETED", "TASK_DELETED",
@@ -183,6 +184,7 @@ function NewKeyModal({ apiKey, onClose }) {
 
 // ── Main page ─────────────────────────────────────────────────
 export default function DeveloperPortal() {
+  const confirm = useConfirm();
   const [tab, setTab]             = useState("webhooks");
   const [webhooks, setWebhooks]   = useState([]);
   const [apiKeys, setApiKeys]     = useState([]);
@@ -223,7 +225,7 @@ export default function DeveloperPortal() {
     load();
   };
   const handleDeleteWh = async (id) => {
-    if (!confirm("Delete this webhook?")) return;
+    if (!(await confirm({ title: "Delete this webhook?", danger: true, confirmText: "Delete" }))) return;
     await deleteWebhook(id); showToast("Webhook deleted"); load();
   };
   const handleTest = async (id) => {
@@ -235,7 +237,7 @@ export default function DeveloperPortal() {
     setTimeout(() => setTestResults(r => { const n = { ...r }; delete n[id]; return n; }), 4000);
   };
   const handleRegenSecret = async (id) => {
-    if (!confirm("Regenerate secret? Old signatures will stop verifying.")) return;
+    if (!(await confirm({ title: "Regenerate secret?", message: "Old signatures will stop verifying.", confirmText: "Regenerate" }))) return;
     await regenSecret(id); showToast("Secret regenerated"); load();
   };
 
@@ -250,7 +252,7 @@ export default function DeveloperPortal() {
     await revokeApiKey(id); showToast("Key revoked"); load();
   };
   const handleDeleteKey = async (id) => {
-    if (!confirm("Delete this API key?")) return;
+    if (!(await confirm({ title: "Delete this API key?", danger: true, confirmText: "Delete" }))) return;
     await deleteApiKey(id); showToast("Key deleted"); load();
   };
 

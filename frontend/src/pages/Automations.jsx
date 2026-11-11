@@ -927,7 +927,7 @@ export default function Automations() {
                     </div>
                     <button className="btn-secondary" style={{fontSize:"11px"}}
                       onClick={async()=>{
-                        if(!window.confirm("Restore to v"+v.version+"?")) return;
+                        if(!(await confirm({ title: "Restore to v"+v.version+"?", confirmText: "Restore" }))) return;
                         await client.post(`/automations/${versionTarget}/versions/${v.id}/restore`);
                         load(); showToast("Restored to v"+v.version,"success");
                       }}>↩ Restore</button>

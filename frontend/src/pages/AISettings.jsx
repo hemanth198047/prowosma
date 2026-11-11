@@ -8,6 +8,7 @@ import {
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/ai.css";
+import { useToast } from "../components/ToastContext";
 const AI_FEATURES = [
   {
     key: "task_assistant",
@@ -185,6 +186,7 @@ const PROVIDERS = [
 const CATEGORIES = [...new Set(AI_FEATURES.map((f) => f.category))];
 
 export default function AISettings() {
+  const { show: showToast } = useToast();
   const [settings, setSettings] = useState(null);
   const [form, setForm] = useState({
     apiKey: "",
@@ -266,7 +268,7 @@ export default function AISettings() {
       // Revert on failure
       setSettings(prev => ({ ...prev, aiEnabled: !newVal }));
       console.error("toggleAI error:", e);
-      alert("Failed to update AI settings. Please check your connection and try again.");
+      showToast("Failed to update AI settings. Please check your connection and try again.", "error");
     }
   };
 

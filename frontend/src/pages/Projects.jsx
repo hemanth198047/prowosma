@@ -48,6 +48,7 @@ function ProjectForm({
   onCategoryCreated,
   onGoalCreated,
 }) {
+  const { show: showToast } = useToast();
   const [form, setForm] = useState(
     initial || {
       name: "",
@@ -110,7 +111,7 @@ function ProjectForm({
       setShowNewCat(false);
     } catch (e) {
       const msg = apiErrorMessage(e, e.message);
-      alert("Failed to create category: " + msg);
+      showToast("Failed to create category: " + msg, "error");
     } finally {
       setCatSaving(false);
     }
@@ -137,7 +138,7 @@ function ProjectForm({
       setShowNewGoal(false);
     } catch (e) {
       const msg = apiErrorMessage(e, e.message);
-      alert("Failed to create goal: " + msg);
+      showToast("Failed to create goal: " + msg, "error");
     } finally {
       setGoalSaving(false);
     }
@@ -1003,7 +1004,7 @@ export default function Projects() {
       setParentForNew(null);
       load();
     } catch (err) {
-      alert(err.response?.data?.message || "Error saving project");
+      showToast(err.response?.data?.message || "Error saving project", "error");
     }
   };
 

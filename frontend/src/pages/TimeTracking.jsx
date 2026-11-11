@@ -7,6 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 import "../styles/pages/time.css";
 import { statusText } from "../utils/statusText";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../hooks/useConfirm";
 function fmt(minutes) {
   if (!minutes) return "0h";
   const h = Math.floor(minutes / 60), m = minutes % 60;
@@ -20,6 +22,7 @@ const STATUS_COLORS = { DRAFT:"var(--gray-400)", SENT:"var(--brand-500)", PAID:"
 
 // ── Generate Invoice Modal ────────────────────────────────────
 function GenerateModal({ projects, onGenerate, onClose }) {
+  const { show: showToast } = useToast();
   const [form, setForm] = useState({
     projectId: "", clientName: "", clientEmail: "",
     hourlyRate: 100, taxRate: 0, currency: "USD",
@@ -29,7 +32,7 @@ function GenerateModal({ projects, onGenerate, onClose }) {
   const submit = async () => {
     setSaving(true);
     try { await onGenerate(form); onClose(); }
-    catch (e) { alert("Failed: " + (e.response?.data?.message || e.message)); }
+    catch (e) { showToast("Failed: " + (e.response?.data?.message || e.message), "error"); }
     finally { setSaving(false); }
   };
 
@@ -154,6 +157,7 @@ function InvoiceModal({ invoice, onClose, onStatusChange }) {
 
 // ── Main page ─────────────────────────────────────────────────
 export default function TimeTracking() {
+  const confirm = useConfirm();
   const [tab, setTab]         = useState("report");
   const [report, setReport]   = useState(null);
   const [invoices, setInvoices] = useState([]);
@@ -195,7 +199,7 @@ export default function TimeTracking() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this invoice?")) return;
+    if (!(await confirm({ title: "Delete this invoice?", danger: true, confirmText: "Delete" }))) return;
     await deleteInvoice(id);
     setInvoices(prev => prev.filter(inv => inv.id !== id));
   };

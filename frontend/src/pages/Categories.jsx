@@ -8,6 +8,7 @@ import {
 } from "../api/categories";
 import PageHeader from "../components/PageHeader";
 import { useConfirm } from "../hooks/useConfirm";
+import { useToast } from "../components/ToastContext";
 import CanDo from "../components/CanDo";
 import { apiErrorMessage } from "../utils/apiError";
 
@@ -100,6 +101,7 @@ function CategoryForm({ initial, onSave, onCancel }) {
 
 export default function Categories() {
   const confirm = useConfirm();
+  const { show: showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -139,7 +141,7 @@ export default function Categories() {
     } catch (e) {
       const status = e.response?.status;
       const msg    = apiErrorMessage(e, e.message);
-      alert("Delete failed (" + status + "): " + msg);
+      showToast("Delete failed (" + status + "): " + msg, "error");
     }
   };
 

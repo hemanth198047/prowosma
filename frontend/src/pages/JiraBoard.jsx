@@ -14,6 +14,8 @@ import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/jira-board.css";
 import { statusText } from "../utils/statusText";
+import { useConfirm } from "../hooks/useConfirm";
+import { useToast } from "../components/ToastContext";
 const getEpics    = () => client.get("/epics").catch(()=>({data:[]}));
 const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
@@ -904,6 +906,8 @@ const DEFAULT_CONFIG = {
 
 export default function JiraBoard() {
   const { activeWorkspace } = useAuth();
+  const confirm = useConfirm();
+  const { show: showToast } = useToast();
 
   const [view,         setView]         = useState("board");
   const [tasks,        setTasks]        = useState([]);
@@ -998,7 +1002,7 @@ export default function JiraBoard() {
       const col=cols.find(c=>c.id===newStatus);
       if(col?.wipLimit) {
         const count=boardTasks.filter(t=>t.status===newStatus&&t.id!==active.id).length;
-        if(count>=col.wipLimit) { alert(`WIP limit (${col.wipLimit}) reached for "${col.label}"`); return; }
+        if(count>=col.wipLimit) { showToast(`WIP limit (${col.wipLimit}) reached for "${col.label}"`, "warning"); return; }
       }
     }
     setTasks(prev=>prev.map(t=>t.id===active.id?{...t,status:newStatus}:t));
@@ -1024,7 +1028,7 @@ export default function JiraBoard() {
   };
 
   const handleDeleteIssue = async(id) => {
-    if(!window.confirm("Delete this issue?")) return;
+    if(!(await confirm({ title: "Delete this issue?", danger: true, confirmText: "Delete" }))) return;
     try {
       await deleteTask(id);
       setTasks(prev=>prev.filter(t=>t.id!==id));
@@ -1053,7 +1057,7 @@ export default function JiraBoard() {
   };
 
   const handleStartSprint = async(sprint) => {
-    if(!window.confirm(`Start "${sprint.name}"?`)) return;
+    if(!(await confirm({ title: `Start "${sprint.name}"?`, confirmText: "Start sprint" }))) return;
     const start=new Date();
     const end=new Date(start.getTime()+config.sprintDuration*7*24*60*60*1000);
     try {

@@ -146,7 +146,7 @@ function ReleasesTab({ projects }) {
                   onClick={async()=>{
                     const res = await client.post(`/releases/${r.id}/generate-changelog`);
                     if (res.data.autoChangelog) {
-                      alert("Changelog:\n\n" + res.data.autoChangelog);
+                      await confirm({ title: "Changelog", message: res.data.autoChangelog, confirmText: "Close", cancelText: null });
                       load();
                     }
                   }}>📋</button>

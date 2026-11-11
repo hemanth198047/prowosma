@@ -23,6 +23,7 @@ import MeetingPulseCard from "../components/MeetingPulseCard";
 
 import "../styles/pages/dashboard.css";
 import { statusText, statusClass } from "../utils/statusText";
+import { useToast } from "../components/ToastContext";
 
 /* ── icon map — one consistent line-icon language instead of emoji ── */
 const ICONS = {
@@ -525,6 +526,7 @@ function TaskRow({ task, navigate }) {
 
 export default function Dashboard() {
   const { user, activeWorkspace } = useAuth();
+  const { show: showToast } = useToast();
   const navigate  = useNavigate();
   const { can }   = useAccess();
   const [summary,     setSummary]     = useState(null);
@@ -567,8 +569,8 @@ export default function Dashboard() {
   }, [activeWorkspace?.id]);
 
   const handleSendReminder = async () => {
-    try   { await client.post("/reminders/send-now"); alert("Reminder sent!"); }
-    catch { alert("Failed to send reminder. Check email configuration."); }
+    try   { await client.post("/reminders/send-now"); showToast("Reminder sent!", "success"); }
+    catch { showToast("Failed to send reminder. Check email configuration.", "error"); }
   };
 
   if (loading) return (

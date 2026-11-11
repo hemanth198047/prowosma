@@ -4,6 +4,8 @@ import {
   createWorkspace, deleteWorkspace, getMyWorkspaces,
 } from "../api/workspaces";
 import { useAuth } from "../hooks/useAuth";
+import { useConfirm } from "../hooks/useConfirm";
+import { useToast } from "../components/ToastContext";
 import {
   INDUSTRIES, ROLES, recommendTemplate, suggestedDescription, industryByKey, roleByKey,
 } from "../config/workspaceRecommendation";
@@ -19,6 +21,8 @@ const AVATARS = ["🚀","💼","🏢","⚡","🎯","🔮","🌟","🦁"];
 export default function WorkspaceSetup() {
   const { activeWorkspace, setActiveWorkspace } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const { show: showToast } = useToast();
   const fileInputRef = useRef(null);
 
   const [mode,           setMode]           = useState("create");
@@ -124,7 +128,8 @@ export default function WorkspaceSetup() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this workspace? All data will be permanently lost.")) return;
+    const ok = await confirm({ title: "Delete this workspace?", message: "All data will be permanently lost.", danger: true, confirmText: "Delete" });
+    if (!ok) return;
     setDeleteLoading(id);
     try {
       await deleteWorkspace(id);
@@ -135,7 +140,7 @@ export default function WorkspaceSetup() {
         else { setActiveWorkspace(null); setMode("create"); setStep(1); }
       }
     } catch (e) {
-      alert("Delete failed: " + (e?.response?.data?.message || e.message));
+      showToast("Delete failed: " + (e?.response?.data?.message || e.message), "error");
     } finally {
       setDeleteLoading(null);
     }

@@ -12,6 +12,7 @@ import { useAccess } from "../hooks/useAccess";
 
 import "../styles/pages/docs.css";
 import { statusText } from "../utils/statusText";
+import { useConfirm } from "../hooks/useConfirm";
 // ═══════════════════════════════════════════════════════
 // BLOCK SYSTEM
 // ═══════════════════════════════════════════════════════
@@ -1857,6 +1858,7 @@ function VersionHistoryPanel({ versions, loading, restoringVersion, activeDoc, c
 export default function Docs() {
   const { activeWorkspace, user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [sp, setSp] = useSearchParams();
   const wsId = activeWorkspace?.id;
 
@@ -2070,7 +2072,7 @@ export default function Docs() {
 
   // ── delete doc ──────────────────────────────────────────
   const handleDelete = async (doc) => {
-    if (!confirm(`Delete "${doc.title || "Untitled"}"? This cannot be undone.`)) return;
+    if (!(await confirm({ title: `Delete "${doc.title || "Untitled"}"?`, message: "This cannot be undone.", danger: true, confirmText: "Delete" }))) return;
     if (doc.id !== "__demo__") {
       try { await deleteDoc(doc.id); }
       catch { toast?.show("Failed to delete page", "error"); return; }
@@ -2111,7 +2113,7 @@ export default function Docs() {
 
   const handleRestoreVersion = async (versionNumber) => {
     if (!activeDoc) return;
-    if (!confirm(`Restore to version ${versionNumber}? Current content will be replaced.`)) return;
+    if (!(await confirm({ title: `Restore to version ${versionNumber}?`, message: "Current content will be replaced.", confirmText: "Restore" }))) return;
     setRestoringVersion(versionNumber);
     try {
       const r = await restoreVersion(activeDoc.id, versionNumber);
@@ -2301,7 +2303,7 @@ export default function Docs() {
                         onClick={async()=>{
                           await client.patch(`/docs/${activeDoc.id}/freshness`,
                             {stale:false, reviewAt: new Date(Date.now()+90*86400000).toISOString()});
-                          alert("✅ Doc marked as reviewed. Next review in 90 days.");
+                          toast.show("Doc marked as reviewed. Next review in 90 days.", "success");
                         }}>
                         {isStale ? "⚠️ Stale" : "🕐 Ageing"} ({daysSince}d)
                       </button>

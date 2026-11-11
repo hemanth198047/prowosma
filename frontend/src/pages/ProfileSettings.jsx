@@ -6,8 +6,12 @@ import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import { apiErrorMessage } from "../utils/apiError";
 import BackupCodesPanel from "../components/BackupCodesPanel";
+import { useConfirm } from "../hooks/useConfirm";
+import { useToast } from "../components/ToastContext";
 
 export default function ProfileSettings() {
+  const confirm = useConfirm();
+  const { show: showToast } = useToast();
   const { user, logoutUser } = useAuth();
   const navigate = useNavigate();
 
@@ -282,7 +286,7 @@ export default function ProfileSettings() {
                 const user = JSON.parse(localStorage.getItem("user")||"{}");
                 if (!user.email) return;
                 await client.post("/auth/mfa/email-otp/send",{email:user.email});
-                alert("OTP sent to " + user.email);
+                showToast("OTP sent to " + user.email, "success");
               }}>📤 Send Test OTP</button>
               <input id="ps-otp-input" placeholder="6-digit code" style={{maxWidth:150}} />
               <button className="btn-primary" onClick={async()=>{
@@ -290,7 +294,7 @@ export default function ProfileSettings() {
                 const user = JSON.parse(localStorage.getItem("user")||"{}");
                 if (!code || !user.email) return;
                 const r = await client.post("/auth/mfa/email-otp/verify",{email:user.email,otp:code});
-                alert(r.data.verified ? "✅ Email OTP verified!" : "❌ Invalid or expired code");
+                showToast(r.data.verified ? "Email OTP verified" : "Invalid or expired code", r.data.verified ? "success" : "error");
               }}>Verify</button>
             </div>
           </div>
@@ -306,7 +310,7 @@ export default function ProfileSettings() {
               if (!user.email) return;
               const r = await client.post("/auth/mfa/backup-codes/generate",{email:user.email});
               const codes = (r.data.codes||[]).join("\n");
-              alert("Your backup codes (copy and store securely):\n\n"+codes+"\n\n⚠️ "+r.data.warning);
+              await confirm({ title: "Your backup codes", message: "Copy these and store them securely. Each code works once.\n\n" + codes + (r.data.warning ? "\n\n⚠️ " + r.data.warning : ""), confirmText: "I've saved them", cancelText: null });
             }}>🔑 Generate Backup Codes</button>
           </div>
 
@@ -402,7 +406,7 @@ export default function ProfileSettings() {
               </div>
               <button className="btn-secondary" style={{ color:"var(--danger)" }}
                 onClick={async () => {
-                  if (!confirm("Submit a data deletion request? Your account will be deleted within 30 days.")) return;
+                  if (!(await confirm({ title: "Submit a data deletion request?", message: "Your account will be deleted within 30 days.", danger: true, confirmText: "Submit request" }))) return;
                   await client.post("/security/gdpr/delete-request");
                   setSuccess("Deletion request submitted. You'll receive a confirmation email.");
                 }}>
