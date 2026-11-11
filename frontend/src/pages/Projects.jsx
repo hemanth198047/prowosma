@@ -766,6 +766,15 @@ function ProjectCard({
             <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
           )}
           <p className="project-desc">{p.description}</p>
+          {p.dueDate && (() => {
+            const closed = ["COMPLETED", "DONE", "CANCELLED", "ARCHIVED"].includes(String(p.status).toUpperCase());
+            const overdue = !closed && new Date(p.dueDate) < new Date(new Date().toDateString());
+            return (
+              <div className={"project-due" + (overdue ? " project-due--overdue" : "")}>
+                {overdue ? `📅 ⚠ Overdue · ${formatDate(p.dueDate)}` : `📅 Due ${formatDate(p.dueDate)}`}
+              </div>
+            );
+          })()}
           <div className="progress-bar">
             <div
               className="progress-fill"
@@ -1126,8 +1135,9 @@ export default function Projects() {
         }
       />
 
-      <div className="filter-bar">
+      <div className="filter-bar filter-bar--inline">
         <select
+          aria-label="Filter by category"
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
         >
@@ -1138,6 +1148,9 @@ export default function Projects() {
             </option>
           ))}
         </select>
+        <span className="filter-bar-count" aria-live="polite">
+          {filtered.length} {filtered.length === 1 ? "project" : "projects"}
+        </span>
       </div>
 
       <div className="cards-grid" onClick={(e) => e.stopPropagation()} role="presentation">
