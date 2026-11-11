@@ -685,8 +685,8 @@ export default function ActivityLog() {
           <div className="al-sidebar-section">
             <div className="al-sidebar-label">Date Range</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-              <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="al-date-input" />
-              <input type="date" value={toDate}   onChange={e => setToDate(e.target.value)}   className="al-date-input" />
+              <input type="date" aria-label="From date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="al-date-input" />
+              <input type="date" aria-label="To date" value={toDate}   onChange={e => setToDate(e.target.value)}   className="al-date-input" />
               <button className="btn-primary" style={{ fontSize:"12px", padding:"6px" }}
                 disabled={!fromDate || !toDate} onClick={loadAll}>Apply</button>
               {(fromDate || toDate) && (
@@ -712,7 +712,7 @@ export default function ActivityLog() {
           {viewMode === "flat" && (
             <div className="al-sidebar-section">
               <div className="al-sidebar-label">Group By</div>
-              <select className="al-select" value={groupBy} onChange={e => setGroupBy(e.target.value)}>
+              <select className="al-select" aria-label="Group by" value={groupBy} onChange={e => setGroupBy(e.target.value)}>
                 <option value="date">Date</option>
                 <option value="entity">Entity</option>
                 <option value="user">User</option>
@@ -722,7 +722,7 @@ export default function ActivityLog() {
 
           <div className="al-sidebar-section">
             <div className="al-sidebar-label">Show</div>
-            <select className="al-select" value={limit} onChange={e => setLimit(Number(e.target.value))}>
+            <select className="al-select" aria-label="Number of entries" value={limit} onChange={e => setLimit(Number(e.target.value))}>
               <option value={50}>Last 50</option>
               <option value={100}>Last 100</option>
               <option value={200}>Last 200</option>

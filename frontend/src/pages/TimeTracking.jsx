@@ -236,7 +236,7 @@ export default function TimeTracking() {
         <div>
           {/* Filter */}
           <div className="filter-bar" style={{ marginBottom: "20px" }}>
-            <select value={filterProject} onChange={e => setFilterProject(e.target.value)}
+            <select aria-label="Filter by project" value={filterProject} onChange={e => setFilterProject(e.target.value)}
               style={{ fontSize: "13px" }}>
               <option value="">All Projects</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

@@ -566,7 +566,11 @@ export default function Licensing() {
             <div key={plan.id}
               className={"lic-plan-card"+(active?" lic-plan-card--active":"")}
               style={active?{borderColor:plan.color,boxShadow:`0 0 0 2px ${plan.colorLight},0 8px 32px ${plan.colorLight}`}:{}}
-              onClick={()=>setActivePlan(plan.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setActivePlan(plan.id))?.(e); } }}>
+              // Clicking the card only highlights the plan; its button does the choosing.
+              // Not a keyboard "button" itself (that nested one interactive control inside
+              // another) — keyboard users reach the plan's button, and focusing it
+              // highlights the card the same way a click does.
+              onClick={()=>setActivePlan(plan.id)} onFocus={()=>setActivePlan(plan.id)} role="presentation">
 
               {plan.badge && <div className="lic-plan-badge" style={{background:plan.color}}>{plan.badge}</div>}
 

@@ -123,7 +123,7 @@ export default function DeploymentAnalytics() {
           <button key={d} className={`sprint-filter-btn${days===d?" active":""}`}
             onClick={()=>setDays(d)}>Last {d}d</button>
         ))}
-        <select value={env} onChange={e=>setEnv(e.target.value)} style={{maxWidth:160, paddingRight:"28px"}}>
+        <select aria-label="Filter by environment" value={env} onChange={e=>setEnv(e.target.value)} style={{maxWidth:160, paddingRight:"28px"}}>
           <option value="">All environments</option>
           {["production","staging","beta","development"].map(e=><option key={e}>{e}</option>)}
         </select>

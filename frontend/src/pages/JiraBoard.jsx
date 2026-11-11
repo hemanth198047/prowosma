@@ -1121,32 +1121,32 @@ export default function JiraBoard() {
         </div>
         <div style={{flex:1}}/>
         {/* Sprint selector */}
-        <select className="jb-filter-select" value={filterSprint}
+        <select className="jb-filter-select" aria-label="Filter by sprint" value={filterSprint}
           onChange={e=>setFilterSprint(e.target.value)}>
           <option value="active">Active{activeSprint?` — ${activeSprint.name}`:""}</option>
           {sprints.map(s=><option key={s.id} value={s.id}>{s.name} ({statusText(s.status)})</option>)}
         </select>
         {/* Filters */}
-        <select className="jb-filter-select" value={filterProject}
+        <select className="jb-filter-select" aria-label="Filter by project" value={filterProject}
           onChange={e=>setFilterProject(e.target.value)}>
           <option value="">All projects</option>
           {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <select className="jb-filter-select" value={filterType}
+        <select className="jb-filter-select" aria-label="Filter by type" value={filterType}
           onChange={e=>setFilterType(e.target.value)}>
           <option value="">All types</option>
           {Object.entries(TYPE_META).map(([k,v])=>(
             <option key={k} value={k}>{v.icon} {v.label}</option>
           ))}
         </select>
-        <select className="jb-filter-select" value={filterPri}
+        <select className="jb-filter-select" aria-label="Filter by priority" value={filterPri}
           onChange={e=>setFilterPri(e.target.value)}>
           <option value="">All priorities</option>
           {Object.entries(PRIORITY_META).map(([k,v])=>(
             <option key={k} value={k}>{v.icon} {v.label}</option>
           ))}
         </select>
-        <select className="jb-filter-select" value={filterAssignee}
+        <select className="jb-filter-select" aria-label="Filter by assignee" value={filterAssignee}
           onChange={e=>setFilterAssignee(e.target.value)}>
           <option value="">All assignees</option>
           {members.map(m=><option key={m.id||m.email} value={m.email||m.id}>{m.name||m.email}</option>)}

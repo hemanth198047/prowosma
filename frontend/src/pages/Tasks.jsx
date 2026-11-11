@@ -990,9 +990,11 @@ export default function Tasks() {
           style={{ width: "200px" }}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search tasks"
           placeholder="🔍 Search tasks..."
         />
         <select
+          aria-label="Filter by status"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
@@ -1002,6 +1004,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by priority"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
         >
@@ -1011,6 +1014,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by project"
           value={filterProject}
           onChange={(e) => setFilterProject(e.target.value)}
         >
@@ -1031,6 +1035,7 @@ export default function Tasks() {
             ))}
         </select>
         <select
+          aria-label="Filter by assignee"
           value={filterAssignee}
           onChange={(e) => setFilterAssignee(e.target.value)}
         >
@@ -1041,6 +1046,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by due date"
           value={filterSpecial}
           onChange={(e) => setFilterSpecial(e.target.value)}
         >
