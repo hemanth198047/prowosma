@@ -42,6 +42,23 @@ export default function MeetingPulseCard() {
   const hasAttention = (counts.overdueActionItems || 0) > 0
     || (counts.activeBlockers || 0) > 0 || (counts.atRiskProjects || 0) > 0;
 
+  // Nothing at all to report: one summary line instead of an empty-looking
+  // panel (an empty list, a "0 open actions" chip and a celebration line).
+  const isQuiet = !(pulse.todaysMeetings?.length > 0) && !hasAttention
+    && !(counts.openActionItems > 0) && !(pulse.recentlyCompleted?.length > 0);
+
+  if (isQuiet) {
+    return (
+      <div className="db-card">
+        <div className="db-card-header">
+          <span className="db-card-title"><Calendar size={13} /> DAILY MEETING PULSE</span>
+          <button className="db-link" onClick={() => navigate("/meetings")}>Open meetings →</button>
+        </div>
+        <div style={{ fontSize: "13px", color: "var(--gray-500)" }}>No meetings today · 0 open actions</div>
+      </div>
+    );
+  }
+
   return (
     <div className="db-card">
       <div className="db-card-header">
