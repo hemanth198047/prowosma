@@ -58,7 +58,8 @@ export function ConfirmProvider({ children }) {
       {children}
       {dialog && (
         <div
-          onClick={handleCancel}
+          // Only a click on the backdrop itself cancels; clicks inside the dialog don't.
+          onClick={(e) => { if (e.target === e.currentTarget) handleCancel(); }}
           style={{
             position:       "fixed",
             inset:          0,
@@ -71,7 +72,6 @@ export function ConfirmProvider({ children }) {
           }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (handleCancel)?.(e); } }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
