@@ -323,6 +323,15 @@ export default function Analytics() {
     </div>
   );
 
+  // The API normally always includes these sections; if a response ever
+  // arrives without them, show an empty state instead of crashing the page.
+  if (!data || !data.kpis) return (
+    <div>
+      <PageHeader icon="📊" title="Analytics" description="Operational intelligence — velocity, health scores, capacity planning" />
+      <div className="empty-state">No analytics data yet. It appears once your workspace has projects and tasks.</div>
+    </div>
+  );
+
   const { kpis, velocity, burndown, capacity, projectHealth,
           tasksByStatus, tasksByPriority, completionTrend } = data;
 
