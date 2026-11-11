@@ -66,6 +66,11 @@ public class Workspace {
     private String  templateId;                     // spawned from a workspace template
     private boolean isTemplate = false;             // this workspace IS a template
     private String  templateCategory;               // ENGINEERING | PRODUCT | MARKETING | CUSTOM
+    // Answers from the setup screen ("Which field do you work in?" / "What best describes your
+    // role?"). templateId is chosen from these automatically — see the frontend's
+    // config/workspaceRecommendation.js for the keys (e.g. "media", "finance"; "executive", "team-lead").
+    private String  industry;
+    private String  userRole;
 
     // ── Language / Locale ──────────────────────────────────────
     private String  language   = "en";              // BCP47 e.g. "en", "fr", "de", "ja"

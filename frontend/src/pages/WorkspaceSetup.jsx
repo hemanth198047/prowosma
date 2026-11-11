@@ -4,6 +4,9 @@ import {
   createWorkspace, deleteWorkspace, getMyWorkspaces,
 } from "../api/workspaces";
 import { useAuth } from "../hooks/useAuth";
+import {
+  INDUSTRIES, ROLES, recommendTemplate, suggestedDescription, industryByKey, roleByKey,
+} from "../config/workspaceRecommendation";
 
 import "../styles/pages/workspace.css";
 const TIMEZONES = [
@@ -12,71 +15,6 @@ const TIMEZONES = [
   "Asia/Singapore","Australia/Sydney",
 ];
 const AVATARS = ["🚀","💼","🏢","⚡","🎯","🔮","🌟","🦁"];
-
-/* ─── Workspace templates (from feedback: reduce overwhelming complexity) ─── */
-const TEMPLATES = [
-  {
-    id: "software-delivery",
-    name: "Software Delivery",
-    icon: "💻",
-    desc: "Built for engineering teams shipping products — sprints, DORA, deployments, goals.",
-    tags: ["Sprints","Tasks","DORA Metrics","Goals","Kanban","Deployments"],
-    color:"#3732A8",
-    defaultPages: ["/","tasks","sprints","kanban","goals","deployments"],
-    settings: { dateFormat:"DD/MM/YYYY", defaultTaskStatus:"TODO",
-      enableSprints:true, enableDORA:true, enableKanban:true },
-  },
-  {
-    id: "pmo",
-    name: "PMO / Portfolio",
-    icon: "📊",
-    desc: "Programme management office — portfolio views, RAID, KPIs, ROI, executive reporting.",
-    tags: ["Portfolio","RAID","KPIs","ROI Engine","Roadmap","Reports"],
-    color: "#0891b2",
-    defaultPages: ["/","portfolio","roadmap","kpis","roi","reports"],
-    settings: { dateFormat:"DD/MM/YYYY", enableRisk:true, enableROI:true, enablePortfolio:true },
-  },
-  {
-    id: "enterprise-transformation",
-    name: "Enterprise Transformation",
-    icon: "🏗",
-    desc: "Large-scale change programmes — initiatives, milestones, decisions, BPM, automations.",
-    tags: ["Initiatives","Roadmap","Decisions","BPM","Automations","Channels"],
-    color:"#7C5CBF",
-    defaultPages: ["/","roadmap","decisions","automations","channels","bpm"],
-    settings: { dateFormat:"DD/MM/YYYY", enableBPM:true, enableAutomations:true },
-  },
-  {
-    id: "agile-product",
-    name: "Agile Product Team",
-    icon: "🎯",
-    desc: "Product squads with OKRs, epics, sprints, kanban, and continuous delivery.",
-    tags: ["OKRs","Epics","Sprints","Kanban","Backlog","Analytics"],
-    color:"#1E8E5A",
-    defaultPages: ["/","goals","epics","sprints","kanban","analytics"],
-    settings: { dateFormat:"DD/MM/YYYY", enableEpics:true, enableOKR:true, enableKanban:true },
-  },
-  {
-    id: "knowledge-hub",
-    name: "Knowledge & Docs Hub",
-    icon: "📚",
-    desc: "Documentation-first team — docs, SOPs, decisions, meetings, knowledge graph.",
-    tags: ["Docs","SOPs","Decisions","Meetings","Knowledge Graph","Search"],
-    color:"#C17D22",
-    defaultPages: ["/","docs","decisions","meetings","sops","knowledge-graph"],
-    settings: { dateFormat:"DD/MM/YYYY", enableDocs:true, enableSOPs:true },
-  },
-  {
-    id: "blank",
-    name: "Blank Workspace",
-    icon: "⬜",
-    desc: "Start from scratch and configure everything yourself.",
-    tags: [],
-    color:"#64748b",
-    defaultPages: ["/"],
-    settings: {},
-  },
-];
 
 export default function WorkspaceSetup() {
   const { activeWorkspace, setActiveWorkspace } = useAuth();
@@ -94,6 +32,10 @@ export default function WorkspaceSetup() {
   const [logoBase64,     setLogoBase64]     = useState(null);
   const [workspaces,     setWorkspaces]     = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  // Step 1 answers — the template is derived from these, never picked by hand.
+  const [industry, setIndustry] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const recommendation = industry && userRole ? recommendTemplate(industry, userRole) : null;
 
   const EMPTY = { name:"", timezone:"Asia/Kolkata", avatar:"🚀",
     logoUrl:"", dateFormat:"DD/MM/YYYY", description:"", template:"" };
@@ -135,10 +77,21 @@ export default function WorkspaceSetup() {
     reader.readAsDataURL(file);
   };
 
-  const pickTemplate = (tpl) => {
+  const resetAnswers = () => { setIndustry(""); setUserRole(""); setSelectedTemplate(null); };
+
+  // Applies the template recommended for the person's field + role and moves on to details.
+  const continueWithAnswers = () => {
+    if (!recommendation) return;
+    const tpl = recommendation.template;
     setSelectedTemplate(tpl);
     set("template", tpl.id);
     if (tpl.settings?.dateFormat) set("dateFormat", tpl.settings.dateFormat);
+    // Pre-fill a description only if the person hasn't typed one (or it is still our earlier suggestion).
+    setForm(p => {
+      const previousSuggestions = INDUSTRIES.map(i => suggestedDescription(i.key)).filter(Boolean);
+      const untouched = !p.description || previousSuggestions.includes(p.description);
+      return untouched ? { ...p, description: suggestedDescription(industry) } : p;
+    });
     setStep(2);
   };
 
@@ -154,6 +107,8 @@ export default function WorkspaceSetup() {
         dateFormat: form.dateFormat,
         description: form.description,
         templateId: selectedTemplate?.id || "blank",
+        industry: industry || null,
+        userRole: userRole || null,
       };
       const r = await createWorkspace(payload);
       // Was unwrapList(r) — POST /workspaces returns the created Workspace
@@ -246,43 +201,84 @@ export default function WorkspaceSetup() {
             </div>
 
             <button className="ws-btn-primary" style={{width:"100%"}}
-              onClick={()=>{ setMode("create"); setStep(1); setForm(EMPTY); setSelectedTemplate(null); }}>
+              onClick={()=>{ setMode("create"); setStep(1); setForm(EMPTY); resetAnswers(); }}>
               + Create new workspace
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Mode: Create — Step 1: Choose template ─────────── */}
+      {/* ── Mode: Create — Step 1: About you (field + role) ─── */}
+      {/* People found "choose a template" confusing, so we ask two plain questions and pick the
+          template for them (see config/workspaceRecommendation.js). */}
       {mode === "create" && step === 1 && (
         <div className="ws-center ws-center-wide">
           <div className="ws-templates-page">
-            <div style={{textAlign:"center",marginBottom:32}}>
-              <h1 className="ws-title" style={{fontSize:28}}>Choose a workspace template</h1>
-              <p className="ws-sub">Templates pre-configure navigation, features, and defaults for your use case.</p>
+            <div style={{textAlign:"center",marginBottom:28}}>
+              <h1 className="ws-title" style={{fontSize:28}}>Tell us a little about your work</h1>
+              <p className="ws-sub">Answer two quick questions and we&apos;ll set up the workspace for you.</p>
             </div>
 
-          <div className="ws-templates-grid">
-            {TEMPLATES.map(tpl => (
-              <button key={tpl.id} className="ws-template-card"
-                style={selectedTemplate?.id===tpl.id?{borderColor:tpl.color,
-                  boxShadow:`0 0 0 2px ${tpl.color}22`}:{}}
-                onClick={()=>pickTemplate(tpl)}>
-                <div className="ws-tpl-icon" style={{background:`${tpl.color}18`,color:tpl.color}}>
-                  {tpl.icon}
+            <section className="ws-question" aria-labelledby="ws-q-industry">
+              <h2 className="ws-question-title" id="ws-q-industry">
+                <span className="ws-question-num">1</span> Which field do you work in?
+              </h2>
+              <div className="ws-choice-grid" role="radiogroup" aria-labelledby="ws-q-industry">
+                {INDUSTRIES.map(opt => (
+                  <button key={opt.key} type="button" role="radio" aria-checked={industry===opt.key}
+                    className={"ws-choice-card"+(industry===opt.key?" active":"")}
+                    onClick={()=>setIndustry(opt.key)}>
+                    <span className="ws-choice-icon" aria-hidden="true">{opt.icon}</span>
+                    <span className="ws-choice-text">
+                      <span className="ws-choice-label">{opt.label}</span>
+                      <span className="ws-choice-hint">{opt.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="ws-question" aria-labelledby="ws-q-role">
+              <h2 className="ws-question-title" id="ws-q-role">
+                <span className="ws-question-num">2</span> What best describes your role?
+              </h2>
+              <div className="ws-choice-grid" role="radiogroup" aria-labelledby="ws-q-role">
+                {ROLES.map(opt => (
+                  <button key={opt.key} type="button" role="radio" aria-checked={userRole===opt.key}
+                    className={"ws-choice-card"+(userRole===opt.key?" active":"")}
+                    onClick={()=>setUserRole(opt.key)}>
+                    <span className="ws-choice-icon" aria-hidden="true">{opt.icon}</span>
+                    <span className="ws-choice-text">
+                      <span className="ws-choice-label">{opt.label}</span>
+                      <span className="ws-choice-hint">{opt.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <div className="ws-recommend" aria-live="polite">
+              {recommendation ? (
+                <div className="ws-recommend-box" data-testid="ws-recommendation">
+                  <span className="ws-tpl-icon" aria-hidden="true"
+                    style={{background:`${recommendation.template.color}18`,color:recommendation.template.color}}>
+                    {recommendation.template.icon}
+                  </span>
+                  <span className="ws-recommend-text">
+                    <strong>We&apos;ll set you up with: {recommendation.template.name}</strong>
+                    <span>{recommendation.reason}</span>
+                  </span>
                 </div>
-                <div className="ws-tpl-name">{tpl.name}</div>
-                <div className="ws-tpl-desc">{tpl.desc}</div>
-                {tpl.tags.length > 0 && (
-                  <div className="ws-tpl-tags">
-                    {tpl.tags.slice(0,4).map(tag=>(
-                      <span key={tag} className="ws-tpl-tag">{tag}</span>
-                    ))}
-                  </div>
-                )}
+              ) : (
+                <p className="ws-sub" style={{textAlign:"center"}}>
+                  {industry ? "Now pick your role." : "Pick your field to get started."}
+                </p>
+              )}
+              <button className="ws-btn-primary ws-recommend-btn" type="button"
+                disabled={!recommendation} onClick={continueWithAnswers}>
+                Continue →
               </button>
-            ))}
-          </div>
+            </div>
           </div>
         </div>
       )}
@@ -294,10 +290,13 @@ export default function WorkspaceSetup() {
             {selectedTemplate && (
               <div className="ws-tpl-pill">
                 <span>{selectedTemplate.icon}</span>
-                <span>{selectedTemplate.name} template selected</span>
+                <span>
+                  Set up for {industryByKey(industry)?.label || "your field"}
+                  {roleByKey(userRole) ? ` · ${roleByKey(userRole).label}` : ""}
+                </span>
                 <button onClick={()=>setStep(1)} style={{background:"none",border:"none",
                   cursor:"pointer",color:"inherit",fontSize:11,marginLeft:"auto"}}>
-                  Change
+                  Change answers
                 </button>
               </div>
             )}
@@ -410,7 +409,7 @@ export default function WorkspaceSetup() {
             <h2 className="ws-title">Workspace ready!</h2>
             <p className="ws-sub" style={{margin:"8px 0 24px"}}>
               Your workspace has been created
-              {selectedTemplate && ` with the ${selectedTemplate.name} template`}.
+              {selectedTemplate && ` and set up for ${industryByKey(industry)?.label || "your team"}`}.
             </p>
             <button className="ws-btn-primary" style={{width:"100%",fontSize:15}}
               onClick={()=>navigate("/")}>

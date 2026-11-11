@@ -188,3 +188,59 @@
 .ws-tpl-pill { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
   color:var(--brand-500); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2);
   border-radius: var(--radius-full); padding:5px 12px; }
+/* ── Setup step 1: "about your work" questions (replaces the template picker) ── */
+.ws-question { width:100%; margin-bottom:24px; }
+.ws-question-title {
+  display:flex; align-items:center; gap:10px;
+  font-size:16px; font-weight:800; color:var(--gray-900); margin:0 0 12px;
+}
+[data-theme="dark"] .ws-question-title { color:rgba(255,255,255,0.92); }
+.ws-question-num {
+  width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:12px; background:var(--brand-500, #6366f1); color:#fff;
+}
+.ws-choice-grid {
+  display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; width:100%;
+}
+.ws-choice-card {
+  display:flex; align-items:center; gap:12px; text-align:left;
+  padding:12px 14px; min-width:0; width:100%; box-sizing:border-box;
+  background:#fff; border:1.5px solid var(--border); border-radius:12px;
+  cursor:pointer; transition:border-color .15s, box-shadow .15s; font:inherit; color:inherit;
+}
+[data-theme="dark"] .ws-choice-card { background:var(--bg-card); border-color:rgba(255,255,255,0.08); }
+.ws-choice-card:hover { border-color:var(--brand-500, #6366f1); }
+.ws-choice-card:focus-visible { outline:2px solid var(--brand-500, #6366f1); outline-offset:2px; }
+.ws-choice-card.active {
+  border-color:var(--brand-500, #6366f1);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-500, #6366f1) 18%, transparent);
+}
+.ws-choice-icon { font-size:22px; flex-shrink:0; }
+.ws-choice-text { display:flex; flex-direction:column; min-width:0; white-space:normal; }
+.ws-choice-label { font-size:13.5px; font-weight:700; color:var(--gray-900); overflow-wrap:anywhere; }
+[data-theme="dark"] .ws-choice-label { color:rgba(255,255,255,0.92); }
+.ws-choice-hint { font-size:11.5px; color:var(--gray-500); line-height:1.4; overflow-wrap:anywhere; }
+
+.ws-recommend {
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  width:100%; margin-top:8px; padding-bottom:24px;
+}
+.ws-recommend-box {
+  display:flex; align-items:center; gap:14px; width:100%; max-width:560px; box-sizing:border-box;
+  padding:14px 16px; border-radius:14px; border:1.5px solid var(--brand-500, #6366f1);
+  background:color-mix(in srgb, var(--brand-500, #6366f1) 6%, transparent);
+}
+.ws-recommend-box .ws-tpl-icon { margin-bottom:0; width:44px; height:44px; font-size:22px; }
+.ws-recommend-text { display:flex; flex-direction:column; gap:2px; font-size:13px; color:var(--gray-600); min-width:0; }
+.ws-recommend-text strong { font-size:14px; color:var(--gray-900); }
+[data-theme="dark"] .ws-recommend-text { color:rgba(255,255,255,0.7); }
+[data-theme="dark"] .ws-recommend-text strong { color:rgba(255,255,255,0.95); }
+.ws-recommend-btn { min-width:220px; }
+.ws-recommend-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+@media (max-width: 860px) { .ws-choice-grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+@media (max-width: 520px) {
+  .ws-choice-grid { grid-template-columns:minmax(0,1fr); }
+  .ws-recommend-btn { width:100%; min-width:0; }
+}
