@@ -322,6 +322,16 @@ select {
     border-color 0.15s,
     box-shadow 0.15s;
 }
+/* Checkboxes and radios keep their natural size: the full-width rule above
+   stretched them across the row and shoved their label to the far edge
+   (Admin Centre policies, DLP, email TLS, white-label…). :where() keeps this
+   at the same weight as `input`, so any component's own sizing still wins. */
+input:where([type="checkbox"], [type="radio"]) {
+  width: auto;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--brand-500);
+}
 input:focus,
 textarea:focus,
 select:focus {

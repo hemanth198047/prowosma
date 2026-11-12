@@ -1,0 +1,182 @@
+/* ==========================================================================
+   Settings pages — Studio + Atlas (Workspace Settings, Admin Centre)
+   One look for every section: a flat card with a title, a 880px reading
+   width, a grouped side menu with line icons.
+   ========================================================================== */
+
+.ws-settings-layout {
+  grid-template-columns: 220px minmax(0, 880px);
+  gap: 28px;
+  min-height: 0;
+}
+
+/* Side menu */
+.ws-settings-nav {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  top: 0;
+}
+.ws-nav-group {
+  padding: 14px 10px 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ws-nav-entry:first-child .ws-nav-group { padding-top: 0; }
+.ws-settings-nav-item {
+  height: 34px;
+  padding: 0 10px !important;
+  margin-bottom: 1px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13.5px !important;
+}
+.ws-settings-nav-item:hover { background: var(--bg-card, #fff); color: var(--text-primary); }
+.ws-settings-nav-item:active:not(:disabled) { transform: none; }
+.ws-settings-nav-item.active { background: var(--brand-50); color: var(--brand-700); }
+.ws-settings-nav-item .ws-nav-icon { color: var(--text-muted); font-size: inherit; }
+.ws-settings-nav-item.active .ws-nav-icon { color: var(--brand-500); }
+.ws-settings-nav-item.danger, .ws-settings-nav-item.danger .ws-nav-icon { color: var(--danger-text); }
+.ws-settings-nav-item.danger:hover, .ws-settings-nav-item.danger.active { background: var(--danger-soft); }
+
+/* Every section is the same flat card (two wrappers existed: one card, one bare) */
+.settings-section,
+.ws-settings-section {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+.settings-section-title,
+.ws-settings-section-title {
+  margin: 0 0 16px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.settings-section-subtitle { color: var(--text-secondary); font-size: 12px; }
+.ws-settings-section .form-row { gap: 16px; }
+
+/* Messages */
+.settings-success-banner,
+.settings-error-banner {
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+.settings-success-banner { background: var(--success-soft); color: var(--success-text); border: 1px solid #BFE6CF; }
+.settings-error-banner { background: var(--danger-soft); color: var(--danger-text); border: 1px solid #F5C2BC; }
+
+/* "Create another workspace" */
+.ws-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 18px 24px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.ws-callout-title { font-weight: 700; font-size: 14px; color: var(--text-primary); margin-bottom: 2px; }
+
+/* Usage tiles: one quiet style, no coloured stripes */
+.usage-stats-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.usage-stat-card { box-shadow: none; border-radius: var(--radius-lg); padding: 14px 16px; gap: 12px; }
+.usage-stat-card:hover { box-shadow: none; border-color: var(--border-strong); }
+.usage-stat-icon { color: var(--brand-500); width: 34px; height: 34px; padding: 8px; box-sizing: border-box; background: var(--brand-50); border-radius: var(--radius-md); }
+.usage-stat-value { font-size: 22px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.usage-stat-label { color: var(--text-secondary); }
+
+/* Logo placeholder */
+.settings-logo-placeholder { color: var(--text-muted); }
+
+/* Permission chips stay usable by keyboard */
+.ws-perm-chip:focus-within { outline: 2px solid var(--brand-500); outline-offset: 1px; }
+
+/* Dark */
+[data-theme="dark"] .settings-section,
+[data-theme="dark"] .ws-settings-section,
+[data-theme="dark"] .ws-callout,
+[data-theme="dark"] .usage-stat-card { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .settings-section-title,
+[data-theme="dark"] .ws-settings-section-title { border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .ws-settings-nav { background: transparent; border: 0; }
+[data-theme="dark"] .ws-settings-nav-item:hover { background: rgba(255,255,255,0.05); }
+[data-theme="dark"] .ws-settings-nav-item.active { background: rgba(124,128,255,0.16); color: #fff; }
+[data-theme="dark"] .usage-stat-icon { background: rgba(124,128,255,0.16); color: #C7C8F5; }
+[data-theme="dark"] .settings-success-banner { background: rgba(110,231,168,0.1); border-color: rgba(110,231,168,0.25); }
+[data-theme="dark"] .settings-error-banner { background: rgba(252,165,165,0.1); border-color: rgba(252,165,165,0.25); }
+
+/* Narrow: the menu becomes a wrapping row of chips above the content */
+@media (max-width: 900px) {
+  .ws-settings-layout { grid-template-columns: 1fr; gap: 16px; }
+  .ws-settings-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+  .ws-nav-entry { display: contents; }
+  .ws-nav-group { display: none; }
+  .ws-settings-nav-item { width: auto; border: 1px solid var(--border); background: var(--bg-card, #fff); }
+}
+
+/* ── Admin Centre panels: same card language as Workspace Settings ──────── */
+.admin-content .admin-section { display: flex; flex-direction: column; gap: 16px; }
+.admin-content .admin-card {
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: none;
+}
+.admin-content .admin-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+.admin-content .admin-stat-grid { gap: 12px; }
+.admin-content .admin-stat-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "icon num" "icon label";
+  align-items: center;
+  column-gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+}
+.admin-content .admin-stat-icon {
+  grid-area: icon;
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; margin: 0;
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+}
+.admin-content .admin-stat-num { grid-area: num; font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; font-variant-numeric: tabular-nums; }
+.admin-content .admin-stat-label { grid-area: label; font-size: 12px; color: var(--text-secondary); }
+.admin-content .admin-toggle-label { font-weight: 500; color: var(--text-primary); }
+
+/* Region / plan cards are <button>s: undo the global inline-flex + nowrap */
+.admin-content button.admin-plan-card {
+  display: block;
+  white-space: normal;
+  padding: 14px 16px !important;
+  min-height: 0;
+  border-radius: var(--radius-lg);
+}
+.admin-content button.admin-plan-card:active:not(:disabled) { transform: none; }
+.admin-content .admin-plan-card.current { border-color: var(--brand-500); box-shadow: 0 0 0 1px var(--brand-500) inset; }
+
+[data-theme="dark"] .admin-content .admin-card,
+[data-theme="dark"] .admin-content .admin-stat-card { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .admin-content .admin-stat-icon { background: rgba(255,255,255,0.05); }

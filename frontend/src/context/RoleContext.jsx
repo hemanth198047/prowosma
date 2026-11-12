@@ -8,12 +8,20 @@ export function RoleProvider({ children }) {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resolutionError, setResolutionError] = useState(false);
+  // Which user+workspace the current role belongs to. Right after sign-in
+  // finishes there is one render where user/workspace are known but the
+  // effect below hasn't run yet; without this, `loading` read false there
+  // and admin-only routes (/admin, /access-control) bounced an admin who
+  // opened them directly (or refreshed) to the Dashboard.
+  const key = user && activeWorkspace ? `${user.email}|${activeWorkspace.id}|${activeWorkspace.ownerEmail}` : null;
+  const [resolvedFor, setResolvedFor] = useState(null);
 
   useEffect(() => {
     const resolveRole = async () => {
       setResolutionError(false);
       if (!user || !activeWorkspace) {
         setRole(null);
+        setResolvedFor(null);
         setLoading(false);
         return;
       }
@@ -21,6 +29,7 @@ export function RoleProvider({ children }) {
       // OWNER: this workspace was created by this user
       if (activeWorkspace.ownerEmail === user.email) {
         setRole("OWNER");
+        setResolvedFor(key);
         setLoading(false);
         return;
       }
@@ -49,6 +58,7 @@ export function RoleProvider({ children }) {
         setRole(null);
         setResolutionError(true);
       } finally {
+        setResolvedFor(key);
         setLoading(false);
       }
     };
@@ -78,7 +88,7 @@ export function RoleProvider({ children }) {
 
   return (
     <RoleContext.Provider value={{
-      role, loading, resolutionError, resolved,
+      role, loading: loading || (key !== null && resolvedFor !== key), resolutionError, resolved,
       isOwner, isAdmin,
       canCreate, canEdit, canDelete, canView,
       canManageSettings, canManageMembers,

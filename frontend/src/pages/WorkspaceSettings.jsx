@@ -11,6 +11,13 @@ import PageHeader from "../components/PageHeader";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 import "../styles/pages/workspace.css";
+import "../styles/pages/settings-v2.css";
+import { statusText } from "../utils/statusText";
+import {
+  Building2, Bell, Globe, CalendarDays, Users, UsersRound, KeyRound, Network, LayoutTemplate,
+  Link2, BarChart3, Plus, AlertTriangle, FolderKanban, SquareCheckBig, Target, HardDrive, History,
+  Code2, BriefcaseBusiness, Layers, BookOpen, Square, Trash2,
+} from "lucide-react";
 import { apiErrorMessage } from "../utils/apiError";
 const DATE_FORMATS = ["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","DD-MM-YYYY","MMM DD, YYYY"];
 
@@ -281,20 +288,21 @@ export default function WorkspaceSettings() {
     );
   }
 
+  // Grouped so the list reads as "this workspace / who can do what / data / other"
   const navItems = [
-    { key: "general",      label: "General",        icon: "🏢" },
-    { key: "preferences",  label: "Preferences",    icon: "🔔" },
-    { key: "locale",       label: "Language",       icon: "🌐" },
-    { key: "calendar",     label: "Business Calendar", icon: "📅" },
-    { key: "members",      label: "Members",        icon: "👥" },
-    { key: "groups",       label: "User Groups",    icon: "👤" },
-    { key: "permissions",  label: "Permissions",    icon: "🔐" },
-    { key: "hierarchy",    label: "Org Hierarchy",  icon: "🏗" },
-    { key: "templates",    label: "WS Templates",   icon: "📋" },
-    { key: "crossaccess",  label: "Cross-Access",   icon: "🔗" },
-    { key: "usage",        label: "Usage & Stats",  icon: "📊" },
-      { key: "new-workspace", label: "New Workspace", icon: "➕" },
-    ...(isOwner ? [{ key: "danger", label: "Danger Zone", icon: "⚠️", danger: true }] : []),
+    { key: "general",      label: "General",           icon: Building2,     group: "Workspace" },
+    { key: "preferences",  label: "Preferences",       icon: Bell,          group: "Workspace" },
+    { key: "locale",       label: "Language",          icon: Globe,         group: "Workspace" },
+    { key: "calendar",     label: "Business calendar", icon: CalendarDays,  group: "Workspace" },
+    { key: "members",      label: "Members",           icon: Users,         group: "People & access" },
+    { key: "groups",       label: "User groups",       icon: UsersRound,    group: "People & access" },
+    { key: "permissions",  label: "Permissions",       icon: KeyRound,      group: "People & access" },
+    { key: "hierarchy",    label: "Org hierarchy",     icon: Network,       group: "People & access" },
+    { key: "crossaccess",  label: "Cross-access",      icon: Link2,         group: "People & access" },
+    { key: "templates",    label: "Templates",         icon: LayoutTemplate, group: "Data" },
+    { key: "usage",        label: "Usage & stats",     icon: BarChart3,     group: "Data" },
+    { key: "new-workspace", label: "New workspace",    icon: Plus,          group: "More" },
+    ...(isOwner ? [{ key: "danger", label: "Danger zone", icon: AlertTriangle, danger: true, group: "More" }] : []),
   ];
 
   return (
@@ -319,10 +327,12 @@ export default function WorkspaceSettings() {
       <div className="ws-settings-layout">
 
         {/* Left nav */}
-        <div className="ws-settings-nav">
-          {navItems.map((item) => (
+        <nav className="ws-settings-nav" aria-label="Settings sections">
+          {navItems.map((item, i) => (
+            <div key={item.key} className="ws-nav-entry">
+            {(i === 0 || navItems[i - 1].group !== item.group) && <div className="ws-nav-group">{item.group}</div>}
             <button
-              key={item.key}
+              aria-current={activeNav === item.key ? "page" : undefined}
               className={"ws-settings-nav-item" +
                 (activeNav === item.key ? " active" : "") +
                 (item.danger ? " danger" : "")}
@@ -342,11 +352,12 @@ export default function WorkspaceSettings() {
                 }
               }}
             >
-              <span className="ws-nav-icon">{item.icon}</span>
+              <item.icon className="ws-nav-icon" size={16} strokeWidth={1.75} aria-hidden="true" />
               {item.label}
             </button>
+            </div>
           ))}
-        </div>
+        </nav>
 
         {/* Right content */}
         <div className="ws-settings-content">
@@ -398,7 +409,7 @@ export default function WorkspaceSettings() {
                       {logoPreview
                         ? <img src={logoPreview} alt="Workspace logo" className="settings-logo-img" onError={() => setLogoPreview(null)} />
                         : <div className="settings-logo-placeholder">
-                            <div style={{ fontSize: "36px" }}>🏢</div>
+                            <Building2 size={32} strokeWidth={1.5} aria-hidden="true" />
                             <span style={{ fontSize: "11px", color: "var(--gray-400)", marginTop: "6px" }}>No logo</span>
                           </div>
                       }
@@ -407,9 +418,9 @@ export default function WorkspaceSettings() {
                   </div>
                 </div>
               </div>
-            <div style={{marginTop:20,padding:"20px 24px",background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.18)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+            <div className="ws-callout">
               <div>
-                <div style={{fontWeight:800,fontSize:14,color:"var(--gray-800)",marginBottom:4}}>Create another workspace</div>
+                <div className="ws-callout-title">Create another workspace</div>
                 <div style={{fontSize:12,color:"var(--gray-500)",lineHeight:1.5}}>Set up a workspace for a different team or project.</div>
               </div>
               <button className="btn-primary" style={{flexShrink:0,padding:"9px 20px",fontSize:13}} onClick={()=>navigate("/workspace-setup")}>+ New workspace</button>
@@ -432,14 +443,18 @@ export default function WorkspaceSettings() {
                   <option value="APAC">Asia-Pacific</option>
                 </select>
               </div>
-              {residency && (
+              {residency?.message && (
                 <div style={{
+                  display: "flex", alignItems: "flex-start", gap: 8,
                   marginTop: 8, padding: "12px 14px", borderRadius: 10, fontSize: 12.5, lineHeight: 1.5,
                   background: residency.matches ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)",
                   border: `1px solid ${residency.matches ? "rgba(16,185,129,.25)" : "rgba(239,68,68,.25)"}`,
                   color: residency.matches ? "#047857" : "#b91c1c",
                 }}>
-                  {residency.matches ? "✅ " : "⚠️ "}{residency.message}
+                  {residency.matches
+                    ? <SquareCheckBig size={15} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
+                    : <AlertTriangle size={15} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />}
+                  <span>{residency.message}</span>
                 </div>
               )}
             </div>
@@ -664,17 +679,17 @@ export default function WorkspaceSettings() {
                 <div>
                   <div className="usage-stats-grid">
                     {[
-                      { label: "Projects",        value: stats.projects,  icon: "📁", color: "var(--brand-500)" },
-                      { label: "Tasks",           value: stats.tasks,     icon: "✅", color: "var(--success)" },
-                      { label: "Goals",           value: stats.goals,     icon: "🎯", color: "var(--warning)" },
-                      { label: "Members",         value: stats.members,   icon: "👥", color: "#3b82f6" },
-                      { label: "Storage",         value: (stats.storageMB ?? 0) + " MB", icon: "💾", color: "var(--purple)" },
-                      { label: "Activities (30d)", value: stats.activityTrend?.reduce((s, d) => s + d.activity, 0), icon: "📋", color: "#ec4899" },
+                      { label: "Projects",        value: stats.projects,  icon: FolderKanban },
+                      { label: "Tasks",           value: stats.tasks,     icon: SquareCheckBig },
+                      { label: "Goals",           value: stats.goals,     icon: Target },
+                      { label: "Members",         value: stats.members,   icon: Users },
+                      { label: "Storage",         value: (stats.storageMB ?? 0) + " MB", icon: HardDrive },
+                      { label: "Activities (30d)", value: stats.activityTrend?.reduce((s, d) => s + d.activity, 0), icon: History },
                     ].map((s) => (
-                      <div key={s.label} className="usage-stat-card" style={{ borderLeft: "4px solid " + s.color }}>
-                        <div className="usage-stat-icon">{s.icon}</div>
+                      <div key={s.label} className="usage-stat-card">
+                        <s.icon className="usage-stat-icon" size={18} aria-hidden="true" />
                         <div>
-                          <div className="usage-stat-value" style={{ color: s.color }}>{s.value}</div>
+                          <div className="usage-stat-value">{s.value ?? 0}</div>
                           <div className="usage-stat-label">{s.label}</div>
                         </div>
                       </div>
@@ -725,7 +740,7 @@ export default function WorkspaceSettings() {
           {/* ── DANGER ZONE (OWNER only) ── */}
           {activeNav === "new-workspace" && (
             <div className="settings-section">
-              <div className="settings-section-title">➕ Create New Workspace</div>
+              <div className="settings-section-title">Create a new workspace</div>
               <p style={{fontSize:14,color:"var(--gray-500)",marginBottom:20,lineHeight:1.6}}>
                 Create a new workspace for a different team, department, or project.
                 Each workspace is completely separate with its own members, projects, and settings.
@@ -743,12 +758,12 @@ export default function WorkspaceSettings() {
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                   {[
-                    {icon:"💻",name:"Software Delivery",desc:"Sprints, DORA, Kanban"},
-                    {icon:"📊",name:"PMO / Portfolio",  desc:"RAID, KPIs, ROI Engine"},
-                    {icon:"🏗",name:"Enterprise",        desc:"BPM, Roadmap, Decisions"},
-                    {icon:"🎯",name:"Agile Product",     desc:"OKRs, Epics, Backlog"},
-                    {icon:"📚",name:"Knowledge Hub",     desc:"Docs, SOPs, Meetings"},
-                    {icon:"⬜",name:"Blank",             desc:"Start from scratch"},
+                    {icon:Code2,name:"Software Delivery",desc:"Sprints, DORA, Kanban"},
+                    {icon:BriefcaseBusiness,name:"PMO / Portfolio",  desc:"RAID, KPIs, ROI Engine"},
+                    {icon:Network,name:"Enterprise",        desc:"BPM, Roadmap, Decisions"},
+                    {icon:Target,name:"Agile Product",     desc:"OKRs, Epics, Backlog"},
+                    {icon:BookOpen,name:"Knowledge Hub",     desc:"Docs, SOPs, Meetings"},
+                    {icon:Square,name:"Blank",             desc:"Start from scratch"},
                   ].map(t => (
                     <div key={t.name}
                       style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
@@ -757,7 +772,7 @@ export default function WorkspaceSettings() {
                       onClick={() => navigate("/workspace-setup")}
                       onMouseEnter={e=>e.currentTarget.style.borderColor="var(--brand-500)"}
                       onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate("/workspace-setup"))?.(e); } }}>
-                      <span style={{fontSize:20}}>{t.icon}</span>
+                      <t.icon size={18} aria-hidden="true" style={{color:"var(--brand-500)",flexShrink:0}} />
                       <div>
                         <div style={{fontSize:12,fontWeight:700,color:"var(--gray-800)"}}>{t.name}</div>
                         <div style={{fontSize:11,color:"var(--gray-400)"}}>{t.desc}</div>
@@ -962,14 +977,14 @@ export default function WorkspaceSettings() {
                     <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"6px"}}>
                       {(g.permissions||[]).map(p=>(
                         <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"1px 7px",
-                          borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{p}</span>
+                          borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{statusText(p)}</span>
                       ))}
                     </div>
                   </div>
                   <button className="btn-icon" onClick={async()=>{
                     await client.delete(`/workspace/groups/${g.id}`);
                     setGroups(prev=>prev.filter(x=>x.id!==g.id));
-                  }}>🗑️</button>
+                  }} aria-label={`Delete group ${g.name}`} title="Delete group"><Trash2 size={15} aria-hidden="true" /></button>
                 </div>
               ))}
               <div style={{background:"var(--gray-50)",border:"1px solid var(--border)",borderRadius:"var(--radius-md)",padding:"14px",marginTop:"12px"}}>
@@ -991,15 +1006,15 @@ export default function WorkspaceSettings() {
                   <span className="field-label">Permissions</span>
                   <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
                     {["VIEW_ALL","CREATE_TASK","EDIT_ALL","DELETE_TASK","CREATE_PROJECT","MANAGE_TEAM","MANAGE_GOALS","CREATE_DOC","VIEW_ANALYTICS","MANAGE_AUTOMATION"].map(p=>(
-                      <label key={p} style={{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer",
+                      <label key={p} className="ws-perm-chip" style={{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer",
                         padding:"3px 10px",borderRadius:"99px",fontSize:"11px",fontWeight:600,
                         border:"1px solid var(--border)",
                         background:groupForm.permissions.includes(p)?"rgba(99,102,241,.1)":"var(--bg-card)",
                         color:groupForm.permissions.includes(p)?"var(--brand-500)":"var(--gray-600)"}}>
-                        <input type="checkbox" style={{display:"none"}} checked={groupForm.permissions.includes(p)}
+                        <input type="checkbox" className="sr-only" checked={groupForm.permissions.includes(p)}
                           onChange={()=>setGroupForm(f=>({...f,permissions:f.permissions.includes(p)
                             ?f.permissions.filter(x=>x!==p):[...f.permissions,p]}))} />
-                        {p}
+                        {statusText(p)}
                       </label>
                     ))}
                   </div>
@@ -1055,24 +1070,24 @@ export default function WorkspaceSettings() {
                     <div key={role} style={{display:"flex",gap:"12px",alignItems:"flex-start",
                       padding:"10px 12px",background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",marginBottom:"6px"}}>
-                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"var(--brand-500)"}}>{role === "OWNER" ? "MANAGER" : role}</div>
+                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"var(--brand-500)"}}>{statusText(role === "OWNER" ? "MANAGER" : role)}</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
                         {(Array.isArray(perms)?perms:["ALL"]).map(p=>(
                           <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"2px 7px",
-                            borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{p}</span>
+                            borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{statusText(p)}</span>
                         ))}
                       </div>
                     </div>
                   ))}
                   <div style={{fontWeight:700,fontSize:"13px",marginTop:"16px",marginBottom:"10px"}}>Inheritance Rules</div>
                   {[["OWNER","→","All permissions including delete workspace"],
-                    ["ADMIN","→","Inherits all MEMBER permissions + team management"],
-                    ["MEMBER","→","Inherits all VIEWER permissions + create/edit"],
+                    ["ADMIN","→","Inherits all Member permissions + team management"],
+                    ["MEMBER","→","Inherits all Viewer permissions + create/edit"],
                     ["VIEWER","→","Read-only + comment"],
                     ["GUEST","→","View assigned content only"]].map(([r,a,d])=>(
                     <div key={r} style={{display:"flex",gap:"10px",padding:"7px 10px",
                       borderBottom:"1px solid var(--border)",fontSize:"12px"}}>
-                      <span style={{fontWeight:700,minWidth:70,color:"var(--brand-500)"}}>{r === "OWNER" ? "MANAGER" : r}</span>
+                      <span style={{fontWeight:700,minWidth:70,color:"var(--brand-500)"}}>{statusText(r === "OWNER" ? "MANAGER" : r)}</span>
                       <span style={{color:"var(--gray-400)"}}>{a}</span>
                       <span style={{color:"var(--gray-600)"}}>{d}</span>
                     </div>

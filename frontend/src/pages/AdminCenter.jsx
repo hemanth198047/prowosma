@@ -11,6 +11,13 @@ import { getProjects } from "../api/projects";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import "../styles/pages/settings-v2.css";
+import {
+  Users, FolderKanban, ShieldCheck, KeyRound, Globe, ShieldAlert, Archive, MapPin, BadgeCheck,
+  Mail, Flag, Megaphone, Palette, CreditCard, Ticket, BarChart3,
+  LockKeyhole, MonitorSmartphone, AlertTriangle, Siren, User, CircleCheck, Briefcase, FileText, Bot, Zap,
+  Shield, Eye, MailPlus, CircleDot, Crown, Trash2,
+} from "lucide-react";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -188,16 +195,16 @@ function SecurityCentre() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label:"MFA Adoption",       value: stats?.mfaAdoptionPct   ?? "—", unit:"%",  color:"var(--success)", icon:"🔐" },
-          { label:"Active Sessions",    value: sessions.length,                color:"var(--brand-500)", icon:"💻" },
-          { label:"Failed Logins (24h)",value: stats?.failedLogins24h  ?? 0,   color:"var(--danger)", icon:"⚠️" },
-          { label:"Anomalous Logins",   value: stats?.anomalousLogins  ?? 0,   color:"var(--warning)", icon:"🚨" },
-          { label:"Total Users",        value: stats?.totalUsers       ?? "—", color:"var(--purple)", icon:"👤" },
-          { label:"2FA Enabled Users",  value: stats?.twoFaUsers       ?? "—", color:"var(--success)", icon:"✅" },
+          { label:"MFA Adoption",       value: stats?.mfaAdoptionPct   ?? "—", unit:"%",  color:"var(--success)", icon: LockKeyhole },
+          { label:"Active Sessions",    value: sessions.length,                color:"var(--brand-500)", icon: MonitorSmartphone },
+          { label:"Failed Logins (24h)",value: stats?.failedLogins24h  ?? 0,   color:"var(--danger)", icon: AlertTriangle },
+          { label:"Anomalous Logins",   value: stats?.anomalousLogins  ?? 0,   color:"var(--warning)", icon: Siren },
+          { label:"Total Users",        value: stats?.totalUsers       ?? "—", color:"var(--purple)", icon: User },
+          { label:"2FA Enabled Users",  value: stats?.twoFaUsers       ?? "—", color:"var(--success)", icon: CircleCheck },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
-            <div className="admin-stat-icon">{s.icon}</div>
-            <div className="admin-stat-num" style={{ color:s.color }}>{s.value}{s.unit||""}</div>
+            <div className="admin-stat-icon" style={{ color: s.color }}><s.icon size={18} aria-hidden="true" /></div>
+            <div className="admin-stat-num">{s.value}{s.unit||""}</div>
             <div className="admin-stat-label">{s.label}</div>
           </div>
         ))}
@@ -683,9 +690,7 @@ function FeatureFlags() {
       {groups.map(group => (
         <div key={group} className="admin-card">
           <div className="admin-card-title">
-            {group === "AI" ? "🤖" : group === "Security" ? "🔐" : group === "Work" ? "⚡" :
-             group === "Insights" ? "📊" : group === "Automate" ? "⚙️" :
-             group === "Knowledge" ? "📚" : "👥"} {group}
+            {group}
           </div>
           {DEFAULT_FLAGS.filter(f => f.group === group).map(f => (
             <div key={f.key} className="admin-flag-row">
@@ -1157,15 +1162,15 @@ function TenantAnalytics() {
         <div className="admin-card-title">Tenant Analytics</div>
         <div className="admin-stat-grid">
           {[
-            { icon:"💼",label:"Projects",    value:usage?.projects||0, color:"var(--brand-500)" },
-            { icon:"✅",label:"Tasks",       value:usage?.tasks||0,    color:"var(--success)" },
-            { icon:"📄",label:"Docs",        value:usage?.docs||0,     color:"var(--warning)" },
-            { icon:"🤖",label:"AI Credits",  value:usage?.aiCredits||0,color:"var(--purple)" },
-            { icon:"⚡",label:"Automations", value:usage?.automationRuns||0, color:"var(--danger)" },
+            { icon: Briefcase,label:"Projects",    value:usage?.projects||0, color:"var(--brand-500)" },
+            { icon: CircleCheck,label:"Tasks",       value:usage?.tasks||0,    color:"var(--success)" },
+            { icon: FileText,label:"Docs",        value:usage?.docs||0,     color:"var(--warning)" },
+            { icon: Bot,label:"AI Credits",  value:usage?.aiCredits||0,color:"var(--purple)" },
+            { icon: Zap,label:"Automations", value:usage?.automationRuns||0, color:"var(--danger)" },
           ].map(s=>(
             <div key={s.label} className="admin-stat-card">
-              <div className="admin-stat-icon">{s.icon}</div>
-              <div className="admin-stat-num" style={{color:s.color}}>{s.value}</div>
+              <div className="admin-stat-icon" style={{ color: s.color }}><s.icon size={18} aria-hidden="true" /></div>
+              <div className="admin-stat-num">{s.value}</div>
               <div className="admin-stat-label">{s.label}</div>
             </div>
           ))}
@@ -1725,15 +1730,15 @@ function WorkspacePeople() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label: "Total People", value: members.length, color: "var(--brand-500)", icon: "👥" },
-          { label: "Managers",     value: owners,          color: "var(--warning)", icon: "👑" },
-          { label: "Admins",       value: admins,          color: "var(--danger)", icon: "🛡️" },
-          { label: "Viewers",      value: viewers,         color: "var(--success)", icon: "👁️" },
-          { label: "Pending Invites", value: invites.length, color: "var(--warning)", icon: "✉️" },
+          { label: "Total People", value: members.length, color: "var(--brand-500)", icon: Users },
+          { label: "Managers",     value: owners,          color: "var(--warning)", icon: Crown },
+          { label: "Admins",       value: admins,          color: "var(--danger)", icon: Shield },
+          { label: "Viewers",      value: viewers,         color: "var(--success)", icon: Eye },
+          { label: "Pending Invites", value: invites.length, color: "var(--warning)", icon: MailPlus },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
-            <div className="admin-stat-icon">{s.icon}</div>
-            <div className="admin-stat-num" style={{ color: s.color }}>{s.value}</div>
+            <div className="admin-stat-icon" style={{ color: s.color }}><s.icon size={18} aria-hidden="true" /></div>
+            <div className="admin-stat-num">{s.value}</div>
             <div className="admin-stat-label">{s.label}</div>
           </div>
         ))}
@@ -1769,12 +1774,12 @@ function WorkspacePeople() {
                   <select value={m.role} disabled={busyId === m.id}
                     onChange={e => handleRoleChange(m, e.target.value)}
                     style={{ fontSize: "12px", padding: "4px 8px" }}>
-                    <option value="MEMBER">MEMBER</option>
-                    <option value="VIEWER">VIEWER</option>
-                    <option value="ADMIN" disabled={!isOwner && m.role !== "ADMIN"}>ADMIN{!isOwner ? " (Manager only)" : ""}</option>
+                    <option value="MEMBER">Member</option>
+                    <option value="VIEWER">Viewer</option>
+                    <option value="ADMIN" disabled={!isOwner && m.role !== "ADMIN"}>Admin{!isOwner ? " (Manager only)" : ""}</option>
                   </select>
-                  <button className="btn-icon" title="Remove" disabled={busyId === m.id}
-                    onClick={() => handleRemove(m)}>🗑️</button>
+                  <button className="btn-icon" title="Remove" aria-label={`Remove ${m.name || m.email}`} disabled={busyId === m.id}
+                    onClick={() => handleRemove(m)}><Trash2 size={15} aria-hidden="true" /></button>
                 </div>
               )}
             </div>
@@ -1866,13 +1871,13 @@ function WorkspaceProjects() {
     <div className="admin-section">
       <div className="admin-stat-grid">
         {[
-          { label: "Total Projects", value: projects.length, color: "var(--brand-500)", icon: "📁" },
-          { label: "Active",         value: active,           color: "var(--success)", icon: "🟢" },
-          { label: "At Risk / Blocked", value: atRisk,        color: "var(--danger)", icon: "⚠️" },
+          { label: "Total Projects", value: projects.length, color: "var(--brand-500)", icon: FolderKanban },
+          { label: "Active",         value: active,           color: "var(--success)", icon: CircleDot },
+          { label: "At Risk / Blocked", value: atRisk,        color: "var(--danger)", icon: AlertTriangle },
         ].map(s => (
           <div key={s.label} className="admin-stat-card">
-            <div className="admin-stat-icon">{s.icon}</div>
-            <div className="admin-stat-num" style={{ color: s.color }}>{s.value}</div>
+            <div className="admin-stat-icon" style={{ color: s.color }}><s.icon size={18} aria-hidden="true" /></div>
+            <div className="admin-stat-num">{s.value}</div>
             <div className="admin-stat-label">{s.label}</div>
           </div>
         ))}
@@ -1885,7 +1890,7 @@ function WorkspaceProjects() {
             <button className={`sprint-filter-btn${filter === "ALL" ? " active" : ""}`} onClick={() => setFilter("ALL")}>All</button>
             {statuses.map(s => (
               <button key={s} className={`sprint-filter-btn${filter === s ? " active" : ""}`} onClick={() => setFilter(s)}>
-                {s.replace("_", " ")}
+                {statusText(s)}
               </button>
             ))}
           </div>
@@ -1916,23 +1921,24 @@ function WorkspaceProjects() {
 }
 
 // ── Main AdminCenter ──────────────────────────────────────────
+// Grouped like Workspace Settings: same ids and panels, easier to scan.
 const TABS = [
-  { id:"people",     label:"People"      },
-  { id:"projects",   label:"Projects"    },
-  { id:"security",   label:"Security"    },
-  { id:"retention",  label:"Retention"  },
-  { id:"email",      label:"Email"       },
-  { id:"security-policy", label:"Password & Sessions" },
-  { id:"features",   label:"Flags"       },
-  { id:"billing",    label:"Billing"     },
-  { id:"ip",         label:"IP Allow"    },
-  { id:"residency",  label:"Residency"   },
-  { id:"soc2",       label:"SOC2"        },
-  { id:"license",    label:"Seats"       },
-  { id:"tenant",     label:"Tenant"      },
-  { id:"announce",   label:"Announce"    },
-  { id:"whitelabel", label:"White-label" },
-  { id:"dlp",        label:"DLP"         },
+  { id:"people",     label:"People",              icon: Users,         group:"People & projects" },
+  { id:"projects",   label:"Projects",            icon: FolderKanban,  group:"People & projects" },
+  { id:"security",   label:"Security centre",     icon: ShieldCheck,   group:"Security" },
+  { id:"security-policy", label:"Password & sessions", icon: KeyRound, group:"Security" },
+  { id:"ip",         label:"IP allowlist",        icon: Globe,         group:"Security" },
+  { id:"dlp",        label:"Data loss prevention", icon: ShieldAlert,  group:"Security" },
+  { id:"retention",  label:"Retention",           icon: Archive,       group:"Compliance & data" },
+  { id:"residency",  label:"Data residency",      icon: MapPin,        group:"Compliance & data" },
+  { id:"soc2",       label:"SOC 2",               icon: BadgeCheck,    group:"Compliance & data" },
+  { id:"email",      label:"Email",               icon: Mail,          group:"Workspace" },
+  { id:"features",   label:"Feature flags",       icon: Flag,          group:"Workspace" },
+  { id:"announce",   label:"Announcements",       icon: Megaphone,     group:"Workspace" },
+  { id:"whitelabel", label:"White-label",         icon: Palette,       group:"Workspace" },
+  { id:"billing",    label:"Billing",             icon: CreditCard,    group:"Plan & usage" },
+  { id:"license",    label:"Seats",               icon: Ticket,        group:"Plan & usage" },
+  { id:"tenant",     label:"Tenant analytics",    icon: BarChart3,     group:"Plan & usage" },
 ];
 
 export default function AdminCenter() {
@@ -1940,18 +1946,25 @@ export default function AdminCenter() {
 
   return (
     <div>
-      <PageHeader icon="⚙️" title="Admin Centre"
+      <PageHeader title="Admin Centre"
         description="Users, projects, security, compliance, feature flags, and billing — all in one place" />
 
-      <div className="admin-tab-bar">
-        {TABS.map(t => (
-          <button key={t.id}
-            className={`admin-tab-btn${tab === t.id ? " active" : ""}`}
-            onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
+      <div className="ws-settings-layout admin-layout">
+      <nav className="ws-settings-nav" aria-label="Admin sections">
+        {TABS.map((t, i) => (
+          <div key={t.id} className="ws-nav-entry">
+            {(i === 0 || TABS[i - 1].group !== t.group) && <div className="ws-nav-group">{t.group}</div>}
+            <button type="button"
+              className={`ws-settings-nav-item${tab === t.id ? " active" : ""}`}
+              aria-current={tab === t.id ? "page" : undefined}
+              onClick={() => setTab(t.id)}>
+              <t.icon className="ws-nav-icon" size={16} strokeWidth={1.75} aria-hidden="true" />
+              {t.label}
+            </button>
+          </div>
         ))}
-      </div>
+      </nav>
+      <div className="ws-settings-content admin-content">
 
       {tab === "people"    && <WorkspacePeople />}
       {tab === "projects"  && <WorkspaceProjects />}
@@ -1969,6 +1982,8 @@ export default function AdminCenter() {
       {tab === "announce"  && <AnnouncementsPanel />}
       {tab === "whitelabel"&& <WhiteLabelPanel />}
       {tab === "dlp"       && <DlpPanel />}
+      </div>
+      </div>
     </div>
   );
 }
