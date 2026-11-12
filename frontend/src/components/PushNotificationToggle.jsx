@@ -3,7 +3,7 @@ import { enablePushNotifications, sendTestPush } from "../utils/push";
 
 /**
  * Real, working push-notification enrollment — previously
- * PWAInstallBanner.jsx advertised "🔔 Push Notifications" as a feature
+ * PWAInstallBanner.jsx advertised "Push Notifications" as a feature
  * with no way to actually turn it on. Small and self-contained so it can
  * be dropped into the install banner (see below) or a settings page.
  */
@@ -47,7 +47,7 @@ export default function PushNotificationToggle() {
   return (
     <div style={{ fontSize: "13px" }}>
       <button className="btn-secondary" onClick={handleEnable} disabled={status === "enabling"}>
-        {status === "enabling" ? "Enabling…" : "🔔 Enable Push Notifications"}
+        {status === "enabling" ? "Enabling…" : "Enable Push Notifications"}
       </button>
       {status === "error" && (
         <div style={{ marginTop: "4px", color: "#ef4444" }}>

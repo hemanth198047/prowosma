@@ -119,7 +119,7 @@ function DecisionCard({ d, onEdit, onDelete, onAI }) {
             <span className="decision-rev" style={{color:rm.color}}>
               {rm.icon} {rm.label}
             </span>
-            {d.madeBy && <span className="decision-by">👤 {d.madeBy}</span>}
+            {d.madeBy && <span className="decision-by">{d.madeBy}</span>}
             <span style={{fontSize:"11px",color:"var(--gray-400)"}}>
               {new Date(d.createdAt).toLocaleDateString()}
             </span>
@@ -137,49 +137,49 @@ function DecisionCard({ d, onEdit, onDelete, onAI }) {
         <div className="decision-body">
           {d.context && (
             <div className="decision-section">
-              <div className="decision-section-label">📋 Context</div>
+              <div className="decision-section-label">Context</div>
               <div className="decision-section-text">{d.context}</div>
             </div>
           )}
           {d.decision && (
             <div className="decision-section">
-              <div className="decision-section-label">✅ Decision</div>
+              <div className="decision-section-label">Decision</div>
               <div className="decision-section-text">{d.decision}</div>
             </div>
           )}
           {d.rationale && (
             <div className="decision-section">
-              <div className="decision-section-label">💡 Rationale</div>
+              <div className="decision-section-label">Rationale</div>
               <div className="decision-section-text">{d.rationale}</div>
             </div>
           )}
           {d.alternatives && (
             <div className="decision-section">
-              <div className="decision-section-label">🔀 Alternatives</div>
+              <div className="decision-section-label">Alternatives</div>
               <div className="decision-section-text">{d.alternatives}</div>
             </div>
           )}
           {d.outcome && (
             <div className="decision-section">
-              <div className="decision-section-label">📊 Outcome</div>
+              <div className="decision-section-label">Outcome</div>
               <div className="decision-section-text">{d.outcome}</div>
             </div>
           )}
           {d.aiSuggestion && (
             <div className="decision-ai-block">
-              <div className="decision-ai-label">🤖 AI Analysis</div>
+              <div className="decision-ai-label">AI Analysis</div>
               <div className="decision-ai-text">{d.aiSuggestion}</div>
             </div>
           )}
           {d.reviewAt && (
             <div className="decision-review-date">
-              📅 Review scheduled: {new Date(d.reviewAt).toLocaleDateString()}
+              Review scheduled: {new Date(d.reviewAt).toLocaleDateString()}
             </div>
           )}
           <div className="decision-actions">
             <button className="btn-secondary" style={{fontSize:"11px"}}
               disabled={aiLoading} onClick={handleAI}>
-              {aiLoading ? "⏳ Analysing…" : "🤖 AI Intelligence"}
+              {aiLoading ? "Analysing…" : "AI Intelligence"}
             </button>
           </div>
         </div>

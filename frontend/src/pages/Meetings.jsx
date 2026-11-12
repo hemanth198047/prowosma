@@ -180,7 +180,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
                       {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                     <select value={blk.statusSnapshot} onChange={e => updateProjectBlock(i, { statusSnapshot: e.target.value })}>
-                      {PROJECT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace("_"," ")}</option>)}
+                      {PROJECT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{statusText(s)}</option>)}
                     </select>
                     <button type="button" className="meet-project-remove" onClick={() => removeProjectBlock(i)}>✕</button>
                   </div>
@@ -221,14 +221,14 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
               className={`meet-extract-btn${extracting ? " loading" : ""}`}
               onClick={handleExtract}
               disabled={extracting || !form.notes.trim()}>
-              {extracting ? "🤖 Extracting…" : "🤖 Extract with AI"}
+              {extracting ? "Extracting…" : "Extract with AI"}
             </button>
           </div>
 
           {/* Right column: AI results */}
           {extracted && (
             <div className="meet-ai-col">
-              <div className="meet-ai-label">🤖 AI Extraction Results</div>
+              <div className="meet-ai-label">AI Extraction Results</div>
 
               {extracted.summary && (
                 <div className="meet-ai-section">
@@ -241,7 +241,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
                 <div className="meet-ai-section">
                   <div className="meet-ai-section-title">Decisions</div>
                   {extracted.decisions.map((d, i) => (
-                    <div key={i} className="meet-ai-decision">⚖️ {d}</div>
+                    <div key={i} className="meet-ai-decision">{d}</div>
                   ))}
                 </div>
               )}
@@ -258,8 +258,8 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
                       <div className="meet-ai-action-body">
                         <div className="meet-ai-action-title">{a.title}</div>
                         <div className="meet-ai-action-meta">
-                          {a.assignee && <span>👤 {a.assignee}</span>}
-                          {a.dueDate  && <span>📅 {a.dueDate}</span>}
+                          {a.assignee && <span>{a.assignee}</span>}
+                          {a.dueDate  && <span>{a.dueDate}</span>}
                           <span className="meet-ai-priority"
                             style={{ color: PRIORITY_COLOR[a.priority] || "var(--warning)" }}>
                             {a.priority}
@@ -277,7 +277,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
         <div className="form-actions meet-modal-footer">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn-primary" disabled={saving || !form.title.trim()} onClick={handleSave}>
-            {saving ? "⏳ Saving…" : initial ? "Update Meeting" : "Save Meeting"}
+            {saving ? "Saving…" : initial ? "Update Meeting" : "Save Meeting"}
           </button>
         </div>
       </div>
@@ -422,9 +422,9 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           <div>
             <div className="meet-card-title">{m.title}{meetingTypeLabel && <span className="meet-type-tag">{meetingTypeLabel}</span>}</div>
             <div className="meet-card-meta">
-              {m.meetingDate && <span>📅 {fmtDate(m.meetingDate)} {fmtTime(m.meetingDate)}</span>}
+              {m.meetingDate && <span>{fmtDate(m.meetingDate)} {fmtTime(m.meetingDate)}</span>}
               {m.attendees?.length > 0 && (
-                <span>👥 {m.attendees.slice(0,3).join(", ")}{m.attendees.length > 3 ? ` +${m.attendees.length-3}` : ""}</span>
+                <span>{m.attendees.slice(0,3).join(", ")}{m.attendees.length > 3 ? ` +${m.attendees.length-3}` : ""}</span>
               )}
               {unconverted.length > 0 && (
                 <span className="meet-action-badge">{unconverted.length} action{unconverted.length > 1 ? "s" : ""}</span>
@@ -444,25 +444,25 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           {/* Since Last Meeting */}
           {whatsChanged?.hasPrevious && (
             <div className="meet-section">
-              <div className="meet-section-label">🔄 Since Last Meeting</div>
+              <div className="meet-section-label">Since Last Meeting</div>
               <div className="meet-whats-changed">
                 {whatsChanged.completedActionItems?.length > 0 && (
-                  <div>✅ {whatsChanged.completedActionItems.length} action item{whatsChanged.completedActionItems.length > 1 ? "s" : ""} completed</div>
+                  <div>{whatsChanged.completedActionItems.length} action item{whatsChanged.completedActionItems.length > 1 ? "s" : ""} completed</div>
                 )}
                 {whatsChanged.newActionItems?.length > 0 && (
-                  <div>🆕 {whatsChanged.newActionItems.length} new action item{whatsChanged.newActionItems.length > 1 ? "s" : ""}</div>
+                  <div>{whatsChanged.newActionItems.length} new action item{whatsChanged.newActionItems.length > 1 ? "s" : ""}</div>
                 )}
                 {whatsChanged.newBlockers?.length > 0 && (
-                  <div>🚧 {whatsChanged.newBlockers.length} new blocker{whatsChanged.newBlockers.length > 1 ? "s" : ""}</div>
+                  <div>{whatsChanged.newBlockers.length} new blocker{whatsChanged.newBlockers.length > 1 ? "s" : ""}</div>
                 )}
                 {whatsChanged.resolvedBlockers?.length > 0 && (
                   <div>✔️ {whatsChanged.resolvedBlockers.length} blocker{whatsChanged.resolvedBlockers.length > 1 ? "s" : ""} resolved</div>
                 )}
                 {whatsChanged.newDecisions?.length > 0 && (
-                  <div>⚖️ {whatsChanged.newDecisions.length} new decision{whatsChanged.newDecisions.length > 1 ? "s" : ""}</div>
+                  <div>{whatsChanged.newDecisions.length} new decision{whatsChanged.newDecisions.length > 1 ? "s" : ""}</div>
                 )}
                 {whatsChanged.projectStatusChanges?.map((c, i) => (
-                  <div key={i}>📊 {projectNameFor(projects, c.projectId)}: {c.from?.replace("_"," ")} → {c.to?.replace("_"," ")}</div>
+                  <div key={i}>{projectNameFor(projects, c.projectId)}: {c.from?.replace("_"," ")} → {c.to?.replace("_"," ")}</div>
                 ))}
                 {!whatsChanged.completedActionItems?.length && !whatsChanged.newActionItems?.length
                   && !whatsChanged.newBlockers?.length && !whatsChanged.resolvedBlockers?.length
@@ -492,7 +492,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           {/* Projects Discussed */}
           {m.projectDiscussions?.length > 0 && (
             <div className="meet-section">
-              <div className="meet-section-label">📁 Projects Discussed</div>
+              <div className="meet-section-label">Projects Discussed</div>
               {m.projectDiscussions.map(pd => (
                 <div key={pd.id || pd.projectId} className="meet-project-discussion">
                   <div className="meet-project-discussion-header">
@@ -558,7 +558,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           {/* Summary */}
           {m.summary && (
             <div className="meet-section">
-              <div className="meet-section-label">📝 Summary</div>
+              <div className="meet-section-label">Summary</div>
               <p className="meet-summary-text">{m.summary}</p>
             </div>
           )}
@@ -566,7 +566,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           {/* Notes */}
           {m.notes && !m.summary && (
             <div className="meet-section">
-              <div className="meet-section-label">📋 Notes</div>
+              <div className="meet-section-label">Notes</div>
               <p className="meet-notes-text">{m.notes.slice(0, 400)}{m.notes.length > 400 ? "…" : ""}</p>
             </div>
           )}
@@ -575,7 +575,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           {m.actionItems?.length > 0 && (
             <div className="meet-section">
               <div className="meet-section-label">
-                ✅ Action Items
+                Action Items
                 <span className="meet-action-progress">
                   {converted.length}/{m.actionItems.length} converted to tasks
                 </span>
@@ -588,8 +588,8 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
                     <div className="meet-action-body">
                       <span className="meet-action-title">{a.title}</span>
                       <span className="meet-action-meta">
-                        {a.assignee && <span>👤 {a.assignee}</span>}
-                        {a.dueDate  && <span>📅 {a.dueDate}</span>}
+                        {a.assignee && <span>{a.assignee}</span>}
+                        {a.dueDate  && <span>{a.dueDate}</span>}
                       </span>
                     </div>
                     {!a.converted ? (
@@ -736,7 +736,7 @@ export default function Meetings() {
         action={can("USE_MEETING_ASSISTANT") && (
           <button className="btn-primary" onClick={() => navigate("/meeting-assistant")}
             title="Get a summary, minutes and tasks from a transcript, recording or notetaker">
-            🤖 Try the Meeting Assistant
+            Try the Meeting Assistant
           </button>
         )}
       />
@@ -778,7 +778,7 @@ export default function Meetings() {
             <button key={s}
               className={`meet-filter-btn${filterStatus === s ? " active" : ""}`}
               onClick={() => setFilterStatus(s)}>
-              {s || "All"}
+              {s ? statusText(s) : "All"}
             </button>
           ))}
         </div>

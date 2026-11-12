@@ -120,11 +120,11 @@ export default function Search() {
           onClick={handleSearch}
           disabled={query.trim().length < 2}
         >
-          🔍 Search
+          Search
         </button>
         {searched && (
           <button className="btn-secondary" onClick={handleClearResults}>
-            🗑️ Clear Results
+            Clear Results
           </button>
         )}
         {(query || searched) && (
@@ -164,7 +164,7 @@ export default function Search() {
           {results.projects.length > 0 && (
             <div className="search-section">
               <div className="search-section-header">
-                📁 Projects
+                Projects
                 <span className="search-section-count">
                   {results.projects.length}
                 </span>
@@ -208,7 +208,7 @@ export default function Search() {
           {results.tasks.length > 0 && (
             <div className="search-section">
               <div className="search-section-header">
-                ✅ Tasks
+                Tasks
                 <span className="search-section-count">
                   {results.tasks.length}
                 </span>
@@ -239,7 +239,7 @@ export default function Search() {
                     <div className="search-result-meta">
                       {t.dueDate && (
                         <span>
-                          📅 {new Date(t.dueDate).toLocaleDateString()}
+                          {new Date(t.dueDate).toLocaleDateString()}
                         </span>
                       )}
                       <span
@@ -272,7 +272,7 @@ export default function Search() {
           {results.goals.length > 0 && (
             <div className="search-section">
               <div className="search-section-header">
-                🎯 Goals
+                Goals
                 <span className="search-section-count">
                   {results.goals.length}
                 </span>
@@ -300,7 +300,7 @@ export default function Search() {
                     <div className="search-result-meta">
                       {g.targetDate && (
                         <span>
-                          🎯 {new Date(g.targetDate).toLocaleDateString()}
+                          {new Date(g.targetDate).toLocaleDateString()}
                         </span>
                       )}
                       <span>{g.progress || 0}% complete</span>

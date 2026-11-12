@@ -207,3 +207,65 @@
   .pg-summary { gap: 8px 20px; padding: 12px 14px; }
   .pg-stat-num { font-size: 19px; }
 }
+
+/* ── Shared PageHeader (46 pages) — the old tinted banner becomes the plain title row ── */
+.pg-title-row.page-header-block,
+[data-theme="dark"] .pg-title-row.page-header-block {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 20px;
+  box-shadow: none;
+  justify-content: flex-start;
+}
+.pg-title-row .page-header-action { margin-left: auto; }
+.pg-title-row .page-header-action > div { flex-wrap: wrap; }
+
+/* ── Shared components on every remaining page (stage 4) ─────────────────── */
+/* Tabs: underline in the brand indigo (was a stray sky blue), no tinted bar */
+.tab-bar {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0;
+  gap: 4px;
+}
+.tab-btn {
+  padding: 10px 12px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  border-bottom-width: 2px;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text-primary); background: transparent; }
+.tab-btn:active:not(:disabled) { transform: none; }
+.tab-active {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--brand-500) !important;
+  font-weight: 600 !important;
+}
+[data-theme="dark"] .tab-bar { background: transparent; border-bottom-color: rgba(255,255,255,0.1); }
+[data-theme="dark"] .tab-active { color: #fff !important; border-bottom-color: var(--brand-400) !important; }
+
+/* Filter bars: a quiet row, not a shadowed card */
+.filter-bar {
+  box-shadow: none;
+  border-color: var(--border);
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+}
+.filter-bar select,
+.filter-bar input { height: 34px; border-radius: var(--radius-md); }
+
+/* Empty states: muted text, thin dashed outline */
+.empty-state {
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+  font-weight: 400;
+}
+[data-theme="dark"] .empty-state { border-color: rgba(255,255,255,0.14); }
+
+/* Header action buttons line up with the title row's 36px controls */
+.page-header-action .btn-primary,
+.page-header-action .btn-secondary { min-height: var(--control-h); }

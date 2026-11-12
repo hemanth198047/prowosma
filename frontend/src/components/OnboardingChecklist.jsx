@@ -263,7 +263,7 @@ export default function OnboardingChecklist() {
           <div className="onboarding-panel-header">
             <div>
               <div className="onboarding-panel-title">
-                {allDone ? "🎉 You're all set!" : "Welcome to Prowosma!"}
+                {allDone ? "You're all set!" : "Welcome to Prowosma!"}
               </div>
               <div className="onboarding-panel-sub">
                 {allDone

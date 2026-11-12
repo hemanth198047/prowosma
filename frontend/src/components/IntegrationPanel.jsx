@@ -54,7 +54,7 @@ function ConfluencePickerModal({ onSelect, onClose, searchConfluence, confluence
 
         {/* Tabs */}
         <div style={{ display:"flex", borderBottom:"1px solid #e8ecf2", flexShrink:0 }}>
-          {[["search","🔍 Search"],["spaces","📂 Spaces"],["create","✏️ Create Page"]].map(([k,l])=>(
+          {[["search","Search"],["spaces","Spaces"],["create","Create Page"]].map(([k,l])=>(
             <button key={k} onClick={()=>setTab(k)}
               style={{ flex:1, padding:"10px", border:"none", cursor:"pointer",
                 fontSize:"12px", fontWeight:700, transition:"all .12s",
@@ -230,7 +230,7 @@ function ConfluencePickerModal({ onSelect, onClose, searchConfluence, confluence
                 style={{ padding:"10px", borderRadius:"9px", border:"none",
                   background:"#0052CC", color:"#fff", fontWeight:800,
                   fontSize:"13px", cursor:"pointer" }}>
-                📄 Create & Link Page
+                Create & Link Page
               </button>
             </div>
           )}
@@ -322,7 +322,7 @@ function SlackSendModal({ context, onClose, slackNotify }) {
               style={{ padding:"9px 24px", borderRadius:"8px", border:"none",
                 background:"#4A154B", color:"#fff", fontSize:"13px",
                 fontWeight:800, cursor:"pointer", opacity:sending||sent?.85:1 }}>
-              {sent?"✓ Sent!":sending?"Sending…":"📨 Send"}
+              {sent?"✓ Sent!":sending?"Sending…":"Send"}
             </button>
           </div>
         </div>
@@ -386,7 +386,7 @@ export default function IntegrationPanel({ entity, compact = false }) {
               padding:"2px 8px", borderRadius:"999px", fontSize:"10px",
               fontWeight:700, textDecoration:"none",
               background:"#eff6ff", color:"#1d4ed8", border:"1px solid #bfdbfe" }}>
-            📘 {(p.title||p.name||p.key||"").slice(0,20)}
+            {(p.title||p.name||p.key||"").slice(0,20)}
           </a>
         ))}
         {isConnected("CONFLUENCE") && (
@@ -430,7 +430,7 @@ export default function IntegrationPanel({ entity, compact = false }) {
       padding:"14px", marginTop:"12px" }}>
       <div style={{ fontSize:"11px", fontWeight:800, color:"#64748b",
         textTransform:"uppercase", letterSpacing:".06em", marginBottom:"12px" }}>
-        🔌 Integrations
+        Integrations
       </div>
 
       {/* Confluence section */}
@@ -498,7 +498,7 @@ export default function IntegrationPanel({ entity, compact = false }) {
               style={{ padding:"4px 12px", borderRadius:"7px", border:"none",
                 background:"#4A154B", color:"#fff", fontSize:"11px",
                 fontWeight:700, cursor:"pointer" }}>
-              📨 Share Update
+              Share Update
             </button>
           </div>
         </div>

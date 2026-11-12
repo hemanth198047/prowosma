@@ -122,14 +122,14 @@ function ScimTokenCard() {
 
   return (
     <div className="admin-card">
-      <div className="admin-card-title">🔑 SCIM Provisioning</div>
+      <div className="admin-card-title">SCIM Provisioning</div>
 
       {newToken && (
         <div className="admin-audit-note" style={{ marginBottom: "10px", border: "1px solid var(--warning)", borderRadius: "8px", padding: "10px" }}>
           <strong>Copy this token now — it will not be shown again.</strong>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px", alignItems: "center" }}>
             <code className="admin-code" style={{ flex: 1, wordBreak: "break-all" }}>{newToken.token}</code>
-            <button className="btn-secondary" style={{ fontSize: "11px" }} onClick={copyToken}>📋 Copy</button>
+            <button className="btn-secondary" style={{ fontSize: "11px" }} onClick={copyToken}>Copy</button>
           </div>
           <div style={{ marginTop: "6px", fontSize: "12px" }}>
             In your IdP, set the SCIM base URL to <code className="admin-code">{newToken.scimBaseUrl}</code> and the bearer token to the value above.
@@ -140,13 +140,13 @@ function ScimTokenCard() {
       {status?.active ? (
         <>
           <div className="admin-mfa-label">
-            ✅ Active — <code className="admin-code">{status.keyPrefix}…</code>
+            Active — <code className="admin-code">{status.keyPrefix}…</code>
             {" "}created {status.createdAt ? new Date(status.createdAt).toLocaleDateString() : "—"}
             {status.lastUsed && <> · last used {new Date(status.lastUsed).toLocaleString()}</>}
             {!status.lastUsed && <span className="admin-warn"> · never used yet</span>}
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
-            <button className="btn-secondary" disabled={busy} onClick={handleGenerate}>🔄 Regenerate</button>
+            <button className="btn-secondary" disabled={busy} onClick={handleGenerate}>Regenerate</button>
             <button className="btn-secondary" disabled={busy} style={{ color: "var(--danger)" }} onClick={handleRevoke}>Revoke</button>
           </div>
         </>
@@ -204,7 +204,7 @@ function SecurityCentre() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">🔐 MFA Status</div>
+        <div className="admin-card-title">MFA Status</div>
         <div className="admin-mfa-bar">
           <div className="admin-mfa-fill" style={{ width:`${stats?.mfaAdoptionPct ?? 0}%` }} />
         </div>
@@ -216,7 +216,7 @@ function SecurityCentre() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">💻 Active Sessions</div>
+        <div className="admin-card-title">Active Sessions</div>
         {sessions.length === 0
           ? <div className="admin-empty">No active sessions found</div>
           : sessions.slice(0,10).map(s => (
@@ -235,7 +235,7 @@ function SecurityCentre() {
       <ScimTokenCard />
 
       <div className="admin-card">
-        <div className="admin-card-title">📋 Permission Audit</div>
+        <div className="admin-card-title">Permission Audit</div>
         <div className="admin-audit-note">
           SCIM 2.0 provisioning endpoint: <code className="admin-code">/scim/v2/Users</code><br/>
           Metadata URL: <code className="admin-code">/scim/v2/ServiceProviderConfig</code><br/>
@@ -271,7 +271,7 @@ function DataRetention() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🗄️ Data Retention Policy</div>
+        <div className="admin-card-title">Data Retention Policy</div>
         <div className="form-group">
           <label htmlFor={"admin-center-retain-data-for-days"}>Retain data for (days)</label>
           <input type="number" min={30} value={policy.retentionDays}
@@ -290,7 +290,7 @@ function DataRetention() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">⚖️ Legal Hold</div>
+        <div className="admin-card-title">Legal Hold</div>
         <div className="admin-legal-hold-desc">
           When legal hold is active, no data will be deleted regardless of retention policy. Use during litigation or regulatory investigations.
         </div>
@@ -298,7 +298,7 @@ function DataRetention() {
           <label className={`admin-toggle-label${policy.legalHoldEnabled ? " hold-active" : ""}`}>
             <input type="checkbox" checked={policy.legalHoldEnabled}
               onChange={e => set("legalHoldEnabled", e.target.checked)} />
-            {policy.legalHoldEnabled ? "⚖️ Legal Hold ACTIVE — all deletion suspended" : "Legal hold is inactive"}
+            {policy.legalHoldEnabled ? "Legal Hold ACTIVE — all deletion suspended" : "Legal hold is inactive"}
           </label>
         </div>
         {policy.legalHoldEnabled && (
@@ -387,7 +387,7 @@ function EmailSettingsPanel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">📧 Email Settings</div>
+        <div className="admin-card-title">Email Settings</div>
         <div className="admin-field-help" style={{ marginBottom: 16 }}>
           Configure the mail account this workspace uses to send invitations and
           notifications. No server environment variables or technical setup needed —
@@ -400,7 +400,7 @@ function EmailSettingsPanel() {
           background: settings.emailConfigured ? "#e7f6ec" : "#fdf1e0",
           color: settings.emailConfigured ? "#15803d" : "#b45309",
         }}>
-          {settings.emailConfigured ? "✓ Configured — sending through this workspace's account" : "⚠ Not configured yet — falls back to the server default (which may not be set up either)"}
+          {settings.emailConfigured ? "✓ Configured — sending through this workspace's account" : "Not configured yet — falls back to the server default (which may not be set up either)"}
         </div>
 
         <div className="form-group">
@@ -452,7 +452,7 @@ function EmailSettingsPanel() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">✉️ Send a Test Email</div>
+        <div className="admin-card-title">Send a Test Email</div>
         <div className="admin-field-help" style={{ marginBottom: 12 }}>
           Save your settings above first, then send a real test email to confirm they actually work before relying on them.
         </div>
@@ -521,7 +521,7 @@ function SecurityPolicyPanel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🔑 Password Policy</div>
+        <div className="admin-card-title">Password Policy</div>
         <div className="admin-field-help" style={{ marginBottom: 16 }}>
           Applies when members of this workspace set or change their password.
           Registration (before any workspace exists) always uses a sane baseline
@@ -579,7 +579,7 @@ function SecurityPolicyPanel() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">⏱️ Session Limits</div>
+        <div className="admin-card-title">Session Limits</div>
 
         <div className="form-group">
           <label htmlFor={"admin-center-idle-session-timeout"}>Idle session timeout</label>
@@ -658,7 +658,7 @@ function FeatureFlags() {
       {/* Usage stats */}
       {usage && (
         <div className="admin-card">
-          <div className="admin-card-title">📊 Workspace Usage</div>
+          <div className="admin-card-title">Workspace Usage</div>
           <div className="admin-usage-grid">
             {[
               { label:"Daily Active Users",    value: usage.dau    ?? "—" },
@@ -802,13 +802,13 @@ function Billing() {
 
       {!summary?.stripeConfigured && (
         <div className="admin-card" style={{ background: "#fdf1e0", color: "#b45309" }}>
-          ⚠️ Payments aren't configured on this server yet — checkout will show an error until a Stripe secret key is set.
+          Payments aren't configured on this server yet — checkout will show an error until a Stripe secret key is set.
         </div>
       )}
 
       {summary && (
         <div className="admin-card">
-          <div className="admin-card-title">💳 Current Plan</div>
+          <div className="admin-card-title">Current Plan</div>
           <div className="admin-billing-current">
             <div className="admin-billing-plan-name">{summary.planName}</div>
             <div className="admin-billing-seats">
@@ -836,7 +836,7 @@ function Billing() {
       )}
 
       <div className="admin-card">
-        <div className="admin-card-title">📦 Available Plans</div>
+        <div className="admin-card-title">Available Plans</div>
         <div className="admin-plans-grid">
           {plans.map(plan => {
             const isCurrent = summary?.planId === plan.id;
@@ -869,7 +869,7 @@ function Billing() {
 
       {summary?.invoices?.length > 0 && (
         <div className="admin-card">
-          <div className="admin-card-title">🧾 Invoice History</div>
+          <div className="admin-card-title">Invoice History</div>
           {summary.invoices.map(inv => (
             <div key={inv.stripeInvoiceId} className="admin-invoice-row">
               <span>{inv.created ? new Date(inv.created).toLocaleDateString() : "—"}</span>
@@ -913,7 +913,7 @@ function IpAllowlist() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🌐 IP Allowlisting</div>
+        <div className="admin-card-title">IP Allowlisting</div>
         <div className="admin-field-help" style={{marginBottom:"14px"}}>
           Restrict workspace access to specific IP addresses or CIDR ranges.
           Leave empty to allow all IPs. Supports IPv4, IPv6, and wildcard (e.g. 192.168.1.*)
@@ -959,7 +959,7 @@ function DataResidency() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🗺 Data Residency</div>
+        <div className="admin-card-title">Data Residency</div>
         <div className="admin-field-help" style={{marginBottom:"14px"}}>
           Choose where your workspace data is stored. Changes take effect at next billing cycle.
           GDPR-compliant EU storage available on Business plan and above.
@@ -978,7 +978,7 @@ function DataResidency() {
         </div>
         <button className="btn-primary" style={{marginTop:"16px"}}
           onClick={()=>{ setSaved(true); toast("Data residency preference saved","success"); setTimeout(()=>setSaved(false),2000); }}>
-          {saved?"✅ Saved!":"Save Preference"}
+          {saved?"Saved!":"Save Preference"}
         </button>
       </div>
     </div>
@@ -1011,7 +1011,7 @@ function Soc2Panel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🛡 SOC2 Type II Preparation</div>
+        <div className="admin-card-title">SOC2 Type II Preparation</div>
         <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"16px"}}>
           <div style={{fontSize:"32px",fontWeight:800,color}}>{pct}%</div>
           <div>
@@ -1071,7 +1071,7 @@ function LicensePanel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">💺 License & Seat Management</div>
+        <div className="admin-card-title">License & Seat Management</div>
         <div className="budget-summary">
           <div className="budget-stat">
             {editSeats ? (
@@ -1121,7 +1121,7 @@ function LicensePanel() {
         </div>
         {overage>0 && (
           <div className="admin-warn" style={{marginTop:"10px",fontSize:"13px"}}>
-            ⚠️ You have {overage} more member{overage>1?"s":""} than your license allows.
+            You have {overage} more member{overage>1?"s":""} than your license allows.
             <button className="btn-primary" style={{marginLeft:"10px",fontSize:"11px"}}>
               Upgrade Plan
             </button>
@@ -1154,7 +1154,7 @@ function TenantAnalytics() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">📊 Tenant Analytics</div>
+        <div className="admin-card-title">Tenant Analytics</div>
         <div className="admin-stat-grid">
           {[
             { icon:"💼",label:"Projects",    value:usage?.projects||0, color:"var(--brand-500)" },
@@ -1219,7 +1219,7 @@ function AnnouncementsPanel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">📢 Workspace Announcements</div>
+        <div className="admin-card-title">Workspace Announcements</div>
         <div className="admin-field-help" style={{marginBottom:"14px"}}>
           Send a pinned announcement to all workspace members. Appears in their notification inbox.
         </div>
@@ -1243,7 +1243,7 @@ function AnnouncementsPanel() {
           </div>
           <button className="btn-primary" style={{alignSelf:"flex-end"}}
             disabled={saving||!form.title||!form.body} onClick={send}>
-            📢 Send to All Members
+            Send to All Members
           </button>
         </div>
         {announcements.length>0 && (
@@ -1312,7 +1312,7 @@ function WhiteLabelPanel() {
   return (
     <div className="admin-section">
       <div className="admin-card">
-        <div className="admin-card-title">🏷 White-Label Branding</div>
+        <div className="admin-card-title">White-Label Branding</div>
         <div className="admin-field-help" style={{marginBottom:"14px"}}>
           Customise Prowosma with your own brand. Changes apply workspace-wide immediately.
           Available on Business and Enterprise plans.
@@ -1417,7 +1417,7 @@ function WhiteLabelPanel() {
         </div>
 
         <button className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? "Saving…" : "💾 Save & Apply Branding"}
+          {saving ? "Saving…" : "Save & Apply Branding"}
         </button>
       </div>
     </div>
@@ -1492,7 +1492,7 @@ function DlpPanel() {
       {/* Policy overview — now editable, and actually reflects saved state */}
       {policy && (
         <div className="admin-card">
-          <div className="admin-card-title">🔒 DLP Policy</div>
+          <div className="admin-card-title">DLP Policy</div>
           <div className="dlp-policy-grid">
             {TOGGLES.map(t=>(
               <label key={t.key} className="dlp-policy-item" style={{cursor:"pointer"}}>
@@ -1520,7 +1520,7 @@ function DlpPanel() {
           found. Never shows the matched sensitive values themselves,
           only finding types/counts (see DlpViolation on the backend). */}
       <div className="admin-card">
-        <div className="admin-card-title">📜 Violation Log</div>
+        <div className="admin-card-title">Violation Log</div>
         {violations === null ? (
           <button className="btn-secondary" onClick={loadViolations}>Load violation log</button>
         ) : violations.length === 0 ? (
@@ -1543,7 +1543,7 @@ function DlpPanel() {
 
       {/* Manual scan */}
       <div className="admin-card">
-        <div className="admin-card-title">🔍 Content Scanner</div>
+        <div className="admin-card-title">Content Scanner</div>
         <div className="admin-field-help" style={{marginBottom:"10px"}}>
           Paste any text to scan for sensitive data (PII, credentials, financial info).
         </div>
@@ -1555,7 +1555,7 @@ function DlpPanel() {
             Auto-redact findings
           </label>
           <button className="btn-primary" onClick={scan} disabled={scanning||!scanText.trim()}>
-            {scanning ? "⏳ Scanning…" : "🔍 Scan Content"}
+            {scanning ? "Scanning…" : "Scan Content"}
           </button>
         </div>
 
@@ -1564,7 +1564,7 @@ function DlpPanel() {
             <div className="dlp-result-header">
               <span className="dlp-risk-chip"
                 style={{background:`${RISK_COLORS[result.riskLevel]}18`,color:RISK_COLORS[result.riskLevel]}}>
-                {result.riskLevel === "CLEAN" ? "✅ Clean" : `⚠️ ${result.riskLevel} Risk`}
+                {result.riskLevel === "CLEAN" ? "Clean" : `${result.riskLevel} Risk`}
               </span>
               {classify && (
                 <span className="dlp-class-chip"
@@ -1748,9 +1748,9 @@ function WorkspacePeople() {
 
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>👥 Team Members ({members.length})</span>
+          <span>Team Members ({members.length})</span>
           <button className="btn-primary" style={{ fontSize: "12px", padding: "6px 12px" }}
-            onClick={() => setInviteOpen(true)}>✉️ Invite</button>
+            onClick={() => setInviteOpen(true)}>Invite</button>
         </div>
         {members.length === 0
           ? <div className="admin-empty">No team members yet.</div>
@@ -1763,7 +1763,7 @@ function WorkspacePeople() {
                 </div>
               </div>
               {m.role === "OWNER" ? (
-                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>👑 MANAGER</span>
+                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>MANAGER</span>
               ) : (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <select value={m.role} disabled={busyId === m.id}
@@ -1783,7 +1783,7 @@ function WorkspacePeople() {
       </div>
 
       <div className="admin-card">
-        <div className="admin-card-title">✉️ Pending Invitations ({invites.length})</div>
+        <div className="admin-card-title">Pending Invitations ({invites.length})</div>
         {invites.length === 0
           ? <div className="admin-empty">No pending invitations.</div>
           : invites.map(inv => (
@@ -1809,8 +1809,8 @@ function WorkspacePeople() {
         <div className="modal-overlay" onClick={() => setInviteOpen(false)} role="button" tabIndex={0}
           onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) setInviteOpen(false); }}>
           <div className="modal" onClick={e => e.stopPropagation()} role="presentation">
-            <h2>✉️ Invite Team Member</h2>
-            {inviteError && <div className="auth-error">⚠️ {inviteError}</div>}
+            <h2>Invite Team Member</h2>
+            {inviteError && <div className="auth-error">{inviteError}</div>}
             <div className="form-group">
               <label htmlFor="admin-invite-email">Email Address *</label>
               <input id="admin-invite-email" type="email" value={inviteForm.email}
@@ -1880,7 +1880,7 @@ function WorkspaceProjects() {
 
       <div className="admin-card">
         <div className="admin-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-          <span>📁 All Projects ({visible.length})</span>
+          <span>All Projects ({visible.length})</span>
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             <button className={`sprint-filter-btn${filter === "ALL" ? " active" : ""}`} onClick={() => setFilter("ALL")}>All</button>
             {statuses.map(s => (
@@ -1917,22 +1917,22 @@ function WorkspaceProjects() {
 
 // ── Main AdminCenter ──────────────────────────────────────────
 const TABS = [
-  { id:"people",     label:"👥 People"      },
-  { id:"projects",   label:"📁 Projects"    },
-  { id:"security",   label:"🔐 Security"    },
-  { id:"retention",  label:"🗄️ Retention"  },
-  { id:"email",      label:"📧 Email"       },
-  { id:"security-policy", label:"🔑 Password & Sessions" },
-  { id:"features",   label:"🚩 Flags"       },
-  { id:"billing",    label:"💳 Billing"     },
-  { id:"ip",         label:"🌐 IP Allow"    },
-  { id:"residency",  label:"🗺 Residency"   },
-  { id:"soc2",       label:"🛡 SOC2"        },
-  { id:"license",    label:"💺 Seats"       },
-  { id:"tenant",     label:"📊 Tenant"      },
-  { id:"announce",   label:"📢 Announce"    },
-  { id:"whitelabel", label:"🏷 White-label" },
-  { id:"dlp",        label:"🔒 DLP"         },
+  { id:"people",     label:"People"      },
+  { id:"projects",   label:"Projects"    },
+  { id:"security",   label:"Security"    },
+  { id:"retention",  label:"Retention"  },
+  { id:"email",      label:"Email"       },
+  { id:"security-policy", label:"Password & Sessions" },
+  { id:"features",   label:"Flags"       },
+  { id:"billing",    label:"Billing"     },
+  { id:"ip",         label:"IP Allow"    },
+  { id:"residency",  label:"Residency"   },
+  { id:"soc2",       label:"SOC2"        },
+  { id:"license",    label:"Seats"       },
+  { id:"tenant",     label:"Tenant"      },
+  { id:"announce",   label:"Announce"    },
+  { id:"whitelabel", label:"White-label" },
+  { id:"dlp",        label:"DLP"         },
 ];
 
 export default function AdminCenter() {

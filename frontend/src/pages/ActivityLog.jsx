@@ -1,3 +1,4 @@
+import { statusText } from "../utils/statusText";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { unwrapList } from "../api/client";
 import client from "../api/client";
@@ -562,7 +563,7 @@ export default function ActivityLog() {
               style={{ fontSize:"12px", padding:"7px 12px" }}
               onClick={() => setShowHealth(s => !s)}
             >
-              📊 Health
+              Health
             </button>
             <div className="al-export-wrap" ref={exportRef}>
               <button className="btn-secondary"
@@ -612,7 +613,7 @@ export default function ActivityLog() {
             <div className="al-sidebar-label">Type</div>
             <div className="al-filter-options">
               {[["ALL","All Types", logs.length], ...["PROJECT","TASK","GOAL","TEAM","TIME"].map(
-                e => [e, `${ENTITY_ICON[e]} ${e}`, entityCounts[e]])].map(([val, label, cnt]) => (
+                e => [e, statusText(e), entityCounts[e]])].map(([val, label, cnt]) => (
                 <div key={val} className={`al-filter-opt ${filterEntity === val ? "active":""}`}
                   onClick={() => setFilterEntity(filterEntity === val && val !== "ALL" ? "ALL" : val)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setFilterEntity(filterEntity === val && val !== "ALL" ? "ALL" : val))?.(e); } }}>
                   <span>{label}</span>
@@ -655,7 +656,7 @@ export default function ActivityLog() {
           <div className="al-sidebar-section">
             <div className="al-sidebar-label">Severity</div>
             <div className="al-filter-options">
-              {[["ALL","All"], ["INFO","ℹ️ Info"], ["WARNING","⚠️ Warning"], ["CRITICAL","🚨 Critical"]].map(
+              {[["ALL","All"], ["INFO","Info"], ["WARNING","Warning"], ["CRITICAL","Critical"]].map(
                 ([val, lbl]) => (
                 <div key={val} className={`al-filter-opt ${filterSeverity === val ? "active":""}`}
                   onClick={() => setFilterSeverity(val)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setFilterSeverity(val))?.(e); } }}>
@@ -700,7 +701,7 @@ export default function ActivityLog() {
           <div className="al-sidebar-section">
             <div className="al-sidebar-label">View Mode</div>
             <div className="al-filter-options">
-              {[["grouped","⚡ Smart Grouped"], ["flat","📋 Flat List"]].map(([v, l]) => (
+              {[["grouped","Smart Grouped"], ["flat","Flat List"]].map(([v, l]) => (
                 <div key={v} className={`al-filter-opt ${viewMode === v ? "active":""}`}
                   onClick={() => setViewMode(v)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setViewMode(v))?.(e); } }}>
                   <span>{l}</span>

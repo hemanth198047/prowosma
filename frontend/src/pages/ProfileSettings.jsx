@@ -148,14 +148,14 @@ export default function ProfileSettings() {
       <PageHeader icon="👤" title="Profile & Settings" description="Manage your account, security and privacy" />
 
       <div className="tab-bar" style={{ marginBottom: "24px" }}>
-        <button className={"tab-btn" + (section === "profile"  ? " tab-active" : "")} onClick={() => { setSection("profile");  setError(""); setSuccess(""); }}>👤 Profile</button>
-        <button className={"tab-btn" + (section === "security" ? " tab-active" : "")} onClick={() => { setSection("security"); setError(""); setSuccess(""); }}>🔐 Security</button>
-        <button className={"tab-btn" + (section === "gdpr"     ? " tab-active" : "")} onClick={() => { setSection("gdpr");     setError(""); setSuccess(""); }}>📋 Privacy & GDPR</button>
-        <button className={"tab-btn" + (section === "danger"   ? " tab-active" : "")} onClick={() => { setSection("danger");   setError(""); setSuccess(""); }}>⚠️ Delete Account</button>
+        <button className={"tab-btn" + (section === "profile"  ? " tab-active" : "")} onClick={() => { setSection("profile");  setError(""); setSuccess(""); }}>Profile</button>
+        <button className={"tab-btn" + (section === "security" ? " tab-active" : "")} onClick={() => { setSection("security"); setError(""); setSuccess(""); }}>Security</button>
+        <button className={"tab-btn" + (section === "gdpr"     ? " tab-active" : "")} onClick={() => { setSection("gdpr");     setError(""); setSuccess(""); }}>Privacy & GDPR</button>
+        <button className={"tab-btn" + (section === "danger"   ? " tab-active" : "")} onClick={() => { setSection("danger");   setError(""); setSuccess(""); }}>Delete Account</button>
       </div>
 
-      {error   && <div className="settings-error-banner"  style={{ marginBottom: "16px" }}>⚠️ {error}</div>}
-      {success && <div className="settings-success-banner" style={{ marginBottom: "16px" }}>✅ {success}</div>}
+      {error   && <div className="settings-error-banner"  style={{ marginBottom: "16px" }}>{error}</div>}
+      {success && <div className="settings-success-banner" style={{ marginBottom: "16px" }}>{success}</div>}
 
       {/* ── Profile ── */}
       {section === "profile" && (
@@ -193,7 +193,7 @@ export default function ProfileSettings() {
 
           {/* 2FA */}
           <div className="settings-section">
-            <div className="settings-section-title">🔐 Two-Factor Authentication (2FA)</div>
+            <div className="settings-section-title">Two-Factor Authentication (2FA)</div>
             <p style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"16px" }}>
               Add an extra layer of security. Once enabled, you'll need a 6-digit code from your authenticator app on every login.
             </p>
@@ -204,7 +204,7 @@ export default function ProfileSettings() {
 
             {twoFaEnabled ? (
               <div>
-                <div className="sec-2fa-enabled-badge">✅ 2FA is enabled on your account</div>
+                <div className="sec-2fa-enabled-badge">2FA is enabled on your account</div>
                 <div style={{ marginTop:"16px" }} data-testid="backup-codes-section">
                   <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"8px" }}>
                     Backup codes remaining: <b>{backupRemaining ?? "-"}</b>
@@ -228,14 +228,14 @@ export default function ProfileSettings() {
                     <button className="btn-secondary" style={{ color:"var(--danger)" }}
                       disabled={disableCode.length < 6 || twoFaLoading}
                       onClick={disable2fa}>
-                      {twoFaLoading ? "⏳" : "🔓 Disable 2FA"}
+                      {twoFaLoading ? "⏳" : "Disable 2FA"}
                     </button>
                   </div>
                 </div>
               </div>
             ) : !twoFaSetup ? (
               <button className="btn-primary" onClick={start2faSetup} disabled={twoFaLoading}>
-                {twoFaLoading ? "⏳ Setting up…" : "🔐 Enable 2FA"}
+                {twoFaLoading ? "Setting up…" : "Enable 2FA"}
               </button>
             ) : (
               <div className="sec-2fa-setup">
@@ -267,7 +267,7 @@ export default function ProfileSettings() {
                     onKeyDown={e => e.key === "Enter" && verify2fa()} />
                   <button className="btn-primary" onClick={verify2fa}
                     disabled={twoFaCode.length !== 6 || twoFaLoading}>
-                    {twoFaLoading ? "⏳ Verifying…" : "✓ Verify & Enable"}
+                    {twoFaLoading ? "Verifying…" : "✓ Verify & Enable"}
                   </button>
                   <button className="btn-secondary" onClick={() => setTwoFaSetup(null)}>Cancel</button>
                 </div>
@@ -277,7 +277,7 @@ export default function ProfileSettings() {
 
           {/* ── Email OTP ── */}
           <div className="settings-section">
-            <div className="settings-section-title">📱 Email OTP (Second Factor)</div>
+            <div className="settings-section-title">Email OTP (Second Factor)</div>
             <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"12px"}}>
               Receive a one-time 6-digit code to your email as an additional login factor.
             </p>
@@ -287,7 +287,7 @@ export default function ProfileSettings() {
                 if (!user.email) return;
                 await client.post("/auth/mfa/email-otp/send",{email:user.email});
                 showToast("OTP sent to " + user.email, "success");
-              }}>📤 Send Test OTP</button>
+              }}>Send Test OTP</button>
               <input id="ps-otp-input" placeholder="6-digit code" style={{maxWidth:150}} />
               <button className="btn-primary" onClick={async()=>{
                 const code = document.getElementById("ps-otp-input")?.value;
@@ -301,7 +301,7 @@ export default function ProfileSettings() {
 
           {/* ── Backup Codes ── */}
           <div className="settings-section">
-            <div className="settings-section-title">🔑 MFA Backup Codes</div>
+            <div className="settings-section-title">MFA Backup Codes</div>
             <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"12px"}}>
               Generate 8 one-time emergency backup codes. Store them securely — each code works once.
             </p>
@@ -311,13 +311,13 @@ export default function ProfileSettings() {
               const r = await client.post("/auth/mfa/backup-codes/generate",{email:user.email});
               const codes = (r.data.codes||[]).join("\n");
               await confirm({ title: "Your backup codes", message: "Copy these and store them securely. Each code works once.\n\n" + codes + (r.data.warning ? "\n\n⚠️ " + r.data.warning : ""), confirmText: "I've saved them", cancelText: null });
-            }}>🔑 Generate Backup Codes</button>
+            }}>Generate Backup Codes</button>
           </div>
 
           {/* Active Sessions */}
           <div className="settings-section">
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
-              <div className="settings-section-title" style={{ marginBottom:0 }}>💻 Active Sessions</div>
+              <div className="settings-section-title" style={{ marginBottom:0 }}>Active Sessions</div>
               {sessions.filter(s => !s.current).length > 0 && (
                 <button className="btn-secondary" style={{ fontSize:"12px", color:"var(--danger)" }}
                   onClick={revokeAllSessions}>
@@ -364,7 +364,7 @@ export default function ProfileSettings() {
       {/* ── Privacy & GDPR ── */}
       {section === "gdpr" && (
         <div className="settings-section">
-          <div className="settings-section-title">📋 Privacy & GDPR</div>
+          <div className="settings-section-title">Privacy & GDPR</div>
           <p style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"20px" }}>
             Under GDPR and similar regulations, you have the right to access and export all data we hold about you.
           </p>
@@ -377,7 +377,7 @@ export default function ProfileSettings() {
                 Download a JSON file containing all your profile data, tasks, projects, and login history.
               </div>
               <button className="btn-primary" onClick={exportData}>
-                📥 Download My Data
+                Download My Data
               </button>
             </div>
           </div>
@@ -410,7 +410,7 @@ export default function ProfileSettings() {
                   await client.post("/security/gdpr/delete-request");
                   setSuccess("Deletion request submitted. You'll receive a confirmation email.");
                 }}>
-                🗑️ Request Data Deletion
+                Request Data Deletion
               </button>
             </div>
           </div>
@@ -420,7 +420,7 @@ export default function ProfileSettings() {
       {/* ── Danger Zone ── */}
       {section === "danger" && (
         <div className="settings-section settings-danger-section">
-          <div className="settings-section-title settings-danger-title">⚠️ Delete Account</div>
+          <div className="settings-section-title settings-danger-title">Delete Account</div>
           <div className="settings-danger-body">
             <div>
               <div className="settings-danger-label">Permanently delete your account</div>
@@ -433,7 +433,7 @@ export default function ProfileSettings() {
                 <li>All AI settings and integrations</li>
               </ul>
               <p style={{ marginTop:"12px", fontSize:"13px", fontWeight:700, color:"var(--danger)" }}>
-                ⚠️ This action is permanent and cannot be undone.
+                This action is permanent and cannot be undone.
               </p>
             </div>
             <div className="settings-delete-confirm">
@@ -447,7 +447,7 @@ export default function ProfileSettings() {
                 <button className="btn-danger"
                   disabled={deleting || confirmation !== "DELETE MY ACCOUNT"}
                   onClick={handleDeleteAccount}>
-                  {deleting ? "⏳ Deleting..." : "🗑️ Delete My Account"}
+                  {deleting ? "Deleting..." : "Delete My Account"}
                 </button>
               </div>
             </div>

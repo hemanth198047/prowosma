@@ -214,7 +214,7 @@ function ResourceForecast() {
 
   return (
     <div>
-      <div className="analytics-section-title">📅 Resource Forecast — Next 4 Weeks</div>
+      <div className="analytics-section-title">Resource Forecast — Next 4 Weeks</div>
       <div className="resource-forecast-grid">
         {(data?.members || []).map((m, i) => {
           const color = m.risk === "OVERLOADED" ? "var(--danger)" : m.risk === "HIGH" ? "var(--warning)" : "var(--success)";
@@ -347,9 +347,9 @@ export default function Analytics() {
             <div style={{ display: "flex", gap: "4px", background: "var(--gray-100)",
               borderRadius: "var(--radius-sm)", padding: "3px" }}>
               {[
-                { key: "overview", label: "📊 Overview" },
-                { key: "workload", label: "👥 Workload" },
-                { key: "forecast", label: "📅 Forecast" },
+                { key: "overview", label: "Overview" },
+                { key: "workload", label: "Workload" },
+                { key: "forecast", label: "Forecast" },
               ].map(v => (
                 <button key={v.key} onClick={() => setActiveView(v.key)}
                   style={{
@@ -364,7 +364,7 @@ export default function Analytics() {
             </div>
             <button className="btn-secondary" style={{ fontSize: "12px" }}
               onClick={() => setShowWidgetConfig(v => !v)}>
-              ⚙ Widgets
+              Widgets
             </button>
             <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={load}>
               ↺ Refresh
@@ -376,16 +376,16 @@ export default function Analytics() {
       {/* D-3: Widget configurator */}
       {showWidgetConfig && (
         <div className="analytics-widget-config">
-          <div className="analytics-widget-config-title">⚙ Configure Widgets</div>
+          <div className="analytics-widget-config-title">Configure Widgets</div>
           <div className="analytics-widget-config-grid">
             {[
-              ["velocity", "⚡ Velocity"],
-              ["burndown", "📉 Burndown"],
-              ["status",   "🍩 By Status"],
-              ["priority", "🔥 By Priority"],
+              ["velocity", "Velocity"],
+              ["burndown", "Burndown"],
+              ["status",   "By Status"],
+              ["priority", "By Priority"],
               ["trend",    "📈 30-Day Trend"],
-              ["capacity", "👥 Capacity"],
-              ["health",   "🏥 Project Health"],
+              ["capacity", "Capacity"],
+              ["health",   "Project Health"],
             ].map(([key, label]) => (
               <label key={key} className="analytics-widget-toggle">
                 <input type="checkbox" checked={!!widgets[key]} onChange={() => toggleWidget(key)} />
@@ -424,7 +424,7 @@ export default function Analytics() {
             <div className="analytics-row">
               {widgets.velocity && (
                 <div className="analytics-card analytics-card-wide">
-                  <div className="analytics-card-title">⚡ Weekly Velocity</div>
+                  <div className="analytics-card-title">Weekly Velocity</div>
                   <div className="analytics-card-sub">Tasks created vs completed per week</div>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={velocity} barGap={4}>
@@ -441,7 +441,7 @@ export default function Analytics() {
               )}
               {widgets.status && (
                 <div className="analytics-card analytics-card-narrow">
-                  <div className="analytics-card-title">🍩 Tasks by Status</div>
+                  <div className="analytics-card-title">Tasks by Status</div>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie data={tasksByStatus} dataKey="value" nameKey="name"
@@ -462,7 +462,7 @@ export default function Analytics() {
             <div className="analytics-row">
               {widgets.burndown && (
                 <div className="analytics-card analytics-card-wide">
-                  <div className="analytics-card-title">📉 Burndown</div>
+                  <div className="analytics-card-title">Burndown</div>
                   <div className="analytics-card-sub">Remaining tasks vs ideal completion line</div>
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={burndown}>
@@ -481,7 +481,7 @@ export default function Analytics() {
               )}
               {widgets.priority && (
                 <div className="analytics-card analytics-card-narrow">
-                  <div className="analytics-card-title">🔥 Tasks by Priority</div>
+                  <div className="analytics-card-title">Tasks by Priority</div>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie data={tasksByPriority} dataKey="value" nameKey="name"
@@ -501,7 +501,7 @@ export default function Analytics() {
           {widgets.trend && (
             <div className="analytics-row">
               <div className="analytics-card" style={{ flex: 1 }}>
-                <div className="analytics-card-title">📈 30-Day Completion Trend</div>
+                <div className="analytics-card-title">30-Day Completion Trend</div>
                 <div className="analytics-card-sub">Daily task completions over the last month</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={completionTrend}>
@@ -522,7 +522,7 @@ export default function Analytics() {
             <div className="analytics-row analytics-row-bottom">
               {widgets.capacity && (
                 <div className="analytics-card analytics-card-medium">
-                  <div className="analytics-card-title">👥 Team Capacity</div>
+                  <div className="analytics-card-title">Team Capacity</div>
                   <div className="analytics-card-sub">Active tasks per team member</div>
                   {capacity.length === 0 ? (
                     <p className="empty-state" style={{ padding: "20px 0", fontSize: "13px" }}>
@@ -563,7 +563,7 @@ export default function Analytics() {
 
               {widgets.health && (
                 <div className="analytics-card analytics-card-medium">
-                  <div className="analytics-card-title">🏥 Project Health Scores</div>
+                  <div className="analytics-card-title">Project Health Scores</div>
                   <div className="analytics-card-sub">0–100 score based on completion & overdue rate</div>
                   {projectHealth.length === 0 ? (
                     <p className="empty-state" style={{ padding: "20px 0", fontSize: "13px" }}>

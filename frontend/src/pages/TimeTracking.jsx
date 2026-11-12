@@ -39,7 +39,7 @@ function GenerateModal({ projects, onGenerate, onClose }) {
   return (
     <div className="dev-form-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="dev-form" onClick={e => e.stopPropagation()} role="presentation">
-        <h3 className="dev-form-title">🧾 Generate Invoice</h3>
+        <h3 className="dev-form-title">Generate Invoice</h3>
         <p style={{ fontSize: "13px", color: "var(--gray-500)", marginBottom: "18px" }}>
           Creates an invoice from all billable time logs.
         </p>
@@ -75,7 +75,7 @@ function GenerateModal({ projects, onGenerate, onClose }) {
         <div className="form-actions">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={submit} disabled={saving}>
-            {saving ? "⏳ Generating…" : "🧾 Generate Invoice"}
+            {saving ? "Generating…" : "Generate Invoice"}
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ export default function TimeTracking() {
         action={
           <button className="btn-primary" style={{ fontSize: "13px" }}
             onClick={() => setShowGenerate(true)}>
-            🧾 Generate Invoice
+            Generate Invoice
           </button>
         }
       />
@@ -223,10 +223,10 @@ export default function TimeTracking() {
       {/* Tabs */}
       <div className="tab-bar" style={{ marginBottom: "20px" }}>
         <button className={"tab-btn" + (tab === "report" ? " tab-active" : "")} onClick={() => setTab("report")}>
-          📊 Time Report
+          Time Report
         </button>
         <button className={"tab-btn" + (tab === "invoices" ? " tab-active" : "")} onClick={() => setTab("invoices")}>
-          🧾 Invoices
+          Invoices
           {invoices.length > 0 && <span className="dev-tab-count">{invoices.length}</span>}
         </button>
       </div>
@@ -281,7 +281,7 @@ export default function TimeTracking() {
               <div className="analytics-row" style={{ marginBottom: "20px" }}>
                 {report.projectBreakdown?.length > 0 && (
                   <div className="analytics-card analytics-card-wide">
-                    <div className="analytics-card-title">⏱️ Time by Project</div>
+                    <div className="analytics-card-title">Time by Project</div>
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={report.projectBreakdown} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
@@ -299,7 +299,7 @@ export default function TimeTracking() {
                 )}
                 {report.memberBreakdown?.length > 0 && (
                   <div className="analytics-card analytics-card-narrow">
-                    <div className="analytics-card-title">👥 Time by Member</div>
+                    <div className="analytics-card-title">Time by Member</div>
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie data={report.memberBreakdown} dataKey="hours" nameKey="name"
@@ -319,7 +319,7 @@ export default function TimeTracking() {
               {/* Time entries table */}
               <div className="analytics-card">
                 <div className="analytics-card-title" style={{ marginBottom: "12px" }}>
-                  📋 Time Entries
+                  Time Entries
                   <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--gray-400)", marginLeft: "8px" }}>
                     {report.entries?.length} entries
                   </span>
@@ -369,7 +369,7 @@ export default function TimeTracking() {
                 Generate an invoice from your billable time logs.
               </div>
               <button className="btn-primary" onClick={() => setShowGenerate(true)}>
-                🧾 Generate First Invoice
+                Generate First Invoice
               </button>
             </div>
           ) : (

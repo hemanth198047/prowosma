@@ -161,8 +161,8 @@ export default function AcceptInvite() {
   };
 
   const roleLabel = {
-    OWNER: "👑 Manager", ADMIN: "🛡️ Admin",
-    MEMBER: "👤 Member", VIEWER: "👁️ Viewer",
+    OWNER: "Manager", ADMIN: "Admin",
+    MEMBER: "Member", VIEWER: "Viewer",
   }[invitedRole] || invitedRole;
 
   return (
@@ -174,7 +174,7 @@ export default function AcceptInvite() {
 
         {/* Loading */}
         {step === "loading" && (
-          <div className="accept-invite-loading">⏳ Loading invitation...</div>
+          <div className="accept-invite-loading">Loading invitation...</div>
         )}
 
         {/* Error */}
@@ -305,7 +305,7 @@ export default function AcceptInvite() {
               </button>
             </div>
 
-            {error && <div className="auth-error">⚠️ {error}</div>}
+            {error && <div className="auth-error">{error}</div>}
 
             {/* Register fields */}
             {mode === "register" && (
@@ -371,10 +371,10 @@ export default function AcceptInvite() {
               onClick={handleSubmit}
             >
               {loading
-                ? "⏳ Please wait..."
+                ? "Please wait..."
                 : mode === "register"
-                  ? "🚀 Create Account & Join"
-                  : "✅ Sign In & Join"}
+                  ? "Create Account & Join"
+                  : "Sign In & Join"}
             </button>
           </div>
         )}

@@ -420,3 +420,66 @@
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Stage 4 — Dashboard in the Studio + Atlas style
+   ========================================================================== */
+/* The page is a fixed-height flex column; without this, sections were
+   allowed to shrink — the hero (greeting, KPI chips, New project / New goal /
+   Reminder / Guide) collapsed to 2px and could not be seen at all. */
+.db-root > * { flex-shrink: 0; }
+.db-root { padding: 24px 32px 32px; gap: 14px; background: var(--bg-page); }
+
+/* Hero → the same title row every page opens with */
+.db-hero { background: none; border: 0; box-shadow: none; overflow: visible; border-radius: 0; }
+.db-hero-bar { display: none; }
+.db-hero-body { padding: 0; align-items: flex-start; }
+.db-hero-greeting { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.db-hero-date { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
+.db-chips-row { margin-top: 6px; }
+/* one primary action; the rest are quiet secondary buttons */
+.db-hero-actions .db-btn { height: var(--control-h); padding: 0 14px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; box-shadow: none; }
+.db-hero-actions .db-btn-primary { background: var(--brand-500); }
+.db-hero-actions .db-btn-primary:hover { background: var(--brand-600); }
+.db-hero-actions .db-btn-green,
+.db-hero-actions .db-btn-indigo,
+.db-hero-actions .db-btn-secondary {
+  background: var(--bg-card, #fff);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+.db-hero-actions .db-btn-green:hover,
+.db-hero-actions .db-btn-indigo:hover,
+.db-hero-actions .db-btn-secondary:hover { background: var(--bg-page); }
+
+/* Cards: flat with a hairline border, like Projects and Tasks */
+.db-card, .db-ai-card { box-shadow: none; border-color: var(--border); border-radius: var(--radius-lg); }
+
+/* AI cards: light, with the brand as the accent (they were the only dark
+   panels on a light page) */
+.db-ai-card { background: var(--bg-card, #fff); border: 1px solid var(--border); padding: 16px; }
+.db-ai-card::before { display: none; }
+.db-ai-badge { color: var(--brand-700); background: var(--brand-50); border-color: var(--brand-200); }
+.db-ai-text { color: var(--text-primary); }
+.db-ai-warn { color: var(--warning-text); }
+.db-ai-good { color: var(--success-text); }
+.db-ai-stat { background: var(--bg-page); border-color: var(--border); }
+.db-ai-stat:hover { background: var(--brand-50); }
+.db-ai-stat:focus-visible { outline-color: var(--brand-500); }
+.db-ai-stat-lbl { color: var(--text-secondary); }
+.db-ai-btn { box-shadow: none; height: var(--control-h); }
+.db-ai-btn:focus-visible { outline-color: var(--brand-500); }
+
+[data-theme="dark"] .db-root { background: var(--bg-page); }
+[data-theme="dark"] .db-hero { background: none; }
+[data-theme="dark"] .db-ai-card { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .db-ai-badge { color: #C7C8F5; background: rgba(124,128,255,0.16); border-color: rgba(124,128,255,0.3); }
+[data-theme="dark"] .db-ai-stat { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .db-hero-actions .db-btn-green,
+[data-theme="dark"] .db-hero-actions .db-btn-indigo,
+[data-theme="dark"] .db-hero-actions .db-btn-secondary { background: transparent; color: #fff; border-color: rgba(255,255,255,0.18); }
+
+@media (max-width: 768px) { .db-root { padding: 16px; } }
+/* the chart panel had no dark-theme surface */
+.cc3-chart-panel { box-shadow: none; border-color: var(--border); }
+[data-theme="dark"] .cc3-chart-panel { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }

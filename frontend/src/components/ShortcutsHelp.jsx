@@ -32,7 +32,7 @@ export default function ShortcutsHelp({ onClose }) {
     <div className="cp-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="shortcuts-modal" onClick={e => e.stopPropagation()} role="presentation">
         <div className="shortcuts-header">
-          <span>⌨️ Keyboard Shortcuts</span>
+          <span>Keyboard Shortcuts</span>
           <button className="cp-clear" onClick={onClose}>✕</button>
         </div>
         <div className="shortcuts-list">

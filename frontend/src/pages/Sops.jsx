@@ -109,7 +109,7 @@ function SopFormModal({ initial, members, wsId, onSave, onCancel }) {
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn-primary"
             disabled={saving || !form.title.trim()} onClick={handleSave}>
-            {saving ? "⏳ Saving…" : initial ? "Update SOP" : "Create SOP"}
+            {saving ? "Saving…" : initial ? "Update SOP" : "Create SOP"}
           </button>
         </div>
       </div>
@@ -143,7 +143,7 @@ function PublishModal({ sop, onConfirm, onCancel }) {
               try { await onConfirm(note); }
               finally { setSaving(false); }
             }}>
-            {saving ? "⏳ Publishing…" : "✅ Publish v" + (sop.version + 1)}
+            {saving ? "Publishing…" : "Publish v" + (sop.version + 1)}
           </button>
         </div>
       </div>
@@ -178,8 +178,8 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
             <div className="sop-card-meta">
               {sop.category && <span className="sop-cat-badge">{sop.category}</span>}
               <span>v{sop.version}</span>
-              {sop.owner && <span>👤 {sop.owner.split("@")[0]}</span>}
-              {sop.publishedAt && <span>📅 {fmtDate(sop.publishedAt)}</span>}
+              {sop.owner && <span>{sop.owner.split("@")[0]}</span>}
+              {sop.publishedAt && <span>{fmtDate(sop.publishedAt)}</span>}
             </div>
           </div>
         </div>
@@ -243,14 +243,14 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
               <div className="sop-my-ack">
                 {myAck ? (
                   <div className="sop-acked">
-                    <span>✅ You acknowledged v{myAck.sopVersion} on {fmtDate(myAck.ackedAt)}</span>
+                    <span>You acknowledged v{myAck.sopVersion} on {fmtDate(myAck.ackedAt)}</span>
                     <button className="sop-revoke-btn" onClick={() => onRevokeAck(sop)}>
                       Revoke
                     </button>
                   </div>
                 ) : (
                   <button className="sop-ack-btn" onClick={() => onAcknowledge(sop)}>
-                    ☐ I acknowledge this SOP (v{sop.version})
+                    I acknowledge this SOP (v{sop.version})
                   </button>
                 )}
               </div>
@@ -278,7 +278,7 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
             <div className="sop-section">
               <button className="sop-history-toggle"
                 onClick={() => setShowHistory(v => !v)}>
-                🕐 Version history ({sop.versionHistory.length})
+                Version history ({sop.versionHistory.length})
                 {showHistory ? " ▾" : " ▸"}
               </button>
               {showHistory && (
@@ -406,7 +406,7 @@ export default function Sops() {
       {/* My pending acks banner */}
       {pendingMyAck > 0 && (
         <div className="sop-pending-banner">
-          ⚠️ You have <b>{pendingMyAck}</b> SOP{pendingMyAck > 1 ? "s" : ""} requiring your acknowledgement.
+          You have <b>{pendingMyAck}</b> SOP{pendingMyAck > 1 ? "s" : ""} requiring your acknowledgement.
           <button onClick={() => setFilterStatus("PUBLISHED")}>View →</button>
         </div>
       )}

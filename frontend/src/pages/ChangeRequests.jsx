@@ -119,7 +119,7 @@ function ChangeRequestCard({ c, currentEmail, onEdit, onDelete, onStatusChange, 
           <div className="cr-meta">
             <span className="cr-category">{c.category}</span>
             <span className="cr-impact" style={{ color: im.color, background: im.bg }}>{c.impact} impact</span>
-            {c.requestedBy && <span className="cr-by">👤 {c.requestedBy}</span>}
+            {c.requestedBy && <span className="cr-by">{c.requestedBy}</span>}
             <span className="cr-date">{c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ""}</span>
           </div>
         </div>
@@ -164,7 +164,7 @@ function ChangeRequestCard({ c, currentEmail, onEdit, onDelete, onStatusChange, 
             </div>
           )}
           {c.status === "REJECTED" && c.rejectionReason && (
-            <div className="cr-rejection">🚫 {c.rejectionReason}</div>
+            <div className="cr-rejection">{c.rejectionReason}</div>
           )}
 
           {/* Workflow actions — deliberately client-side gated for a sane
@@ -182,10 +182,10 @@ function ChangeRequestCard({ c, currentEmail, onEdit, onDelete, onStatusChange, 
             {c.status === "SUBMITTED" && isApprover && (
               <>
                 <button className="btn-primary" onClick={() => onStatusChange(c.id, "APPROVED")}>
-                  ✅ Approve
+                  Approve
                 </button>
                 <button className="btn-secondary" onClick={() => onRejectStart(c.id)}>
-                  🚫 Reject
+                  Reject
                 </button>
               </>
             )}

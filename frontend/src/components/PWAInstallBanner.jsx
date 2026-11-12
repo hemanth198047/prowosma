@@ -87,7 +87,7 @@ export default function PWAInstallBanner() {
             <p className="pwa-modal-desc">
               You can now launch Prowosma directly from your desktop or home screen.
             </p>
-            {/* The banner's own feature list below promises "🔔 Push
+            {/* The banner's own feature list below promises "Push
                 Notifications" — this is the real, working way to actually
                 turn that on, not just a claim. See
                 src/utils/push.js / docs/MOBILE_OFFLINE.md. */}
@@ -199,7 +199,7 @@ export default function PWAInstallBanner() {
               </button>
               <button className="btn-primary pwa-modal-install"
                 onClick={handleInstall} disabled={installing}>
-                {installing ? '⏳ Installing…' : '⬇️ Install App'}
+                {installing ? 'Installing…' : '⬇️ Install App'}
               </button>
             </div>
           </>

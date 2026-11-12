@@ -32,109 +32,109 @@ import { apiErrorMessage } from "../utils/apiError";
 const PANELS = [
   {
     key: "chat",
-    label: "💬 AI Chat",
+    label: "AI Chat",
     desc: "Ask anything",
     feature: "chat_assistant",
   },
   {
     key: "digest",
-    label: "☀️ Daily Digest",
+    label: "Daily Digest",
     desc: "Today's summary",
     feature: "daily_digest",
   },
   {
     key: "standup",
-    label: "🗣️ Standup",
+    label: "Standup",
     desc: "Daily standup",
     feature: "standup",
   },
   {
     key: "focus",
-    label: "🎯 Focus Mode",
+    label: "Focus Mode",
     desc: "What to work on",
     feature: "focus_mode",
   },
   {
     key: "tasks",
-    label: "🤖 Task Generator",
+    label: "Task Generator",
     desc: "Generate tasks",
     feature: "task_assistant",
   },
   {
     key: "natural",
-    label: "💬 Natural Task",
+    label: "Natural Task",
     desc: "Text to task",
     feature: "natural_language",
   },
   {
     key: "meeting",
-    label: "📝 Meeting Notes",
+    label: "Meeting Notes",
     desc: "Notes to tasks",
     feature: "meeting_notes",
   },
   {
     key: "goal",
-    label: "🎯 Goal Advisor",
+    label: "Goal Advisor",
     desc: "Goal breakdown",
     feature: "goal_advisor",
   },
   {
     key: "breakdown",
-    label: "🗺️ Full Breakdown",
+    label: "Full Breakdown",
     desc: "Goal to tasks",
     feature: "breakdown",
   },
   {
     key: "estimate",
-    label: "⏱️ Estimator",
+    label: "Estimator",
     desc: "Time estimate",
     feature: "estimation",
   },
   {
     key: "prioritize",
-    label: "📊 Prioritize",
+    label: "Prioritize",
     desc: "Smart priority",
     feature: "prioritization",
   },
   {
     key: "weekly",
-    label: "📆 Weekly Plan",
+    label: "Weekly Plan",
     desc: "Week planning",
     feature: "weekly_planning",
   },
   {
     key: "risks",
-    label: "⚠️ Risk Check",
+    label: "Risk Check",
     desc: "Detect risks",
     feature: "risk_detection",
   },
   {
     key: "burnout",
-    label: "💊 Burnout Check",
+    label: "Burnout Check",
     desc: "Wellbeing check",
     feature: "burnout_detection",
   },
   {
     key: "predict",
-    label: "🔮 Predictions",
+    label: "Predictions",
     desc: "Predict issues",
     feature: "predictive_planning",
   },
   {
     key: "team",
-    label: "👥 Team Insights",
+    label: "Team Insights",
     desc: "Team analysis",
     feature: "team_insights",
   },
   {
     key: "deps",
-    label: "🔗 Dependencies",
+    label: "Dependencies",
     desc: "Find dependencies",
     feature: "dependency_detection",
   },
   {
     key: "ask",
-    label: "🧠 Knowledge",
+    label: "Knowledge",
     desc: "Ask about data",
     feature: "knowledge_assistant",
   },
@@ -162,13 +162,13 @@ function AIDisabledBanner({
           </div>
           <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
             <button className="btn-primary" onClick={onToggleAI}>
-              ⚡ Enable AI
+              Enable AI
             </button>
             <button
               className="btn-secondary"
               onClick={() => navigate("/ai-settings")}
             >
-              ⚙️ Go to AI Settings
+              Go to AI Settings
             </button>
           </div>
         </div>
@@ -197,13 +197,13 @@ function AIDisabledBanner({
               style={{ background: "var(--warning)" }}
               onClick={() => onToggleFeature(featureKey)}
             >
-              ⚡ Enable This Feature
+              Enable This Feature
             </button>
             <button
               className="btn-secondary"
               onClick={() => navigate("/ai-settings")}
             >
-              ⚙️ Manage All Features
+              Manage All Features
             </button>
           </div>
         </div>
@@ -235,7 +235,7 @@ function ResultCard({ data, onClose }) {
             style={{ color: copied ? "var(--success)" : "#fff", fontSize: "14px" }}
             onClick={handleCopy}
           >
-            {copied ? "✅ Copied!" : "📋 Copy"}
+            {copied ? "Copied!" : "Copy"}
           </button>
           <button className="btn-icon" onClick={onClose}>
             ✕
@@ -290,7 +290,7 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
         ...prev,
         {
           role: "assistant",
-          content: `⚠️ ${apiErrorMessage(
+          content: `${apiErrorMessage(
             error,
             "Could not reach the AI service. Please add your API key in AI Settings → API Configuration."
           )}`,
@@ -329,7 +329,7 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
         ))}
         {loading && (
           <div className="ai-chat-message assistant">
-            <div className="ai-chat-bubble ai-typing">🤖 Thinking...</div>
+            <div className="ai-chat-bubble ai-typing">Thinking...</div>
           </div>
         )}
       </div>
@@ -455,7 +455,7 @@ export default function AIAssistant() {
               onClick={() => run(getDailyDigest)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Generating..." : "☀️ Generate Daily Digest"}
+              {loading ? "Generating..." : "Generate Daily Digest"}
             </button>
           </div>
         )}
@@ -469,7 +469,7 @@ export default function AIAssistant() {
               onClick={() => run(getStandup)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Generating..." : "🗣️ Generate Standup"}
+              {loading ? "Generating..." : "Generate Standup"}
             </button>
           </div>
         )}
@@ -483,7 +483,7 @@ export default function AIAssistant() {
               onClick={() => run(getFocusMode)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Thinking..." : "🎯 What Should I Focus On?"}
+              {loading ? "Thinking..." : "What Should I Focus On?"}
             </button>
           </div>
         )}
@@ -521,7 +521,7 @@ export default function AIAssistant() {
                 })
               }
             >
-              {loading ? "⏳ Generating..." : "🤖 Generate Tasks"}
+              {loading ? "Generating..." : "Generate Tasks"}
             </button>
           </div>
         )}
@@ -545,7 +545,7 @@ export default function AIAssistant() {
               disabled={loading || !inputs.naturalText || !featureEnabled}
               onClick={() => run(naturalTask, { text: inputs.naturalText })}
             >
-              {loading ? "⏳ Parsing..." : "💬 Parse Task"}
+              {loading ? "Parsing..." : "Parse Task"}
             </button>
           </div>
         )}
@@ -569,7 +569,7 @@ export default function AIAssistant() {
               disabled={loading || !inputs.meetingNotes || !featureEnabled}
               onClick={() => run(meetingNotes, { notes: inputs.meetingNotes })}
             >
-              {loading ? "⏳ Extracting..." : "📝 Extract Tasks"}
+              {loading ? "Extracting..." : "Extract Tasks"}
             </button>
           </div>
         )}
@@ -607,7 +607,7 @@ export default function AIAssistant() {
                 })
               }
             >
-              {loading ? "⏳ Advising..." : "🎯 Get Goal Advice"}
+              {loading ? "Advising..." : "Get Goal Advice"}
             </button>
           </div>
         )}
@@ -645,7 +645,7 @@ export default function AIAssistant() {
                 })
               }
             >
-              {loading ? "⏳ Breaking down..." : "🗺️ Generate Full Breakdown"}
+              {loading ? "Breaking down..." : "Generate Full Breakdown"}
             </button>
           </div>
         )}
@@ -683,7 +683,7 @@ export default function AIAssistant() {
                 })
               }
             >
-              {loading ? "⏳ Estimating..." : "⏱️ Estimate Time"}
+              {loading ? "Estimating..." : "Estimate Time"}
             </button>
           </div>
         )}
@@ -698,7 +698,7 @@ export default function AIAssistant() {
               onClick={() => run(prioritizeTasks)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Analyzing..." : "📊 Prioritize My Tasks"}
+              {loading ? "Analyzing..." : "Prioritize My Tasks"}
             </button>
           </div>
         )}
@@ -712,7 +712,7 @@ export default function AIAssistant() {
               onClick={() => run(getWeeklyPlan)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Planning..." : "📆 Generate Weekly Plan"}
+              {loading ? "Planning..." : "Generate Weekly Plan"}
             </button>
           </div>
         )}
@@ -726,7 +726,7 @@ export default function AIAssistant() {
               onClick={() => run(detectRisks)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Analyzing..." : "⚠️ Detect Risks"}
+              {loading ? "Analyzing..." : "Detect Risks"}
             </button>
           </div>
         )}
@@ -740,7 +740,7 @@ export default function AIAssistant() {
               onClick={() => run(burnoutCheck)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Checking..." : "💊 Check Burnout Risk"}
+              {loading ? "Checking..." : "Check Burnout Risk"}
             </button>
           </div>
         )}
@@ -754,7 +754,7 @@ export default function AIAssistant() {
               onClick={() => run(predictRisks)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Predicting..." : "🔮 Predict Risks"}
+              {loading ? "Predicting..." : "Predict Risks"}
             </button>
           </div>
         )}
@@ -768,7 +768,7 @@ export default function AIAssistant() {
               onClick={() => run(teamInsights)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Analyzing..." : "👥 Get Team Insights"}
+              {loading ? "Analyzing..." : "Get Team Insights"}
             </button>
           </div>
         )}
@@ -782,7 +782,7 @@ export default function AIAssistant() {
               onClick={() => run(detectDependencies)}
               disabled={loading || !featureEnabled}
             >
-              {loading ? "⏳ Detecting..." : "🔗 Detect Dependencies"}
+              {loading ? "Detecting..." : "Detect Dependencies"}
             </button>
           </div>
         )}
@@ -805,7 +805,7 @@ export default function AIAssistant() {
               disabled={loading || !inputs.question || !featureEnabled}
               onClick={() => run(askKnowledge, { question: inputs.question })}
             >
-              {loading ? "⏳ Thinking..." : "🧠 Ask"}
+              {loading ? "Thinking..." : "Ask"}
             </button>
           </div>
         )}
@@ -824,7 +824,7 @@ export default function AIAssistant() {
         action={
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <span style={{ fontSize: "12px", color: "#888" }}>
-              AI: {settings?.aiEnabled ? "🟢 ON" : "🔴 OFF"}
+              AI: {settings?.aiEnabled ? "ON" : "OFF"}
             </span>
             <button
               className={settings?.aiEnabled ? "btn-secondary" : "btn-primary"}
@@ -838,7 +838,7 @@ export default function AIAssistant() {
               style={{ fontSize: "12px", padding: "6px 14px" }}
               onClick={() => navigate("/ai-settings")}
             >
-              ⚙️ Settings
+              Settings
             </button>
           </div>
         }

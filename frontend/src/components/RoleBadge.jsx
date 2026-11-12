@@ -12,10 +12,10 @@ export default function RoleBadge({ role }) {
   }[role] || "role-badge role-member";
 
   const label = {
-    OWNER:  "👑 Manager",
-    ADMIN:  "🛡️ Admin",
-    MEMBER: "👤 Member",
-    VIEWER: "👁️ Viewer",
+    OWNER:  "Manager",
+    ADMIN:  "Admin",
+    MEMBER: "Member",
+    VIEWER: "Viewer",
   }[role] || role;
 
   return <span className={cls}>{label}</span>;

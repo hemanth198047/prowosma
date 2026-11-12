@@ -468,7 +468,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
               background:intg.color,
               color:"#fff", textDecoration:"none", display:"block",
               boxSizing:"border-box" }}>
-            ⚙️ Go to AI Settings
+            Go to AI Settings
           </a>
         ) : (
           <>
@@ -484,7 +484,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
                 transition:"opacity .13s" }}
               onMouseEnter={e => e.currentTarget.style.opacity=".9"}
               onMouseLeave={e => e.currentTarget.style.opacity="1"}>
-              {isConnected ? "⚙️ Reconfigure" : "🔗 Configure"}
+              {isConnected ? "Reconfigure" : "Configure"}
             </button>
 
             {isConnected && syncAction && (
@@ -693,7 +693,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
                 <div style={{ fontSize:"11px", color:"#64748b", marginTop:"4px",
                   lineHeight:1.5, padding:"4px 8px", background:"#fffbeb",
                   borderRadius:"6px", border:"1px solid #fef3c7" }}>
-                  💡 {field.help}
+                  {field.help}
                 </div>
               )}
             </div>
@@ -727,7 +727,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
             <div style={{ padding:"10px 14px", borderRadius:"9px",
               background:"#fff1f2", border:"1px solid #fca5a5",
               fontSize:"12px", color:"#b91c1c", fontWeight:600 }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
@@ -758,7 +758,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
               opacity: (saving||saved) ? 0.85 : 1,
               boxShadow:"var(--elevation-2)",
               transition:"all .15s" }}>
-            {saved ? "✓ Saved!" : saving ? "Saving…" : "💾 Save & Connect"}
+            {saved ? "✓ Saved!" : saving ? "Saving…" : "Save & Connect"}
           </button>
         </div>
       </div>
@@ -792,7 +792,7 @@ function UnifiedLayerBanner({ navigate }) {
         <div style={{ flex:1, minWidth:240 }}>
           <div style={{ fontSize:"12px", fontWeight:700, color:"#38bdf8",
             letterSpacing:".06em", textTransform:"uppercase", marginBottom:"8px" }}>
-            🔗 Enterprise Integration Vision
+            Enterprise Integration Vision
           </div>
           <div style={{ fontSize:"20px", fontWeight:800, color:"#fff",
             lineHeight:1.3, marginBottom:"8px" }}>

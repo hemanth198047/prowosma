@@ -240,12 +240,12 @@ export default function WhiteLabel() {
   };
 
   const TABS = [
-    { id:"brand",  label:"🎨 Brand identity" },
-    { id:"layout", label:"🖼 Layout & colours" },
-    { id:"domain", label:"🌐 Domain & email" },
-    { id:"login",  label:"🔐 Login page" },
-    { id:"pdf",    label:"📄 PDF exports" },
-    { id:"links",  label:"🔗 Links & legal" },
+    { id:"brand",  label:"Brand identity" },
+    { id:"layout", label:"Layout & colours" },
+    { id:"domain", label:"Domain & email" },
+    { id:"login",  label:"Login page" },
+    { id:"pdf",    label:"PDF exports" },
+    { id:"links",  label:"Links & legal" },
     { id:"code",   label:"</> Custom code" },
   ];
 
@@ -462,7 +462,7 @@ export default function WhiteLabel() {
               </div>
               <div className="wl-field">
                 <p className="wl-hint" style={{fontSize:12}}>
-                  💡 Tip: Use Unsplash (unsplash.com) for free professional background images.
+                  Tip: Use Unsplash (unsplash.com) for free professional background images.
                   Recommended size: 1920×1080px.
                 </p>
               </div>
@@ -538,7 +538,7 @@ export default function WhiteLabel() {
               </div>
               <div className="wl-field">
                 <label className="wl-label" htmlFor="whitelabel-custom-js">Custom JavaScript</label>
-                <p className="wl-hint">⚠️ Use with caution — runs on every page after React mounts. Do not include <code>&lt;script&gt;</code> tags.</p>
+                <p className="wl-hint">Use with caution — runs on every page after React mounts. Do not include <code>&lt;script&gt;</code> tags.</p>
                 <textarea className="wl-code-editor" rows={6} id="whitelabel-custom-js"
                   value={brand.customJs}
                   onChange={e=>set("customJs",e.target.value)}

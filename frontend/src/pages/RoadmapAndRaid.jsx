@@ -58,7 +58,7 @@ function BudgetPanel({ project, onRefresh }) {
 
   return (
     <div className="raid-panel">
-      <div className="raid-panel-title">💰 Budget Tracking — {project.name}</div>
+      <div className="raid-panel-title">Budget Tracking — {project.name}</div>
 
       {/* Summary */}
       <div className="budget-summary">
@@ -99,7 +99,7 @@ function BudgetPanel({ project, onRefresh }) {
           </div>
         ) : (
           <button className="btn-secondary" style={{ fontSize:"11px" }} onClick={() => setEditBudget(true)}>
-            ✏️ {budget > 0 ? "Edit Budget" : "Set Budget"}
+            {budget > 0 ? "Edit Budget" : "Set Budget"}
           </button>
         )}
         <button className="btn-primary" style={{ fontSize:"11px" }}
@@ -202,7 +202,7 @@ function RaidPanel({ projectId }) {
   return (
     <div className="raid-panel">
       <div className="raid-panel-header">
-        <div className="raid-panel-title">📋 RAID Log</div>
+        <div className="raid-panel-title">RAID Log</div>
         <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
           {Object.entries(TYPE_META).map(([t,m]) => (
             <button key={t}
@@ -349,7 +349,7 @@ function RoadmapView({ projects }) {
 
   return (
     <div className="roadmap-wrap">
-      <div className="roadmap-header-title">📅 Project Roadmap — {year}</div>
+      <div className="roadmap-header-title">Project Roadmap — {year}</div>
 
       {/* Month headers */}
       <div className="roadmap-months">
@@ -421,7 +421,7 @@ export default function RoadmapAndRaid() {
         description="Project roadmap timeline, budget tracking, and RAID log" />
 
       <div className="admin-tab-bar">
-        {[["roadmap","📅 Roadmap"],["budget","💰 Budget"],["raid","📋 RAID Log"]].map(([t,l]) => (
+        {[["roadmap","Roadmap"],["budget","Budget"],["raid","RAID Log"]].map(([t,l]) => (
           <button key={t} className={`admin-tab-btn${tab===t?" active":""}`}
             onClick={() => setTab(t)}>{l}</button>
         ))}

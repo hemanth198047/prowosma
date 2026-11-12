@@ -162,7 +162,7 @@ function OverviewTab({ settings, profiles, departments, reload, notify }) {
         <button className="btn-secondary" onClick={() => setSlots((all) => [...all, { key: "", label: "" }])}>+ Add a responsibility</button>
       </div>
 
-      {warnings.map((w) => <p key={w} role="status" style={{ color: "var(--warning)" }}>⚠️ {w}</p>)}
+      {warnings.map((w) => <p key={w} role="status" style={{ color: "var(--warning)" }}>{w}</p>)}
       <button className="btn-primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save settings"}</button>
       <LegacyDocsCard departments={departments} notify={notify} />
     </section>
@@ -432,7 +432,7 @@ function OrgSetupAdvanced({ reload, notify }) {
           {(result.warnings || []).length > 0 && (
             <>
               <strong>Needs your attention</strong>
-              <ul>{result.warnings.map((w) => <li key={w}>⚠️ {w}</li>)}</ul>
+              <ul>{result.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
             </>
           )}
         </div>

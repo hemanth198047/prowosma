@@ -150,12 +150,12 @@ export default function Calendar() {
       extendedProps: { type: "task", itemId: t.id, item: t },
     }));
     if (layers.project) projects.filter((p) => p.dueDate).forEach((p) => out.push({
-      id: `project-${p.id}`, title: `📁 ${p.name}`, start: p.dueDate.slice(0, 10), allDay: true, editable: false,
+      id: `project-${p.id}`, title: `${p.name}`, start: p.dueDate.slice(0, 10), allDay: true, editable: false,
       backgroundColor: p.color || "var(--warning)", borderColor: "transparent", textColor: "#fff",
       classNames: ["cal-ev-item"], extendedProps: { type: "project", itemId: p.id, item: p },
     }));
     if (layers.goal) goals.filter((g) => g.targetDate).forEach((g) => out.push({
-      id: `goal-${g.id}`, title: `🎯 ${g.title}`, start: g.targetDate.slice(0, 10), allDay: true, editable: false,
+      id: `goal-${g.id}`, title: `${g.title}`, start: g.targetDate.slice(0, 10), allDay: true, editable: false,
       backgroundColor: g.status === "ACHIEVED" ? "var(--success)" : "var(--purple)", borderColor: "transparent", textColor: "#fff",
       classNames: ["cal-ev-item"], extendedProps: { type: "goal", itemId: g.id, item: g },
     }));

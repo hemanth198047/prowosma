@@ -132,7 +132,7 @@ function ReleasesTab({ projects }) {
               <span className="pplus-version-chip">{r.version}</span>
               <div>
                 <div className="pplus-row-title">{r.name||r.version}</div>
-                {r.owner && <div className="pplus-row-meta">👤 {r.owner}</div>}
+                {r.owner && <div className="pplus-row-meta">{r.owner}</div>}
               </div>
               <span className="pplus-row-meta">{projectName(r.projectId)}</span>
               <span className="pplus-row-meta">{r.environment||"—"}</span>
@@ -235,7 +235,7 @@ function InitiativesTab({ projects, goals }) {
               <div>
                 <div className="pplus-initiative-name">{item.name}</div>
                 <div className="pplus-initiative-meta">
-                  {item.owner && <span>👤 {item.owner}</span>}
+                  {item.owner && <span>{item.owner}</span>}
                   <span className="pplus-priority-chip"
                     style={{color:PRIORITY_COLOR[item.priority||"MEDIUM"]}}>
                     {item.priority||"MEDIUM"}
@@ -249,7 +249,7 @@ function InitiativesTab({ projects, goals }) {
             </div>
             {item.description && <div className="pplus-initiative-desc">{item.description}</div>}
             {item.strategicRationale && (
-              <div className="pplus-initiative-rationale">💡 {item.strategicRationale}</div>
+              <div className="pplus-initiative-rationale">{item.strategicRationale}</div>
             )}
             <div className="pplus-initiative-progress">
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
@@ -263,10 +263,10 @@ function InitiativesTab({ projects, goals }) {
             </div>
             <div className="pplus-initiative-links">
               {(item.projectIds||[]).length>0 && (
-                <span className="pplus-link-chip">📁 {item.projectIds.length} project{item.projectIds.length>1?"s":""}</span>
+                <span className="pplus-link-chip">{item.projectIds.length} project{item.projectIds.length>1?"s":""}</span>
               )}
               {(item.goalIds||[]).length>0 && (
-                <span className="pplus-link-chip">🎯 {item.goalIds.length} goal{item.goalIds.length>1?"s":""}</span>
+                <span className="pplus-link-chip">{item.goalIds.length} goal{item.goalIds.length>1?"s":""}</span>
               )}
             </div>
           </div>
@@ -408,7 +408,7 @@ function ProgrammesTab({ projects }) {
               <div className="pplus-programme-header">
                 <div className="pplus-programme-left">
                   <div className="pplus-initiative-name">{prog.name}</div>
-                  {prog.owner && <div className="pplus-row-meta">👤 {prog.owner}</div>}
+                  {prog.owner && <div className="pplus-row-meta">{prog.owner}</div>}
                   <div style={{display:"flex",gap:"6px",marginTop:"4px",flexWrap:"wrap"}}>
                     <span className="pplus-status-chip"
                       style={{color:STATUS_COLOR[prog.status]||"var(--gray-500)",
@@ -416,7 +416,7 @@ function ProgrammesTab({ projects }) {
                       {statusText(prog.status)}
                     </span>
                     {linkedProjs.map(p=>(
-                      <span key={p.id} className="pplus-link-chip">📁 {p.name}</span>
+                      <span key={p.id} className="pplus-link-chip">{p.name}</span>
                     ))}
                   </div>
                 </div>
@@ -458,11 +458,11 @@ function ProgrammesTab({ projects }) {
                         </span>
                         {m.dueDate && (
                           <span className="pplus-milestone-date">
-                            📅 {new Date(m.dueDate).toLocaleDateString()}
+                            {new Date(m.dueDate).toLocaleDateString()}
                           </span>
                         )}
                         {m.ownedBy && (
-                          <span className="pplus-milestone-owner">👤 {m.ownedBy}</span>
+                          <span className="pplus-milestone-owner">{m.ownedBy}</span>
                         )}
                       </div>
                     ))}
@@ -538,9 +538,9 @@ export default function PortfolioPlus() {
   }, []);
 
   const TABS = [
-    { id:"releases",    label:"🚀 Releases"   },
-    { id:"initiatives", label:"⚡ Initiatives" },
-    { id:"programmes",  label:"📦 Programmes" },
+    { id:"releases",    label:"Releases"   },
+    { id:"initiatives", label:"Initiatives" },
+    { id:"programmes",  label:"Programmes" },
   ];
 
   return (

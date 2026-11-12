@@ -664,8 +664,8 @@ export default function Dashboard() {
         <div className="db-hero-bar" />
         <div className="db-hero-body">
           <div className="db-hero-left">
-            <div className="db-hero-greeting">{greeting()}, {userName} 👋</div>
-            <div className="db-hero-date">Your command center · {todayStr}</div>
+            <h1 className="db-hero-greeting">{greeting()}, {userName}</h1>
+            <div className="db-hero-date">{todayStr}</div>
             <div className="db-chips-row">
               {totalOverdue > 0 && <Chip Icon={AlertTriangle} value={totalOverdue} label="overdue" color="#ef4444" bg="rgba(239,68,68,0.08)" border="rgba(239,68,68,0.25)" onClick={() => setShowOverdue(true)} />}
               <Chip Icon={CheckSquare} value={summary.inProgressTasks||0} label="in progress" color="#6366f1" bg="rgba(99,102,241,0.08)" border="rgba(99,102,241,0.2)" onClick={() => navigate("/tasks?status=IN_PROGRESS")} />
@@ -701,7 +701,7 @@ export default function Dashboard() {
       {can("USE_MEETING_ASSISTANT") && (
         <div className="db-card">
           <div className="db-card-header">
-            <span className="db-card-title">🤖 MEETING ASSISTANT</span>
+            <span className="db-card-title">MEETING ASSISTANT</span>
             <button className="db-link" onClick={() => navigate("/meeting-assistant")}>Open →</button>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -762,7 +762,7 @@ export default function Dashboard() {
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:"5px", flex:1, overflowY:"auto" }}>
               {(dashTaskTab==="active"?dashTasks.active:dashTaskTab==="overdue"?dashTasks.overdue:dashTasks.today).length===0
-                ? <div className="db-empty">{dashTaskTab==="overdue"?"🎉 No overdue!":"No tasks here"}</div>
+                ? <div className="db-empty">{dashTaskTab==="overdue"?"No overdue!":"No tasks here"}</div>
                 : (dashTaskTab==="active"?dashTasks.active:dashTaskTab==="overdue"?dashTasks.overdue:dashTasks.today).slice(0,8).map(t=><TaskRow key={t.id} task={t} navigate={navigate} />)
               }
             </div>
@@ -777,8 +777,8 @@ export default function Dashboard() {
             <div className="db-ai-card-top"><span className="db-ai-badge"><Sparkles size={11} style={{marginRight:4, verticalAlign:"-2px"}} />AI Insight</span></div>
             <div className="db-ai-text">
               {summary.inProgressTasks||0} tasks across {summary.activeProjects||summary.totalProjects||0} projects.
-              {totalOverdue > 0 && <span className="db-ai-warn"> ⚠️ {totalOverdue} overdue.</span>}
-              {completionRate >= 70 && <span className="db-ai-good"> 🎉 On track!</span>}
+              {totalOverdue > 0 && <span className="db-ai-warn"> {totalOverdue} overdue.</span>}
+              {completionRate >= 70 && <span className="db-ai-good"> On track!</span>}
             </div>
             <div className="db-ai-stats">
               {[{l:"Todo",v:summary.todoTasks||0,c:"var(--viz-todo)"},{l:"Progress",v:summary.inProgressTasks||0,c:"var(--viz-progress)"},{l:"Done",v:summary.doneTasks||0,c:"var(--viz-done)"}].map(s=>(
@@ -822,10 +822,10 @@ export default function Dashboard() {
           <div className="db-ai-text" style={{ marginBottom:"8px" }}>Your AI command centre. Run intelligence, get insights, automate decisions.</div>
           <div className="db-compact-list" style={{ marginBottom:"10px" }}>
             {aiTiles.map(t=>(
-              <div key={t.to} className="db-compact-item" onClick={() => navigate(t.to)} style={{ color:"rgba(255,255,255,0.8)" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate(t.to))?.(e); } }}>
-                <span className="db-compact-icon" style={{ color:"rgba(255,255,255,0.85)" }}><t.Icon size={15} /></span>
-                <span style={{ fontSize:"var(--text-sm)", fontWeight:600, color:"rgba(255,255,255,0.85)", flex:1 }}>{t.label}</span>
-                <span style={{ fontSize:"var(--text-2xs)", color:"rgba(255,255,255,0.4)" }}>{t.sub}</span>
+              <div key={t.to} className="db-compact-item" onClick={() => navigate(t.to)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate(t.to))?.(e); } }}>
+                <span className="db-compact-icon"><t.Icon size={15} /></span>
+                <span className="db-compact-name">{t.label}</span>
+                <span className="db-compact-sub">{t.sub}</span>
               </div>
             ))}
           </div>

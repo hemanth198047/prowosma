@@ -179,9 +179,9 @@ export default function Importer() {
               <button key={s}
                 className={`importer-source-btn${source === s ? " active" : ""}`}
                 onClick={() => setSource(s)}>
-                {s === "asana" ? "🟥 Asana CSV" : s === "clickup" ? "🟣 ClickUp CSV"
-                  : s === "notion" ? "⬛ Notion CSV" : s === "monday" ? "🔴 Monday.com CSV"
-                  : s === "csv" ? "📄 Generic CSV" : "📋 JSON"}
+                {s === "asana" ? "Asana CSV" : s === "clickup" ? "ClickUp CSV"
+                  : s === "notion" ? "⬛ Notion CSV" : s === "monday" ? "Monday.com CSV"
+                  : s === "csv" ? "Generic CSV" : "JSON"}
               </button>
             ))}
           </div>
@@ -219,7 +219,7 @@ export default function Importer() {
               placeholder={`Paste CSV or JSON here…\n\nExample CSV:\n${SAMPLE_CSV}`} id={"importer-or-paste-raw-text"} />
           </div>
 
-          {error && <div className="auth-error">⚠ {error}</div>}
+          {error && <div className="auth-error">{error}</div>}
 
           <div style={{ display:"flex", gap:"10px" }}>
             <button className="btn-secondary" onClick={() => { setRawText(SAMPLE_CSV); setSource("csv"); }}>
@@ -282,12 +282,12 @@ export default function Importer() {
             )}
           </div>
 
-          {error && <div className="auth-error">⚠ {error}</div>}
+          {error && <div className="auth-error">{error}</div>}
 
           <div style={{ display:"flex", gap:"10px", marginTop:"16px" }}>
             <button className="btn-secondary" onClick={reset}>← Start Over</button>
             <button className="btn-primary" disabled={importing} onClick={handleImport}>
-              {importing ? "⏳ Importing…" : `🚀 Import ${parsed.length} Tasks`}
+              {importing ? "Importing…" : `Import ${parsed.length} Tasks`}
             </button>
           </div>
         </div>

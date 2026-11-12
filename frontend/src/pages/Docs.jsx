@@ -78,7 +78,7 @@ function TaskPicker({ onSelect, onClose, allTasks }) {
     <div className="modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="doc-task-picker" onClick={e => e.stopPropagation()} role="presentation">
         <div className="doc-task-picker-header">
-          <span>🔗 Embed a task</span>
+          <span>Embed a task</span>
           <button onClick={onClose}>✕</button>
         </div>
         <input
@@ -118,7 +118,7 @@ function GoalPicker({ onSelect, onClose, allGoals }) {
   return (
     <div className="task-picker-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="task-picker" onClick={e => e.stopPropagation()} role="presentation">
-        <div className="task-picker-header">🎯 Pick a goal to embed</div>
+        <div className="task-picker-header">Pick a goal to embed</div>
         <input className="task-picker-search" placeholder="Search goals…"
           value={q} onChange={e => setQ(e.target.value)} />
         <div className="task-picker-list">
@@ -144,7 +144,7 @@ function GoalEmbedBlock({ goalId, allGoals, onRemove }) {
   const goal = allGoals?.find(g => g.id === goalId);
   if (!goal) return (
     <div className="doc-task-embed doc-task-embed--missing">
-      <span>⚠️ Goal not found</span>
+      <span>Goal not found</span>
       <button onClick={onRemove} title="Remove embed">✕</button>
     </div>
   );
@@ -255,7 +255,7 @@ function AIWriteBlock({ onGenerated, onRemove }) {
 
   return (
     <div className="doc-ai-block">
-      <div className="doc-ai-block-header">🤖 AI Write</div>
+      <div className="doc-ai-block-header">AI Write</div>
       <textarea className="doc-ai-block-input" rows={2}
         placeholder="What should I write? e.g. 'Summarize the risks of this approach' or 'Draft a meeting agenda for sprint planning'"
         value={prompt} onChange={e => setPrompt(e.target.value)}
@@ -263,7 +263,7 @@ function AIWriteBlock({ onGenerated, onRemove }) {
       {error && <div className="doc-ai-block-error">{error}</div>}
       <div className="doc-ai-block-actions">
         <button className="doc-ai-block-btn-primary" disabled={loading || !prompt.trim()} onClick={handleGenerate}>
-          {loading ? "⏳ Generating…" : "✨ Generate"}
+          {loading ? "Generating…" : "Generate"}
         </button>
         <button className="doc-ai-block-btn-cancel" onClick={onRemove}>Cancel</button>
       </div>
@@ -281,7 +281,7 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
 
   if (!task) return (
     <div className="doc-task-embed doc-task-embed--missing">
-      <span>⚠️ Task not found</span>
+      <span>Task not found</span>
       <button onClick={onRemove} title="Remove embed">✕</button>
     </div>
   );
@@ -310,7 +310,7 @@ function TaskEmbedBlock({ taskId, allTasks, onOpenTask, onRemove }) {
           )}
           {task.dueDate && (
             <span className="doc-task-embed-due">
-              📅 {new Date(task.dueDate).toLocaleDateString()}
+              {new Date(task.dueDate).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -341,7 +341,7 @@ function DecisionInlineForm({ docId, wsId, initial, onSave, onCancel }) {
 
   return (
     <div className="dec-inline-form" onClick={e => e.stopPropagation()} role="presentation">
-      <div className="dec-inline-form-title">⚖️ {initial ? "Edit Decision" : "New Decision Record"}</div>
+      <div className="dec-inline-form-title">{initial ? "Edit Decision" : "New Decision Record"}</div>
       <div className="form-group">
         <label htmlFor={"docs-title"}>Title *</label>
         <input value={form.title} onChange={e => set("title", e.target.value)}
@@ -399,7 +399,7 @@ function DecisionEmbedBlock({ decisionId, docDecisions, onEdit, onRemove, onNavi
 
   if (!d) return (
     <div className="dec-embed dec-embed--missing">
-      <span>⚠️ Decision not found</span>
+      <span>Decision not found</span>
       <button onClick={onRemove} title="Remove">✕</button>
     </div>
   );
@@ -419,7 +419,7 @@ function DecisionEmbedBlock({ decisionId, docDecisions, onEdit, onRemove, onNavi
         </div>
         {d.decision  && <div className="dec-embed-text"><b>Decision: </b>{d.decision}</div>}
         {d.rationale && <div className="dec-embed-text"><b>Rationale: </b>{d.rationale}</div>}
-        {d.owner     && <div className="dec-embed-owner">👤 {d.owner}</div>}
+        {d.owner     && <div className="dec-embed-owner">{d.owner}</div>}
       </div>
       <div className="dec-embed-btns" onClick={e => e.stopPropagation()} role="presentation">
         <button title="Edit" onClick={() => onEdit(d)}>✎</button>
@@ -464,7 +464,7 @@ function WikiLinkMenu({ query, onSelect, onClose, anchorRef, allDocs }) {
 
   return (
     <div className="doc-wiki-menu" style={{ top: pos.top, left: pos.left }} onMouseDown={e => e.preventDefault()} role="presentation">
-      <div className="doc-wiki-menu-label">🔗 Link to page</div>
+      <div className="doc-wiki-menu-label">Link to page</div>
       {filtered.length === 0
         ? <div className="doc-wiki-empty">No pages match "{query}"</div>
         : filtered.map((d, i) => (
@@ -532,7 +532,7 @@ function DocTagPanel({ doc, onSave, onClose }) {
   return (
     <div className="doc-tag-panel">
       <div className="doc-tag-panel-header">
-        <span>🏷 Tags &amp; Category</span>
+        <span>Tags &amp; Category</span>
         <button onClick={onClose} className="doc-tag-panel-close">✕</button>
       </div>
       <div className="doc-tag-panel-body">
@@ -883,7 +883,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
           />
         : <button className="doc-task-embed-placeholder"
             onClick={() => setGoalPicker(true)}>
-            🎯 Click to select a goal to embed
+            Click to select a goal to embed
           </button>
       }
     </div>
@@ -1014,7 +1014,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
           />
         : <button className="doc-task-embed-placeholder"
             onClick={() => setTaskPicker(true)}>
-            ✅ Click to select a task to embed
+            Click to select a task to embed
           </button>
       }
       <div className="doc-block-actions">
@@ -1076,7 +1076,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
             onNavigate={() => window.location.href = "/decisions"}
           />
         : <button className="dec-embed-placeholder" onClick={() => setDecisionForm(true)}>
-            ⚖️ Click to create a decision record
+            Click to create a decision record
           </button>
       }
       <div className="doc-block-actions">
@@ -1103,7 +1103,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
         : <button className="doc-img-placeholder" onClick={() => {
             const url = prompt("Image URL (https://…):");
             if (url) onChange({ ...block, content: url });
-          }}>🖼 Click to add image URL</button>
+          }}>Click to add image URL</button>
       }
     </div>
   );
@@ -1357,7 +1357,7 @@ const TEMPLATES = [
     key:"meeting", emoji:"📝", label:"Meeting Notes",
     blocks: () => [
       newBlock("heading1","Meeting Notes"),
-      newBlock("paragraph",`📅 ${new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}`),
+      newBlock("paragraph",`${new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}`),
       newBlock("heading2","Attendees"),
       newBlock("bulletList",""),
       newBlock("heading2","Agenda"),
@@ -1376,13 +1376,13 @@ const TEMPLATES = [
     blocks: () => [
       newBlock("heading1","Sprint Retrospective"),
       newBlock("paragraph",`Sprint — ${new Date().toLocaleDateString()}`),
-      newBlock("heading2","✅ What went well"),
+      newBlock("heading2","What went well"),
       newBlock("bulletList",""),
-      newBlock("heading2","⚠️ What to improve"),
+      newBlock("heading2","What to improve"),
       newBlock("bulletList",""),
-      newBlock("heading2","💡 Ideas"),
+      newBlock("heading2","Ideas"),
       newBlock("bulletList",""),
-      newBlock("heading2","🎯 Action items"),
+      newBlock("heading2","Action items"),
       newBlock("todo",""),
     ],
   },
@@ -1630,7 +1630,7 @@ function DocBreadcrumb({ doc, allDocs, onNavigate }) {
   }
   return (
     <nav className="doc-breadcrumb">
-      <button className="doc-bc-root" onClick={() => onNavigate(null)}>📚 Docs</button>
+      <button className="doc-bc-root" onClick={() => onNavigate(null)}>Docs</button>
       {path.map(d => (
         <span key={d.id} className="doc-bc-seg">
           <span className="doc-bc-sep">/</span>
@@ -1753,7 +1753,7 @@ function VersionHistoryPanel({ versions, loading, restoringVersion, activeDoc, c
         {/* Header */}
         <div className="doc-vh-header">
           <div className="doc-vh-header-left">
-            <span className="doc-vh-title">🕐 Version history</span>
+            <span className="doc-vh-title">Version history</span>
             <span className="doc-vh-doc-name">{activeDoc?.emoji} {activeDoc?.title || "Untitled"}</span>
           </div>
           <button className="doc-vh-close" onClick={onClose}>✕</button>
@@ -1800,7 +1800,7 @@ function VersionHistoryPanel({ versions, loading, restoringVersion, activeDoc, c
                       disabled={restoringVersion === v.versionNumber}
                       onClick={e => { e.stopPropagation(); onRestore(v.versionNumber); }}
                     >
-                      {restoringVersion === v.versionNumber ? "⏳ Restoring…" : "↩ Restore"}
+                      {restoringVersion === v.versionNumber ? "Restoring…" : "↩ Restore"}
                     </button>
                   </div>
                 )}
@@ -1981,7 +1981,7 @@ export default function Docs() {
           newBlock("bulletList","Press Enter to create a new block"),
           newBlock("bulletList","Backspace on an empty block to delete it"),
           newBlock("heading2","Block types"),
-          newBlock("callout","💡 Tip — Headings, bullet lists, numbered lists, to-dos, quotes, code blocks, callouts, images, and dividers"),
+          newBlock("callout","Tip — Headings, bullet lists, numbered lists, to-dos, quotes, code blocks, callouts, images, and dividers"),
           newBlock("heading2","Getting started"),
           newBlock("todo","Create your first real page using + New page"),
           newBlock("todo","Try the PRD template"),
@@ -2152,7 +2152,7 @@ export default function Docs() {
   };
 
   const wc = wordCount(content);
-  const saveLabel = saving ? "⏳ Saving…" : savedAt ? `✓ Saved ${savedAt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}` : activeDoc ? "● Unsaved" : "";
+  const saveLabel = saving ? "Saving…" : savedAt ? `✓ Saved ${savedAt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}` : activeDoc ? "● Unsaved" : "";
 
   // ── render ──────────────────────────────────────────────
   if (loading) return (
@@ -2168,7 +2168,7 @@ export default function Docs() {
       {/* ── SIDEBAR ─────────────────────────────────── */}
       <aside className={`docs-sidebar${sidebarOpen ? "" : " docs-sidebar--closed"}`}>
         <div className="docs-sb-header">
-          {sidebarOpen && <span className="docs-sb-title">📚 Docs</span>}
+          {sidebarOpen && <span className="docs-sb-title">Docs</span>}
           <button className="docs-sb-toggle" onClick={() => setSidebarOpen(v=>!v)} title="Toggle sidebar">
             {sidebarOpen ? "‹" : "›"}
           </button>
@@ -2273,17 +2273,17 @@ export default function Docs() {
                   {/* Who can see this doc (departments / sharing), shown once access control is on */}
                   {accessEnabled && activeDoc && activeDoc.id !== "__demo__" && (
                     <button className="docs-history-btn" onClick={() => setShowDocAccess(true)} title="Who can see this document">
-                      👥 Access
+                      Access
                     </button>
                   )}
                   {/* A-8: Publish toggle */}
                   <button className={`docs-history-btn${activeDoc?.visibility === "PUBLIC" ? " docs-btn-published" : ""}`}
                     onClick={() => setShowPublish(v => !v)} title="Publish settings">
-                    {activeDoc?.visibility === "PUBLIC" ? "🌐 Published" : "🔒 Private"}
+                    {activeDoc?.visibility === "PUBLIC" ? "Published" : "Private"}
                   </button>
                   {/* A-12: Tags button */}
                   <button className="docs-history-btn" onClick={() => setShowTagPanel(v => !v)} title="Tags & category">
-                    🏷 Tags
+                    Tags
                   </button>
 
                   {/* Knowledge freshness indicator */}
@@ -2305,7 +2305,7 @@ export default function Docs() {
                             {stale:false, reviewAt: new Date(Date.now()+90*86400000).toISOString()});
                           toast.show("Doc marked as reviewed. Next review in 90 days.", "success");
                         }}>
-                        {isStale ? "⚠️ Stale" : "🕐 Ageing"} ({daysSince}d)
+                        {isStale ? "Stale" : "Ageing"} ({daysSince}d)
                       </button>
                     );
                   })()}
@@ -2314,7 +2314,7 @@ export default function Docs() {
                   <button className="docs-history-btn"
                     onClick={() => setShowInlineComments && setShowInlineComments(v => !v)}
                     title="Inline comments">
-                    💬 Comments
+                    Comments
                     {activeDoc?.inlineComments?.filter(c=>!c.resolved).length > 0 && (
                       <span style={{fontSize:"9px",background:"var(--danger)",color:"#fff",
                         borderRadius:"99px",padding:"1px 5px",marginLeft:"4px"}}>
@@ -2323,7 +2323,7 @@ export default function Docs() {
                     )}
                   </button>
                   <button className="docs-history-btn" onClick={handleShowVersions} title="Version history">
-                    🕐 History
+                    History
                   </button>
                 </div>
               </div>
@@ -2381,7 +2381,7 @@ export default function Docs() {
               {/* A-8: Publish panel */}
               {showPublish && (
                 <div className="doc-publish-panel">
-                  <div className="doc-publish-title">🌐 Publishing</div>
+                  <div className="doc-publish-title">Publishing</div>
                   <div className="doc-publish-options">
                     {["PRIVATE","TEAM","PUBLIC"].map(v => (
                       <button key={v}
@@ -2394,7 +2394,7 @@ export default function Docs() {
                           setActiveDoc(d => ({ ...d, visibility: v, publishedSlug: slug }));
                           toast?.show(`Visibility set to ${v}`, "success");
                         }}>
-                        {v === "PRIVATE" ? "🔒 Private" : v === "TEAM" ? "👥 Team" : "🌐 Public"}
+                        {v === "PRIVATE" ? "Private" : v === "TEAM" ? "Team" : "Public"}
                       </button>
                     ))}
                   </div>
@@ -2410,7 +2410,7 @@ export default function Docs() {
                                 navigator.clipboard.writeText(window.location.origin + "/docs/p/" + activeDoc.publishedSlug);
                                 toast?.show("Link copied!", "success");
                               }}>
-                              📋 Copy
+                              Copy
                             </button>
                           </div>
                         </>
@@ -2449,7 +2449,7 @@ export default function Docs() {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                   padding:"14px 16px",borderBottom:"1px solid var(--border)",
                   fontWeight:800,fontSize:"14px"}}>
-                  💬 Inline Comments
+                  Inline Comments
                   <button style={{background:"none",border:"none",cursor:"pointer",fontSize:"18px"}}
                     onClick={()=>setShowInlineComments(false)}>✕</button>
                 </div>
@@ -2475,7 +2475,7 @@ export default function Docs() {
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",
                         fontSize:"10px",color:"#94a3b8"}}>
-                        <span>💬 {c.authorEmail}</span>
+                        <span>{c.authorEmail}</span>
                         {!c.resolved && (
                           <button style={{fontSize:"10px",background:"none",border:"1px solid var(--border)",
                             borderRadius:"4px",cursor:"pointer",padding:"1px 7px",color:"#1E8E5A"}}

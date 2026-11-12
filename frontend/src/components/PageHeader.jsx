@@ -1,15 +1,18 @@
+/**
+ * The title row every page opens with: the page name, one line on what it's
+ * for, and the page's main actions on the right. Same look as Projects and
+ * Tasks (page-kit.css). `icon` is still accepted so callers don't break, but
+ * pages no longer show an emoji beside their title.
+ */
+// eslint-disable-next-line no-unused-vars
 export default function PageHeader({ title, description, icon, action }) {
   return (
-    <div className="page-header-block">
-      <div className="page-header-left">
-        <div className="page-header-breadcrumb">Prowosma</div>
-        <div className="page-header-title">
-          {icon && <span className="page-header-icon">{icon}</span>}
-          <h1>{title}</h1>
-        </div>
-        {description && <p className="page-header-desc">{description}</p>}
+    <header className="pg-title-row page-header-block">
+      <div className="pg-title-text">
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
       </div>
-      {action && <div className="page-header-action">{action}</div>}
-    </div>
+      {action && <div className="pg-title-actions page-header-action">{action}</div>}
+    </header>
   );
 }

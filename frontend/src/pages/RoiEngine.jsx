@@ -136,7 +136,7 @@ function ProjectRoiCard({ project, onUpdate }) {
       {/* Actions */}
       <div className="roi-card-actions">
         <button className="btn-secondary" style={{fontSize:"11px"}}
-          onClick={()=>setShowSettings(v=>!v)}>⚙️ Settings</button>
+          onClick={()=>setShowSettings(v=>!v)}>Settings</button>
         <button className="btn-primary" style={{fontSize:"11px"}}
           onClick={()=>setShowAdd(v=>!v)}>+ Revenue</button>
       </div>

@@ -340,7 +340,7 @@ export default function AISettings() {
 
       {/* API Config */}
       <div className="ai-config-card">
-        <div className="ai-config-title">🔑 API Configuration</div>
+        <div className="ai-config-title">API Configuration</div>
         <div className="ai-config-note">
           Choose your AI provider. Your key is stored only on your server —
           never shared. You can change or remove it anytime.
@@ -376,7 +376,7 @@ export default function AISettings() {
                       padding: "2px 10px", borderRadius: "999px",
                       letterSpacing: "0.06em", textTransform: "uppercase",
                       whiteSpace: "nowrap", boxShadow: "var(--elevation-2)",
-                    }}>⭐ PRIMARY</div>
+                    }}>PRIMARY</div>
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px",
                     marginBottom: "6px", marginTop: isPrimary ? "6px" : "0" }}>
@@ -448,7 +448,7 @@ export default function AISettings() {
                 <button className="btn-secondary"
                   style={{ fontSize: "12px", padding: "8px 12px", whiteSpace: "nowrap" }}
                   onClick={() => { handleKeyChange(""); setTestResult(null); }}>
-                  🗑️ Clear
+                  Clear
                 </button>
               )}
             </div>
@@ -535,11 +535,11 @@ export default function AISettings() {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "💾 Save Configuration"}
+            {saving ? "Saving..." : "Save Configuration"}
           </button>
           {saved && (
             <span style={{ color: "var(--success)", fontSize: "13px" }}>
-              ✅ Saved!
+              Saved!
             </span>
           )}
           <span style={{ fontSize: "12px", color: "#888", marginLeft: "8px" }}>
@@ -552,7 +552,7 @@ export default function AISettings() {
       <div className="ai-features-section">
         <div className="ai-features-header">
           <div className="ai-features-title">
-            ⚙️ Feature Settings
+            Feature Settings
             {settings?.aiEnabled ? (
               <span className="ai-enabled-count">
                 {enabledCount}/{AI_FEATURES.length} enabled

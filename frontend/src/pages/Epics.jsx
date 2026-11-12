@@ -6,6 +6,7 @@ import { getTasks } from "../api/tasks";
 import { getProjects } from "../api/projects";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { statusText } from "../utils/statusText";
 
 const api = {
   list:   (pid) => client.get(`/epics${pid?`?projectId=${pid}`:""}`),
@@ -160,7 +161,7 @@ export default function Epics() {
       <div className="intg-filter-bar">
         {["","OPEN","IN_PROGRESS","DONE","CANCELLED"].map(f=>(
           <button key={f} className={`sprint-filter-btn${filter===f?" active":""}`}
-            onClick={()=>setFilter(f)}>{f||"All"}</button>
+            onClick={()=>setFilter(f)}>{f ? statusText(f) : "All"}</button>
         ))}
       </div>
 
@@ -213,7 +214,7 @@ export default function Epics() {
                 </span>
                 {epic.targetDate && (
                   <span style={{fontSize:"11px",color:"var(--gray-400)"}}>
-                    🎯 {new Date(epic.targetDate).toLocaleDateString()}
+                    {new Date(epic.targetDate).toLocaleDateString()}
                   </span>
                 )}
                 {epic.priority && epic.priority!=="MEDIUM" && (

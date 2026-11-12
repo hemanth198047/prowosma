@@ -882,9 +882,9 @@ function ProjectCard({
       <div>
         <h3 className="pj-name">
           <span className="pj-swatch" style={{ background: color }} aria-hidden="true" />
-          <button type="button" className="pj-name-link" onClick={() => navigate(`/tasks?projectId=${p.id}`)}>{p.name}</button>
+          <button type="button" className="pj-name-link" title={p.name} onClick={() => navigate(`/tasks?projectId=${p.id}`)}>{p.name}</button>
         </h3>
-        {p.description && <p className="pj-desc">{p.description}</p>}
+        <p className="pj-desc">{p.description || <span className="pj-desc-none">No description</span>}</p>
         <ProjectMeta p={p} cat={cat} />
       </div>
       <ProgressBar value={progress} color={color} name={p.name} />

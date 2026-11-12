@@ -15,15 +15,16 @@ describe("PageHeader", () => {
     expect(screen.getByRole("heading", { name: "Change Requests" })).toBeInTheDocument();
   });
 
-  it("renders the icon and description when provided", () => {
+  it("renders the description, and no longer shows an emoji icon beside the title", () => {
     render(<PageHeader icon="🔧" title="Change Requests" description="Propose and review changes" />);
-    expect(screen.getByText("🔧")).toBeInTheDocument();
     expect(screen.getByText("Propose and review changes")).toBeInTheDocument();
+    expect(screen.queryByText("🔧")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Change Requests" })).toBeInTheDocument();
   });
 
   it("omits the description block entirely when none is given, rather than rendering an empty <p>", () => {
     const { container } = render(<PageHeader title="Minimal" />);
-    expect(container.querySelector(".page-header-desc")).not.toBeInTheDocument();
+    expect(container.querySelector("p")).not.toBeInTheDocument();
   });
 
   it("renders the action slot (e.g. a 'New' button) when provided", () => {

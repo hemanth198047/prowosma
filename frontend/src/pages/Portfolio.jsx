@@ -54,9 +54,9 @@ function ProjectRow({ project, onOpen, onCriticalPath, cpActive }) {
       </div>
 
       <div className="portfolio-row-stats">
-        <span className="portfolio-stat-chip">✅ {project.doneTasks}/{project.totalTasks}</span>
+        <span className="portfolio-stat-chip">{project.doneTasks}/{project.totalTasks}</span>
         {project.overdueTasks > 0 && (
-          <span className="portfolio-stat-chip portfolio-stat-danger">⚠ {project.overdueTasks} overdue</span>
+          <span className="portfolio-stat-chip portfolio-stat-danger">{project.overdueTasks} overdue</span>
         )}
       </div>
 
@@ -87,7 +87,7 @@ function ProjectRow({ project, onOpen, onCriticalPath, cpActive }) {
 function CriticalPathPanel({ data, loading, onClose }) {
   if (loading) return (
     <div className="cp-panel">
-      <div className="cp-header"><span className="cp-title">🔴 Critical Path</span><button className="btn-icon" onClick={onClose}>✕</button></div>
+      <div className="cp-header"><span className="cp-title">Critical Path</span><button className="btn-icon" onClick={onClose}>✕</button></div>
       <div className="analytics-loading"><div className="analytics-spinner"/></div>
     </div>
   );
@@ -97,7 +97,7 @@ function CriticalPathPanel({ data, loading, onClose }) {
     <div className="cp-panel">
       <div className="cp-header">
         <div>
-          <span className="cp-title">🔴 Critical Path</span>
+          <span className="cp-title">Critical Path</span>
           <span className="cp-meta">{criticalPath.length} critical tasks · {totalDuration} days total</span>
         </div>
         <button className="btn-icon" onClick={onClose}>✕</button>
@@ -199,7 +199,7 @@ function ProjectDetailPanel({ project, onClose }) {
             <div className="portfolio-detail-section-label">Sub-projects</div>
             <div className="portfolio-subproject-list">
               {project.subProjects.map(sp => (
-                <div key={sp} className="portfolio-subproject-chip">📁 {sp}</div>
+                <div key={sp} className="portfolio-subproject-chip">{sp}</div>
               ))}
             </div>
           </div>
@@ -210,7 +210,7 @@ function ProjectDetailPanel({ project, onClose }) {
           <div className="portfolio-detail-section">
             <div className="portfolio-detail-section-label">Linked Goals</div>
             {project.linkedGoals.map(g => (
-              <div key={g} className="portfolio-goal-chip">🎯 {g}</div>
+              <div key={g} className="portfolio-goal-chip">{g}</div>
             ))}
           </div>
         )}
@@ -255,7 +255,7 @@ function RiskPlanningPanel({ projects, onClose }) {
   return (
     <div className="cp-overlay" style={{width:560}}>
       <div className="cp-header">
-        <div className="cp-title">⚠️ Risk-Adjusted Planning</div>
+        <div className="cp-title">Risk-Adjusted Planning</div>
         <button className="cp-close" onClick={onClose}>✕</button>
       </div>
       <div className="cp-body" style={{maxHeight:"80vh",overflowY:"auto"}}>
@@ -300,7 +300,7 @@ function RiskPlanningPanel({ projects, onClose }) {
                 onClick={()=>{
                   const id = document.getElementById("risk-proj-sel")?.value;
                   if (id) runAnalysis(id);
-                }}>{analysing?"⏳ Analysing…":"▶ Analyse"}</button>
+                }}>{analysing?"Analysing…":"▶ Analyse"}</button>
             </div>
 
             {detail && (
@@ -333,18 +333,18 @@ function RiskPlanningPanel({ projects, onClose }) {
                     <div style={{fontSize:"11px",fontWeight:700,color:"var(--gray-500)",marginBottom:"5px"}}>RISK FACTORS</div>
                     {detail.riskFactors.map((f,i)=>(
                       <div key={i} style={{fontSize:"12px",color:"var(--gray-600)",padding:"3px 0",
-                        borderBottom:"1px solid var(--border)"}}>⚠️ {f}</div>
+                        borderBottom:"1px solid var(--border)"}}>{f}</div>
                     ))}
                   </div>
                 )}
                 {detail.forecastConfidence && (
                   <div style={{fontSize:"11px",color:"var(--gray-400)",marginBottom:"10px",lineHeight:1.5}}>
-                    📊 {detail.forecastConfidence}
+                    {detail.forecastConfidence}
                   </div>
                 )}
                 {detail.aiNarrative && (
                   <div style={{background:"rgba(99,102,241,.06)",borderRadius:"var(--radius-sm)",padding:"10px"}}>
-                    <div style={{fontSize:"10px",fontWeight:700,color:"var(--brand-500)",marginBottom:"5px"}}>🤖 AI ASSESSMENT</div>
+                    <div style={{fontSize:"10px",fontWeight:700,color:"var(--brand-500)",marginBottom:"5px"}}>AI ASSESSMENT</div>
                     <div style={{fontSize:"12px",color:"var(--gray-600)",lineHeight:1.6}}>{detail.aiNarrative}</div>
                   </div>
                 )}
@@ -437,7 +437,7 @@ export default function Portfolio() {
           <div style={{display:"flex",gap:"6px"}}>
             <button className="btn-secondary" style={{ fontSize:"12px" }}
               onClick={() => setShowRisk(v=>!v)}>
-              ⚠️ Risk Planning
+              Risk Planning
             </button>
             <button className="btn-secondary" style={{ fontSize:"12px" }}
               onClick={() => navigate("/projects")}>

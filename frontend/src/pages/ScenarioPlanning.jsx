@@ -21,17 +21,17 @@ const api = {
 
 // ── Constants ──────────────────────────────────────────────────
 const SCENARIO_TYPES = [
-  { value:"TEAM_CHANGE",     label:"👥 Team Change",       icon:"👥",
+  { value:"TEAM_CHANGE",     label:"Team Change",       icon:"👥",
     desc:"Simulate losing or adding team members and the impact on delivery" },
-  { value:"DEADLINE_SHIFT",  label:"📅 Deadline Shift",    icon:"📅",
+  { value:"DEADLINE_SHIFT",  label:"Deadline Shift",    icon:"📅",
     desc:"Compress or extend project timelines and see confidence projections" },
-  { value:"SCOPE_CHANGE",    label:"📦 Scope Change",      icon:"📦",
+  { value:"SCOPE_CHANGE",    label:"Scope Change",      icon:"📦",
     desc:"Add or remove story points and see sprint/delivery impact" },
-  { value:"BUDGET_CUT",      label:"💰 Budget Cut",        icon:"💰",
+  { value:"BUDGET_CUT",      label:"Budget Cut",        icon:"💰",
     desc:"Model budget reduction scenarios and projected burn rate" },
-  { value:"VELOCITY_CHANGE", label:"⚡ Velocity Change",   icon:"⚡",
+  { value:"VELOCITY_CHANGE", label:"Velocity Change",   icon:"⚡",
     desc:"Simulate team slowdown (illness, onboarding, tech debt) or speedup" },
-  { value:"COMBINED",        label:"🔀 Combined",          icon:"🔀",
+  { value:"COMBINED",        label:"Combined",          icon:"🔀",
     desc:"Mix multiple changes together for complex what-if analysis" },
 ];
 
@@ -148,7 +148,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
         <MetricCard icon="👥" label="Team Load"
           value={`${results.teamLoadChange > 0 ? "+" : ""}${results.teamLoadChange}%`}
           color={results.teamLoadChange > 20 ? "var(--danger)" : results.teamLoadChange > 0 ? "var(--warning)" : "var(--success)"}
-          sub={results.burnoutRisk ? "⚠️ Burnout risk" : "Within capacity"} />
+          sub={results.burnoutRisk ? "Burnout risk" : "Within capacity"} />
         <MetricCard icon="💰" label="Budget Variance"
           value={results.budgetVariance < 0 ? `−$${Math.abs(results.budgetVariance).toLocaleString()}` : "No change"}
           color={results.budgetVariance < -1000 ? "var(--danger)" : "var(--gray-700)"}
@@ -158,7 +158,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
       {/* AI Narrative */}
       {aiNarrative && (
         <div className="sc-ai-narrative">
-          <div className="sc-ai-label">🤖 AI Executive Narrative</div>
+          <div className="sc-ai-label">AI Executive Narrative</div>
           <div className="sc-ai-text">{aiNarrative}</div>
         </div>
       )}
@@ -166,7 +166,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
       {/* Warnings */}
       {results.warnings?.length > 0 && (
         <div className="sc-section">
-          <div className="sc-section-label">⚠️ Warnings</div>
+          <div className="sc-section-label">Warnings</div>
           {results.warnings.map((w,i) => (
             <div key={i} className="sc-warning-row">
               <span className="sc-warning-dot" />
@@ -179,7 +179,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
       {/* Recommendations */}
       {results.recommendations?.length > 0 && (
         <div className="sc-section">
-          <div className="sc-section-label">💡 Recommendations</div>
+          <div className="sc-section-label">Recommendations</div>
           {results.recommendations.map((r,i) => (
             <div key={i} className="sc-rec-row">
               <span className="sc-rec-num">{i+1}</span>
@@ -192,7 +192,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
       {/* Affected Goals */}
       {results.affectedGoals?.length > 0 && (
         <div className="sc-section">
-          <div className="sc-section-label">🎯 Goal Impact Detail</div>
+          <div className="sc-section-label">Goal Impact Detail</div>
           {results.affectedGoals.map((g,i) => (
             <div key={i} className="sc-goal-impact-row">
               <span className="sc-goal-impact-title">{g.title}</span>
@@ -212,7 +212,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
                     {g.projectedConf}%
                   </span>
                 </div>
-                {g.atRisk && <span className="sc-goal-at-risk">⚠️ At Risk</span>}
+                {g.atRisk && <span className="sc-goal-at-risk">At Risk</span>}
               </div>
             </div>
           ))}
@@ -222,7 +222,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
       {/* Member impacts */}
       {results.memberImpacts?.length > 0 && (
         <div className="sc-section">
-          <div className="sc-section-label">👤 Member Impact</div>
+          <div className="sc-section-label">Member Impact</div>
           {results.memberImpacts.map((m,i) => (
             <div key={i} className="sc-member-impact-row">
               <span className="sc-member-impact-email">{m.email}</span>
@@ -264,7 +264,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
       {/* Team Change */}
       {showTeam && (
         <div className="sc-builder-section">
-          <div className="sc-builder-section-title">👥 Team Changes</div>
+          <div className="sc-builder-section-title">Team Changes</div>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor={"scenario-planning-net-team-size-change"}>Net Team Size Change</label>
@@ -304,7 +304,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
       {/* Deadline Shift */}
       {showDeadline && (
         <div className="sc-builder-section">
-          <div className="sc-builder-section-title">📅 Deadline Shift</div>
+          <div className="sc-builder-section-title">Deadline Shift</div>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor={"scenario-planning-shift-deadline-by-days"}>Shift deadline by (days)</label>
@@ -337,7 +337,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
       {/* Velocity Change */}
       {showVelocity && (
         <div className="sc-builder-section">
-          <div className="sc-builder-section-title">⚡ Velocity Change</div>
+          <div className="sc-builder-section-title">Velocity Change</div>
           <div className="form-group">
             <label htmlFor={"scenario-planning-sprint-velocity-change"}>Sprint velocity change (%)</label>
             <div className="sc-slider-wrap">
@@ -358,7 +358,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
       {/* Scope Change */}
       {showScope && (
         <div className="sc-builder-section">
-          <div className="sc-builder-section-title">📦 Scope Changes</div>
+          <div className="sc-builder-section-title">Scope Changes</div>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor={"scenario-planning-story-points-added-to-backlog"}>Story points ADDED to backlog</label>
@@ -387,7 +387,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
       {/* Budget Cut */}
       {showBudget && (
         <div className="sc-builder-section">
-          <div className="sc-builder-section-title">💰 Budget Reduction</div>
+          <div className="sc-builder-section-title">Budget Reduction</div>
           <div className="form-group">
             <label htmlFor={"scenario-planning-budget-cut"}>Budget cut (%)</label>
             <div className="sc-slider-wrap">
@@ -404,7 +404,7 @@ function ScenarioBuilder({ scenario, projects, members, onChange, onSimulate, si
 
       <div className="sc-builder-actions">
         <button className="btn-primary sc-simulate-btn" onClick={onSimulate} disabled={simulating}>
-          {simulating ? "⏳ Simulating…" : "▶ Run Simulation"}
+          {simulating ? "Simulating…" : "▶ Run Simulation"}
         </button>
       </div>
     </div>
@@ -617,9 +617,9 @@ export default function ScenarioPlanning() {
           <div style={{display:"flex",gap:"8px"}}>
             {tab==="builder" && editing && (
               <>
-                <button className="btn-secondary" onClick={saveScenario}>💾 Save</button>
+                <button className="btn-secondary" onClick={saveScenario}>Save</button>
                 <button className="btn-primary" onClick={runPreview} disabled={previewing}>
-                  {previewing ? "⏳" : "👁 Preview"}
+                  {previewing ? "⏳" : "Preview"}
                 </button>
               </>
             )}
@@ -630,10 +630,10 @@ export default function ScenarioPlanning() {
       {/* Tab bar */}
       <div className="admin-tab-bar">
         {[
-          ["scenarios",  "📋 Scenarios"],
-          ["builder",    "🔨 Builder"],
-          ["results",    `📊 Results${simulated.length>0?` (${simulated.length})`:""}`],
-          ["compare",    "⚖️ Compare"],
+          ["scenarios",  "Scenarios"],
+          ["builder",    "Builder"],
+          ["results",    `Results${simulated.length>0?` (${simulated.length})`:""}`],
+          ["compare",    "Compare"],
         ].map(([t,l])=>(
           <button key={t} className={`admin-tab-btn${tab===t?" active":""}`}
             onClick={()=>setTab(t)}>{l}</button>
@@ -686,7 +686,7 @@ export default function ScenarioPlanning() {
                       <div style={{display:"flex",gap:"6px"}}>
                         <button className="btn-secondary" style={{fontSize:"11px"}}
                           onClick={()=>{ setEditing(s); setLiveInputs(s.inputs); setLiveResult(null); setTab("builder"); }}>
-                          ✏️ Edit
+                          Edit
                         </button>
                         {s.id && (
                           <button className="btn-primary" style={{fontSize:"11px"}}
@@ -698,7 +698,7 @@ export default function ScenarioPlanning() {
                         {s.status==="SIMULATED" && (
                           <button className="btn-secondary" style={{fontSize:"11px"}}
                             onClick={()=>{ setActiveId(s.id); setTab("results"); }}>
-                            📊 View
+                            View
                           </button>
                         )}
                         <button className="btn-icon" onClick={()=>handleDelete(s.id)}>🗑️</button>
@@ -768,8 +768,8 @@ export default function ScenarioPlanning() {
                   <div className="sc-preview-placeholder">
                     <div className="sc-preview-icon">🔮</div>
                     <div className="sc-preview-hint">
-                      Adjust the sliders and click <strong>👁 Preview</strong> to see a live simulation,
-                      or <strong>💾 Save</strong> then <strong>▶ Run Simulation</strong> to persist results.
+                      Adjust the sliders and click <strong>Preview</strong> to see a live simulation,
+                      or <strong>Save</strong> then <strong>▶ Run Simulation</strong> to persist results.
                     </div>
                   </div>
                 )}

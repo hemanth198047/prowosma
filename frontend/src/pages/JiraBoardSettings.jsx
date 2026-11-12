@@ -142,7 +142,7 @@ export default function JiraBoardSettings() {
         <div>
           <div className="jbs-breadcrumb">
             <span onClick={()=>navigate("/jira-board")} className="jbs-bc-link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>navigate("/jira-board"))?.(e); } }}>
-              🎯 Jira Board
+              Jira Board
             </span>
             <span className="jbs-bc-sep">›</span>
             <span>Settings</span>
@@ -189,7 +189,7 @@ export default function JiraBoardSettings() {
             <div className="jbs-section">
               <div className="jbs-section-head">
                 <div>
-                  <div className="jbs-section-title">📋 Board Columns</div>
+                  <div className="jbs-section-title">Board Columns</div>
                   <div className="jbs-section-desc">
                     Add, remove, rename and reorder columns. Set a WIP (work-in-progress)
                     limit to cap how many issues can be in a column at once.
@@ -232,7 +232,7 @@ export default function JiraBoardSettings() {
           {activeTab==="sprints" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🏃 Sprint Settings</div>
+                <div className="jbs-section-title">Sprint Settings</div>
                 <div className="jbs-section-desc">
                   Control how sprints are created, named, and completed.
                 </div>
@@ -308,7 +308,7 @@ export default function JiraBoardSettings() {
           {activeTab==="estimation" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🎯 Story Point Estimation</div>
+                <div className="jbs-section-title">Story Point Estimation</div>
                 <div className="jbs-section-desc">
                   Choose the estimation scale shown in issue cards and dropdowns.
                 </div>
@@ -364,7 +364,7 @@ export default function JiraBoardSettings() {
           {activeTab==="display" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🖼 Cards & Display</div>
+                <div className="jbs-section-title">Cards & Display</div>
                 <div className="jbs-section-desc">
                   Control how issues look on the board and how the backlog is organised.
                 </div>
@@ -435,7 +435,7 @@ export default function JiraBoardSettings() {
           {activeTab==="types" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🏷 Issue Types</div>
+                <div className="jbs-section-title">Issue Types</div>
                 <div className="jbs-section-desc">
                   Enable or disable issue types for this board. Disabled types are hidden
                   from filters, creation dropdowns, and the backlog.
@@ -488,7 +488,7 @@ export default function JiraBoardSettings() {
           {activeTab==="workflow" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🔄 Workflow Rules</div>
+                <div className="jbs-section-title">Workflow Rules</div>
                 <div className="jbs-section-desc">
                   Enforce quality gates and process rules when moving issues between statuses.
                 </div>
@@ -538,7 +538,7 @@ export default function JiraBoardSettings() {
           {activeTab==="statuses" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🔁 Status Mapping</div>
+                <div className="jbs-section-title">Status Mapping</div>
                 <div className="jbs-section-desc">
                   Map each board column to the underlying task status stored in the database.
                   This lets you rename columns without changing the backend status values.
@@ -585,7 +585,7 @@ export default function JiraBoardSettings() {
           {activeTab==="permissions" && (
             <div className="jbs-section">
               <div className="jbs-section-head">
-                <div className="jbs-section-title">🔐 Board Permissions</div>
+                <div className="jbs-section-title">Board Permissions</div>
                 <div className="jbs-section-desc">
                   Control what team members can do on this board.
                 </div>

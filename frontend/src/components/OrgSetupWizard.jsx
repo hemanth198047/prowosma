@@ -266,7 +266,7 @@ function ReviewStep({ s, plan, preview, previewing, error, invite, setInvite, ne
           {(preview.warnings || []).length > 0 && (
             <>
               <strong>Needs your attention</strong>
-              <ul>{preview.warnings.map((w) => <li key={w}>⚠️ {w}</li>)}</ul>
+              <ul>{preview.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
             </>
           )}
           <strong>What will be done</strong>

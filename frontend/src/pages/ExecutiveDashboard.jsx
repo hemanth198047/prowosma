@@ -99,7 +99,7 @@ export default function ExecutiveDashboard() {
         description="One-screen strategic view: portfolio health, goals, KPIs, risks, and AI narrative"
         action={
           <button className="btn-primary" onClick={loadAISummary} disabled={aiLoading}>
-            {aiLoading ? "⏳ Generating…" : "🤖 AI Narrative"}
+            {aiLoading ? "Generating…" : "AI Narrative"}
           </button>
         }
       />
@@ -147,7 +147,7 @@ export default function ExecutiveDashboard() {
       <div className="exec-grid">
         {/* Radar chart */}
         <div className="exec-card">
-          <div className="exec-card-title">🕸 Organisational Health Radar</div>
+          <div className="exec-card-title">Organisational Health Radar</div>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={radarData}>
               <PolarGrid />
@@ -159,7 +159,7 @@ export default function ExecutiveDashboard() {
 
         {/* Top risks */}
         <div className="exec-card">
-          <div className="exec-card-title">🚨 Top Risks</div>
+          <div className="exec-card-title">Top Risks</div>
           {risks.slice(0,5).map((r,i) => (
             <div key={i} className="exec-risk-row">
               <span className={`exec-risk-sev exec-risk-${r.severity?.toLowerCase()||"medium"}`}>
@@ -167,7 +167,7 @@ export default function ExecutiveDashboard() {
               </span>
               <div className="exec-risk-info">
                 <div className="exec-risk-title">{r.risk || r.title}</div>
-                {r.project && <div className="exec-risk-meta">📁 {r.project}</div>}
+                {r.project && <div className="exec-risk-meta">{r.project}</div>}
               </div>
             </div>
           ))}
@@ -178,7 +178,7 @@ export default function ExecutiveDashboard() {
 
         {/* KPI status */}
         <div className="exec-card">
-          <div className="exec-card-title">📊 KPI Status</div>
+          <div className="exec-card-title">KPI Status</div>
           {kpis.slice(0,6).map(k => {
             const range = k.targetValue - k.baselineValue;
             const pct   = range===0 ? 0 : Math.min(100,Math.round(((k.currentValue-k.baselineValue)/range)*100));
@@ -198,7 +198,7 @@ export default function ExecutiveDashboard() {
 
         {/* Goals confidence */}
         <div className="exec-card">
-          <div className="exec-card-title">🎯 Goal Confidence</div>
+          <div className="exec-card-title">Goal Confidence</div>
           {goals.filter(g=>g.status==="ACTIVE").slice(0,6).map(g => {
             const conf = g.confidence || 50;
             const color = conf >= 70 ? "var(--success)" : conf >= 40 ? "var(--warning)" : "var(--danger)";
@@ -217,7 +217,7 @@ export default function ExecutiveDashboard() {
 
         {/* Portfolio table */}
         <div className="exec-card exec-card-wide">
-          <div className="exec-card-title">📁 Portfolio Overview</div>
+          <div className="exec-card-title">Portfolio Overview</div>
           <table className="exec-table">
             <thead>
               <tr><th>Project</th><th>Status</th><th>Health</th><th>Progress</th></tr>

@@ -5,11 +5,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
-  align-items: start;
+  /* every card the same size: equal columns, and every row at least as tall
+     as a full card; a card that opens a panel grows its own row only */
+  grid-auto-rows: minmax(var(--pj-card-h), auto);
+  align-items: stretch;
 }
+.pj-page { --pj-card-h: 248px; }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 .pj-card {
+  height: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -71,8 +77,13 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: calc(2 * 1.45em);  /* always room for two lines, so cards line up */
 }
-.pj-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pj-card-text { min-height: 0; }
+/* progress + team sit on the card's bottom edge whatever is above them */
+.pj-card > .pj-progress { margin-top: auto; }
+.pj-meta { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 8px; overflow: hidden; }
+.pj-meta .pj-chip { flex-shrink: 0; max-width: 100%; }
 .pj-chip {
   display: inline-flex;
   align-items: center;
@@ -227,3 +238,8 @@
 /* themes.css has a blanket `[data-theme="dark"] [title] { color: inherit }`; the due date carries a title */
 [data-theme="dark"] .pj-due { color: var(--text-secondary); }
 [data-theme="dark"] .pj-due.pj-due--late { color: var(--danger-text); }
+.pj-desc-none { color: var(--text-muted); font-style: italic; }
+/* long names stay on one line so every card's layout matches */
+.pj-card .pj-name-link { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; overflow-wrap: normal; }
+.pj-card .pj-name { min-width: 0; }
+@media (max-width: 640px) { .pj-page { --pj-card-h: auto; } .pj-grid { grid-auto-rows: auto; } }

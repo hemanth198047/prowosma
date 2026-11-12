@@ -168,7 +168,7 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="notif-panel-header">
             <div className="notif-inbox-title">
-              📥 Inbox
+              Inbox
               {unreadCount > 0 && <span className="notif-unread-badge">{unreadCount} new</span>}
             </div>
             <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>

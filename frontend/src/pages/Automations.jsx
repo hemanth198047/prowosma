@@ -68,7 +68,7 @@ const WORKFLOW_TEMPLATES = [
     icon: "🚨",
     triggerType: "TASK_CREATED",
     conditions: [{ id:"1", field:"priority", operator:"equals", value:"HIGH" }],
-    actions: [{ id:"1", type:"POST_COMMENT", config:{ comment:"🚨 This is a high-priority task. Please action immediately." } }],
+    actions: [{ id:"1", type:"POST_COMMENT", config:{ comment:"This is a high-priority task. Please action immediately." } }],
   },
   {
     name: "Sprint Start Notification",
@@ -130,7 +130,7 @@ function ConditionEditor({ conditions, operator, onChange, onOperatorChange }) {
   return (
     <div className="auto-conditions">
       <div className="auto-section-header">
-        <span className="auto-section-label">🔍 Conditions</span>
+        <span className="auto-section-label">Conditions</span>
         {conditions.length > 1 && (
           <div className="auto-operator-toggle">
             {["AND","OR"].map(op => (
@@ -190,7 +190,7 @@ function ActionEditor({ actions, onChange }) {
   return (
     <div className="auto-actions">
       <div className="auto-section-header">
-        <span className="auto-section-label">⚡ Actions</span>
+        <span className="auto-section-label">Actions</span>
         <button className="auto-add-btn" onClick={addAction}>+ Add Action</button>
       </div>
 
@@ -381,8 +381,8 @@ function AutomationBuilder({ initial, onSave, onCancel }) {
               <label htmlFor={"automations-status"}>Status</label>
               <select value={form.enabled ? "true" : "false"}
                 onChange={e => set("enabled", e.target.value === "true")} id={"automations-status"}>
-                <option value="true">✅ Enabled</option>
-                <option value="false">⏸ Disabled</option>
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
               </select>
             </div>
           </div>
@@ -412,7 +412,7 @@ function AutomationBuilder({ initial, onSave, onCancel }) {
               </div>
               {form.triggerType === "INBOUND_WEBHOOK" && (
                 <div className="auto-cron-config">
-                  <div className="auto-cron-label">📥 Inbound Webhook Key</div>
+                  <div className="auto-cron-label">Inbound Webhook Key</div>
                   <input className="auto-cron-input"
                     value={form.triggerConfig?.webhookKey||""}
                     onChange={e => setForm(f=>({...f,triggerConfig:{...f.triggerConfig,webhookKey:e.target.value}}))}
@@ -426,7 +426,7 @@ function AutomationBuilder({ initial, onSave, onCancel }) {
               )}
               {isScheduled && (
                 <div className="auto-cron-config">
-                  <div className="auto-cron-label">⏰ Schedule (cron expression)</div>
+                  <div className="auto-cron-label">Schedule (cron expression)</div>
                   <div className="auto-cron-presets">
                     {[
                       { label:"Daily 9am",    expr:"0 9 * * *"   },
@@ -744,7 +744,7 @@ export default function Automations() {
         action={
           <div style={{ display:"flex", gap:"8px" }}>
             <div style={{ display:"flex", gap:"4px", background:"var(--gray-100)", borderRadius:"var(--radius-sm)", padding:"3px" }}>
-              {[["automations","⚡ Automations"],["approvals","✅ Approvals"],["history","📜 History"],["templates","📋 Templates"]].map(([t,l]) => (
+              {[["automations","Automations"],["approvals","Approvals"],["history","History"],["templates","Templates"]].map(([t,l]) => (
                 <button key={t}
                   style={{ padding:"5px 12px", border:"none", borderRadius:"5px", fontSize:"12px", fontWeight:600, cursor:"pointer",
                     background: activeTab===t ? "var(--bg-card)" : "transparent",
@@ -779,7 +779,7 @@ export default function Automations() {
         <>
         {automations.length > 0 && (
           <div className="filter-bar">
-            <input style={{ width:"200px" }} value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search automations..." />
+            <input style={{ width:"200px" }} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search automations..." />
             <select value={filterTrigger} onChange={e=>setFilterTrigger(e.target.value)}>
               <option value="">All Triggers</option>
               {TRIGGER_META.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
@@ -912,7 +912,7 @@ export default function Automations() {
                   setVersionHistory(unwrapList(hist));
                   showToast("Version saved","success");
                 }}>
-                💾 Save Version Snapshot
+                Save Version Snapshot
               </button>
               {versionHistory.length===0
                 ? <div className="auto-tab-sub">No saved versions yet.</div>

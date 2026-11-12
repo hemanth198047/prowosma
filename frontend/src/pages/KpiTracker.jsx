@@ -191,8 +191,8 @@ function KpiCard({ kpi, goals, onEdit, onDelete, onRefresh }) {
           <div className="kpi-card-meta">
             <span className="kpi-category-chip">{kpi.category}</span>
             <span className="kpi-period-chip">{kpi.period}</span>
-            {kpi.owner && <span className="kpi-owner">👤 {kpi.owner}</span>}
-            {linked && <span className="kpi-linked-goal">🎯 {linked.title}</span>}
+            {kpi.owner && <span className="kpi-owner">{kpi.owner}</span>}
+            {linked && <span className="kpi-linked-goal">{linked.title}</span>}
           </div>
         </div>
         <div className="kpi-card-actions">
@@ -254,14 +254,14 @@ function KpiCard({ kpi, goals, onEdit, onDelete, onRefresh }) {
         <button className={`btn-secondary${showHistory?" btn-active":""}`}
           style={{ fontSize:"11px", padding:"4px 10px" }}
           onClick={() => setShowHistory(v => !v)}>
-          📈 History ({kpi.history?.length || 0})
+          History ({kpi.history?.length || 0})
         </button>
         {kpi.linkedGoalId && (
           <button className={`btn-secondary${showForecast?" btn-active":""}`}
             style={{ fontSize:"11px", padding:"4px 10px" }}
             disabled={forecasting}
             onClick={handleForecast}>
-            {forecasting ? "⏳" : "🔮 Forecast"}
+            {forecasting ? "⏳" : "Forecast"}
           </button>
         )}
       </div>
@@ -427,7 +427,7 @@ export default function KpiTracker() {
         </div>
         <div className="kpi-summary-stat">
           <div className="kpi-summary-num" style={{ color:"var(--danger)" }}>{alerts.length}</div>
-          <div className="kpi-summary-label">⚠ Alerts</div>
+          <div className="kpi-summary-label">Alerts</div>
         </div>
       </div>
 

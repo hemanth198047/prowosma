@@ -14,7 +14,7 @@ import { useRole } from "../hooks/useRole";
  *   </CanDo>
  *
  *   <CanDo action="manageSettings">
- *     <NavLink to="/workspace-settings">⚙️ Settings</NavLink>
+ *     <NavLink to="/workspace-settings">Settings</NavLink>
  *   </CanDo>
  *
  * Actions:

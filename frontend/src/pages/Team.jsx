@@ -410,7 +410,7 @@ export default function Team() {
                 className="btn-secondary"
                 onClick={() => setShowInviteModal(true)}
               >
-                ✉️ Invite Member
+                Invite Member
               </button>
             </CanDo>
             <CanDo action="manageMembers">
@@ -441,32 +441,32 @@ export default function Team() {
           className={`tab-btn ${activeTab === "members" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("members")}
         >
-          👥 Members ({members.length})
+          Members ({members.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "assignments" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("assignments")}
         >
-          📋 Assignments
+          Assignments
         </button>
         <button
           className={`tab-btn ${activeTab === "unassigned" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("unassigned")}
         >
-          ⚠️ Unassigned ({unassignedTasks.length})
+          Unassigned ({unassignedTasks.length})
         </button>
         <button
           className={`tab-btn ${activeTab === "invitations" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("invitations")}
         >
-          ✉️ Invitations{" "}
+          Invitations{" "}
           {pendingInvites.length > 0 && `(${pendingInvites.length})`}
         </button>
         <button
           className={`tab-btn ${activeTab === "expertise" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("expertise")}
         >
-          🧠 Expertise
+          Expertise
         </button>
       </div>
 
@@ -626,12 +626,12 @@ export default function Team() {
                           <div className="task-meta">
                             {getProjectName(t.projectId) && (
                               <span className="task-project">
-                                📁 {getProjectName(t.projectId)}
+                                {getProjectName(t.projectId)}
                               </span>
                             )}
                             {t.dueDate && (
                               <span>
-                                📅 {new Date(t.dueDate).toLocaleDateString()}
+                                {new Date(t.dueDate).toLocaleDateString()}
                               </span>
                             )}
                           </div>
@@ -700,12 +700,12 @@ export default function Team() {
                     <div className="task-meta">
                       {getProjectName(t.projectId) && (
                         <span className="task-project">
-                          📁 {getProjectName(t.projectId)}
+                          {getProjectName(t.projectId)}
                         </span>
                       )}
                       {t.dueDate && (
                         <span>
-                          📅 {new Date(t.dueDate).toLocaleDateString()}
+                          {new Date(t.dueDate).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -826,11 +826,11 @@ export default function Team() {
             className="modal invite-modal"
             onClick={(e) => e.stopPropagation()} role="presentation"
           >
-            <h2>✉️ Invite Team Member</h2>
+            <h2>Invite Team Member</h2>
             {inviteSuccess && (
-              <div className="settings-success-banner">✅ {inviteSuccess}</div>
+              <div className="settings-success-banner">{inviteSuccess}</div>
             )}
-            {inviteError && <div className="auth-error">⚠️ {inviteError}</div>}
+            {inviteError && <div className="auth-error">{inviteError}</div>}
             <div className="form-group">
               <label htmlFor={"team-email-address"}>Email Address *</label>
               <input
@@ -883,7 +883,7 @@ export default function Team() {
                 disabled={inviteLoading}
                 onClick={handleSendInvite}
               >
-                {inviteLoading ? "⏳ Sending..." : "📨 Send Invitation"}
+                {inviteLoading ? "Sending..." : "Send Invitation"}
               </button>
             </div>
           </div>
@@ -962,7 +962,7 @@ function ExpertiseProfileModal({ member, onSave, onClose }) {
   return (
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (e=>e.target===e.currentTarget&&onClose())?.(e); } }}>
       <div className="modal" style={{maxWidth:560, maxHeight:"90vh", overflowY:"auto"}}>
-        <h2>🧠 Expertise Profile — {member.name}</h2>
+        <h2>Expertise Profile — {member.name}</h2>
 
         <div className="form-row">
           <div className="form-group" style={{flex:2}}>
@@ -1077,7 +1077,7 @@ function ExpertFinder() {
     <div className="exp-finder">
       {/* AI Ask anything */}
       <div className="exp-ai-bar">
-        <div className="exp-ai-bar-label">🤖 Ask AI about your team</div>
+        <div className="exp-ai-bar-label">Ask AI about your team</div>
         <div className="exp-ai-bar-input">
           <input value={aiQuery} onChange={e=>setAiQuery(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&askAI()}
@@ -1088,7 +1088,7 @@ function ExpertFinder() {
         </div>
         {aiResult && (
           <div className="exp-ai-result">
-            <div className="exp-ai-result-label">🤖 AI Recommendation</div>
+            <div className="exp-ai-result-label">AI Recommendation</div>
             <div className="exp-ai-result-text">{aiResult.recommendation}</div>
           </div>
         )}
@@ -1102,12 +1102,12 @@ function ExpertFinder() {
             placeholder="Search by skill (e.g. React, Python, DevOps, ML)…"
             className="exp-search-input" />
           <button className="btn-primary" onClick={search} disabled={searching||!query.trim()}>
-            {searching ? "⏳" : "🔍 Find Experts"}
+            {searching ? "⏳" : "Find Experts"}
           </button>
         </div>
         <button className="btn-secondary" onClick={runInfer} disabled={inferring}
           title="Re-analyse task/doc activity to update expertise scores">
-          {inferring ? "⏳ Inferring…" : "🔄 Infer from Activity"}
+          {inferring ? "Inferring…" : "Infer from Activity"}
         </button>
       </div>
 
@@ -1130,8 +1130,8 @@ function ExpertFinder() {
                     {m.department && <div className="exp-result-dept">{m.department}</div>}
                     <div className="exp-result-badges">
                       {r.declaredSkill && <span className="exp-badge exp-badge-declared">✓ Declared</span>}
-                      {r.inferredSkill && <span className="exp-badge exp-badge-inferred">⚡ Inferred</span>}
-                      {r.canMentor     && <span className="exp-badge exp-badge-mentor">🎓 Can Mentor</span>}
+                      {r.inferredSkill && <span className="exp-badge exp-badge-inferred">Inferred</span>}
+                      {r.canMentor     && <span className="exp-badge exp-badge-mentor">Can Mentor</span>}
                     </div>
                     <div className="exp-result-avail">
                       <span className="exp-avail-dot" style={{background:avColor}} />
@@ -1178,7 +1178,7 @@ function SkillMapTab() {
   return (
     <div>
       <div className="exp-tab-switcher">
-        {[["map","🗺 Team Skills"],["gaps","🚧 Skill Gaps"],["mentor","🎓 Mentor Matches"]].map(([v,l])=>(
+        {[["map","Team Skills"],["gaps","Skill Gaps"],["mentor","Mentor Matches"]].map(([v,l])=>(
           <button key={v} className={`sprint-filter-btn${activeView===v?" active":""}`}
             onClick={()=>setActiveView(v)}>{l}</button>
         ))}
@@ -1293,7 +1293,7 @@ function MentorMatchTab() {
               </div>
               {m.matchedLearners.length > 0 && (
                 <div className="exp-mentor-matches">
-                  🎯 Matched learners: <strong>{m.matchedLearners.join(", ")}</strong>
+                  Matched learners: <strong>{m.matchedLearners.join(", ")}</strong>
                 </div>
               )}
             </div>
@@ -1332,7 +1332,7 @@ function TribalKnowledgeTab() {
       </div>
 
       {risks.length === 0 ? (
-        <div className="exp-empty">✅ No critical tribal knowledge risks detected. Knowledge is well distributed.</div>
+        <div className="exp-empty">No critical tribal knowledge risks detected. Knowledge is well distributed.</div>
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
           {risks.map((r,i) => {
@@ -1364,7 +1364,7 @@ function TribalKnowledgeTab() {
       )}
 
       <div className="exp-tribal-hint">
-        💡 Mitigation: pair-programming, doc reviews, cross-training, or updating mentor fields on expertise profiles.
+        Mitigation: pair-programming, doc reviews, cross-training, or updating mentor fields on expertise profiles.
       </div>
     </div>
   );
@@ -1499,8 +1499,8 @@ function MemberExpertiseCard({ member, onEditProfile }) {
       <div className="exp-member-body">
         <div className="exp-member-name">{member.name}</div>
         {member.title && <div className="exp-member-title">{member.title}</div>}
-        {member.department && <div className="exp-member-dept">🏢 {member.department}</div>}
-        {member.location  && <div className="exp-member-dept">📍 {member.location}</div>}
+        {member.department && <div className="exp-member-dept">{member.department}</div>}
+        {member.location  && <div className="exp-member-dept">{member.location}</div>}
         {member.bio && <div className="exp-member-bio">{member.bio}</div>}
 
         {(member.skills || []).length > 0 && (
@@ -1517,7 +1517,7 @@ function MemberExpertiseCard({ member, onEditProfile }) {
 
         {(member.mentorFor || []).length > 0 && (
           <div className="exp-member-mentor">
-            🎓 Mentors: {member.mentorFor.slice(0,3).join(", ")}
+            Mentors: {member.mentorFor.slice(0,3).join(", ")}
             {member.mentorFor.length > 3 && ` +${member.mentorFor.length-3}`}
           </div>
         )}
@@ -1533,7 +1533,7 @@ function MemberExpertiseCard({ member, onEditProfile }) {
       </div>
       <button className="btn-secondary" style={{fontSize:"11px",alignSelf:"flex-start",flexShrink:0}}
         onClick={()=>onEditProfile(member)}>
-        ✏️ Profile
+        Profile
       </button>
     </div>
   );
@@ -1545,11 +1545,11 @@ function ExpertiseTab({ members, onRefresh }) {
   const [editingProfile, setEditingProfile] = React.useState(null);
 
   const VIEWS = [
-    { id:"directory",  label:"👥 Directory"     },
-    { id:"finder",     label:"🔍 Expert Finder" },
-    { id:"skills",     label:"🗺 Skill Map"     },
-    { id:"tribal",     label:"⚠️ Tribal Risk"  },
-    { id:"graph",      label:"🕸 Graph"         },
+    { id:"directory",  label:"Directory"     },
+    { id:"finder",     label:"Expert Finder" },
+    { id:"skills",     label:"Skill Map"     },
+    { id:"tribal",     label:"Tribal Risk"  },
+    { id:"graph",      label:"Graph"         },
   ];
 
   return (

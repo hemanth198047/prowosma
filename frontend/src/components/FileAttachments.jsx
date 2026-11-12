@@ -88,7 +88,7 @@ export default function FileAttachments({ task, onRefresh, compact = false }) {
           setOpen((o) => !o);
         }}
       >
-        📎 Files {count > 0 ? `(${count})` : ""} {open ? "▲" : "▼"}
+        Files {count > 0 ? `(${count})` : ""} {open ? "▲" : "▼"}
       </button>
       )}
 
@@ -152,7 +152,7 @@ export default function FileAttachments({ task, onRefresh, compact = false }) {
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
             >
-              {uploading ? "⏳ Uploading..." : "⬆️ Upload File"}
+              {uploading ? "Uploading..." : "⬆️ Upload File"}
             </button>
             <p
               style={{

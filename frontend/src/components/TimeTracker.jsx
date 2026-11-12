@@ -98,7 +98,7 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
           setOpen((o) => !o);
         }}
       >
-        ⏱️ Time Tracker{" "}
+        Time Tracker{" "}
         {totalMinutes > 0 ? `(${formatTime(totalMinutes)})` : ""}{" "}
         {open ? "▲" : "▼"}
       </button>
@@ -145,7 +145,7 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
                   }}
                   onClick={stopTimer}
                 >
-                  ⏹ Stop & Save
+                  Stop & Save
                 </button>
               </div>
             ) : (

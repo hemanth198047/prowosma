@@ -319,7 +319,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               if (ok) { await onDelete(task.id); onClose(); }
             }}
           >
-            🗑️ Delete Task
+            Delete Task
           </button>
         </div>
       </div>

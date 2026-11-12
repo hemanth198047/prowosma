@@ -62,7 +62,7 @@ function VelocityChart({ sprints, tasks }) {
     <div className="velocity-chart-card">
       <div className="velocity-chart-header">
         <div>
-          <div className="velocity-chart-title">📈 Sprint Velocity History</div>
+          <div className="velocity-chart-title">Sprint Velocity History</div>
           <div className="velocity-chart-sub">Avg: {avgVelocity} tasks/sprint</div>
         </div>
       </div>
@@ -113,10 +113,10 @@ function VelocityChart({ sprints, tasks }) {
         }, 0) / doneTasks.length;
         return (
           <div className="cycle-time-bar">
-            <span className="cycle-time-label">⏱ Avg Cycle Time</span>
+            <span className="cycle-time-label">Avg Cycle Time</span>
             <span className="cycle-time-value">{avgCycle.toFixed(1)} days</span>
             <span className="cycle-time-label" style={{ marginLeft:"16px" }}>
-              📊 Based on {doneTasks.length} completed tasks
+              Based on {doneTasks.length} completed tasks
             </span>
           </div>
         );
@@ -198,7 +198,7 @@ function BacklogPanel({ sprint, allTasks, onTaskAdded, onTaskRemoved }) {
   return (
     <div className="sprint-backlog">
       <div className="sprint-backlog-header">
-        <span className="sprint-section-label">📋 Sprint Backlog</span>
+        <span className="sprint-section-label">Sprint Backlog</span>
         <span className="sprint-points-badge">{donePoints} / {totalPoints} pts</span>
       </div>
 
@@ -220,7 +220,7 @@ function BacklogPanel({ sprint, allTasks, onTaskAdded, onTaskRemoved }) {
 
       {/* Backlog */}
       <div className="sprint-section-label" style={{ marginTop:"16px" }}>
-        📥 Backlog ({filtered.length})
+        Backlog ({filtered.length})
       </div>
       <input className="sprint-search" value={search} onChange={e => setSearch(e.target.value)}
         placeholder="Search backlog tasks…" />
@@ -272,7 +272,7 @@ function BurnupChart({ sprint, allTasks }) {
 
   return (
     <div className="sprint-burnup-card">
-      <div className="sprint-chart-title">📈 Burnup Chart — {sprint.name}</div>
+      <div className="sprint-chart-title">Burnup Chart — {sprint.name}</div>
       <div className="sprint-chart-legend">
         <span className="sprint-legend-dot" style={{ background:"var(--brand-500)" }} /> Completed
         <span className="sprint-legend-dot" style={{ background:"var(--border)", marginLeft:"12px" }} /> Scope
@@ -326,7 +326,7 @@ function PredictabilityPanel({ sprints, allTasks }) {
 
   return (
     <div className="sprint-predict-card">
-      <div className="sprint-chart-title">🎯 Sprint Predictability</div>
+      <div className="sprint-chart-title">Sprint Predictability</div>
       <div className="sprint-predict-score" style={{ color: avgColor }}>
         {avg}%
         <span className="sprint-predict-label">{label}</span>
@@ -381,7 +381,7 @@ function PIPanel({ sprints, allTasks }) {
     <div className="pi-panel">
       <div className="pi-header">
         <div>
-          <div className="pi-title">🏃 SAFe PI Planning — Program Increment</div>
+          <div className="pi-title">SAFe PI Planning — Program Increment</div>
           <div className="pi-subtitle">Agile Release Train (ART) planning board</div>
         </div>
         <input className="pi-name-input" value={piName}
@@ -479,7 +479,7 @@ function GroomingPanel({ sprint, allTasks, onRefresh }) {
   return (
     <div className="grooming-panel">
       <div className="grooming-header">
-        <div className="sprint-section-label">🧹 Backlog Grooming ({backlog.length} items)</div>
+        <div className="sprint-section-label">Backlog Grooming ({backlog.length} items)</div>
         <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
           <button className="btn-secondary" style={{ fontSize:"11px" }} onClick={selAll}>Select All</button>
           <button className="btn-secondary" style={{ fontSize:"11px" }} onClick={selNone}>Clear</button>
@@ -551,7 +551,7 @@ function BurndownChart({ sprintId }) {
 
   return (
     <div className="sprint-burndown">
-      <div className="sprint-section-label">🔥 Burndown Chart</div>
+      <div className="sprint-section-label">Burndown Chart</div>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={data} margin={{ top:8, right:16, left:0, bottom:0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -599,7 +599,7 @@ function RetroPanel({ sprint, onSaved }) {
   return (
     <div className="sprint-retro">
       <div className="sprint-retro-header">
-        <span className="sprint-section-label">🔄 Retrospective</span>
+        <span className="sprint-section-label">Retrospective</span>
         <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
           onClick={() => setOpen(v => !v)}>
           {open ? "✕ Close" : existing ? "✎ Edit" : "+ Add Retro"}
@@ -614,7 +614,7 @@ function RetroPanel({ sprint, onSaved }) {
           </div>
           {existing.wentWell?.length > 0 && (
             <div className="sprint-retro-section">
-              <div className="sprint-retro-section-title">✅ Went Well</div>
+              <div className="sprint-retro-section-title">Went Well</div>
               {existing.wentWell.map((item, i) => (
                 <div key={i} className="sprint-retro-item">{item}</div>
               ))}
@@ -622,7 +622,7 @@ function RetroPanel({ sprint, onSaved }) {
           )}
           {existing.improvements?.length > 0 && (
             <div className="sprint-retro-section">
-              <div className="sprint-retro-section-title">📈 To Improve</div>
+              <div className="sprint-retro-section-title">To Improve</div>
               {existing.improvements.map((item, i) => (
                 <div key={i} className="sprint-retro-item">{item}</div>
               ))}
@@ -630,7 +630,7 @@ function RetroPanel({ sprint, onSaved }) {
           )}
           {existing.actionItems?.length > 0 && (
             <div className="sprint-retro-section">
-              <div className="sprint-retro-section-title">⚡ Action Items</div>
+              <div className="sprint-retro-section-title">Action Items</div>
               {existing.actionItems.map((item, i) => (
                 <div key={i} className="sprint-retro-item sprint-retro-action">{item}</div>
               ))}
@@ -655,19 +655,19 @@ function RetroPanel({ sprint, onSaved }) {
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor={"sprints-what-went-well"}>✅ What went well? <span style={{color:"var(--gray-400)",fontSize:"11px"}}>(one per line)</span></label>
+            <label htmlFor={"sprints-what-went-well"}>What went well? <span style={{color:"var(--gray-400)",fontSize:"11px"}}>(one per line)</span></label>
             <textarea rows={3} value={form.wentWell}
               onChange={e => setForm(f => ({...f, wentWell: e.target.value}))}
               placeholder="Delivered all planned features&#10;Great team collaboration&#10;…" id={"sprints-what-went-well"} />
           </div>
           <div className="form-group">
-            <label htmlFor={"sprints-what-to-improve"}>📈 What to improve?</label>
+            <label htmlFor={"sprints-what-to-improve"}>What to improve?</label>
             <textarea rows={3} value={form.improvements}
               onChange={e => setForm(f => ({...f, improvements: e.target.value}))}
               placeholder="Better estimation&#10;Daily standups&#10;…" id={"sprints-what-to-improve"} />
           </div>
           <div className="form-group">
-            <label htmlFor={"sprints-action-items"}>⚡ Action items</label>
+            <label htmlFor={"sprints-action-items"}>Action items</label>
             <textarea rows={3} value={form.actionItems}
               onChange={e => setForm(f => ({...f, actionItems: e.target.value}))}
               placeholder="Set up CI/CD pipeline&#10;Schedule design reviews&#10;…" id={"sprints-action-items"} />
@@ -718,7 +718,7 @@ function SprintGoalsPanel({ sprint, onRefresh }) {
   return (
     <div className="sprint-goals-panel">
       <div className="sprint-goals-header">
-        <div className="sprint-goals-title">🎯 Sprint Goal Milestones</div>
+        <div className="sprint-goals-title">Sprint Goal Milestones</div>
         {milestones.length > 0 && (
           <div className="sprint-goals-pct">
             {achieved}/{milestones.length} achieved
@@ -789,9 +789,9 @@ function SprintCard({ sprint, allTasks, onEdit, onDelete, onRefresh }) {
             {meta.label}
           </span>
         </div>
-        {sprint.goal && <div className="sprint-goal-text">🎯 {sprint.goal}</div>}
+        {sprint.goal && <div className="sprint-goal-text">{sprint.goal}</div>}
         <div className="sprint-dates">
-          📅 {formatDate(sprint.startDate)} → {formatDate(sprint.endDate)}
+          {formatDate(sprint.startDate)} → {formatDate(sprint.endDate)}
           {daysLeft !== null && sprint.status === "ACTIVE" && (
             <span className={`sprint-days-left${daysLeft < 3 ? " urgent" : ""}`}>
               {daysLeft > 0 ? `${daysLeft}d left` : "Overdue"}
@@ -816,23 +816,23 @@ function SprintCard({ sprint, allTasks, onEdit, onDelete, onRefresh }) {
         <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
           <button className={`btn-secondary${activePanel==="backlog"?" btn-active":""}`}
             style={{ fontSize:"12px", padding:"5px 10px" }} onClick={() => toggle("backlog")}>
-            📋 Backlog ({sprintTasks.length})
+            Backlog ({sprintTasks.length})
           </button>
           <button className={`btn-secondary${activePanel==="burndown"?" btn-active":""}`}
             style={{ fontSize:"12px", padding:"5px 10px" }} onClick={() => toggle("burndown")}>
-            🔥 Burndown
+            Burndown
           </button>
           <button className={`btn-secondary${activePanel==="retro"?" btn-active":""}`}
             style={{ fontSize:"12px", padding:"5px 10px" }} onClick={() => toggle("retro")}>
-            🔄 Retro {sprint.retrospective ? "✓" : ""}
+            Retro {sprint.retrospective ? "✓" : ""}
           </button>
           <button className={`btn-secondary${activePanel==="burnup"?" btn-active":""}`}
             style={{ fontSize:"12px", padding:"5px 10px" }} onClick={() => toggle("burnup")}>
-            📈 Burnup
+            Burnup
           </button>
           <button className={`btn-secondary${activePanel==="grooming"?" btn-active":""}`}
             style={{ fontSize:"12px", padding:"5px 10px" }} onClick={() => toggle("grooming")}>
-            🧹 Grooming
+            Grooming
           </button>
           {sprint.status === "PLANNING" && (
             <button className="btn-primary" style={{ fontSize:"12px", padding:"5px 10px" }}
@@ -987,10 +987,10 @@ export default function Sprints() {
       {/* Sprints page tabs */}
       <div className="sprint-page-tabs">
         {[
-          { key:"sprints",        label:"🏃 Sprints"        },
-          { key:"velocity",       label:"📈 Velocity"       },
-          { key:"predictability", label:"🎯 Predictability" },
-          { key:"pi",             label:"🏃 SAFe / PI"      },
+          { key:"sprints",        label:"Sprints"        },
+          { key:"velocity",       label:"Velocity"       },
+          { key:"predictability", label:"Predictability" },
+          { key:"pi",             label:"SAFe / PI"      },
         ].map(t => (
           <button key={t.key}
             className={`sprint-filter-btn${pageTab===t.key?" active":""}`}

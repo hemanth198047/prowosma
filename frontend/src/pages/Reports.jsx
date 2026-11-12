@@ -33,7 +33,7 @@ function ReportBuilder({ report }) {
 
   return (
     <div className="report-builder">
-      <div className="report-builder-title">🔧 No-Code Report Builder</div>
+      <div className="report-builder-title">No-Code Report Builder</div>
       <div className="form-row">
         <div className="form-group" style={{ flex:2 }}>
           <label htmlFor={"reports-report-name"}>Report Name</label>
@@ -81,15 +81,15 @@ function ReportBuilder({ report }) {
         </div>
         {config.schedule && (
           <div className="report-schedule-note">
-            📧 Report will be delivered as PDF to {config.scheduleEmail || "the specified email"}
+            Report will be delivered as PDF to {config.scheduleEmail || "the specified email"}
           </div>
         )}
       </div>
       <div className="form-actions">
-        <button className="btn-secondary" onClick={() => window.print()}>🖨️ Print</button>
+        <button className="btn-secondary" onClick={() => window.print()}>Print</button>
         <button className="btn-primary"
           onClick={() => { setSaved(true); setTimeout(()=>setSaved(false),2000); }}>
-          {saved ? "✅ Saved!" : "💾 Save Report Config"}
+          {saved ? "Saved!" : "Save Report Config"}
         </button>
       </div>
       {report && (
@@ -167,9 +167,9 @@ export default function Reports() {
 
       <div className="admin-tab-bar" style={{ marginBottom:"16px" }}>
         <button className={`admin-tab-btn${tab==="summary"?" active":""}`}
-          onClick={() => setTab("summary")}>📊 Summary Report</button>
+          onClick={() => setTab("summary")}>Summary Report</button>
         <button className={`admin-tab-btn${tab==="builder"?" active":""}`}
-          onClick={() => setTab("builder")}>🔧 Report Builder</button>
+          onClick={() => setTab("builder")}>Report Builder</button>
       </div>
 
       {tab === "builder" && <ReportBuilder report={report} />}

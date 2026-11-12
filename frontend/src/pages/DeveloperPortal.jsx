@@ -91,7 +91,7 @@ function WebhookForm({ initial, onSave, onCancel }) {
         <div className="form-actions">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn-primary" onClick={submit} disabled={saving}>
-            {saving ? "⏳ Saving…" : "💾 Save Webhook"}
+            {saving ? "Saving…" : "Save Webhook"}
           </button>
         </div>
       </div>
@@ -142,7 +142,7 @@ function ApiKeyForm({ onSave, onCancel }) {
         <div className="form-actions">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn-primary" onClick={submit} disabled={saving}>
-            {saving ? "⏳ Creating…" : "🔑 Create Key"}
+            {saving ? "Creating…" : "Create Key"}
           </button>
         </div>
       </div>
@@ -161,14 +161,14 @@ function NewKeyModal({ apiKey, onClose }) {
   return (
     <div className="dev-form-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="dev-form" onClick={e => e.stopPropagation()} role="presentation">
-        <h3 className="dev-form-title">🔑 API Key Created</h3>
+        <h3 className="dev-form-title">API Key Created</h3>
         <div className="dev-key-reveal-banner">
-          ⚠️ Copy this key now. It will never be shown again.
+          Copy this key now. It will never be shown again.
         </div>
         <div className="dev-key-reveal-box">
           <code className="dev-key-code">{apiKey.key}</code>
           <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={copy}>
-            {copied ? "✓ Copied" : "📋 Copy"}
+            {copied ? "✓ Copied" : "Copy"}
           </button>
         </div>
         <p style={{ fontSize: "12px", color: "var(--gray-500)", marginTop: "12px" }}>
@@ -264,7 +264,7 @@ export default function DeveloperPortal() {
         description="Webhooks, API keys, and REST API documentation"
         action={<a href={SWAGGER_URL} target="_blank" rel="noreferrer"
           className="btn-secondary" style={{ fontSize: "12px", textDecoration: "none" }}>
-          📖 Open API Docs ↗
+          Open API Docs ↗
         </a>} />
 
       {toast && <div className="dev-toast">{toast}</div>}
@@ -272,13 +272,13 @@ export default function DeveloperPortal() {
       {/* Tabs */}
       <div className="tab-bar" style={{ marginBottom: "20px" }}>
         <button className={"tab-btn" + (tab === "webhooks" ? " tab-active" : "")} onClick={() => setTab("webhooks")}>
-          🔗 Webhooks <span className="dev-tab-count">{webhooks.length}</span>
+          Webhooks <span className="dev-tab-count">{webhooks.length}</span>
         </button>
         <button className={"tab-btn" + (tab === "keys" ? " tab-active" : "")} onClick={() => setTab("keys")}>
-          🔑 API Keys <span className="dev-tab-count">{apiKeys.length}</span>
+          API Keys <span className="dev-tab-count">{apiKeys.length}</span>
         </button>
         <button className={"tab-btn" + (tab === "docs" ? " tab-active" : "")} onClick={() => setTab("docs")}>
-          📖 API Docs
+          API Docs
         </button>
       </div>
 
@@ -332,7 +332,7 @@ export default function DeveloperPortal() {
                       </button>
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px" }}
                         onClick={() => { setEditingWh(wh); setShowWhForm(true); }}>
-                        ✏️ Edit
+                        Edit
                       </button>
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--danger)" }}
                         onClick={() => handleDeleteWh(wh.id)}>
@@ -419,7 +419,7 @@ export default function DeveloperPortal() {
                       {k.active ? (
                         <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--warning)" }}
                           onClick={() => handleRevokeKey(k.id)}>
-                          🔒 Revoke
+                          Revoke
                         </button>
                       ) : (
                         <span className="dev-last-status failed">Revoked</span>
@@ -458,7 +458,7 @@ export default function DeveloperPortal() {
             <p>Prowosma exposes a full REST API. All endpoints are documented interactively via Swagger UI.</p>
             <a href={SWAGGER_URL} target="_blank" rel="noreferrer" className="btn-primary"
               style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none", marginTop: "12px" }}>
-              📖 Open Swagger UI ↗
+              Open Swagger UI ↗
             </a>
           </div>
 

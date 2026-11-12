@@ -230,7 +230,7 @@ function StepCard({ step, color, isLast }) {
             border: "1px solid #fde68a", borderRadius: "6px",
             padding: "6px 10px", marginBottom: "10px",
           }}>
-            💡 {step.tip}
+            {step.tip}
           </div>
         )}
         <button
@@ -337,7 +337,7 @@ export default function WorkflowGuide() {
           textAlign: "center", padding: "40px",
           color: "var(--gray-400, var(--gray-400))", fontSize: "14px",
         }}>
-          👆 Select your role above to see your personalised workflow
+          Select your role above to see your personalised workflow
         </div>
       )}
     </div>

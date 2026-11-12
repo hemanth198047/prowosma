@@ -73,7 +73,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
     <div className="jb-modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="jb-modal jb-config-modal" onClick={e=>e.stopPropagation()} role="presentation">
         <div className="jb-modal-header">
-          <span style={{fontWeight:800,fontSize:16}}>⚙️ Board Configuration</span>
+          <span style={{fontWeight:800,fontSize:16}}>Board Configuration</span>
           <button className="jb-modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -83,7 +83,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* COLUMNS */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">📋 Board Columns</div>
+              <div className="jb-config-section-title">Board Columns</div>
               <div className="jb-config-section-desc">
                 Define columns, their colours, and WIP limits. Drag to reorder.
               </div>
@@ -113,7 +113,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* STORY POINTS */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">🎯 Story Points</div>
+              <div className="jb-config-section-title">Story Points</div>
               <div className="jb-form-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
                 <div className="jb-form-group">
                   <label htmlFor={"jira-board-estimation-scale"}>Estimation scale</label>
@@ -144,7 +144,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* SPRINT SETTINGS */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">🏃 Sprint Settings</div>
+              <div className="jb-config-section-title">Sprint Settings</div>
               <div className="jb-form-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
                 <div className="jb-form-group">
                   <label htmlFor={"jira-board-default-sprint-duration"}>Default sprint duration</label>
@@ -186,7 +186,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* DISPLAY */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">🖼 Display & Cards</div>
+              <div className="jb-config-section-title">Display & Cards</div>
               <div className="jb-form-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
                 <div className="jb-form-group">
                   <label htmlFor={"jira-board-card-colour-coding"}>Card colour coding</label>
@@ -233,7 +233,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* ISSUE TYPES */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">🏷 Issue Types</div>
+              <div className="jb-config-section-title">Issue Types</div>
               <div className="jb-config-section-desc">
                 Choose which issue types are active on this board.
               </div>
@@ -258,7 +258,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
 
             {/* WORKFLOW */}
             <div className="jb-config-section">
-              <div className="jb-config-section-title">🔄 Workflow Rules</div>
+              <div className="jb-config-section-title">Workflow Rules</div>
               <div className="jb-form-grid" style={{gridTemplateColumns:"1fr"}}>
                 <div className="jb-form-group">
                   <label>
@@ -325,7 +325,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
     <div className="jb-modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="jb-modal" style={{maxWidth:540}} onClick={e=>e.stopPropagation()} role="presentation">
         <div className="jb-modal-header">
-          <span style={{fontWeight:800}}>✅ Complete Sprint — {sprint?.name}</span>
+          <span style={{fontWeight:800}}>Complete Sprint — {sprint?.name}</span>
           <button className="jb-modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -385,19 +385,19 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
             <>
               <div style={{fontWeight:700,fontSize:14}}>Sprint Retrospective</div>
               <div className="jb-form-group">
-                <label htmlFor={"jira-board-what-went-well"}>✅ What went well?</label>
+                <label htmlFor={"jira-board-what-went-well"}>What went well?</label>
                 <textarea className="jb-desc-editor" rows={3} value={retroWent}
                   onChange={e=>setRetroWent(e.target.value)}
                   placeholder="Things the team did well this sprint..." id={"jira-board-what-went-well"}/>
               </div>
               <div className="jb-form-group">
-                <label htmlFor={"jira-board-what-could-be-improved"}>🔧 What could be improved?</label>
+                <label htmlFor={"jira-board-what-could-be-improved"}>What could be improved?</label>
                 <textarea className="jb-desc-editor" rows={3} value={retroImprove}
                   onChange={e=>setRetroImprove(e.target.value)}
                   placeholder="Areas for improvement..." id={"jira-board-what-could-be-improved"}/>
               </div>
               <div className="jb-form-group">
-                <label htmlFor={"jira-board-action-items-for-next-sprint"}>🎯 Action items for next sprint</label>
+                <label htmlFor={"jira-board-action-items-for-next-sprint"}>Action items for next sprint</label>
                 <textarea className="jb-desc-editor" rows={2} value={retroAction}
                   onChange={e=>setRetroAction(e.target.value)}
                   placeholder="Concrete actions to take..." id={"jira-board-action-items-for-next-sprint"}/>
@@ -422,7 +422,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
                     <strong>{dest==="next"?`next sprint (${nextSprint?.name})`:"backlog"}</strong>.
                   </div>
                 )}
-                {retroWent && <div style={{marginTop:4}}>✅ Retrospective notes saved.</div>}
+                {retroWent && <div style={{marginTop:4}}>Retrospective notes saved.</div>}
               </div>
               <div style={{display:"flex",justifyContent:"space-between"}}>
                 <button className="jb-btn-secondary" onClick={()=>setStep(2)}>← Back</button>
@@ -483,7 +483,7 @@ function BurndownChart({ sprint, tasks, metric }) {
     <div className="jb-burndown-card">
       <div className="jb-burndown-header">
         <div>
-          <div className="jb-burndown-title">📉 Burndown Chart</div>
+          <div className="jb-burndown-title">Burndown Chart</div>
           <div className="jb-burndown-sub">
             {done}/{total} {metric==="storyPoints"?"SP":"issues"} done · {remaining} remaining
           </div>
@@ -545,7 +545,7 @@ function VelocityChart({ sprints, tasks, metric }) {
     <div className="jb-burndown-card">
       <div className="jb-burndown-header">
         <div>
-          <div className="jb-burndown-title">📈 Velocity</div>
+          <div className="jb-burndown-title">Velocity</div>
           <div className="jb-burndown-sub">Avg {avg} {metric==="storyPoints"?"SP":"issues"}/sprint</div>
         </div>
       </div>
@@ -1114,7 +1114,7 @@ export default function JiraBoard() {
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <div className="jb-toolbar">
         <div className="jb-view-tabs">
-          {[["board","📋 Board"],["backlog","📑 Backlog"],["metrics","📊 Metrics"]].map(([v,l])=>(
+          {[["board","Board"],["backlog","Backlog"],["metrics","Metrics"]].map(([v,l])=>(
             <button key={v} className={"jb-view-tab"+(view===v?" active":"")}
               onClick={()=>setView(v)}>{l}</button>
           ))}
@@ -1321,7 +1321,7 @@ export default function JiraBoard() {
           <div className="jb-burndown-card">
             <div className="jb-burndown-header">
               <div>
-                <div className="jb-burndown-title">📋 Sprint Summary</div>
+                <div className="jb-burndown-title">Sprint Summary</div>
                 <div className="jb-burndown-sub">{displayedSprint?.name||"No active sprint"}</div>
               </div>
             </div>
@@ -1346,7 +1346,7 @@ export default function JiraBoard() {
           <div className="jb-burndown-card">
             <div className="jb-burndown-header">
               <div>
-                <div className="jb-burndown-title">🏷 Issue Breakdown</div>
+                <div className="jb-burndown-title">Issue Breakdown</div>
                 <div className="jb-burndown-sub">By type across all sprints</div>
               </div>
             </div>

@@ -445,7 +445,7 @@ export default function KnowledgeGraph() {
         <div style={{ display:"flex", gap:"4px", background:"var(--gray-100)", borderRadius:"10px", padding:"3px" }}>
           {["graph","cards"].map(v=>(
             <button key={v} onClick={()=>setView(v)} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:view===v?"var(--surface-1)":"transparent", color:view===v?"var(--gray-800)":"var(--gray-500)", boxShadow:view===v?"var(--elevation-1)":"none", transition:"all .15s" }}>
-              {v==="graph"?"🕸 Graph":"🗂 Cards"}
+              {v==="graph"?"Graph":"Cards"}
             </button>
           ))}
         </div>

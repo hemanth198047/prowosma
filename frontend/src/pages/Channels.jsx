@@ -39,7 +39,7 @@ function StandupPanel() {
     <div className="channel-standup">
       <div className="channel-standup-header">
         <div>
-          <div className="channel-standup-title">📅 Async Standup</div>
+          <div className="channel-standup-title">Async Standup</div>
           <div className="channel-standup-sub">Share your daily update with the team</div>
         </div>
         <button className="btn-primary" onClick={()=>setShowForm(v=>!v)}>
@@ -50,17 +50,17 @@ function StandupPanel() {
       {showForm && (
         <div className="channel-standup-form">
           <div className="form-group">
-            <label htmlFor={"channels-what-did-you-do-yesterday"}>✅ What did you do yesterday?</label>
+            <label htmlFor={"channels-what-did-you-do-yesterday"}>What did you do yesterday?</label>
             <textarea rows={2} value={form.yesterday} onChange={e=>set("yesterday",e.target.value)}
               placeholder="Completed the auth module, fixed 3 bugs…" id={"channels-what-did-you-do-yesterday"} />
           </div>
           <div className="form-group">
-            <label htmlFor={"channels-what-will-you-do-today"}>🎯 What will you do today?</label>
+            <label htmlFor={"channels-what-will-you-do-today"}>What will you do today?</label>
             <textarea rows={2} value={form.today} onChange={e=>set("today",e.target.value)}
               placeholder="Work on the dashboard, review PRs…" id={"channels-what-will-you-do-today"} />
           </div>
           <div className="form-group">
-            <label htmlFor={"channels-any-blockers"}>🚧 Any blockers?</label>
+            <label htmlFor={"channels-any-blockers"}>Any blockers?</label>
             <textarea rows={1} value={form.blockers} onChange={e=>set("form.blockers",e.target.value)}
               placeholder="None / Waiting for design review…" id={"channels-any-blockers"} />
           </div>
@@ -162,7 +162,7 @@ function ChannelView({ channel, onDelete }) {
                   </div>
                 )}
                 <div className="channel-msg-content">{m.content}</div>
-                {m.linkedTaskId && <div className="channel-msg-link">📋 Linked task</div>}
+                {m.linkedTaskId && <div className="channel-msg-link">Linked task</div>}
               </div>
             </div>
           );
@@ -233,7 +233,7 @@ export default function Channels() {
         description="Team communication, project channels, and async daily standups" />
 
       <div className="admin-tab-bar">
-        {[["channels","💬 Channels"],["standup","📅 Standup"]].map(([t,l])=>(
+        {[["channels","Channels"],["standup","Standup"]].map(([t,l])=>(
           <button key={t} className={`admin-tab-btn${tab===t?" active":""}`}
             onClick={()=>setTab(t)}>{l}</button>
         ))}

@@ -43,12 +43,12 @@ function TaskCard({ task, getProjectName, isDragging }) {
       <div className="kanban-card-title">{task.title}</div>
       {task.description && <div className="kanban-card-desc">{task.description}</div>}
       <div className="kanban-card-meta">
-        {task.projectId && <span className="kanban-card-project">📁 {getProjectName(task.projectId)}</span>}
+        {task.projectId && <span className="kanban-card-project">{getProjectName(task.projectId)}</span>}
         {task.dueDate && (isTaskOverdue(task)
           ? <span className="kanban-card-date" style={{ color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
               <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(task.dueDate).toLocaleDateString()}
             </span>
-          : <span className="kanban-card-date">📅 {new Date(task.dueDate).toLocaleDateString()}</span>)}
+          : <span className="kanban-card-date">{new Date(task.dueDate).toLocaleDateString()}</span>)}
         {task.storyPoints && <span className="kanban-card-points">{task.storyPoints}pt</span>}
       </div>
       <div className="kanban-card-footer">
@@ -91,7 +91,7 @@ function KanbanColumn({ column, tasks, getProjectName, activeId }) {
           )}
         </div>
         {isOverWip && (
-          <span className="kanban-wip-warning">⚠ WIP limit exceeded</span>
+          <span className="kanban-wip-warning">WIP limit exceeded</span>
         )}
       </div>
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
@@ -222,8 +222,8 @@ export default function Kanban() {
         description="Drag-and-drop with WIP limits and swimlanes"
         action={
           <div style={{ display:"flex", gap:"8px" }}>
-            <button className="btn-secondary" onClick={() => navigate("/sprints")}>🏃 Sprints</button>
-            <button className="btn-secondary" onClick={() => navigate("/tasks")}>☰ List View</button>
+            <button className="btn-secondary" onClick={() => navigate("/sprints")}>Sprints</button>
+            <button className="btn-secondary" onClick={() => navigate("/tasks")}>List View</button>
           </div>
         }
       />
@@ -257,7 +257,7 @@ export default function Kanban() {
         {/* C-4: WIP limit editor */}
         <button className="btn-secondary" style={{ fontSize:"12px", padding:"5px 10px" }}
           onClick={() => setEditingWip(v => !v)}>
-          ⚙ WIP Limits
+          WIP Limits
         </button>
       </div>
 

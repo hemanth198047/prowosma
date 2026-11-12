@@ -35,8 +35,8 @@ function ActionItemRow({ item, projects, onComplete, onDefer, onDismiss, onCarry
           {item.status === "DEFERRED" && <span className="cont-tag cont-tag--deferred">Deferred</span>}
         </div>
         <div className="cont-row-meta">
-          {item.owner && <span>👤 {item.owner}</span>}
-          {item.dueDate && <span className={overdue ? "cont-overdue-text" : ""}>📅 {fmtDate(item.dueDate)}{overdue ? " · overdue" : ""}</span>}
+          {item.owner && <span>{item.owner}</span>}
+          {item.dueDate && <span className={overdue ? "cont-overdue-text" : ""}>{fmtDate(item.dueDate)}{overdue ? " · overdue" : ""}</span>}
           {item.projectIds?.length > 0 && <span>{item.projectIds.map(id => projectName(projects, id)).join(", ")}</span>}
         </div>
       </div>
@@ -57,7 +57,7 @@ function RaidRow({ entry, onCarry, onResolve }) {
       <div className="cont-row-body">
         <div className="cont-row-title">{entry.title}</div>
         <div className="cont-row-meta">
-          {entry.owner && <span>👤 {entry.owner}</span>}
+          {entry.owner && <span>{entry.owner}</span>}
           <span>{RAID_STATUS_LABEL[entry.status] || entry.status}</span>
           {entry.impact && <span>Impact: {entry.impact}</span>}
         </div>
@@ -78,7 +78,7 @@ function DecisionRow({ decision, onCarry }) {
         <div className="cont-row-title">{decision.title}</div>
         <div className="cont-row-meta">
           <span>Pending decision</span>
-          {decision.madeBy && <span>👤 {decision.madeBy}</span>}
+          {decision.madeBy && <span>{decision.madeBy}</span>}
         </div>
       </div>
       {onCarry && <div className="cont-row-actions"><button className="cont-btn" onClick={() => onCarry(decision)}>Carry in</button></div>}
@@ -126,7 +126,7 @@ export default function MeetingContinuityPanel({
         <>
           {atRiskProjects.length > 0 && (
             <div className="cont-section">
-              <div className="cont-section-label">⚠️ Needs attention</div>
+              <div className="cont-section-label">Needs attention</div>
               {atRiskProjects.map(p => (
                 <div key={p.projectId} className="cont-row">
                   <span className="cont-row-dot" style={{ background: p.statusSnapshot === "BLOCKED" ? "#ef4444" : "#f59e0b" }} />
@@ -141,7 +141,7 @@ export default function MeetingContinuityPanel({
 
           {actionItems.length > 0 && (
             <div className="cont-section">
-              <div className="cont-section-label">✅ Open action items ({actionItems.length})</div>
+              <div className="cont-section-label">Open action items ({actionItems.length})</div>
               {actionItems.map(item => (
                 <ActionItemRow key={item.id} item={item} projects={projects}
                   onComplete={onCompleteActionItem} onDefer={onDeferActionItem}
@@ -152,21 +152,21 @@ export default function MeetingContinuityPanel({
 
           {blockers.length > 0 && (
             <div className="cont-section">
-              <div className="cont-section-label">🚧 Active blockers ({blockers.length})</div>
+              <div className="cont-section-label">Active blockers ({blockers.length})</div>
               {blockers.map(b => <RaidRow key={b.id} entry={b} onCarry={onCarryBlocker} onResolve={onResolveBlocker} />)}
             </div>
           )}
 
           {risks.length > 0 && (
             <div className="cont-section">
-              <div className="cont-section-label">⚡ Active risks ({risks.length})</div>
+              <div className="cont-section-label">Active risks ({risks.length})</div>
               {risks.map(r => <RaidRow key={r.id} entry={r} onCarry={onCarryBlocker} />)}
             </div>
           )}
 
           {decisions.length > 0 && (
             <div className="cont-section">
-              <div className="cont-section-label">⚖️ Pending decisions ({decisions.length})</div>
+              <div className="cont-section-label">Pending decisions ({decisions.length})</div>
               {decisions.map(d => <DecisionRow key={d.id} decision={d} onCarry={onCarryDecision} />)}
             </div>
           )}

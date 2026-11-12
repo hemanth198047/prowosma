@@ -452,11 +452,11 @@ function WorkflowCanvas({ process, onChange }) {
                     onChange={e=>updateConfig(selectedNode.id,"actionType",e.target.value)}
                     style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
                       border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-action-type"}>
-                    <option value="NOTIFY">📢 Send Notification</option>
-                    <option value="CREATE_TASK">✅ Create Task</option>
-                    <option value="UPDATE_STATUS">🔄 Update Status</option>
-                    <option value="SEND_EMAIL">📧 Send Email</option>
-                    <option value="WEBHOOK">🔗 Call Webhook</option>
+                    <option value="NOTIFY">Send Notification</option>
+                    <option value="CREATE_TASK">Create Task</option>
+                    <option value="UPDATE_STATUS">Update Status</option>
+                    <option value="SEND_EMAIL">Send Email</option>
+                    <option value="WEBHOOK">Call Webhook</option>
                   </select>
                 </div>
                 <div>
@@ -601,7 +601,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                       padding:"12px 14px", marginBottom:"8px", position:"relative" }}>
                       <div style={{ fontSize:"10px", fontWeight:800, color:"#38bdf8",
                         letterSpacing:".05em", textTransform:"uppercase", marginBottom:"6px" }}>
-                        🤖 AI Output
+                        AI Output
                       </div>
                       <div style={{ fontSize:"12px", color:"var(--border)", lineHeight:1.6,
                         whiteSpace:"pre-wrap", maxHeight:"200px", overflowY:"auto" }}>
@@ -613,7 +613,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                             border:"1px solid rgba(255,255,255,.2)", background:"rgba(255,255,255,.1)",
                             color:"rgba(255,255,255,.8)", fontSize:"10px", fontWeight:700,
                             cursor:"pointer" }}>
-                          ✏️ Override
+                          Override
                         </button>
                       )}
                       {overrideNode===h.nodeId && (
@@ -660,7 +660,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                     <div style={{ background:"#fffbeb", border:"1.5px solid #f59e0b44",
                       borderRadius:"10px", padding:"12px 14px" }}>
                       <div style={{ fontWeight:700, fontSize:"12px", color:"#C17D22",
-                        marginBottom:"10px" }}>👤 Your decision is required</div>
+                        marginBottom:"10px" }}>Your decision is required</div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px",
                         marginBottom:"10px" }}>
                         <div>
@@ -699,7 +699,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                       borderRadius:"10px", padding:"10px 14px", display:"flex",
                       alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
                       <span style={{ fontSize:"12px", fontWeight:600, color:"#3732A8", flex:1 }}>
-                        👁 Review the AI output above and proceed
+                        Review the AI output above and proceed
                       </span>
                       <div style={{ display:"flex", gap:"6px" }}>
                         <button onClick={()=>onDecide(instance.id,h.nodeId,"APPROVED","Reviewed and accepted")}
@@ -712,7 +712,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                           style={{ padding:"6px 14px", borderRadius:"7px",
                             border:"1px solid var(--brand-500)", background:"transparent",
                             color:"#5B5FEE", fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
-                          ✏️ Override
+                          Override
                         </button>
                       </div>
                     </div>
@@ -729,7 +729,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
             <summary style={{ fontSize:"11px", fontWeight:700, color:"#64748b",
               cursor:"pointer", padding:"6px 10px", background:"var(--gray-50)",
               borderRadius:"7px", border:"1px solid var(--border)" }}>
-              ⚙️ Process Variables ({Object.keys(instance.variables).length})
+              Process Variables ({Object.keys(instance.variables).length})
             </summary>
             <div style={{ background:"var(--gray-50)", borderRadius:"0 0 7px 7px",
               border:"1px solid var(--border)", borderTop:"none", padding:"8px 10px" }}>
@@ -899,7 +899,7 @@ export default function BpmStudio() {
               background:"var(--brand-600)", color:"#fff",
               fontSize:"13px", fontWeight:800, cursor:"pointer",
               boxShadow:"var(--elevation-2)" }}>
-            💾 Save
+            Save
           </button>
         </div>
       </div>
@@ -1040,10 +1040,10 @@ export default function BpmStudio() {
                             marginBottom:"8px", lineHeight:1.5 }}>{p.description}</div>
                         )}
                         <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#94a3b8" }}>
-                          <span>🔢 {p.nodes?.length||0} nodes</span>
+                          <span>{p.nodes?.length||0} nodes</span>
                           <span>▶ {p.runCount||0} runs</span>
                           {pRunning>0&&<span style={{ color:"#0ea5e9", fontWeight:700 }}>▶ {pRunning} running</span>}
-                          {pWaiting>0&&<span style={{ color:"#C17D22", fontWeight:700 }}>⏸ {pWaiting} waiting review</span>}
+                          {pWaiting>0&&<span style={{ color:"#C17D22", fontWeight:700 }}>{pWaiting} waiting review</span>}
                         </div>
                       </div>
                       <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
@@ -1078,7 +1078,7 @@ export default function BpmStudio() {
                               style={{ padding:"6px 12px", borderRadius:"8px",
                                 border:"1px solid var(--border)", background:"#fff",
                                 fontSize:"11px", fontWeight:600, cursor:"pointer", color:"#334155" }}>
-                              ✏️ Edit
+                              Edit
                             </button>
                             <button onClick={()=>handleDelete(p.id)}
                               style={{ padding:"6px 10px", borderRadius:"8px",
@@ -1149,7 +1149,7 @@ export default function BpmStudio() {
         <div style={{ position:"sticky", top:80 }}>
           <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a",
             marginBottom:"12px", display:"flex", alignItems:"center", gap:"8px" }}>
-            📚 Template Library
+            Template Library
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
             {TEMPLATES.map((tpl,i) => (

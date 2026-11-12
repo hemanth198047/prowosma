@@ -57,7 +57,7 @@ export default function AIIntelligence() {
       <PageHeader icon="🧠" title="AI Intelligence"
         description="Predictive analytics, burnout detection, process mining, and autonomous insights" />
 
-      <div className="intel-section-label">🔮 Predictive Insights</div>
+      <div className="intel-section-label">Predictive Insights</div>
       <div className="intel-cards-grid">
 
       <IntelCard icon="⏰" title="Predictive Delay Detection" desc="Identifies tasks at risk of missing their deadline before it happens"
@@ -74,7 +74,7 @@ export default function AIIntelligence() {
                 </div>
               </div>
             ))}
-            {d.delayRisks?.length === 0 && <div className="intel-ok">✅ All tasks on track</div>}
+            {d.delayRisks?.length === 0 && <div className="intel-ok">All tasks on track</div>}
           </div>
         )}
       />
@@ -116,10 +116,10 @@ export default function AIIntelligence() {
                     </div>
                   </div>
                   {d.indicators?.map((ind,i) => (
-                    <div key={i} className="intel-rec">⚠ {ind}</div>
+                    <div key={i} className="intel-rec">{ind}</div>
                   ))}
                   {d.recommendations?.map((rec,i) => (
-                    <div key={i} className="intel-rec">💡 {rec}</div>
+                    <div key={i} className="intel-rec">{rec}</div>
                   ))}
                 </>
             }
@@ -129,7 +129,7 @@ export default function AIIntelligence() {
 
       </div>
 
-      <div className="intel-section-label">📋 Daily Intelligence</div>
+      <div className="intel-section-label">Daily Intelligence</div>
       <div className="intel-cards-grid">
 
       <IntelCard icon="🎯" title="AI Daily Priorities" desc="What to work on today — ranked by urgency, priority, goal alignment, and risk"
@@ -173,10 +173,10 @@ export default function AIIntelligence() {
                 </div>
               )}
               {Array.isArray(d.insights) && d.insights.map((insight, i) => (
-                <div key={i} className="intel-rec">💡 {typeof insight === "string" ? insight : JSON.stringify(insight)}</div>
+                <div key={i} className="intel-rec">{typeof insight === "string" ? insight : JSON.stringify(insight)}</div>
               ))}
               {Array.isArray(d.recommendations) && d.recommendations.map((rec, i) => (
-                <div key={i} className="intel-rec">🎯 {rec}</div>
+                <div key={i} className="intel-rec">{rec}</div>
               ))}
             </>}
           </div>
@@ -185,7 +185,7 @@ export default function AIIntelligence() {
 
       </div>
 
-      <div className="intel-section-label">🔬 Advanced Analytics</div>
+      <div className="intel-section-label">Advanced Analytics</div>
       <div className="intel-cards-grid">
 
       <IntelCard icon="🕸" title="Dependency Risk Detection" desc="Surfaces hidden dependency blockers proactively before humans notice"
@@ -200,7 +200,7 @@ export default function AIIntelligence() {
                   Found {d.dependencies.length} potential {d.dependencies.length === 1 ? "dependency" : "dependencies"}
                 </div>
                 {d.dependencies.length === 0
-                  ? <div className="intel-ok">✅ No hidden dependencies detected</div>
+                  ? <div className="intel-ok">No hidden dependencies detected</div>
                   : d.dependencies.slice(0,8).map((dep, i) => (
                     <div key={i} className="intel-risk-row">
                       <span className="intel-sev" style={{
@@ -233,11 +233,11 @@ export default function AIIntelligence() {
                 </span>
                 <div className="intel-risk-info">
                   <div className="intel-risk-title">{r.risk || r.title}</div>
-                  {r.project && <div className="intel-risk-reason">📁 {r.project}</div>}
+                  {r.project && <div className="intel-risk-reason">{r.project}</div>}
                 </div>
               </div>
             ))}
-            {(!d.risks || d.risks.length === 0) && <div className="intel-ok">✅ No critical risks detected</div>}
+            {(!d.risks || d.risks.length === 0) && <div className="intel-ok">No critical risks detected</div>}
           </div>
         )}
       />
@@ -263,7 +263,7 @@ export default function AIIntelligence() {
             ))}
             {d.recommendations?.length > 0 && (
               <div className="intel-recs">
-                {d.recommendations.map((r,i) => <div key={i} className="intel-rec">💡 {r}</div>)}
+                {d.recommendations.map((r,i) => <div key={i} className="intel-rec">{r}</div>)}
               </div>
             )}
           </div>
@@ -272,7 +272,7 @@ export default function AIIntelligence() {
 
       </div>
 
-      <div className="intel-section-label">🎯 Goal Intelligence</div>
+      <div className="intel-section-label">Goal Intelligence</div>
       <div className="intel-cards-grid">
 
       <IntelCard icon="💡" title="AI Goal Recommendations" desc="Analyses your current goals and suggests new OKRs that fill strategic gaps"
@@ -331,7 +331,7 @@ export default function AIIntelligence() {
 
       </div>
 
-      <div className="intel-section-label">🏗 Roadmap (Coming in Phase D)</div>
+      <div className="intel-section-label">Roadmap (Coming in Phase D)</div>
       <div className="intel-roadmap-grid">
         {[
           { icon:"🧠", title:"Enterprise Memory",  desc:"AI remembers past decisions and lessons learned" },

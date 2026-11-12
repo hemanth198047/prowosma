@@ -188,7 +188,7 @@ export default function TaskComments({ task, onRefresh, compact = false }) {
       ) : (
       <button className="task-comments-toggle"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
-        💬 {count > 0 ? `${count} Comment${count > 1 ? "s" : ""}` : "Comments"}
+        {count > 0 ? `${count} Comment${count > 1 ? "s" : ""}` : "Comments"}
         {" "}{open ? "▲" : "▼"}
       </button>
       )}
@@ -196,7 +196,7 @@ export default function TaskComments({ task, onRefresh, compact = false }) {
       {open && (
         <div className="task-comments-panel" onClick={e => e.stopPropagation()} role="presentation">
           <div className="task-comments-header">
-            💬 Comments
+            Comments
             <span className="task-comments-count">{count}</span>
           </div>
 

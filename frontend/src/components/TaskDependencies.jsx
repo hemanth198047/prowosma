@@ -105,7 +105,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh, compact = 
 
           {deps.isBlocked && (
             <div className="deps-blocked-warning">
-              🔒 This task is blocked by incomplete tasks
+              This task is blocked by incomplete tasks
             </div>
           )}
 

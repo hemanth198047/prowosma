@@ -122,7 +122,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
           <div className="form-group">
             <label htmlFor={"goals-status"}>Status</label>
             <select value={form.status} onChange={(e) => set("status", e.target.value)} id={"goals-status"}>
-              {STATUSES.map((s) => <option key={s}>{s}</option>)}
+              {STATUSES.map((s) => <option key={s} value={s}>{statusText(s)}</option>)}
             </select>
           </div>
         </div>
@@ -150,7 +150,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
         <div className="form-actions">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn-primary" onClick={handleSubmit} disabled={saving || !form.title.trim()}>
-            {saving ? "⏳ Saving..." : "Save Goal"}
+            {saving ? "Saving..." : "Save Goal"}
           </button>
         </div>
       </div>
@@ -238,7 +238,7 @@ function SubGoalForm({ initial, onSave, onCancel }) {
             onChange={(e) => set("status", e.target.value)} id={"goals-status-2"}
           >
             {STATUSES.map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s} value={s}>{statusText(s)}</option>
             ))}
           </select>
         </div>
@@ -251,7 +251,7 @@ function SubGoalForm({ initial, onSave, onCancel }) {
             onClick={handleSubmit}
             disabled={saving || !form.title.trim()}
           >
-            {saving ? "⏳ Saving..." : "Save"}
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
@@ -342,21 +342,21 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
           <button className={`step-tool-btn ${showComments ? "active" : ""}`}
             onClick={() => { setShowComments(v => !v); setShowFiles(false); setShowDeps(false); }}
             title="Comments">
-            💬 {commentCount > 0
+            {commentCount > 0
               ? <span className="step-tool-count">{commentCount}</span>
               : <span style={{ fontSize:"10px", color:"#94a3b8" }}>comment</span>}
           </button>
           <button className={`step-tool-btn ${showFiles ? "active" : ""}`}
             onClick={() => { setShowFiles(v => !v); setShowComments(false); setShowDeps(false); }}
             title="File attachments">
-            📎 {fileCount > 0
+            {fileCount > 0
               ? <span className="step-tool-count">{fileCount}</span>
               : <span style={{ fontSize:"10px", color:"#94a3b8" }}>files</span>}
           </button>
           <button className={`step-tool-btn ${showDeps ? "active" : ""}`}
             onClick={() => { setShowDeps(v => !v); setShowComments(false); setShowFiles(false); }}
             title="Manage step dependencies — set which steps must finish before this one">
-            🔗 {depCount > 0
+            {depCount > 0
               ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"#D64545" }}>
                   {depCount} blocked
                 </span>
@@ -411,7 +411,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
               style={{ display:"none" }} onChange={handleFileUpload} />
             <button className="btn-secondary" style={{ fontSize:"11px" }}
               disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-              {uploading ? "⏳ Uploading…" : "📎 Attach File"}
+              {uploading ? "Uploading…" : "Attach File"}
             </button>
           </div>
         </div>
@@ -427,7 +427,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
           {/* Currently blocked by */}
           {step.blockedByStepIds?.length > 0 ? (
             <div style={{ marginBottom:"12px" }}>
-              <div className="step-panel-label">⛔ This step is blocked until these finish:</div>
+              <div className="step-panel-label">This step is blocked until these finish:</div>
               {step.blockedByStepIds.map(bid => {
                 const blocker = allSteps.find(s => s.id === bid);
                 return blocker ? (
@@ -442,7 +442,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
                       <span style={{ fontSize:"10px", marginLeft:"6px",
                         color: blocker.completed ? "var(--success)" : "var(--warning)",
                         fontWeight:600 }}>
-                        {blocker.completed ? "✓ Done" : "⏳ Pending"}
+                        {blocker.completed ? "✓ Done" : "Pending"}
                       </span>
                     </div>
                     <button className="btn-icon" style={{ fontSize:"11px" }}
@@ -694,8 +694,8 @@ function ConfidenceMeter({ goal, onUpdate }) {
     const last  = spark[spark.length-1]?.value || 50;
     const prev  = spark[spark.length-3]?.value || 50;
     const delta = last - prev;
-    if (delta <= -15) return { label:"⚠️ Drifting", color:"#D64545", delta };
-    if (delta >= 15)  return { label:"📈 Improving", color:"#1E8E5A", delta };
+    if (delta <= -15) return { label:"Drifting", color:"#D64545", delta };
+    if (delta >= 15)  return { label:"Improving", color:"#1E8E5A", delta };
     return null;
   })();
 
@@ -788,7 +788,7 @@ function CheckInPanel({ goal, onUpdate }) {
   return (
     <div className="goal-checkin-panel">
       <div className="goal-checkin-header">
-        <span className="goal-section-label">📅 Weekly Check-ins ({checkIns.length})</span>
+        <span className="goal-section-label">Weekly Check-ins ({checkIns.length})</span>
         <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
           onClick={() => setOpen(v => !v)}>
           {open ? "✕ Cancel" : "+ Add Check-in"}
@@ -821,11 +821,11 @@ function CheckInPanel({ goal, onUpdate }) {
             <span className="goal-checkin-date">
               {ci.createdAt ? new Date(ci.createdAt).toLocaleDateString([], { day:"numeric", month:"short" }) : ""}
             </span>
-            <span className="goal-checkin-snap">📊 {ci.progressSnapshot}% · 🎯 {ci.confidenceSnapshot}%</span>
+            <span className="goal-checkin-snap">{ci.progressSnapshot}% · 🎯 {ci.confidenceSnapshot}%</span>
             <button className="goal-ci-delete-btn" onClick={() => handleDelete(ci.id)}>🗑</button>
           </div>
           <div className="goal-checkin-update">{ci.update}</div>
-          {ci.blockers && <div className="goal-checkin-blockers">⚠️ {ci.blockers}</div>}
+          {ci.blockers && <div className="goal-checkin-blockers">{ci.blockers}</div>}
         </div>
       ))}
       {checkIns.length > 5 && (
@@ -884,7 +884,7 @@ function KeyResultsPanel({ goal, onUpdate }) {
   return (
     <div className="goal-kr-panel">
       <div className="goal-kr-header">
-        <span className="goal-section-label">🎯 Key Results ({krs.length})</span>
+        <span className="goal-section-label">Key Results ({krs.length})</span>
         <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
           onClick={() => { setShowAdd(v => !v); resetForm(); }}>
           {showAdd ? "✕ Cancel" : "+ Add KR"}
@@ -1019,7 +1019,7 @@ function GoalContributionPanel({ goal, onUpdate }) {
   return (
     <div style={{padding:"12px 0"}}>
       <div style={{fontWeight:800,fontSize:"13px",marginBottom:"10px",color:"#1e293b"}}>
-        📈 Task Contribution to Goal
+        Task Contribution to Goal
       </div>
 
       {/* Auto-calculated progress */}
@@ -1100,7 +1100,7 @@ function ChildGoalsPanel({ goal, allGoals, onRequestAdd }) {
   return (
     <div className="goal-children-panel">
       <div className="goal-section-label">
-        🔗 Child Goals ({children.length})
+        Child Goals ({children.length})
         <button className="btn-secondary" style={{ fontSize:"11px", padding:"3px 8px", marginLeft:"8px" }}
           onClick={() => onRequestAdd(goal.id)}>
           + Add child goal
@@ -1298,7 +1298,7 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
   return (
     <div className="goal-dep-panel">
       <div className="goal-dep-section-title">
-        🔗 Dependencies
+        Dependencies
         <span className="goal-dep-count">
           {blockers.length} prerequisite{blockers.length !== 1 ? "s" : ""}
         </span>
@@ -1306,7 +1306,7 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
 
       {blockers.length > 0 && (
         <div className="goal-dep-group">
-          <div className="goal-dep-group-label">⛔ This goal is blocked by:</div>
+          <div className="goal-dep-group-label">This goal is blocked by:</div>
           {blockers.map(g => (
             <div key={g.id} className="goal-dep-row">
               <div className="goal-dep-conf" style={{ background: confColor(g) }} />
@@ -1324,7 +1324,7 @@ function GoalDependencyPanel({ goal, allGoals, onRefresh }) {
 
       {blocks.length > 0 && (
         <div className="goal-dep-group">
-          <div className="goal-dep-group-label">🚧 This goal unblocks:</div>
+          <div className="goal-dep-group-label">This goal unblocks:</div>
           {blocks.map(g => (
             <div key={g.id} className="goal-dep-row goal-dep-row-blocks">
               <div className="goal-dep-conf" style={{ background: confColor(g) }} />
@@ -1562,7 +1562,7 @@ function QuarterlyView({ goals, allGoals, onRequestAdd }) {
                         {statusText(g.status)}
                       </span>
                     </div>
-                    {g.owner && <div className="quarterly-owner">👤 {g.owner}</div>}
+                    {g.owner && <div className="quarterly-owner">{g.owner}</div>}
                     <div className="quarterly-goal-progress-row">
                       <div className="quarterly-goal-progress-bar">
                         <div style={{ width:`${g.progress||0}%`, height:"100%",
@@ -1573,13 +1573,13 @@ function QuarterlyView({ goals, allGoals, onRequestAdd }) {
                     </div>
                     <div className="quarterly-goal-footer">
                       <span style={{ color:CONFIDENCE_COLOR(conf), fontSize:"11px", fontWeight:600 }}>
-                        🎯 {conf}% confidence
+                        {conf}% confidence
                       </span>
                       {g.keyResults?.length > 0 && (
                         <span className="quarterly-kr-count">{g.keyResults.length} KR{g.keyResults.length!==1?"s":""}</span>
                       )}
                       {children.length > 0 && (
-                        <span className="quarterly-kr-count">🔗 {children.length} child{children.length!==1?"ren":""}</span>
+                        <span className="quarterly-kr-count">{children.length} child{children.length!==1?"ren":""}</span>
                       )}
                     </div>
                   </div>
@@ -1645,7 +1645,7 @@ function GoalCard({
           {levelMeta.icon} {levelMeta.label}
         </span>
         {goal.quarter && <span className="goal-quarter-badge">{goal.quarter}</span>}
-        {goal.owner && <span className="goal-owner-badge">👤 {goal.owner}</span>}
+        {goal.owner && <span className="goal-owner-badge">{goal.owner}</span>}
         {goal.parentGoalId && <span className="goal-child-indicator">↳ child goal</span>}
       </div>
 
@@ -1659,7 +1659,7 @@ function GoalCard({
       <p className="project-desc">{goal.description}</p>
 
       {goal.targetDate && (
-        <div className="goal-date">🎯 Target: {formatDate(goal.targetDate, true)}</div>
+        <div className="goal-date">Target: {formatDate(goal.targetDate, true)}</div>
       )}
 
       {/* Overall Progress */}
@@ -1680,8 +1680,8 @@ function GoalCard({
       {/* Sub-goals summary */}
       {subGoals.length > 0 && (
         <div className="goal-stats-row">
-          <span>📋 {subGoals.length} sub-goal{subGoals.length > 1 ? "s" : ""}</span>
-          <span>🪜 {doneSteps}/{totalSteps} steps done</span>
+          <span>{subGoals.length} sub-goal{subGoals.length > 1 ? "s" : ""}</span>
+          <span>{doneSteps}/{totalSteps} steps done</span>
         </div>
       )}
 
@@ -1696,27 +1696,27 @@ function GoalCard({
           </button>
           <button className={`btn-secondary${activePanel==="kr" ? " btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("kr")}>
-            🎯 KRs {goal.keyResults?.length > 0 ? `(${goal.keyResults.length})` : ""}
+            KRs {goal.keyResults?.length > 0 ? `(${goal.keyResults.length})` : ""}
           </button>
           <button className={`btn-secondary${activePanel==="checkin" ? " btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("checkin")}>
-            📅 Check-ins {goal.checkIns?.length > 0 ? `(${goal.checkIns.length})` : ""}
+            Check-ins {goal.checkIns?.length > 0 ? `(${goal.checkIns.length})` : ""}
           </button>
           <button className={`btn-secondary${activePanel==="children" ? " btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("children")}>
-            🔗 Children {(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length > 0 ? `(${(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length})` : ""}
+            Children {(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length > 0 ? `(${(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length})` : ""}
           </button>
           <button className={`btn-secondary${activePanel==="contribution" ? " btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("contribution")}>
-            📈 Contribution
+            Contribution
           </button>
           <button className={`btn-secondary${activePanel==="deps" ? " btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("deps")}>
-            🔀 Dependencies
+            Dependencies
           </button>
           <button className={`btn-secondary ${showActivity ? "btn-active" : ""}`}
             style={{ fontSize:"12px", padding:"6px 10px" }}
-            onClick={() => setShowActivity(a => !a)}>📋 Activity</button>
+            onClick={() => setShowActivity(a => !a)}>Activity</button>
         </div>
         <div className="card-actions">
           <CanDo action="edit">
@@ -1802,7 +1802,7 @@ function GoalCard({
       )}
       {showActivity && (
         <div className="entity-activity-panel">
-          <div className="entity-activity-panel-title">📋 Goal Activity</div>
+          <div className="entity-activity-panel-title">Goal Activity</div>
           <EntityActivityTab entityType="goal" entityId={goal.id} />
         </div>
       )}
@@ -1988,9 +1988,9 @@ export default function Goals() {
             </button>
             <div className="goal-view-switcher">
               <button className={`goal-view-btn${view==="grid"?" active":""}`} onClick={() => setView("grid")} title="Card grid">⊞ Grid</button>
-              <button className={`goal-view-btn${view==="scorecard"?" active":""}`} onClick={() => setView("scorecard")} title="Scorecard">📊 Scorecard</button>
-              <button className={`goal-view-btn${view==="quarterly"?" active":""}`} onClick={() => setView("quarterly")} title="Quarterly plan">🗓 Quarterly</button>
-              <button className={`goal-view-btn${view==="alignment"?" active":""}`} onClick={() => setView("alignment")} title="Alignment map">🕸 Alignment</button>
+              <button className={`goal-view-btn${view==="scorecard"?" active":""}`} onClick={() => setView("scorecard")} title="Scorecard">Scorecard</button>
+              <button className={`goal-view-btn${view==="quarterly"?" active":""}`} onClick={() => setView("quarterly")} title="Quarterly plan">Quarterly</button>
+              <button className={`goal-view-btn${view==="alignment"?" active":""}`} onClick={() => setView("alignment")} title="Alignment map">Alignment</button>
             </div>
             <CanDo action="create">
               <button className="btn-primary" onClick={() => setShowForm(true)}>
@@ -2020,7 +2020,7 @@ export default function Goals() {
               border: "1px solid #fecaca",
             }}
           >
-            ⚠️ Showing Overdue Goals
+            Showing Overdue Goals
           </span>
         </div>
       )}
@@ -2055,7 +2055,7 @@ export default function Goals() {
             <button key={s}
               className={`goal-filter-btn${statusFilter === s ? " active" : ""}`}
               onClick={() => setStatusFilter(v => v === s ? "" : s)}>
-              {s}
+              {statusText(s)}
             </button>
           ))}
         </div>

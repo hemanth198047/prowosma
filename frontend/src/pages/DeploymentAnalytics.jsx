@@ -13,8 +13,8 @@ const api = {
 };
 
 const STATUS_META = {
-  SUCCESS:  { color:"var(--success)", bg:"rgba(16,185,129,.1)",  label:"✅ Success"  },
-  FAILED:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   label:"❌ Failed"   },
+  SUCCESS:  { color:"var(--success)", bg:"rgba(16,185,129,.1)",  label:"Success"  },
+  FAILED:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   label:"Failed"   },
   ROLLBACK: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  label:"⏮ Rollback" },
 };
 
@@ -230,7 +230,7 @@ export default function DeploymentAnalytics() {
                     {new Date(d.timestamp).toLocaleString([],{dateStyle:"short",timeStyle:"short"})}
                   </span>
                   {d.durationSec > 0 && (
-                    <span className="dep-log-dur">⏱ {Math.round(d.durationSec/60)}min</span>
+                    <span className="dep-log-dur">{Math.round(d.durationSec/60)}min</span>
                   )}
                   <span className="dep-log-by">{d.deployedBy}</span>
                   {d.commitSha && (

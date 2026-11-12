@@ -306,14 +306,14 @@ export default function WorkspaceSettings() {
         action={
           (activeNav === "general" || activeNav === "preferences") && (
             <button className="btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? "⏳ Saving..." : "💾 Save Changes"}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           )
         }
       />
 
-      {success && <div className="settings-success-banner">✅ {success}</div>}
-      {error   && <div className="settings-error-banner">⚠️ {error}</div>}
+      {success && <div className="settings-success-banner">{success}</div>}
+      {error   && <div className="settings-error-banner">{error}</div>}
 
       {/* ── Option C: Left sidebar + content ── */}
       <div className="ws-settings-layout">
@@ -379,7 +379,7 @@ export default function WorkspaceSettings() {
                         <span style={{ fontSize: "12px", color: "var(--gray-400)" }}>or</span>
                         <button className="btn-secondary" style={{ fontSize: "12px", padding: "5px 12px" }}
                           onClick={() => fileInputRef.current?.click()}>
-                          📁 Upload File
+                          Upload File
                         </button>
                         {form.logoUrl && (
                           <button className="btn-secondary"
@@ -481,7 +481,7 @@ export default function WorkspaceSettings() {
 
               {/* ── Quiet Hours ── */}
               <div className="settings-section">
-                <div className="settings-section-title">🌙 Quiet Hours</div>
+                <div className="settings-section-title">Quiet Hours</div>
                 <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"12px"}}>
                   Suppress notifications during these hours. Users won't receive alerts until quiet hours end.
                 </p>
@@ -532,12 +532,12 @@ export default function WorkspaceSettings() {
               {/* Invite new member */}
               {(isOwner || isAdmin) && (
                 <div className="settings-section">
-                  <div className="settings-section-title">✉️ Invite a Member</div>
+                  <div className="settings-section-title">Invite a Member</div>
                   <p style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"14px" }}>
                     Invite someone by email. They'll receive a link to join this workspace.
                   </p>
-                  {inviteSuccess && <div className="settings-success-banner">✅ {inviteSuccess}</div>}
-                  {inviteError   && <div className="settings-error-banner">⚠️ {inviteError}</div>}
+                  {inviteSuccess && <div className="settings-success-banner">{inviteSuccess}</div>}
+                  {inviteError   && <div className="settings-error-banner">{inviteError}</div>}
                   <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", alignItems:"flex-end" }}>
                     <div className="form-group" style={{ flex:1, minWidth:"220px", marginBottom:0 }}>
                       <label htmlFor={"workspace-settings-email-address"}>Email address</label>
@@ -563,7 +563,7 @@ export default function WorkspaceSettings() {
                       style={{ height:"38px", padding:"0 18px" }}
                       disabled={inviteSending || !inviteForm.email.trim()}
                       onClick={handleSendInvite}>
-                      {inviteSending ? "⏳ Sending…" : "📨 Send Invite"}
+                      {inviteSending ? "Sending…" : "Send Invite"}
                     </button>
                   </div>
                 </div>
@@ -571,7 +571,7 @@ export default function WorkspaceSettings() {
 
               {/* Current members with role change */}
               <div className="settings-section">
-                <div className="settings-section-title">👥 Current Members</div>
+                <div className="settings-section-title">Current Members</div>
                 {members.length === 0 ? (
                   <p className="empty-state" style={{ padding:"16px 0", textAlign:"left" }}>No members yet.</p>
                 ) : (
@@ -615,7 +615,7 @@ export default function WorkspaceSettings() {
 
               {/* Pending invitations */}
               <div className="settings-section">
-                <div className="settings-section-title">⏳ Pending Invitations</div>
+                <div className="settings-section-title">Pending Invitations</div>
                 {invitesLoading ? (
                   <p className="empty-state" style={{ padding:"12px 0", textAlign:"left" }}>Loading…</p>
                 ) : invites.filter(i => i.status === "PENDING").length === 0 ? (
@@ -639,7 +639,7 @@ export default function WorkspaceSettings() {
                         <div style={{ display:"flex", gap:"6px" }}>
                           <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
                             onClick={() => handleResendInvite(inv.id)}>
-                            🔄 Resend
+                            Resend
                           </button>
                           <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px", color:"var(--danger)" }}
                             onClick={() => handleCancelInvite(inv.id)}>
@@ -657,7 +657,7 @@ export default function WorkspaceSettings() {
           {activeNav === "usage" && (
             <div>
               {statsLoading ? (
-                <div className="empty-state">📊 Loading stats...</div>
+                <div className="empty-state">Loading stats...</div>
               ) : !stats ? (
                 <div className="empty-state">No stats available yet</div>
               ) : (
@@ -715,7 +715,7 @@ export default function WorkspaceSettings() {
 
                   <button className="btn-secondary" style={{ marginTop: "8px", fontSize: "12px" }}
                     onClick={() => { setStats(null); loadStats(); }}>
-                    🔄 Refresh Stats
+                    Refresh Stats
                   </button>
                 </div>
               )}
@@ -734,7 +734,7 @@ export default function WorkspaceSettings() {
                 className="btn-primary"
                 style={{display:"flex",alignItems:"center",gap:8,fontSize:14,padding:"10px 22px"}}
                 onClick={() => navigate("/workspace-setup")}>
-                ⚡ Create new workspace
+                Create new workspace
               </button>
               <div style={{marginTop:28,padding:"16px 20px",background:"var(--gray-50)",
                 borderRadius:10,border:"1px solid var(--border)"}}>
@@ -773,7 +773,7 @@ export default function WorkspaceSettings() {
             <div>
               {/* Delete workspace */}
               <div className="settings-section settings-danger-section">
-                <div className="settings-section-title settings-danger-title">🗑️ Delete Workspace</div>
+                <div className="settings-section-title settings-danger-title">Delete Workspace</div>
                 <div className="settings-danger-body">
                   <div>
                     <div className="settings-danger-label">Permanently delete this workspace</div>
@@ -793,7 +793,7 @@ export default function WorkspaceSettings() {
                       <button className="btn-danger"
                         disabled={deleteLoading || deleteConfirm !== form.name}
                         onClick={handleDelete}>
-                        {deleteLoading ? "⏳ Deleting..." : "🗑️ Delete Workspace"}
+                        {deleteLoading ? "Deleting..." : "Delete Workspace"}
                       </button>
                     </div>
                   </div>
@@ -802,7 +802,7 @@ export default function WorkspaceSettings() {
 
               {/* Admin delete members */}
               <div className="settings-section settings-danger-section" style={{ marginTop: "16px" }}>
-                <div className="settings-section-title settings-danger-title">🛡️ Delete Member Accounts</div>
+                <div className="settings-section-title settings-danger-title">Delete Member Accounts</div>
                 <div className="settings-danger-desc" style={{ marginBottom: "16px" }}>
                   Permanently delete a member's account and all their owned data.
                 </div>
@@ -830,7 +830,7 @@ export default function WorkspaceSettings() {
                           </select>
                           <button className="btn-danger" style={{ fontSize: "12px", padding: "5px 14px" }}
                             onClick={() => openAdminDeleteModal(member)}>
-                            🗑️ Delete
+                            Delete
                           </button>
                         </div>
                       );
@@ -845,7 +845,7 @@ export default function WorkspaceSettings() {
           {/* ── Language / Locale tab ── */}
           {activeNav === "locale" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">🌐 Language &amp; Locale</h3>
+              <h3 className="ws-settings-section-title">Language &amp; Locale</h3>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={"workspace-settings-language"}>Language</label>
@@ -873,7 +873,7 @@ export default function WorkspaceSettings() {
                 </div>
               </div>
               <button className="btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? "Saving…" : "💾 Save Language Settings"}
+                {saving ? "Saving…" : "Save Language Settings"}
               </button>
             </div>
           )}
@@ -881,7 +881,7 @@ export default function WorkspaceSettings() {
           {/* ── Business Calendar tab ── */}
           {activeNav === "calendar" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">📅 Business Calendar</h3>
+              <h3 className="ws-settings-section-title">Business Calendar</h3>
               <div className="form-group">
                 <span className="field-label">Working Days</span>
                 <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
@@ -911,9 +911,9 @@ export default function WorkspaceSettings() {
               <button className="btn-primary" style={{marginBottom:"20px"}} onClick={async()=>{
                 await client.patch(`/workspaces/${activeWorkspace.id}/calendar`, calForm);
                 setSuccess("Business calendar saved");
-              }}>💾 Save Calendar</button>
+              }}>Save Calendar</button>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginBottom:"10px"}}>🎉 Public Holidays</div>
+              <div style={{fontWeight:700,fontSize:"13px",marginBottom:"10px"}}>Public Holidays</div>
               <div className="form-row">
                 <div className="form-group" style={{flex:2}}>
                   <label htmlFor={"workspace-settings-name"}>Name</label>
@@ -944,7 +944,7 @@ export default function WorkspaceSettings() {
           {/* ── User Groups tab ── */}
           {activeNav === "groups" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">👤 User Groups</h3>
+              <h3 className="ws-settings-section-title">User Groups</h3>
               <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"14px"}}>
                 Groups let you assign permissions and manage access for multiple users at once.
               </p>
@@ -1012,7 +1012,7 @@ export default function WorkspaceSettings() {
                 }}>+ Create Group</button>
               </div>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginTop:"24px",marginBottom:"8px"}}>📧 Bulk Invite</div>
+              <div style={{fontWeight:700,fontSize:"13px",marginTop:"24px",marginBottom:"8px"}}>Bulk Invite</div>
               <p style={{fontSize:"12px",color:"var(--gray-400)",marginBottom:"8px"}}>Paste one email per line to invite multiple members.</p>
               <textarea rows={4} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}
                 placeholder={"alice@company.com\nbob@company.com\ncarol@company.com"} />
@@ -1029,7 +1029,7 @@ export default function WorkspaceSettings() {
                 }}>Send {bulkEmails.trim().split("\n").filter(Boolean).length || 0} Invites</button>
               </div>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginTop:"20px",marginBottom:"6px"}}>👤 Guest / External Access</div>
+              <div style={{fontWeight:700,fontSize:"13px",marginTop:"20px",marginBottom:"6px"}}>Guest / External Access</div>
               <p style={{fontSize:"12px",color:"var(--gray-400)",marginBottom:"8px"}}>Guests get read-only access via a secure link — no password needed.</p>
               <div className="form-row">
                 <div className="form-group" style={{flex:2}}>
@@ -1040,7 +1040,7 @@ export default function WorkspaceSettings() {
                   const r = await client.post("/workspace/guest-invite",{email:guestEmail});
                   setSuccess(`Guest link generated — token: ${r.data.token}`);
                   setGuestEmail("");
-                }}>🔗 Generate Guest Link</button>
+                }}>Generate Guest Link</button>
               </div>
             </div>
           )}
@@ -1048,7 +1048,7 @@ export default function WorkspaceSettings() {
           {/* ── Permissions tab ── */}
           {activeNav === "permissions" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">🔐 Permission Matrix</h3>
+              <h3 className="ws-settings-section-title">Permission Matrix</h3>
               {permMatrix ? (
                 <div>
                   {Object.entries(permMatrix.roles||{}).map(([role,perms])=>(
@@ -1090,11 +1090,11 @@ export default function WorkspaceSettings() {
           {/* ── Org Hierarchy tab ── */}
           {activeNav === "hierarchy" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">🏗 Organisation Hierarchy</h3>
+              <h3 className="ws-settings-section-title">Organisation Hierarchy</h3>
               <button className="btn-secondary" style={{marginBottom:"14px"}} onClick={async()=>{
                 const r = await client.get("/workspace/hierarchy");
                 setHierarchy(r.data);
-              }}>🔄 Load Hierarchy</button>
+              }}>Load Hierarchy</button>
               {hierarchy && (
                 <div>
                   {(hierarchy.hierarchy||[]).length===0 && (
@@ -1144,7 +1144,7 @@ export default function WorkspaceSettings() {
           {/* ── Workspace Templates tab ── */}
           {activeNav === "templates" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">📋 Workspace Templates</h3>
+              <h3 className="ws-settings-section-title">Workspace Templates</h3>
               <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"14px"}}>
                 Templates are reusable workspace configurations. Clone one to create a pre-configured workspace.
               </p>
@@ -1163,7 +1163,7 @@ export default function WorkspaceSettings() {
                         const r = await client.post(`/workspace/${t.id}/clone`,
                           {name,includeProjects:"true"});
                         setSuccess(`Workspace cloned: ${r.data.name}`);
-                      }}>🔀 Clone</button>
+                      }}>Clone</button>
                   </div>
                 ))}
                 {wsTemplates.length===0 && (
@@ -1174,13 +1174,13 @@ export default function WorkspaceSettings() {
                 <button className="btn-secondary" onClick={async()=>{
                   await client.patch(`/workspaces/${activeWorkspace.id}`,{isTemplate:true});
                   setSuccess("Workspace marked as template");
-                }}>📋 Save as Template</button>
+                }}>Save as Template</button>
                 <button className="btn-primary" onClick={async()=>{
                   const name = prompt("Name for the cloned workspace:", activeWorkspace.name+" (Copy)");
                   if (!name) return;
                   const r = await client.post(`/workspace/${activeWorkspace.id}/clone`,{name});
                   setSuccess(`Cloned: ${r.data.name}`);
-                }}>🔀 Clone This Workspace</button>
+                }}>Clone This Workspace</button>
               </div>
             </div>
           )}
@@ -1188,7 +1188,7 @@ export default function WorkspaceSettings() {
           {/* ── Cross-workspace Access tab ── */}
           {activeNav === "crossaccess" && (
             <div className="ws-settings-section">
-              <h3 className="ws-settings-section-title">🔗 Cross-Workspace Access</h3>
+              <h3 className="ws-settings-section-title">Cross-Workspace Access</h3>
               <p style={{fontSize:"13px",color:"var(--gray-500)",marginBottom:"14px"}}>
                 Allow users from other workspaces in your organisation to access resources here.
               </p>
@@ -1216,7 +1216,7 @@ export default function WorkspaceSettings() {
       {showAdminDeleteModal && selectedMember && (
         <div className="modal-overlay" onClick={() => setShowAdminDeleteModal(false)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setShowAdminDeleteModal(false))?.(e); } }}>
           <div className="modal" style={{ maxWidth: "440px" }} onClick={(e) => e.stopPropagation()} role="presentation">
-            <h2 style={{ color: "var(--danger)", marginBottom: "8px" }}>🗑️ Delete Account</h2>
+            <h2 style={{ color: "var(--danger)", marginBottom: "8px" }}>Delete Account</h2>
             <p style={{ fontSize: "14px", color: "var(--gray-600)", marginBottom: "16px" }}>
               Permanently deleting the account of:
             </p>
@@ -1229,8 +1229,8 @@ export default function WorkspaceSettings() {
                 <div className="admin-delete-email">{selectedMember.email}</div>
               </div>
             </div>
-            {adminDeleteSuccess && <div className="settings-success-banner">✅ {adminDeleteSuccess}</div>}
-            {adminDeleteError   && <div className="settings-error-banner">⚠️ {adminDeleteError}</div>}
+            {adminDeleteSuccess && <div className="settings-success-banner">{adminDeleteSuccess}</div>}
+            {adminDeleteError   && <div className="settings-error-banner">{adminDeleteError}</div>}
             {!adminDeleteSuccess && (
               <>
                 <div className="form-group">
@@ -1245,7 +1245,7 @@ export default function WorkspaceSettings() {
                   <button className="btn-danger"
                     disabled={adminDeleteLoading || adminDeleteConfirm !== selectedMember.email}
                     onClick={handleAdminDelete}>
-                    {adminDeleteLoading ? "⏳ Deleting..." : "🗑️ Permanently Delete"}
+                    {adminDeleteLoading ? "Deleting..." : "Permanently Delete"}
                   </button>
                 </div>
               </>

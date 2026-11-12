@@ -443,7 +443,7 @@ export default function Licensing() {
       try {
         const res = await startTrial();
         setSummary(res.data);
-        setInfoBanner("🎉 Your 14-day Pro trial has started — every Pro feature is unlocked until it ends.");
+        setInfoBanner("Your 14-day Pro trial has started — every Pro feature is unlocked until it ends.");
         navigate("/");
       } catch (err) {
         setBillingError(
@@ -546,7 +546,7 @@ export default function Licensing() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="lic-page-header">
-        <div className="lic-header-badge">💎 Pricing & Plans</div>
+        <div className="lic-header-badge">Pricing & Plans</div>
         <h1 className="lic-page-title">Simple, transparent pricing</h1>
         <p className="lic-page-sub">Every feature built. Every feature available. Pay only for what fits your team.</p>
         <div className="lic-billing-toggle">

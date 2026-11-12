@@ -388,7 +388,7 @@ export default function Gantt() {
       dragStateRef.current.offset = days;
       setDragOffset(days);
       if (origDue) setTooltip({
-        text: `📅 Due: ${addDays(origDue,days).toLocaleDateString()}`,
+        text: `Due: ${addDays(origDue,days).toLocaleDateString()}`,
         x: ev.clientX, y: ev.clientY,
       });
     };
@@ -433,7 +433,7 @@ export default function Gantt() {
       resizeStateRef.current.offset = days;
       setResizeOffset(days);
       if (origDue) setTooltip({
-        text: `📅 Due: ${addDays(origDue,days).toLocaleDateString()}`,
+        text: `Due: ${addDays(origDue,days).toLocaleDateString()}`,
         x: ev.clientX, y: ev.clientY,
       });
     };
@@ -467,7 +467,7 @@ export default function Gantt() {
         icon="📅"
         title="Gantt Chart"
         description="Timeline view of project tasks and goals — drag bars to reschedule, drag edge to resize"
-        action={<button className="btn-secondary" style={{ fontSize:"12px" }} onClick={load}>🔄 Refresh</button>}
+        action={<button className="btn-secondary" style={{ fontSize:"12px" }} onClick={load}>Refresh</button>}
       />
 
       {/* ── Toolbar ── */}
@@ -476,9 +476,9 @@ export default function Gantt() {
 
         <div className="tab-bar" style={{ marginBottom:0 }}>
           <button className={"tab-btn"+(activeTab==="tasks"?" tab-active":"")}
-            onClick={() => setActiveTab("tasks")}>📁 Project Tasks</button>
+            onClick={() => setActiveTab("tasks")}>Project Tasks</button>
           <button className={"tab-btn"+(activeTab==="goals"?" tab-active":"")}
-            onClick={() => setActiveTab("goals")}>🎯 Goals & Steps</button>
+            onClick={() => setActiveTab("goals")}>Goals & Steps</button>
         </div>
 
         {activeTab === "tasks" && (
@@ -507,7 +507,7 @@ export default function Gantt() {
           style={{ fontSize:"11px", padding:"5px 10px" }}
           onClick={() => setShowDeps(d => !d)}
         >
-          🔗 Dependencies
+          Dependencies
         </button>
 
         {/* Progress stat */}

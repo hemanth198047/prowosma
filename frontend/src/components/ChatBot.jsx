@@ -567,9 +567,9 @@ export default function ChatBot() {
           {/* AI-off banner strip */}
           {!minimised&&isOffline&&(
             <div className="cb-ai-off-strip">
-              <span>⚠️ AI is off — answering from the help guide</span>
+              <span>AI is off — answering from the help guide</span>
               <button className="cb-ai-off-enable" onClick={()=>send("Enable AI now")}>
-                ⚡ Enable AI
+                Enable AI
               </button>
             </div>
           )}

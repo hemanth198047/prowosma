@@ -101,7 +101,7 @@ export default function MeetingPulseCard() {
 
       {pulse.recentlyCompleted?.length > 0 && (
         <div style={{ marginTop: "10px", fontSize: "11px", color: "var(--gray-400)" }}>
-          ✅ {pulse.recentlyCompleted.length} item{pulse.recentlyCompleted.length > 1 ? "s" : ""} completed in the last 48h
+          {pulse.recentlyCompleted.length} item{pulse.recentlyCompleted.length > 1 ? "s" : ""} completed in the last 48h
         </div>
       )}
     </div>

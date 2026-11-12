@@ -172,7 +172,7 @@ export default function ImportExport() {
                     border:"1.5px solid var(--border)", background:"#fff",
                     fontSize:"13px", fontWeight:700, cursor:"pointer",
                     color:"#334155", display:"flex", alignItems:"center", gap:"6px" }}>
-                  📥 Get Template
+                  Get Template
                 </button>
               </div>
 
@@ -231,7 +231,7 @@ export default function ImportExport() {
                 <div style={{ padding:"12px 16px", borderRadius:"10px",
                   background:"#fff1f2", border:"1px solid #fca5a5",
                   color:"#b91c1c", fontSize:"13px", fontWeight:600 }}>
-                  ⚠️ {error}
+                  {error}
                 </div>
               )}
             </div>
@@ -307,7 +307,7 @@ export default function ImportExport() {
                 <div style={{ marginTop:"12px", padding:"12px 16px", borderRadius:"10px",
                   background:"#fff1f2", border:"1px solid #fca5a5",
                   color:"#b91c1c", fontSize:"13px", fontWeight:600 }}>
-                  ⚠️ {error}
+                  {error}
                 </div>
               )}
             </div>
@@ -320,7 +320,7 @@ export default function ImportExport() {
             borderRadius:"14px", padding:"18px", marginBottom:"12px" }}>
             <div style={{ fontSize:"12px", fontWeight:800, color:"#475569",
               letterSpacing:".06em", textTransform:"uppercase", marginBottom:"14px" }}>
-              📋 Sheets & Columns
+              Sheets & Columns
             </div>
             {SECTIONS.map(sec => (
               <div key={sec.key} style={{ marginBottom:"14px" }}>
@@ -345,7 +345,7 @@ export default function ImportExport() {
             padding:"16px", color:"var(--border)" }}>
             <div style={{ fontSize:"12px", fontWeight:800, color:"#38bdf8",
               letterSpacing:".06em", textTransform:"uppercase", marginBottom:"10px" }}>
-              💡 Tips
+              Tips
             </div>
             {[
               "Download the template first to see the correct format.",
