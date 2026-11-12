@@ -1,3 +1,4 @@
+import { Clock } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { addTimeLog, deleteTimeLog } from "../api/tasks";
 import { useConfirm } from "../hooks/useConfirm";
@@ -9,7 +10,7 @@ function formatTime(minutes) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function TimeTracker({ task, onRefresh }) {
+export default function TimeTracker({ task, onRefresh, compact = false }) {
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState("");
@@ -83,6 +84,13 @@ export default function TimeTracker({ task, onRefresh }) {
 
   return (
     <div className="time-tracker-wrapper" ref={ref}>
+      {compact ? (
+        <button type="button" className="task-tool-btn" aria-expanded={open}
+          aria-label={totalMinutes > 0 ? `Time tracked: ${formatTime(totalMinutes)}` : "Time tracker"} title="Time tracker"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}>
+          <Clock size={14} aria-hidden="true" />{totalMinutes > 0 && <span>{formatTime(totalMinutes)}</span>}
+        </button>
+      ) : (
       <button
         className="time-tracker-toggle"
         onClick={(e) => {
@@ -94,6 +102,7 @@ export default function TimeTracker({ task, onRefresh }) {
         {totalMinutes > 0 ? `(${formatTime(totalMinutes)})` : ""}{" "}
         {open ? "▲" : "▼"}
       </button>
+      )}
 
       {open && (
         <div

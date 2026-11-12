@@ -9,7 +9,10 @@ import { getGoals, toggleStep, deleteStep, addStep, updateSubGoal,
   addStepDependency, removeStepDependency,
 } from "../api/goals";
 import { getProjects } from "../api/projects";
-import PageHeader from "../components/PageHeader";
+import ActionMenu from "../components/ui/ActionMenu";
+import StatusPill from "../components/ui/StatusPill";
+import PriorityTag from "../components/ui/PriorityTag";
+import { taskMatches, facetCount, matchesDue, groupTasks } from "../utils/taskFilters";
 import IntegrationPanel from "../components/IntegrationPanel";
 import { useToast } from "../components/ToastContext";
 import { useAuth } from "../hooks/useAuth";
@@ -27,10 +30,14 @@ import TaskTable from "../components/TaskTable";
 import TaskDrawer from "../components/TaskDrawer";
 
 import "../styles/pages/tasks.css";
+import "../styles/pages/task-list.css";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
-import { AlertTriangle } from "lucide-react";
-import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
+import {
+  AlertTriangle, Check, ChevronDown, Download, Eye, FileSpreadsheet, FileText, GitBranch, History, Link2, List,
+  PanelRight, Pencil, Plus, Search, SlidersHorizontal, Table2, Trash2,
+} from "lucide-react";
+import { isTaskOverdue } from "../utils/overdue";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -253,108 +260,31 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
   );
 }
 
-function groupByTag(tasks) {
-  const map = {};
-  tasks.forEach((t) => {
-    const tags = t.tags?.length > 0 ? t.tags : ["No Tag"];
-    tags.forEach((tag) => {
-      if (!map[tag]) map[tag] = [];
-      map[tag].push(t);
-    });
-  });
-  return Object.entries(map).map(([tag, tasks]) => ({ tag, tasks }));
+// Remembered per browser: the list/table choice and the list's grouping.
+function readPref(key, allowed, fallback) {
+  try { const v = localStorage.getItem(key); return allowed.includes(v) ? v : fallback; } catch { return fallback; }
+}
+function writePref(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* private mode: not remembered */ }
 }
 
-function groupByProject(tasks, projects) {
-  const map = {};
-  tasks.forEach((t) => {
-    const proj = projects.find((p) => p.id === t.projectId);
-    const key  = proj ? proj.id : "__none__";
-    if (!map[key]) map[key] = { project: proj || null, tasks: [] };
-    map[key].tasks.push(t);
-  });
-  // Sort: named projects first (alphabetically), then no-project
-  return Object.values(map).sort((a, b) => {
-    if (!a.project) return 1;
-    if (!b.project) return -1;
-    return a.project.name.localeCompare(b.project.name);
-  });
-}
-
-function StatusDropdown({ task, onUpdate }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const statusColor = {
-    TODO: "var(--brand-500)",
-    IN_PROGRESS: "var(--warning)",
-    DONE: "var(--success)",
-  };
-  const statuses = ["TODO", "IN_PROGRESS", "DONE"];
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
+// Status as a pill that opens a small menu of the three statuses.
+function StatusMenu({ task, onUpdate }) {
   return (
-    <div style={{ position: "relative" }} ref={ref}>
-      <div
-        className="status-quick-btn"
-        style={{
-          background: statusColor[task.status] + "22",
-          color: statusColor[task.status],
-          border: `1px solid ${statusColor[task.status]}`,
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        })?.(e); } }}
-      >
-        {statusText(task.status)}
-        <span style={{ fontSize: "10px", marginLeft: "4px" }}>▼</span>
-      </div>
-      {open && (
-        <div className="status-dropdown">
-          {statuses.map((s) => (
-            <div
-              key={s}
-              className={`status-dropdown-item ${task.status === s ? "active" : ""}`}
-              style={{ color: statusColor[s] }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdate(task, s);
-                setOpen(false);
-              }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => {
-                e.stopPropagation();
-                onUpdate(task, s);
-                setOpen(false);
-              })?.(e); } }}
-            >
-              <div
-                className="task-status-dot"
-                style={{ background: statusColor[s] }}
-              />
-              {s.replace("_", " ")}
-              {task.status === s && (
-                <span style={{ marginLeft: "auto" }}>✓</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <ActionMenu
+      label={`Status of ${task.title}`}
+      align="start"
+      className="tk-status-trigger"
+      items={STATUSES.map((s) => ({
+        label: (task.status === s ? "✓ " : "") + statusText(s),
+        onSelect: () => { if (task.status !== s) onUpdate(task, s); },
+      }))}
+    >
+      <StatusPill status={task.status} />
+      <ChevronDown size={12} aria-hidden="true" className="tk-status-chev" />
+    </ActionMenu>
   );
 }
-
 
 function GoalStepAdder({ onAdd }) {
   const [title, setTitle] = useState("");
@@ -569,7 +499,11 @@ export default function Tasks() {
   // makes a table the right choice in a spreadsheet applies here. The
   // other three views (by-project, plain list, by-tag) stay available
   // for when grouping matters more than side-by-side comparison.
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState(() => readPref("tasks.view", ["list", "table"], "list"));
+  const [groupBy, setGroupBy] = useState(() => readPref("tasks.groupBy", ["due", "status", "project", "tag"], "due"));
+  const [railOpen, setRailOpen] = useState(false); // phones only: the rail folds away
+  const chooseView = (v) => { setViewMode(v); writePref("tasks.view", v); };
+  const chooseGroupBy = (g) => { setGroupBy(g); writePref("tasks.groupBy", g); };
   const [drawerTask, setDrawerTask] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [activityOpenIds, setActivityOpenIds] = useState({});
@@ -743,168 +677,124 @@ export default function Tasks() {
     return [projectId, ...subIds];
   };
 
-  // Due-date windows for the "This Week" / "This Month" options below —
-  // calendar week (through Sunday) and calendar month, not a rolling
-  // 7/30-day count, since "due this week" normally means "by the end of
-  // the current week" rather than "within the next 7 days from right now".
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfWeek = new Date(startOfToday);
-  endOfWeek.setDate(endOfWeek.getDate() + (6 - endOfWeek.getDay())); // through Saturday
-  endOfWeek.setHours(23, 59, 59, 999);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const filters = {
+    status: filterStatus,
+    priority: filterPriority,
+    project: filterProject,
+    assignee: filterAssignee,
+    due: filterSpecial,
+    search,
+  };
+  const filterCtx = { now, projectIds: getProjectAndSubIds };
+  const filtered = tasks.filter((t) => taskMatches(t, filters, filterCtx));
+  const countFor = (key, value) => facetCount(tasks, filters, key, value, filterCtx);
+  const activeFilterCount = [filterStatus, filterPriority, filterProject, filterAssignee, filterSpecial].filter(Boolean).length;
+  const anyFilter = activeFilterCount > 0 || !!search;
+  const clearFilters = () => {
+    setFilterStatus(""); setFilterPriority(""); setFilterProject("");
+    setFilterAssignee(""); setFilterSpecial(""); setSearch("");
+  };
+  const openCount = tasks.filter((t) => t.status !== "DONE").length;
+  const overdueCount = tasks.filter((t) => isTaskOverdue(t, now)).length;
+  const todayCount = tasks.filter((t) => t.status !== "DONE" && matchesDue(t, "today", now)).length;
+  const groups = viewMode === "list" ? groupTasks(filtered, groupBy, { projects, statusLabel: statusText, now }) : [];
 
-  const filtered = tasks.filter((t) => {
-    if (filterSpecial === "overdue") {
-      if (!(t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE")) return false;
-    } else if (filterSpecial === "today") {
-      if (!(t.dueDate && new Date(t.dueDate).toDateString() === now.toDateString())) return false;
-    } else if (filterSpecial === "week") {
-      if (!(t.dueDate && new Date(t.dueDate) >= startOfToday && new Date(t.dueDate) <= endOfWeek)) return false;
-    } else if (filterSpecial === "month") {
-      if (!(t.dueDate && new Date(t.dueDate) >= startOfToday && new Date(t.dueDate) <= endOfMonth)) return false;
-    } else if (filterSpecial === "nodate") {
-      if (t.dueDate) return false;
-    }
-    if (filterStatus && t.status !== filterStatus) return false;
-    if (filterPriority && t.priority !== filterPriority) return false;
-    if (filterProject) {
-      const validIds = getProjectAndSubIds(filterProject);
-      if (!validIds.includes(t.projectId)) return false;
-    }
-    if (filterAssignee) {
-      if (filterAssignee === "__unassigned__") {
-        if (t.assigneeIds?.length > 0) return false;
-      } else if (!t.assigneeIds?.includes(filterAssignee)) {
-        return false;
-      }
-    }
-    if (search && !t.title.toLowerCase().includes(search.toLowerCase()))
-      return false;
-    return true;
-  });
-
-  const priorityColor = { LOW: "var(--success)", MEDIUM: "var(--warning)", HIGH: "var(--danger)" };
-  const statusColor = {
-    TODO: "var(--brand-500)",
-    IN_PROGRESS: "var(--warning)",
-    DONE: "var(--success)",
+  const memberById = (id) => teamMembers.find((m) => m.id === id);
+  const projectById = (id) => projects.find((p) => p.id === id);
+  const editInForm = (t) => {
+    setEditing({ ...t, dueDate: t.dueDate ? t.dueDate.slice(0, 16) : "", tags: t.tags?.join(", ") || "" });
+    setShowForm(true);
   };
 
-  /* Inner render helper — shared across all 3 view modes */
-  const TaskRow = ({ t }) => (
-    <div
-      className={`task-row ${highlightId === t.id ? "task-row-highlight" : ""} ${selectedIds.has(t.id) ? "task-row-selected" : ""}`}
-      key={t.id}
-      ref={highlightId === t.id ? (el) => el?.scrollIntoView({ behavior: "smooth", block: "center" }) : null}
-      style={highlightId === t.id ? {
-        "--highlight-color": `#${highlightColor}`,
-        "--highlight-bg": `#${highlightColor}11`,
-        "--highlight-shadow": `rgba(${parseInt(highlightColor.slice(0,2),16)},${parseInt(highlightColor.slice(2,4),16)},${parseInt(highlightColor.slice(4,6),16)},0.2)`,
-      } : {}}
-    >
-      <input type="checkbox" className="task-row-checkbox"
-        checked={selectedIds.has(t.id)}
-        onChange={() => toggleSelect(t.id)}
-        onClick={e => e.stopPropagation()}
-      />
-      <div className="task-status-dot"
-        style={{ background: t.blockedByTaskIds?.length > 0 ? "var(--danger)" : statusColor[t.status] }}
-        title={t.blockedByTaskIds?.length > 0 ? "This task has dependencies" : t.status}
-      />
-      <div className="task-info">
-        <div className="task-title">
-          {t.title}
-          <button className="btn-icon" style={{ fontSize: "14px", marginLeft: "6px" }}
-            title="Quick view"
-            onClick={() => setDrawerTask(t)}>
-            ⤢
-          </button>
-          <button className="btn-icon" style={{ fontSize: "14px" }}
-            title="Edit in full form"
-            onClick={() => { setEditing({ ...t, dueDate: t.dueDate ? t.dueDate.slice(0,16) : "", tags: t.tags?.join(", ") || "" }); setShowForm(true); }}>
-            ✏️
-          </button>
-          <StatusDropdown task={t} onUpdate={handleStatusUpdate} />
-          <TaskComments task={t} onRefresh={load} />
-          <TimeTracker task={t} onRefresh={load} />
-          <FileAttachments task={t} onRefresh={load} />
-          <TaskDependencies task={t} allTasks={tasks} onRefresh={load} />
-          <button
-            className={`btn-icon task-activity-btn ${activityOpenIds[t.id] ? "active" : ""}`}
-            style={{ fontSize: "12px", padding: "2px 6px" }}
-            title="Activity history"
-            onClick={() => toggleActivity(t.id)}
-          >📋</button>
-        </div>
-        {t.assigneeIds?.length > 0 && (
-          <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-            👤{" "}
-            {t.assigneeIds.map((id) => {
-              const m = teamMembers.find((m) => m.id === id);
-              return m ? (
-                <span key={id} style={{ background: m.color || "var(--brand-500)", color: "#fff", borderRadius: "50%",
-                  width: "18px", height: "18px", fontSize: "9px", fontWeight: 700,
-                  display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                  {m.name.slice(0, 2).toUpperCase()}
+  /* One task in the list view. Every tool the old row had is still here:
+     quick view, full edit, status, comments, time, files, dependencies,
+     activity, linked docs, delete. */
+  const renderTaskRow = (t) => {
+    const overdue = isTaskOverdue(t, now);
+    const proj = projectById(t.projectId);
+    const people = (t.assigneeIds || []).map(memberById).filter(Boolean);
+    const blocked = t.blockedByTaskIds?.length > 0;
+    return (
+      <li
+        key={t.id}
+        className={`tk-row ${highlightId === t.id ? "task-row-highlight" : ""} ${selectedIds.has(t.id) ? "tk-row--selected" : ""}`}
+        ref={highlightId === t.id ? (el) => el?.scrollIntoView({ behavior: "smooth", block: "center" }) : null}
+        style={highlightId === t.id ? {
+          "--highlight-color": `#${highlightColor}`,
+          "--highlight-bg": `#${highlightColor}11`,
+          "--highlight-shadow": `rgba(${parseInt(highlightColor.slice(0,2),16)},${parseInt(highlightColor.slice(2,4),16)},${parseInt(highlightColor.slice(4,6),16)},0.2)`,
+        } : {}}
+      >
+        <div className="tk-row-main">
+          <input type="checkbox" className="tk-check"
+            aria-label={`Select ${t.title}`}
+            checked={selectedIds.has(t.id)}
+            onChange={() => toggleSelect(t.id)}
+            onClick={e => e.stopPropagation()}
+          />
+          <div className="tk-body">
+            <button type="button" className={"tk-title" + (t.status === "DONE" ? " tk-title--done" : "")} onClick={() => setDrawerTask(t)}>
+              {t.title}
+            </button>
+            <div className="tk-sub">
+              {proj && <span className="tk-proj"><span className="tk-dot" style={{ background: proj.color || "var(--gray-400)" }} aria-hidden="true" />{getProjectName(t.projectId)}</span>}
+              <StatusMenu task={t} onUpdate={handleStatusUpdate} />
+              {blocked && <span className="tk-flag tk-flag--late" title="This task has dependencies"><Link2 size={12} aria-hidden="true" />Blocked</span>}
+              {t.type && t.type !== "TASK" && <span className="tk-flag">{statusText(t.type)}</span>}
+              {t.severity && t.severity !== "NONE" && <span className={"tk-flag" + (t.severity === "CRITICAL" || t.severity === "HIGH" ? " tk-flag--late" : "")}>Severity: {statusText(t.severity)}</span>}
+              {t.slaStatus && t.slaStatus !== "NONE" && <span className={"tk-flag" + (t.slaStatus === "BREACHED" ? " tk-flag--late" : "")}>SLA: {statusText(t.slaStatus)}</span>}
+              {(t.subtaskIds || []).length > 0 && <span className="tk-flag" title="Sub-tasks"><GitBranch size={12} aria-hidden="true" />{t.subtaskIds.length}</span>}
+              {(t.watcherIds || []).length > 0 && <span className="tk-flag" title="Watchers"><Eye size={12} aria-hidden="true" />{t.watcherIds.length}</span>}
+              {t.tags?.map(tag => <span key={tag} className="tk-tag">{tag}</span>)}
+            </div>
+          </div>
+          <span className="tk-col-pri"><PriorityTag priority={t.priority} /></span>
+          <span className="tk-col-who">
+            {people.length > 0 ? (
+              <>
+                <span className="tk-avatars">
+                  {people.slice(0, 3).map((m) => (
+                    <span key={m.id} className="tk-avatar" style={{ background: m.color || "var(--brand-500)" }} title={m.name}>
+                      {(m.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                    </span>
+                  ))}
                 </span>
-              ) : null;
-            })}
+                <span className="tk-who-name">{people.length === 1 ? people[0].name.split(" ")[0] : `${people.length} people`}</span>
+              </>
+            ) : <span className="tk-who-none">Unassigned</span>}
           </span>
-        )}
-        {t.dueDate && (isTaskOverdue(t)
-          ? <span className="task-meta" style={{ marginTop: "2px", color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(t.dueDate).toLocaleDateString()}
-            </span>
-          : <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>)}
-        {t.tags?.length > 0 && (
-          <div className="task-meta" style={{ marginTop: "2px" }}>
-            {t.tags.map(tag => <span key={tag} className="task-tag">{tag}</span>)}
+          <span className={"tk-col-due" + (overdue ? " tk-due--late" : "")}>
+            {t.dueDate ? (
+              <>
+                {overdue && <AlertTriangle size={12} aria-hidden="true" />}
+                {overdue && <span className="sr-only">Overdue: </span>}
+                {new Date(t.dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+              </>
+            ) : <span className="tk-who-none">—</span>}
+          </span>
+          <span className="tk-tools">
+            <TaskComments task={t} onRefresh={load} compact />
+            <TimeTracker task={t} onRefresh={load} compact />
+            <FileAttachments task={t} onRefresh={load} compact />
+            <TaskDependencies task={t} allTasks={tasks} onRefresh={load} compact />
+          </span>
+          <ActionMenu label={`More actions for ${t.title}`} items={[
+            { label: "Quick view", icon: PanelRight, onSelect: () => setDrawerTask(t) },
+            { label: "Edit in full form", icon: Pencil, onSelect: () => editInForm(t) },
+            { label: activityOpenIds[t.id] ? "Hide activity" : "Activity", icon: History, onSelect: () => toggleActivity(t.id) },
+            "divider",
+            { label: "Delete", icon: Trash2, danger: true, onSelect: () => handleDelete(t.id) },
+          ]} />
+        </div>
+        {activityOpenIds[t.id] && (
+          <div className="task-activity-inline">
+            <EntityActivityTab entityType="task" entityId={t.id} />
           </div>
         )}
-      </div>
-      {activityOpenIds[t.id] && (
-        <div className="task-activity-inline">
-          <EntityActivityTab entityType="task" entityId={t.id} />
-        </div>
-      )}
-      <div className="task-badges">
-        <span className="badge" style={{ background: priorityColor[t.priority], color: "#fff" }}>
-          {t.priority}
-        </span>
-        {t.type && t.type !== "TASK" && (
-          <span className="badge" style={{ background:"#6366f118",color:"var(--brand-500)",border:"1px solid #6366f133" }}>
-            {t.type}
-          </span>
-        )}
-        {t.severity && t.severity !== "NONE" && (
-          <span className="badge" style={{
-            background: t.severity==="CRITICAL"?"#7c3aed18":t.severity==="HIGH"?"#ef444418":"#f59e0b18",
-            color: t.severity==="CRITICAL"?"var(--purple)":t.severity==="HIGH"?"var(--danger)":"var(--warning)",
-          }}>⚡{t.severity}</span>
-        )}
-        {t.slaStatus && t.slaStatus !== "NONE" && (
-          <span className="badge" style={{
-            background: t.slaStatus==="BREACHED"?"#ef444418":t.slaStatus==="AT_RISK"?"#f59e0b18":"#10b98118",
-            color: t.slaStatus==="BREACHED"?"var(--danger)":t.slaStatus==="AT_RISK"?"var(--warning)":"var(--success)",
-          }}>SLA:{t.slaStatus}</span>
-        )}
-        {(t.subtaskIds||[]).length > 0 && (
-          <span className="badge" style={{background:"var(--gray-100)",color:"var(--gray-600)"}}>
-            🔀{t.subtaskIds.length}
-          </span>
-        )}
-        {(t.watcherIds||[]).length > 0 && (
-          <span className="badge" style={{background:"var(--gray-100)",color:"var(--gray-600)"}}>
-            👁{t.watcherIds.length}
-          </span>
-        )}
-      </div>
-      <LinkedDocsPanel taskId={t.id} allDocs={allDocs} />
-      <div className="card-actions">
-        <button className="btn-icon" onClick={() => handleDelete(t.id)}>🗑️</button>
-      </div>
-    </div>
-  );
+        <LinkedDocsPanel taskId={t.id} allDocs={allDocs} />
+      </li>
+    );
+  };
 
   const updateGoalInState = (updated) =>
     setGoals((prev) => prev.map((g) => g.id === updated.id ? updated : g));
@@ -946,292 +836,181 @@ export default function Tasks() {
     return matchSearch && matchStatus;
   });
 
-  return (
-    <div>
-      <PageHeader
-        icon="✅"
-        title="Tasks"
-        description="Track and manage all your tasks"
-        action={
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportCSV}
-            >
-              ⬇️ CSV
-            </button>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportPDF}
-            >
-              ⬇️ PDF
-            </button>
-            <button className="btn-primary" onClick={() => setShowForm(true)}>
-              + New Task
-            </button>
-          </div>
-        }
-      />
+  const STATUS_FACET = [["TODO", "To do"], ["IN_PROGRESS", "In progress"], ["DONE", "Done"]];
+  const DUE_FACET = [["overdue", "Overdue"], ["today", "Due today"], ["week", "This week"], ["month", "This month"], ["nodate", "No due date"]];
+  const PRIORITY_FACET = [["HIGH", "High"], ["MEDIUM", "Medium"], ["LOW", "Low"]];
+  const renderFacet = (legend, fkey, value, setValue, options) => (
+    <fieldset className="tk-facet">
+      <legend>{legend}</legend>
+      {options.map(([v, label]) => {
+        const on = value === v;
+        const n = countFor(fkey, v);
+        return (
+          <button key={v} type="button" className={"tk-facet-opt" + (on ? " on" : "")} aria-pressed={on}
+            onClick={() => setValue(on ? "" : v)} disabled={!on && n === 0}>
+            <span className="tk-facet-box" aria-hidden="true">{on && <Check size={12} strokeWidth={3} />}</span>
+            <span className="tk-facet-label">{label}</span>
+            <span className="tk-facet-n">{n}</span>
+          </button>
+        );
+      })}
+    </fieldset>
+  );
 
-      <div className="tab-bar" style={{ marginBottom: "20px" }}>
-        <button className={"tab-btn" + (mainTab === "projects" ? " tab-active" : "")} onClick={() => setMainTab("projects")}>
-          📁 Project Tasks
-        </button>
-        <button className={"tab-btn" + (mainTab === "goals" ? " tab-active" : "")} onClick={() => setMainTab("goals")}>
-          🎯 Goal Steps
-        </button>
-      </div>
+  return (
+    <div className="tk-page">
+      <header className="pg-title-row">
+        <div className="pg-title-text">
+          <h1>Tasks</h1>
+          {mainTab === "projects" ? (
+            <p>
+              {openCount} open
+              {overdueCount > 0 && <> · <button type="button" className="tk-inline-link tk-inline-link--late" onClick={() => setFilterSpecial("overdue")}>{overdueCount} overdue</button></>}
+              {todayCount > 0 && <> · <button type="button" className="tk-inline-link" onClick={() => setFilterSpecial("today")}>{todayCount} due today</button></>}
+            </p>
+          ) : (
+            <p>Steps from your goals, in one place.</p>
+          )}
+        </div>
+        <div className="pg-title-actions">
+          <div className="tk-tabs" role="tablist" aria-label="Task source">
+            <button type="button" role="tab" aria-selected={mainTab === "projects"} onClick={() => setMainTab("projects")}>Project tasks</button>
+            <button type="button" role="tab" aria-selected={mainTab === "goals"} onClick={() => setMainTab("goals")}>Goal steps</button>
+          </div>
+          {mainTab === "projects" && (
+            <ActionMenu label="Export" className="btn-secondary pg-btn" items={[
+              { label: "CSV spreadsheet", icon: FileSpreadsheet, onSelect: handleExportCSV },
+              { label: "PDF report", icon: FileText, onSelect: handleExportPDF },
+            ]}>
+              <Download size={14} aria-hidden="true" />Export
+            </ActionMenu>
+          )}
+          <button type="button" className="btn-primary pg-btn" onClick={() => setShowForm(true)}>
+            <Plus size={15} aria-hidden="true" />New task
+          </button>
+        </div>
+      </header>
 
       {mainTab === "projects" && (
-      <><div className="filter-bar">
-        <input
-          style={{ width: "200px" }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label="Search tasks"
-          placeholder="🔍 Search tasks..."
-        />
-        <select
-          aria-label="Filter by status"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter by priority"
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-        >
-          <option value="">All Priorities</option>
-          {PRIORITIES.map((p) => (
-            <option key={p}>{p}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter by project"
-          value={filterProject}
-          onChange={(e) => setFilterProject(e.target.value)}
-        >
-          <option value="">All Projects</option>
-          {projects
-            .filter((p) => !p.parentProjectId)
-            .map((p) => (
-              <optgroup key={p.id} label={p.name}>
-                <option value={p.id}>{p.name}</option>
-                {projects
-                  .filter((sp) => sp.parentProjectId === p.id)
-                  .map((sp) => (
-                    <option key={sp.id} value={sp.id}>
-                      ↳ {sp.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-        </select>
-        <select
-          aria-label="Filter by assignee"
-          value={filterAssignee}
-          onChange={(e) => setFilterAssignee(e.target.value)}
-        >
-          <option value="">All Assignees</option>
-          <option value="__unassigned__">Unassigned</option>
-          {teamMembers.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter by due date"
-          value={filterSpecial}
-          onChange={(e) => setFilterSpecial(e.target.value)}
-        >
-          <option value="">Any Due Date</option>
-          <option value="overdue">⚠️ Overdue</option>
-          <option value="today">📅 Due Today</option>
-          <option value="week">Due This Week</option>
-          <option value="month">Due This Month</option>
-          <option value="nodate">No Due Date</option>
-        </select>
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Overdue/Due Today used to be their own standalone toggle
-              buttons here, duplicating what the new "Due Date" dropdown
-              above now covers (plus This Week/This Month/No Due Date,
-              which the buttons never offered) — one control for this
-              instead of two. Deep links into this page still work the
-              same either way (?filter=overdue / ?filter=today), since
-              both drove and still drive the same filterSpecial state. */}
-          {/* Table leads: it's the default and the recommended view for
-              comparing tasks side-by-side. The other three stay for when
-              grouping matters more than comparison. */}
-          <button
-            className={viewMode === "table" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("table")}
-          >
-            📊 Table
+      <><div className="tk-layout">
+        <aside className={"tk-rail" + (railOpen ? " open" : "")} aria-label="Filters">
+          <button type="button" className="btn-secondary pg-btn tk-rail-toggle" aria-expanded={railOpen} onClick={() => setRailOpen(o => !o)}>
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
           </button>
-          <button
-            className={viewMode === "project" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("project")}
-          >
-            📁 By Project
-          </button>
-          <button
-            className={viewMode === "grouped" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("grouped")}
-          >
-            🏷️ By Tag
-          </button>
-          <button
-            className={viewMode === "list" ? "btn-primary" : "btn-secondary"}
-            style={{ padding: "8px 14px", fontSize: "12px" }}
-            onClick={() => setViewMode("list")}
-          >
-            ☰ List
-          </button>
-        </div>
-      </div>
-
-      {filterSpecial && (
-        <div
-          style={{
-            marginBottom: "12px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span
-            style={{
-              background: filterSpecial === "overdue" ? "#fff5f5" : "#fffbeb",
-              color: filterSpecial === "overdue" ? "var(--danger)" : "var(--warning)",
-              padding: "4px 12px",
-              borderRadius: "20px",
-              fontSize: "12px",
-              fontWeight: 600,
-              border: `1px solid ${filterSpecial === "overdue" ? "#fecaca" : "#fde68a"}`,
-            }}
-          >
-            {filterSpecial === "overdue"
-              ? "⚠️ Showing Overdue Tasks"
-              : "📅 Showing Due Today Tasks"}
-          </span>
-          <button
-            className="btn-link"
-            style={{ fontSize: "12px" }}
-            onClick={() => setFilterSpecial("")}
-          >
-            Clear Filter ✕
-          </button>
-        </div>
-      )}
-
-      {/* ── Bulk action toolbar ── */}
-      {filtered.length > 0 && (
-        <div className="bulk-toolbar">
-          <label className="bulk-select-all">
-            <input type="checkbox"
-              checked={selectedIds.size === filtered.length && filtered.length > 0}
-              onChange={e => e.target.checked ? setSelectedIds(new Set(filtered.map(t => t.id))) : clearSelection()}
-            />
-            {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+          <label className="pg-find">
+            <Search size={14} aria-hidden="true" />
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Find a task" placeholder="Find a task" />
           </label>
-          {selectedIds.size > 0 && (
-            <div className="bulk-actions">
-              <span style={{ fontSize:"12px", color:"var(--gray-400)", marginRight:"4px" }}>Mark as:</span>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("TODO")}>⬜ Todo</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("IN_PROGRESS")}>🔄 In Progress</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={() => handleBulkStatus("DONE")}>✅ Done</button>
-              <div style={{ width:"1px", background:"var(--border)", margin:"0 4px" }} />
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px", color:"var(--danger)" }}
-                onClick={handleBulkDelete}>🗑️ Delete ({selectedIds.size})</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
-                onClick={clearSelection}>✕ Clear</button>
+          {renderFacet("Status", "status", filterStatus, setFilterStatus, STATUS_FACET)}
+          {renderFacet("Due", "due", filterSpecial, setFilterSpecial, DUE_FACET)}
+          {renderFacet("Priority", "priority", filterPriority, setFilterPriority, PRIORITY_FACET)}
+          <fieldset className="tk-facet">
+            <legend>Project</legend>
+            <select className="pg-select" aria-label="Filter by project" value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
+              <option value="">All projects</option>
+              {projects
+                .filter((p) => !p.parentProjectId)
+                .map((p) => (
+                  <optgroup key={p.id} label={p.name}>
+                    <option value={p.id}>{p.name}</option>
+                    {projects
+                      .filter((sp) => sp.parentProjectId === p.id)
+                      .map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          ↳ {sp.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+            </select>
+          </fieldset>
+          <fieldset className="tk-facet">
+            <legend>Assignee</legend>
+            <select className="pg-select" aria-label="Filter by assignee" value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)}>
+              <option value="">Anyone</option>
+              <option value="__unassigned__">Unassigned</option>
+              {teamMembers.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </fieldset>
+          {anyFilter && (
+            <button type="button" className="tk-clear" onClick={clearFilters}>Clear filters</button>
+          )}
+        </aside>
+
+        <div className="tk-main">
+          <div className="tk-toolbar">
+            {filtered.length > 0 && (
+              <label className="tk-select-all">
+                <input type="checkbox"
+                  checked={selectedIds.size === filtered.length && filtered.length > 0}
+                  onChange={e => e.target.checked ? setSelectedIds(new Set(filtered.map(t => t.id))) : clearSelection()}
+                />
+                {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+              </label>
+            )}
+            {selectedIds.size > 0 ? (
+              <div className="tk-bulk" role="group" aria-label="Bulk actions">
+                <span className="tk-bulk-label">Mark as</span>
+                <button type="button" className="btn-secondary tk-bulk-btn" onClick={() => handleBulkStatus("TODO")}>To do</button>
+                <button type="button" className="btn-secondary tk-bulk-btn" onClick={() => handleBulkStatus("IN_PROGRESS")}>In progress</button>
+                <button type="button" className="btn-secondary tk-bulk-btn" onClick={() => handleBulkStatus("DONE")}>Done</button>
+                <span className="tk-bulk-sep" aria-hidden="true" />
+                <button type="button" className="btn-secondary tk-bulk-btn tk-bulk-danger" onClick={handleBulkDelete}><Trash2 size={13} aria-hidden="true" />Delete ({selectedIds.size})</button>
+                <button type="button" className="btn-secondary tk-bulk-btn" onClick={clearSelection}>Clear</button>
+              </div>
+            ) : (
+              <span className="tk-count" aria-live="polite">{filtered.length} {filtered.length === 1 ? "task" : "tasks"}{anyFilter ? " match" : ""}</span>
+            )}
+            <span className="pg-spacer" />
+            {viewMode === "list" && (
+              <label className="tk-groupby">
+                <span>Group by</span>
+                <select className="pg-select" value={groupBy} onChange={(e) => chooseGroupBy(e.target.value)}>
+                  <option value="due">Due date</option>
+                  <option value="status">Status</option>
+                  <option value="project">Project</option>
+                  <option value="tag">Tag</option>
+                </select>
+              </label>
+            )}
+            <div className="pg-seg" role="group" aria-label="Layout">
+              <button type="button" aria-pressed={viewMode === "list"} onClick={() => chooseView("list")}><List size={14} aria-hidden="true" />List</button>
+              <button type="button" aria-pressed={viewMode === "table"} onClick={() => chooseView("table")}><Table2 size={14} aria-hidden="true" />Table</button>
+            </div>
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="pg-empty">
+              {tasks.length === 0 ? (
+                <>
+                  <h2>No tasks yet</h2>
+                  <p>Add a task to a project to start tracking work.</p>
+                  <button type="button" className="btn-primary pg-btn" onClick={() => setShowForm(true)}><Plus size={15} aria-hidden="true" />New task</button>
+                </>
+              ) : (
+                <>
+                  <h2>No tasks match</h2>
+                  <p>Try a different filter{search ? ` or search than “${search}”` : ""}.</p>
+                  <button type="button" className="btn-secondary pg-btn" onClick={clearFilters}>Clear filters</button>
+                </>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── Task list rendering ── */}
-      {viewMode === "list" && (
-        <div className="task-list">
-          {filtered.map((t) => <TaskRow key={t.id} t={t} />)}
-          {filtered.length === 0 && <p className="empty-state">No tasks found.</p>}
-        </div>
-      )}
-
-      {viewMode === "project" && (
-        <div>
-          {groupByProject(filtered, projects).length === 0 ? (
-            <p className="empty-state">No tasks found.</p>
-          ) : (
-            groupByProject(filtered, projects).map(({ project, tasks: ptasks }) => (
-              <div className="project-task-group" key={project?.id || "__none__"}>
-                <div className="project-task-group-header">
-                  <div className="project-task-group-dot"
-                    style={{ background: project?.color || "var(--gray-400)" }} />
-                  <span className="project-task-group-name">
-                    {project ? project.name : "No Project"}
-                  </span>
-                  <span className="project-task-group-count">
-                    {ptasks.length} task{ptasks.length !== 1 ? "s" : ""}
-                  </span>
-                  {project && (
-                    <span className="badge"
-                      style={{ fontSize: "10px", padding: "2px 8px",
-                        background: project.status === "ACTIVE" ? "rgba(5,150,105,0.12)" : "var(--gray-100)",
-                        color: project.status === "ACTIVE" ? "#15803d" : "var(--gray-600)" }}>
-                      {statusText(project.status)}
-                    </span>
-                  )}
-                </div>
-                <div className="task-list">
-                  {ptasks.map((t) => <TaskRow key={t.id} t={t} />)}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {viewMode === "grouped" && (
-        <div>
-          {groupByTag(filtered).map(({ tag, tasks: gtasks }) => (
-            <div className="tag-group" key={tag}>
-              <div className="tag-group-header">
-                <span className="task-tag" style={{ fontSize: "13px", padding: "4px 12px" }}>
-                  🏷️ {tag}
-                </span>
-                <span style={{ fontSize: "12px", color: "#888" }}>
-                  {gtasks.length} task{gtasks.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className="task-list">
-                {gtasks.map((t) => <TaskRow key={t.id} t={t} />)}
-              </div>
-            </div>
+          {viewMode === "list" && groups.map((g) => (
+            <section key={g.key} className={"tk-group" + (g.tone === "late" ? " tk-group--late" : "")} aria-label={g.label}>
+              <h2 className="tk-group-head">
+                {g.color && <span className="tk-dot" style={{ background: g.color }} aria-hidden="true" />}
+                {g.label} <span>{g.tasks.length}</span>
+              </h2>
+              <ul className="tk-list">
+                {g.tasks.map(renderTaskRow)}
+              </ul>
+            </section>
           ))}
-          {filtered.length === 0 && <p className="empty-state">No tasks found.</p>}
-        </div>
-      )}
-
       {viewMode === "table" && (
         <TaskTable
           tasks={filtered}
@@ -1246,6 +1025,8 @@ export default function Tasks() {
           highlightId={highlightId}
         />
       )}
+        </div>
+      </div>
 
       {showForm && (
         <TaskForm
@@ -1271,11 +1052,14 @@ export default function Tasks() {
       {mainTab === "goals" && (
         <div>
           <div className="filter-bar" style={{ marginBottom: "16px" }}>
-            <input style={{ width: "220px" }} value={goalSearch}
-              onChange={(e) => setGoalSearch(e.target.value)}
-              placeholder="🔍 Search goals or steps..." />
-            <select value={goalFilterStatus} onChange={(e) => setGoalFilterStatus(e.target.value)}>
-              <option value="">All Statuses</option>
+            <label className="pg-find">
+              <Search size={14} aria-hidden="true" />
+              <input type="search" value={goalSearch} aria-label="Find a goal or step"
+                onChange={(e) => setGoalSearch(e.target.value)}
+                placeholder="Find a goal or step" />
+            </label>
+            <select className="pg-select" aria-label="Filter goals by status" value={goalFilterStatus} onChange={(e) => setGoalFilterStatus(e.target.value)}>
+              <option value="">All statuses</option>
               <option value="ACTIVE">Active</option>
               <option value="ACHIEVED">Achieved</option>
             </select>

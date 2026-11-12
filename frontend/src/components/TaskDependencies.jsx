@@ -1,3 +1,4 @@
+import { Link2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getDependencies, addDependency, removeDependency } from "../api/tasks";
 import { statusText } from "../utils/statusText";
@@ -9,7 +10,7 @@ const statusColor = {
   DONE: "#10b981",
 };
 
-export default function TaskDependencies({ task, allTasks, onRefresh }) {
+export default function TaskDependencies({ task, allTasks, onRefresh, compact = false }) {
   const { show: showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [deps, setDeps] = useState({
@@ -70,6 +71,13 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
 
   return (
     <div className="task-deps-wrapper" ref={ref}>
+      {compact ? (
+        <button type="button" className={"task-tool-btn" + (deps.isBlocked ? " task-tool-btn--late" : "")} aria-expanded={open}
+          aria-label={`Dependencies${total > 0 ? `: ${total}` : ""}${deps.isBlocked ? ", blocked" : ""}`} title="Dependencies"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}>
+          <Link2 size={14} aria-hidden="true" />{total > 0 && <span>{total}</span>}
+        </button>
+      ) : (
       <button
         className="task-deps-toggle"
         style={
@@ -89,6 +97,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
         {deps.isBlocked ? "🔒" : "🔗"} Deps {total > 0 ? `(${total})` : ""}{" "}
         {open ? "▲" : "▼"}
       </button>
+      )}
 
       {open && (
         <div className="task-deps-panel" onClick={(e) => e.stopPropagation()} role="presentation">

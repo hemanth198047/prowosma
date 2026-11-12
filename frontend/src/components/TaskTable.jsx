@@ -1,6 +1,7 @@
+import { statusText } from "../utils/statusText";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "./ToastContext";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Maximize2 } from "lucide-react";
 import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
@@ -83,14 +84,14 @@ export default function TaskTable({
   });
 
   return (
-    <div style={{ overflowX: "auto", border: "1px solid var(--card-border)", borderRadius: "var(--radius-lg)", background: "var(--surface-1)", boxShadow: "var(--elevation-1)" }}>
+    <div className="tk-table-frame" style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", background: "var(--bg-card, #fff)" }}>
       {/* Fixed layout so each column keeps its set width and "IN PROGRESS" /
           "MEDIUM" are never cut off (the browser used to squeeze them). The
           Title column takes the remaining space; below minWidth the table
           scrolls inside this frame instead of truncating values. */}
       <table style={{ width: "100%", minWidth: 1100, tableLayout: "fixed", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
-          <tr style={{ background: "var(--gray-50)", borderBottom: "2px solid var(--border)" }}>
+          <tr style={{ background: "var(--bg-card, #fff)", borderBottom: "1px solid var(--border)" }}>
             <Th style={{ width: 36 }}>
               <input type="checkbox" aria-label="Select all tasks" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
@@ -215,7 +216,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
               {task.title}
             </span>
           )}
-          <button className="btn-icon" title="Open details" style={{ fontSize: 13, flexShrink: 0 }} onClick={() => onOpenDrawer(task)}>⤢</button>
+          <button className="btn-icon" title="Open details" aria-label={`Open details for ${task.title}`} style={{ flexShrink: 0, color: "var(--text-muted)" }} onClick={() => onOpenDrawer(task)}><Maximize2 size={13} aria-hidden="true" /></button>
         </div>
       </td>
 
@@ -228,7 +229,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           disabled={busyField === "status"}
           style={{ ...inputStyle, color: statusColor[task.status], fontWeight: 600, cursor: "pointer" }}
         >
-          {STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+          {STATUSES.map((s) => <option key={s} value={s}>{statusText(s)}</option>)}
         </select>
       </td>
 
@@ -241,7 +242,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           disabled={busyField === "priority"}
           style={{ ...inputStyle, color: priorityColor[task.priority], fontWeight: 600, cursor: "pointer" }}
         >
-          {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+          {PRIORITIES.map((p) => <option key={p} value={p}>{statusText(p)}</option>)}
         </select>
       </td>
 

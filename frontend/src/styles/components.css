@@ -914,3 +914,7 @@
 .priority-tag--high { color: var(--danger-text); }
 .priority-tag--medium { color: var(--warning-text); }
 .priority-tag--low { color: var(--text-secondary, #4A5265); }
+/* themes.css sets `[data-theme="dark"] [title] { color: inherit }`; PriorityTag carries a title */
+[data-theme="dark"] .priority-tag.priority-tag--high { color: var(--danger-text); }
+[data-theme="dark"] .priority-tag.priority-tag--medium { color: var(--warning-text); }
+[data-theme="dark"] .priority-tag.priority-tag--low { color: var(--text-secondary); }

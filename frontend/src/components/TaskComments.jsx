@@ -1,3 +1,4 @@
+import { MessageSquare } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { addComment, deleteComment, toggleReaction } from "../api/tasks";
 import { useAuth } from "../hooks/useAuth";
@@ -87,7 +88,7 @@ function PresenceDot({ email, onlineUsers }) {
   );
 }
 
-export default function TaskComments({ task, onRefresh }) {
+export default function TaskComments({ task, onRefresh, compact = false }) {
   const [open,         setOpen]         = useState(false);
   const [text,         setText]         = useState("");
   const [members,      setMembers]      = useState([]);
@@ -178,11 +179,19 @@ export default function TaskComments({ task, onRefresh }) {
 
   return (
     <div className="task-comments-wrapper" ref={panelRef}>
+      {compact ? (
+        <button type="button" className="task-tool-btn" aria-expanded={open}
+          aria-label={count > 0 ? `${count} comment${count > 1 ? "s" : ""}` : "Comments"} title="Comments"
+          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+          <MessageSquare size={14} aria-hidden="true" />{count > 0 && <span>{count}</span>}
+        </button>
+      ) : (
       <button className="task-comments-toggle"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
         💬 {count > 0 ? `${count} Comment${count > 1 ? "s" : ""}` : "Comments"}
         {" "}{open ? "▲" : "▼"}
       </button>
+      )}
 
       {open && (
         <div className="task-comments-panel" onClick={e => e.stopPropagation()} role="presentation">

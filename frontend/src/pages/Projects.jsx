@@ -1,4 +1,9 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import {
+  AlertTriangle, Archive, ArchiveRestore, Bot, CalendarDays, ChevronRight, Copy, Download, FileSpreadsheet,
+  FileText, FolderPlus, History, LayoutGrid, List, ListChecks, Lock, Pencil, Plus, Search, Target, Trash2, Users,
+} from "lucide-react";
 import { unwrapList } from "../api/client";
 import IntegrationPanel from "../components/IntegrationPanel";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -11,7 +16,11 @@ import {
   getProjectProgress,
 } from "../api/projects";
 import { getCategories, createCategory } from "../api/categories";
-import PageHeader from "../components/PageHeader";
+import ActionMenu from "../components/ui/ActionMenu";
+import StatusPill from "../components/ui/StatusPill";
+import { usePeople } from "../context/PeopleContext";
+import { groupProjects, projectSummary, isOverdue, dueLabel } from "../utils/projectGroups";
+import "../styles/pages/projects.css";
 import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
 import DateTimePicker from "../components/DateTimePicker";
@@ -27,7 +36,6 @@ import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
 import ProjectTeamModal from "../components/ProjectTeamModal";
 import PersonAvatar from "../components/people/PersonAvatar";
-import { statusText, statusClass } from "../utils/statusText";
 
 const COLORS = [
   "var(--brand-500)",
@@ -575,33 +583,28 @@ function SubProjectCard({
               overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
               flex:1, minWidth:0, cursor:"pointer",
             }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ((e) => { e.stopPropagation(); navigate(`/tasks?projectId=${sub.id}`); })?.(e); } }}>{sub.name}</span>
-          <span style={{
-            flexShrink:0, fontSize:"9px", fontWeight:700,
-            padding:"1px 7px", borderRadius:"99px",
-            background:"rgba(16,185,129,0.1)", color:"var(--success)",
-            border:"1px solid rgba(16,185,129,0.2)", whiteSpace:"nowrap",
-          }}>{sub.status || "ACTIVE"}</span>
+          <StatusPill status={sub.status || "ACTIVE"} className="pj-sub-pill" />
         </div>
         {/* Right: action buttons */}
         <div style={{ display:"flex", alignItems:"center", gap:2, flexShrink:0 }}>
-          <button title="Add Task" onClick={(e) => { e.stopPropagation(); onAddSubTask(sub); }} style={{
+          <button title="Add task" aria-label={`Add a task to ${sub.name}`} className="pj-sub-icon" onClick={(e) => { e.stopPropagation(); onAddSubTask(sub); }} style={{
             width:26, height:26, border:"none", background:"transparent",
             borderRadius:6, cursor:"pointer", fontSize:13,
             display:"flex", alignItems:"center", justifyContent:"center",
             opacity:0.6, flexShrink:0,
-          }}>➕</button>
-          <button onClick={(e) => { e.stopPropagation(); onEdit(sub); }} style={{
+          }}><Plus size={14} aria-hidden="true" /></button>
+          <button title="Edit" aria-label={`Edit ${sub.name}`} className="pj-sub-icon" onClick={(e) => { e.stopPropagation(); onEdit(sub); }} style={{
             width:26, height:26, border:"none", background:"transparent",
             borderRadius:6, cursor:"pointer", fontSize:13,
             display:"flex", alignItems:"center", justifyContent:"center",
             opacity:0.6, flexShrink:0,
-          }}>✏️</button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(sub.id); }} style={{
+          }}><Pencil size={14} aria-hidden="true" /></button>
+          <button title="Delete" aria-label={`Delete ${sub.name}`} className="pj-sub-icon" onClick={(e) => { e.stopPropagation(); onDelete(sub.id); }} style={{
             width:26, height:26, border:"none", background:"transparent",
             borderRadius:6, cursor:"pointer", fontSize:13,
             display:"flex", alignItems:"center", justifyContent:"center",
             opacity:0.6, flexShrink:0,
-          }}>🗑️</button>
+          }}><Trash2 size={14} aria-hidden="true" /></button>
           <button onClick={(e) => { e.stopPropagation(); navigate(`/tasks?projectId=${sub.id}`); }} style={{
             flexShrink:0, fontSize:10, fontWeight:700, padding:"2px 8px",
             border:`1px solid ${subColor}`, borderRadius:6, background:"transparent",
@@ -615,7 +618,7 @@ function SubProjectCard({
       </div>
       {/* Footer */}
       <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"var(--gray-400)" }}>
-        <span>{sub.dueDate ? `📅 ${formatDate(sub.dueDate)}` : "No due date"}</span>
+        <span>{sub.dueDate ? `Due ${formatDate(sub.dueDate)}` : "No due date"}</span>
         <span>{subPct}% complete</span>
       </div>
     </div>
@@ -643,7 +646,7 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
   return (
     <div className="entity-activity-panel">
       <div className="entity-activity-panel-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>📅 Project Meetings</span>
+        <span>Project meetings</span>
         <button
           className="btn-secondary"
           style={{ fontSize: "11px", padding: "4px 10px" }}
@@ -664,8 +667,9 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
           {meetings.slice(0, 5).map(m => {
             const pd = m.projectDiscussions?.find(d => d.projectId === projectId);
             return (
-              <div key={m.id} className="pending-invite-row" style={{ cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); }}>
+              <div key={m.id} className="pending-invite-row" style={{ cursor: "pointer" }} role="link" tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); } }}>
                 <div className="pending-invite-info">
                   <div className="pending-invite-email">{m.title}</div>
                   <div className="pending-invite-meta">
@@ -689,23 +693,10 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
   );
 }
 
-function ProjectCard({
-  p,
-  cat,
-  progress,
-  subProjects,
-  subProgress,
-  navigate,
-  highlightId,
-  highlightColor,
-  onEdit,
-  onDelete,
-  onAddSub,
-  onEditSub,
-  onDeleteSub,
-  onAddSubTask,
-}) {
-  const [expanded, setExpanded] = useState(false);
+// ── Everything you can do to one project ─────────────────────
+// Shared by the card and the list row so both offer exactly the same
+// actions (the old card's icon buttons, now named, in one ⋯ menu).
+function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub }) {
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
@@ -713,222 +704,251 @@ function ProjectCard({
   const [teamSaved, setTeamSaved] = useState(null);
   const { enabled: accessEnabled, can } = useAccess();
   const team = teamSaved || p;
-  const teamEmails = team.memberEmails || [];
 
-  return (
-    <div
-      className={`project-card ${highlightId === p.id ? "task-row-highlight" : ""}`}
-      ref={
-        highlightId === p.id
-          ? (el) => el?.scrollIntoView({ behavior: "smooth", block: "center" })
-          : null
-      }
-      style={
-        highlightId === p.id
-          ? {
-              "--highlight-color": `#${highlightColor}`,
-              "--highlight-bg": `#${highlightColor}11`,
-              "--highlight-shadow": `rgba(${parseInt(highlightColor.slice(0, 2), 16)},${parseInt(highlightColor.slice(2, 4), 16)},${parseInt(highlightColor.slice(4, 6), 16)},0.2)`,
-            }
-          : {}
-      }
-    >
-      <div className="project-card-top">
-        <div
-          className="project-color-bar"
-          style={{ background: p.color || "var(--brand-500)" }}
-        />
-        <div className="project-card-body">
-          <div className="project-card-header">
-            <h3>
-              <button
-                type="button"
-                onClick={() => navigate(`/tasks?projectId=${p.id}`)}
-                style={{ font: "inherit", color: "inherit", background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", textAlign: "left" }}
-              >
-                {p.name}
-              </button>
-            </h3>
-            <span className={`badge badge-${statusClass(p.status)}`}>
-              {statusText(p.status)}
-            </span>
-          </div>
-          {cat && (
-            <div className="project-category-tag" style={{ color: cat.color }}>
-              {cat.icon} {cat.name}
-            </div>
-          )}
-          {p.linkedGoalId && (
-            <div
-              style={{
-                fontSize: "11px",
-                color: "var(--purple)",
-                marginBottom: "4px",
-              }}
-            >
-              🎯 Linked to goal
-            </div>
-          )}
-          {showAccess && (
-            <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
-          )}
-          {showTeam && (
-            <ProjectTeamModal project={team} onClose={() => setShowTeam(false)} onSaved={(saved) => saved && setTeamSaved(saved)} />
-          )}
-          <p className="project-desc">{p.description}</p>
-          {p.dueDate && (() => {
-            const closed = ["COMPLETED", "DONE", "CANCELLED", "ARCHIVED"].includes(String(p.status).toUpperCase());
-            const overdue = !closed && new Date(p.dueDate) < new Date(new Date().toDateString());
-            return (
-              <div className={"project-due" + (overdue ? " project-due--overdue" : "")}>
-                {overdue ? `📅 ⚠ Overdue · ${formatDate(p.dueDate)}` : `📅 Due ${formatDate(p.dueDate)}`}
-              </div>
-            );
-          })()}
-          <div className="project-team-row">
-            {teamEmails.length > 0 ? (
-              <div className="project-team-stack" aria-label={`${teamEmails.length} people on ${p.name}`}>
-                {teamEmails.slice(0, 5).map((e) => <PersonAvatar key={e} email={e} size={26} />)}
-                {teamEmails.length > 5 && (
-                  <button type="button" className="project-team-more" onClick={(ev) => { ev.stopPropagation(); setShowTeam(true); }}>
-                    +{teamEmails.length - 5}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <span className="project-team-empty">No team yet</span>
-            )}
-            <button type="button" className="project-team-btn" onClick={(ev) => { ev.stopPropagation(); setShowTeam(true); }}>
-              {teamEmails.length ? "Team" : "Add team"}
-            </button>
-          </div>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{
-                width: `${progress || 0}%`,
-                background: p.color || "var(--brand-500)",
-              }}
-            />
-          </div>
-          <div className="project-card-footer">
-            <div className="project-footer-row1">
-              <span className="project-progress-text">{progress || 0}% complete</span>
-              <div className="project-footer-actions">
-                <button
-                  className="btn-icon"
-                  onClick={(e) => { e.stopPropagation(); onEdit(p); }}
-                  title="Edit"
-                >
-                  ✏️
-                </button>
-                {can("USE_MEETING_ASSISTANT") && (
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/meeting-assistant?project=${encodeURIComponent(p.id)}`); }}
-                    title="Analyse a meeting for this project"
-                    aria-label={`Analyse a meeting for ${p.name}`}
-                  >
-                    🤖
-                  </button>
-                )}
-                {accessEnabled && (
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => { e.stopPropagation(); setShowAccess(true); }}
-                    title="Who can see this project"
-                    aria-label={`Access for ${p.name}`}
-                  >
-                    🔐
-                  </button>
-                )}
-                <button className="btn-icon" title="Clone project"
-                  onClick={async(e)=>{ e.stopPropagation();
-                    const name = prompt("Name for the cloned project:", p.name+" (Copy)");
-                    if (!name) return;
-                    await import("../api/client").then(m=>m.default.post(`/projects/${p.id}/clone`,{name}));
-                    window.location.reload();
-                  }}>🔀</button>
-                <button className="btn-icon" title={p.archived?"Unarchive":"Archive"}
-                  onClick={async(e)=>{ e.stopPropagation();
-                    await import("../api/client").then(m=>m.default.patch(`/projects/${p.id}`,
-                      {archived:!p.archived,status:!p.archived?"PAUSED":p.status}));
-                    window.location.reload();
-                  }}>{p.archived?"📦":"🗂"}</button>
-                <button
-                  className="btn-icon"
-                  onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
-                  title="Delete"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-            <div className="project-footer-row2">
-              {subProjects.length > 0 && (
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: "11px", padding: "4px 10px" }}
-                  onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
-                >
-                  {expanded ? "▲" : "▼"} {subProjects.length} Sub-project
-                  {subProjects.length > 1 ? "s" : ""}
-                </button>
-              )}
-              <button
-                className="btn-secondary"
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-                onClick={(e) => { e.stopPropagation(); onAddSub(p); }}
-              >
-                + Sub-project
-              </button>
-              <button
-                className={`btn-secondary ${showActivity ? "btn-active" : ""}`}
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-                onClick={(e) => { e.stopPropagation(); setShowActivity(a => !a); }}
-              >
-                📋 Activity
-              </button>
-              <button
-                className={`btn-secondary ${showMeetings ? "btn-active" : ""}`}
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-                onClick={(e) => { e.stopPropagation(); setShowMeetings(m => !m); }}
-              >
-                📅 Meetings
-              </button>
-            </div>
-          </div>
+  const items = [
+    { label: "Edit project", icon: Pencil, onSelect: () => onEdit(p) },
+    { label: "Open tasks", icon: ListChecks, onSelect: () => navigate(`/tasks?projectId=${p.id}`) },
+    { label: "Team", icon: Users, onSelect: () => setShowTeam(true) },
+    { label: "Add sub-project", icon: FolderPlus, onSelect: () => onAddSub(p) },
+    "divider",
+    { label: showActivity ? "Hide activity" : "Activity", icon: History, onSelect: () => setShowActivity(a => !a) },
+    { label: showMeetings ? "Hide meetings" : "Meetings", icon: CalendarDays, onSelect: () => setShowMeetings(m => !m) },
+    { label: "Analyse a meeting", icon: Bot, hidden: !can("USE_MEETING_ASSISTANT"),
+      onSelect: () => navigate(`/meeting-assistant?project=${encodeURIComponent(p.id)}`) },
+    { label: "Who can see this", icon: Lock, hidden: !accessEnabled, onSelect: () => setShowAccess(true) },
+    "divider",
+    { label: "Clone", icon: Copy, onSelect: async () => {
+      const name = prompt("Name for the cloned project:", p.name + " (Copy)");
+      if (!name) return;
+      await import("../api/client").then(m => m.default.post(`/projects/${p.id}/clone`, { name }));
+      window.location.reload();
+    } },
+    { label: p.archived ? "Unarchive" : "Archive", icon: p.archived ? ArchiveRestore : Archive, onSelect: async () => {
+      await import("../api/client").then(m => m.default.patch(`/projects/${p.id}`,
+        { archived: !p.archived, status: !p.archived ? "PAUSED" : p.status }));
+      window.location.reload();
+    } },
+    { label: "Delete", icon: Trash2, danger: true, onSelect: () => onDelete(p.id) },
+  ];
 
-          {/* Sub-projects */}
-          {expanded && subProjects.length > 0 && (
-            <div className="sub-projects-container" onClick={(e) => e.stopPropagation()} role="presentation">
-              <div className="sub-projects-label">Sub-projects</div>
-              {subProjects.map((sub) => (
-                <SubProjectCard
-                  key={sub.id}
-                  sub={sub}
-                  progress={subProgress[sub.id]}
-                  navigate={navigate}
-                  onEdit={onEditSub}
-                  onDelete={onDeleteSub}
-                  onAddSubTask={onAddSubTask}
-                />
-              ))}
-            </div>
-          )}
-          {showActivity && (
-            <div className="entity-activity-panel">
-              <div className="entity-activity-panel-title">📋 Project Activity</div>
-              <EntityActivityTab entityType="project" entityId={p.id} />
-            </div>
-          )}
-          {showMeetings && (
-            <ProjectMeetingsPanel projectId={p.id} navigate={navigate} />
-          )}
+  const anyModal = showAccess || showTeam;
+  const modals = anyModal && createPortal(
+    <>
+      {showAccess && (
+        <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
+      )}
+      {showTeam && (
+        <ProjectTeamModal project={team} onClose={() => setShowTeam(false)} onSaved={(saved) => saved && setTeamSaved(saved)} />
+      )}
+    </>,
+    document.body,
+  );
+
+  const panels = (
+    <>
+      {showActivity && (
+        <div className="entity-activity-panel">
+          <div className="entity-activity-panel-title">Project activity</div>
+          <EntityActivityTab entityType="project" entityId={p.id} />
         </div>
+      )}
+      {showMeetings && <ProjectMeetingsPanel projectId={p.id} navigate={navigate} />}
+    </>
+  );
+
+  return { items, modals, panels, team, openTeam: () => setShowTeam(true), hasPanel: showActivity || showMeetings };
+}
+
+function highlightProps(p, highlightId, highlightColor) {
+  if (highlightId !== p.id) return {};
+  return {
+    ref: (el) => el?.scrollIntoView({ behavior: "smooth", block: "center" }),
+    style: {
+      "--highlight-color": `#${highlightColor}`,
+      "--highlight-bg": `#${highlightColor}11`,
+      "--highlight-shadow": `rgba(${parseInt(highlightColor.slice(0, 2), 16)},${parseInt(highlightColor.slice(2, 4), 16)},${parseInt(highlightColor.slice(4, 6), 16)},0.2)`,
+    },
+  };
+}
+
+function DueText({ p }) {
+  const late = isOverdue(p);
+  return (
+    <span className={"pj-due" + (late ? " pj-due--late" : "")} title={p.dueDate ? formatDate(p.dueDate) : undefined}>
+      {late && <AlertTriangle size={13} aria-hidden="true" />}
+      {dueLabel(p)}
+    </span>
+  );
+}
+
+function ProgressBar({ value, color, name }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value || 0)));
+  return (
+    <div className="pj-progress">
+      <div className="pj-progress-track" role="progressbar" aria-label={`${name} progress`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="pj-progress-fill" style={{ width: `${pct}%`, background: color }} />
       </div>
+      <span className="pj-progress-num">{pct}%</span>
     </div>
   );
+}
+
+function TeamLine({ emails, onOpen, projectName, max = 4 }) {
+  const { byEmail } = usePeople();
+  const first = (e) => (byEmail.get(String(e).toLowerCase())?.name || String(e).split("@")[0]).split(" ")[0];
+  const names = emails.length > 2
+    ? `${first(emails[0])}, ${first(emails[1])} +${emails.length - 2}`
+    : emails.map(first).join(" & ");
+  return (
+    <div className="pj-team">
+      {emails.length > 0 ? (
+        <>
+          <div className="pj-team-stack" aria-label={`${emails.length} people on ${projectName}`}>
+            {emails.slice(0, max).map((e) => <PersonAvatar key={e} email={e} size={26} />)}
+            {emails.length > max && (
+              <button type="button" className="project-team-more" onClick={(ev) => { ev.stopPropagation(); onOpen(); }}>
+                +{emails.length - max}
+              </button>
+            )}
+          </div>
+          <span className="pj-team-names">{names}</span>
+        </>
+      ) : (
+        <span className="pj-team-names pj-team-empty">No team yet</span>
+      )}
+      <button type="button" className="pj-team-btn" onClick={(ev) => { ev.stopPropagation(); onOpen(); }}>
+        {emails.length ? "Team" : "Add team"}
+      </button>
+    </div>
+  );
+}
+
+function SubProjects({ subProjects, subProgress, navigate, onEditSub, onDeleteSub, onAddSubTask }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!subProjects.length) return null;
+  return (
+    <>
+      <button type="button" className="pj-subtoggle" aria-expanded={expanded} onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}>
+        <ChevronRight size={14} className={expanded ? "open" : ""} aria-hidden="true" />
+        {subProjects.length} sub-project{subProjects.length > 1 ? "s" : ""}
+      </button>
+      {expanded && (
+        <div className="sub-projects-container" onClick={(e) => e.stopPropagation()} role="presentation">
+          {subProjects.map((sub) => (
+            <SubProjectCard
+              key={sub.id}
+              sub={sub}
+              progress={subProgress[sub.id]}
+              navigate={navigate}
+              onEdit={onEditSub}
+              onDelete={onDeleteSub}
+              onAddSubTask={onAddSubTask}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ProjectMeta({ p, cat }) {
+  if (!cat && !p.linkedGoalId && !p.archived) return null;
+  return (
+    <div className="pj-meta">
+      {cat && <span className="pj-chip"><span className="pj-chip-dot" style={{ background: cat.color }} aria-hidden="true" />{cat.name}</span>}
+      {p.linkedGoalId && <span className="pj-chip"><Target size={12} aria-hidden="true" />Linked to goal</span>}
+      {p.archived && <span className="pj-chip"><Archive size={12} aria-hidden="true" />Archived</span>}
+    </div>
+  );
+}
+
+function ProjectCard({
+  p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask,
+}) {
+  const { items, modals, panels, team, openTeam } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub });
+  const color = p.color || "var(--brand-500)";
+  return (
+    <article
+      className={`pj-card ${highlightId === p.id ? "task-row-highlight" : ""}`}
+      {...highlightProps(p, highlightId, highlightColor)}
+    >
+      <div className="pj-card-top">
+        <StatusPill status={p.status} />
+        <span className="pj-spacer" />
+        <DueText p={p} />
+        <ActionMenu items={items} label={`More actions for ${p.name}`} />
+      </div>
+      <div>
+        <h3 className="pj-name">
+          <span className="pj-swatch" style={{ background: color }} aria-hidden="true" />
+          <button type="button" className="pj-name-link" onClick={() => navigate(`/tasks?projectId=${p.id}`)}>{p.name}</button>
+        </h3>
+        {p.description && <p className="pj-desc">{p.description}</p>}
+        <ProjectMeta p={p} cat={cat} />
+      </div>
+      <ProgressBar value={progress} color={color} name={p.name} />
+      <TeamLine emails={team.memberEmails || []} onOpen={openTeam} projectName={p.name} />
+      <SubProjects subProjects={subProjects} subProgress={subProgress} navigate={navigate}
+        onEditSub={onEditSub} onDeleteSub={onDeleteSub} onAddSubTask={onAddSubTask} />
+      {panels}
+      {modals}
+    </article>
+  );
+}
+
+function ProjectRow({
+  p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask,
+}) {
+  const { items, modals, panels, team, openTeam, hasPanel } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub });
+  const color = p.color || "var(--brand-500)";
+  const emails = team.memberEmails || [];
+  return (
+    <>
+      <tr className={`pj-row ${highlightId === p.id ? "task-row-highlight" : ""}`} {...highlightProps(p, highlightId, highlightColor)}>
+        <td>
+          <div className="pj-cell-name">
+            <span className="pj-swatch" style={{ background: color }} aria-hidden="true" />
+            <div className="pj-cell-name-text">
+              <button type="button" className="pj-name-link" onClick={() => navigate(`/tasks?projectId=${p.id}`)}>{p.name}</button>
+              {(p.description || cat) && <span className="pj-cell-sub">{[cat?.name, p.description].filter(Boolean).join(" · ")}</span>}
+            </div>
+          </div>
+        </td>
+        <td><StatusPill status={p.status} /></td>
+        <td><DueText p={p} /></td>
+        <td className="pj-cell-progress"><ProgressBar value={progress} color={color} name={p.name} /></td>
+        <td>
+          {emails.length ? (
+            <button type="button" className="pj-row-team" onClick={openTeam} aria-label={`Team for ${p.name}: ${emails.length} people`}>
+              <span className="pj-team-stack">
+                {emails.slice(0, 3).map((e) => <PersonAvatar key={e} email={e} size={24} />)}
+              </span>
+              {emails.length > 3 && <span className="pj-row-more">+{emails.length - 3}</span>}
+            </button>
+          ) : (
+            <button type="button" className="pj-team-btn" onClick={openTeam}>Add team</button>
+          )}
+        </td>
+        <td className="pj-cell-actions"><ActionMenu items={items} label={`More actions for ${p.name}`} />{modals}</td>
+      </tr>
+      {(hasPanel || subProjects.length > 0) && (
+        <tr className="pj-row-extra">
+          <td colSpan={6}>
+            <SubProjects subProjects={subProjects} subProgress={subProgress} navigate={navigate}
+              onEditSub={onEditSub} onDeleteSub={onDeleteSub} onAddSubTask={onAddSubTask} />
+            {panels}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+const VIEW_KEY = "projects.view";
+function readView() {
+  try { return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "cards"; } catch { return "cards"; }
 }
 
 export default function Projects() {
@@ -950,6 +970,10 @@ export default function Projects() {
   const [filterCategory, setFilterCategory] = useState(
     searchParams.get("categoryId") || "",
   );
+  const [query, setQuery] = useState("");
+  const [view, setViewState] = useState(readView);
+  const [loaded, setLoaded] = useState(false);
+  const setView = (v) => { setViewState(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* private mode */ } };
 
   const load = async () => {
     const [projRes, catRes, goalRes] = await Promise.all([
@@ -992,6 +1016,7 @@ export default function Projects() {
       setProjects(allProjects);
       setCategories(unwrapList(catRes));
       setGoals(unwrapList(goalRes));
+      setLoaded(true);
 
       const progressMap = {};
       const subMap = {};
@@ -1010,7 +1035,7 @@ export default function Projects() {
       setProgress(progressMap);
       setSubProjectsMap(subMap);
     };
-    fetchData();
+    fetchData().catch(() => setLoaded(true));
   }, [activeWorkspace?.id]);
 
   const handleSave = async (form) => {
@@ -1097,9 +1122,12 @@ export default function Projects() {
     Object.values(subProjectsMap).flat().map(s => s.id)
   );
   const rootProjects = projects.filter(p => !shownAsSubIds.has(p.id));
-  const filtered = filterCategory
-    ? rootProjects.filter((p) => p.categoryId === filterCategory)
-    : rootProjects;
+  const q = query.trim().toLowerCase();
+  const filtered = rootProjects
+    .filter((p) => !filterCategory || p.categoryId === filterCategory)
+    .filter((p) => !q || `${p.name ?? ""} ${p.description ?? ""}`.toLowerCase().includes(q));
+  const sections = groupProjects(filtered);
+  const summary = projectSummary(filtered);
 
   const openAddSub = (parentProject) => {
     setParentForNew(parentProject);
@@ -1126,98 +1154,133 @@ export default function Projects() {
     return null;
   };
 
+  const itemProps = (p) => ({
+    p,
+    cat: getCategoryById(p.categoryId),
+    progress: progress[p.id],
+    subProjects: subProjectsMap[p.id] || [],
+    subProgress: progress,
+    navigate,
+    highlightId,
+    highlightColor,
+    onEdit: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
+    onDelete: handleDelete,
+    onAddSub: openAddSub,
+    // Only called from the explicit edit button inside SubProjectCard
+    onEditSub: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
+    onDeleteSub: handleDelete,
+    onAddSubTask: openAddSubTask,
+  });
+
+  const countText = `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`;
+  const stats = [
+    { key: "motion", label: "in motion", value: summary.motion },
+    { key: "notstarted", label: "not started", value: summary.notstarted },
+    { key: "paused", label: "paused", value: summary.paused },
+    { key: "done", label: "done", value: summary.done },
+  ].filter(s => s.value > 0 || s.key === "motion");
+
   return (
-    <div>
-      <PageHeader
-        icon="📁"
-        title="Projects"
-        description="Manage your projects and track progress"
-        action={
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportCSV}
-            >
-              ⬇️ CSV
-            </button>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "8px 12px" }}
-              onClick={handleExportPDF}
-            >
-              ⬇️ PDF
-            </button>
-            <button
-              className="btn-primary"
-              onClick={() => {
-                setEditing(null);
-                setParentForNew(null);
-                setShowForm(true);
-              }}
-            >
-              + New Project
-            </button>
+    <div className="pj-page">
+      <header className="pg-title-row">
+        <div className="pg-title-text">
+          <h1>Projects</h1>
+          <p>{loaded ? `${countText}${filtered.length > 1 ? ", soonest due first" : ""}.` : "Loading projects…"}</p>
+        </div>
+        <div className="pg-title-actions">
+          <label className="pg-find">
+            <Search size={14} aria-hidden="true" />
+            <input type="search" placeholder="Find a project" aria-label="Find a project" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+          {categories.length > 0 && (
+            <select className="pg-select" aria-label="Filter by category" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option value="">All categories</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+          <div className="pg-seg" role="group" aria-label="Layout">
+            <button type="button" aria-pressed={view === "cards"} onClick={() => setView("cards")}><LayoutGrid size={14} aria-hidden="true" />Cards</button>
+            <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}><List size={14} aria-hidden="true" />List</button>
           </div>
-        }
-      />
+          <ActionMenu label="Export" className="btn-secondary pg-btn" items={[
+            { label: "CSV spreadsheet", icon: FileSpreadsheet, onSelect: handleExportCSV },
+            { label: "PDF report", icon: FileText, onSelect: handleExportPDF },
+          ]}>
+            <Download size={14} aria-hidden="true" />Export
+          </ActionMenu>
+          <button
+            type="button"
+            className="btn-primary pg-btn"
+            onClick={() => { setEditing(null); setParentForNew(null); setShowForm(true); }}
+          >
+            <Plus size={15} aria-hidden="true" />New project
+          </button>
+        </div>
+      </header>
 
-      <div className="filter-bar filter-bar--inline">
-        <select
-          aria-label="Filter by category"
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-        >
-          <option value="">All Categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.icon} {c.name}
-            </option>
+      {filtered.length > 0 && (
+        <div className="pg-summary" aria-label="Summary">
+          {stats.map(s => (
+            <div key={s.key} className="pg-stat"><span className="pg-stat-num">{s.value}</span><span className="pg-stat-label">{s.label}</span></div>
           ))}
-        </select>
-        <span className="filter-bar-count" aria-live="polite">
-          {filtered.length} {filtered.length === 1 ? "project" : "projects"}
-        </span>
-      </div>
+          <div className={"pg-stat" + (summary.overdue ? " pg-stat--late" : "")}>
+            <span className="pg-stat-num">{summary.overdue}</span>
+            <span className="pg-stat-label">past {summary.overdue === 1 ? "its" : "their"} due date</span>
+          </div>
+        </div>
+      )}
 
-      <div className="cards-grid" onClick={(e) => e.stopPropagation()} role="presentation">
-        {filtered.map((p) => {
-          const cat = getCategoryById(p.categoryId);
-          const subs = subProjectsMap[p.id] || [];
-          return (
-            <ProjectCard
-              key={p.id}
-              p={p}
-              cat={cat}
-              progress={progress[p.id]}
-              subProjects={subs}
-              subProgress={progress}
-              categories={categories}
-              navigate={navigate}
-              highlightId={highlightId}
-              highlightColor={highlightColor}
-              onEdit={(proj) => {
-                setEditing(proj);
-                setParentForNew(null);
-                setShowForm(true);
-              }}
-              onDelete={handleDelete}
-              onAddSub={openAddSub}
-              onEditSub={(proj) => {
-                // Only called from the explicit ✏️ button inside SubProjectCard
-                setEditing(proj);
-                setParentForNew(null);
-                setShowForm(true);
-              }}
-              onDeleteSub={handleDelete}
-              onAddSubTask={openAddSubTask}
-            />
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="empty-state">No projects found.</p>
-        )}
-      </div>
+      {loaded && filtered.length === 0 && (
+        <div className="pg-empty">
+          {rootProjects.length === 0 ? (
+            <>
+              <h2>No projects yet</h2>
+              <p>Projects hold your tasks, team and timeline. Create the first one to get started.</p>
+              <button type="button" className="btn-primary pg-btn" onClick={() => { setEditing(null); setParentForNew(null); setShowForm(true); }}>
+                <Plus size={15} aria-hidden="true" />New project
+              </button>
+            </>
+          ) : (
+            <>
+              <h2>No projects match</h2>
+              <p>Nothing matches {q ? `“${query.trim()}”` : "this filter"}.</p>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => { setQuery(""); setFilterCategory(""); }}>Clear filters</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {view === "cards" ? (
+        sections.map(sec => (
+          <section key={sec.key} className="pj-section" aria-label={sec.label}>
+            <h2 className="pg-section-title">{sec.label} <span>· {sec.projects.length}</span></h2>
+            <div className="pj-grid">
+              {sec.projects.map((p) => <ProjectCard key={p.id} {...itemProps(p)} />)}
+            </div>
+          </section>
+        ))
+      ) : filtered.length > 0 && (
+        <div className="pj-table-wrap">
+          <table className="pj-table">
+            <thead>
+              <tr>
+                <th scope="col">Project</th>
+                <th scope="col">Status</th>
+                <th scope="col">Due</th>
+                <th scope="col">Progress</th>
+                <th scope="col">Team</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            {sections.map(sec => (
+              <tbody key={sec.key}>
+                <tr className="pj-table-group"><th scope="rowgroup" colSpan={6}>{sec.label} <span>· {sec.projects.length}</span></th></tr>
+                {sec.projects.map((p) => <ProjectRow key={p.id} {...itemProps(p)} />)}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      )}
 
       {showForm && (
         <ProjectForm

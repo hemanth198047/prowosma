@@ -1,3 +1,4 @@
+import { Paperclip } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   addAttachment,
@@ -23,7 +24,7 @@ function fileIcon(type) {
   return "📎";
 }
 
-export default function FileAttachments({ task, onRefresh }) {
+export default function FileAttachments({ task, onRefresh, compact = false }) {
   const { show: showToast } = useToast();
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
@@ -73,6 +74,13 @@ export default function FileAttachments({ task, onRefresh }) {
 
   return (
     <div className="file-attachments-wrapper" ref={ref}>
+      {compact ? (
+        <button type="button" className="task-tool-btn" aria-expanded={open}
+          aria-label={count > 0 ? `${count} file${count > 1 ? "s" : ""}` : "Files"} title="Files"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}>
+          <Paperclip size={14} aria-hidden="true" />{count > 0 && <span>{count}</span>}
+        </button>
+      ) : (
       <button
         className="file-attach-toggle"
         onClick={(e) => {
@@ -82,6 +90,7 @@ export default function FileAttachments({ task, onRefresh }) {
       >
         📎 Files {count > 0 ? `(${count})` : ""} {open ? "▲" : "▼"}
       </button>
+      )}
 
       {open && (
         <div
