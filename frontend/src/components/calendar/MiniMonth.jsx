@@ -29,6 +29,8 @@ export default function MiniMonth({ selected, rangeStart, rangeEnd, busyDays, on
   }, [month, firstDay]);
 
   const today = new Date();
+  // Day view shows one day: mark it with a ring, not just the band.
+  const singleDay = rangeStart && rangeEnd && rangeEnd - rangeStart <= 25 * 3600 * 1000;
   const shift = (n) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
 
   return (
@@ -47,6 +49,7 @@ export default function MiniMonth({ selected, rangeStart, rangeEnd, busyDays, on
             "cal-mini-day",
             inMonth ? "" : "cal-mini-out",
             inRange ? "cal-mini-range" : "",
+            inRange && singleDay ? "cal-mini-selected" : "",
             sameDay(d, today) ? "cal-mini-today" : "",
             busyDays?.has(d.toDateString()) ? "cal-mini-busy" : "",
           ].filter(Boolean).join(" ");
@@ -59,7 +62,7 @@ export default function MiniMonth({ selected, rangeStart, rangeEnd, busyDays, on
               aria-label={d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               aria-current={sameDay(d, today) ? "date" : undefined}
             >
-              {d.getDate()}
+              <span className="cal-mini-num">{d.getDate()}</span>
             </button>
           );
         })}

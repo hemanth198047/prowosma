@@ -62,7 +62,7 @@
 }
 .cal-mini-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
 .cal-mini-title { flex: 1; font-size: 13px; font-weight: 700; color: var(--gray-800); padding-left: 4px; }
-.cal-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.cal-mini-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; }
 .cal-mini-wd {
   text-align: center;
   font-size: 10.5px;
@@ -72,30 +72,47 @@
 }
 .cal-mini-day {
   position: relative;
-  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 0;
   background: transparent;
   color: var(--gray-800);
   font-size: 12px;
   cursor: pointer;
 }
-.cal-mini-day:hover { background: var(--gray-100); }
+/* The circle is a fixed square, so it stays round and centred whatever the column width. */
+.cal-mini-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  line-height: 1;
+}
+.cal-mini-day:hover .cal-mini-num { background: var(--gray-100); }
 .cal-mini-out { color: var(--gray-400); }
-.cal-mini-range { background: var(--brand-50); border-radius: 0; }
-.cal-mini-today { background: var(--brand-600) !important; color: #fff !important; font-weight: 700; border-radius: 50%; }
+/* Days shown in the main calendar: a soft band across the row. */
+.cal-mini-range { background: var(--brand-50); }
+.cal-mini-range .cal-mini-num { color: var(--brand-700); font-weight: 600; }
+.cal-mini-selected { background: transparent; }
+.cal-mini-selected .cal-mini-num { box-shadow: inset 0 0 0 2px var(--brand-600); background: var(--brand-50); }
+.cal-mini-today .cal-mini-num,
+.cal-mini-day.cal-mini-today:hover .cal-mini-num { background: var(--brand-600); color: #fff; font-weight: 700; }
 .cal-mini-busy::after {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: 2px;
+  bottom: 0;
   width: 4px;
   height: 4px;
   margin-left: -2px;
   border-radius: 50%;
   background: var(--brand-500);
 }
-.cal-mini-today.cal-mini-busy::after { background: #fff; }
 
 /* Layers ("My calendars") */
 .cal-layers {
