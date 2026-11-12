@@ -10,6 +10,11 @@ export const getMeetings      = (wsId, params) =>
 // Calendar: every meeting starting inside [from, to] (Dates, sent as UTC).
 export const getMeetingsInRange = (from, to) =>
   client.get("/meetings", { params: { from: from.toISOString(), to: to.toISOString() } });
+// Scheduling assistant: busy times (no titles) for these people between from and to.
+export const getAvailability = (emails, from, to, excludeId) =>
+  client.get("/meetings/availability", {
+    params: { emails: emails.join(","), from: from.toISOString(), to: to.toISOString(), ...(excludeId ? { excludeId } : {}) },
+  });
 export const getMeeting       = (id)    => client.get(`/meetings/${id}`);
 export const createMeeting    = (data)  => client.post("/meetings", data);
 export const updateMeeting    = (id, data) => client.put(`/meetings/${id}`, data);

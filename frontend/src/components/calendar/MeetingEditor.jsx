@@ -1,7 +1,11 @@
 import { apiErrorMessage } from "../../utils/apiError";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Users, Clock, MapPin, AlignLeft, Folder, Tag, AlertTriangle, Video, Trash2 } from "lucide-react";
+import { X, Users, Clock, MapPin, AlignLeft, Folder, Tag, AlertTriangle, Video, Trash2, CalendarSearch } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { getAvailability } from "../../api/meetings";
+import { parseAvailability, statusFor } from "../../utils/availability";
+import SchedulingAssistant from "./SchedulingAssistant";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   fromLocalParts, toLocalDateValue, toLocalTimeValue, toServerDateTime,
@@ -59,6 +63,11 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
 
   useEffect(() => { titleRef.current?.focus(); }, []);
 
+  const { user } = useAuth();
+  const myEmail = user?.email || null;
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [avail, setAvail] = useState({ key: null, data: null, loading: false, error: "" });
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const start = fromLocalParts(form.startDate, form.startTime);
@@ -85,6 +94,60 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [form.startDate, form.startTime, form.endDate, form.endTime, meetings, meeting?.id],
   );
+
+  // ── Free/busy (scheduling assistant + the dots on attendee chips) ──
+  const availEmails = useMemo(() => {
+    const seen = new Set();
+    return [myEmail, ...form.attendees].filter((e) => {
+      if (!e || !e.includes("@")) return false;
+      const k = e.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [myEmail, form.attendees]);
+  const dayStart = useMemo(() => {
+    const d = start ? new Date(start) : new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.startDate]);
+  const wantAvail = availEmails.length > 0 && (showAssistant || form.attendees.length > 0);
+  const availKey = wantAvail ? `${availEmails.join(",").toLowerCase()}|${dayStart.getTime()}|${meeting?.id || ""}` : null;
+
+  useEffect(() => {
+    if (!availKey) return undefined;
+    let alive = true;
+    const t = setTimeout(() => {
+      setAvail((a) => ({ ...a, key: availKey, loading: true, error: "" }));
+      const to = new Date(dayStart.getTime() + 24 * 3600 * 1000);
+      getAvailability(availEmails, dayStart, to, meeting?.id)
+        .then((res) => { if (alive) setAvail({ key: availKey, data: parseAvailability(res.data), loading: false, error: "" }); })
+        .catch((e) => {
+          if (!alive) return;
+          const st = e?.response?.status;
+          setAvail({
+            key: availKey, data: null, loading: false,
+            error: st === 403 ? "You don't have access to other people's availability."
+              : "Couldn't load availability. If you just updated the app, restart the backend.",
+          });
+        });
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availKey]);
+
+  const availability = avail.key === availKey ? avail.data : null;
+  const chipStatus = (email) => (availability && rangeOk ? statusFor(availability.get(email.toLowerCase()), start, end) : null);
+  const assistantPeople = availEmails.map((email) => {
+    const t = (team || []).find((x) => x.email && x.email.toLowerCase() === email.toLowerCase());
+    return { email, name: t?.name, color: t?.color, timeZone: t?.timeZone, isYou: !!myEmail && email.toLowerCase() === myEmail.toLowerCase() };
+  });
+  const moveStartTo = (d) => moveStart(toLocalDateValue(d), toLocalTimeValue(d));
+  const shiftDay = (n) => {
+    if (!start) return;
+    moveStartTo(new Date(start.getFullYear(), start.getMonth(), start.getDate() + n, start.getHours(), start.getMinutes()));
+  };
 
   const teamOptions = useMemo(
     () => (team || []).filter((t) => t.email || t.name),
@@ -179,7 +242,7 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
     >
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog-level Esc / Ctrl+Enter / focus trap */}
       <div
-        className="cal-ed"
+        className={`cal-ed${showAssistant ? " cal-ed-wide" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cal-ed-heading"
@@ -210,7 +273,11 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
               <div className="cal-ed-chips">
                 {form.attendees.map((a) => (
                   <span key={a} className="cal-chip" title={a}>
+                    {chipStatus(a) && (
+                      <i className={`cal-chip-dot cal-chip-${chipStatus(a)}`} title={chipStatus(a) === "busy" ? "Busy at this time" : chipStatus(a) === "free" ? "Free at this time" : "No information"} />
+                    )}
                     {attendeeLabel(a)}
+                    {chipStatus(a) && <span className="sr-only">{chipStatus(a) === "busy" ? " (busy at this time)" : chipStatus(a) === "free" ? " (free)" : ""}</span>}
                     <button type="button" onClick={() => removeAttendee(a)} aria-label={`Remove ${a}`}>
                       <X size={12} />
                     </button>
@@ -261,9 +328,30 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
                 />
                 <TimeSelect id="cal-ed-end-time" label="End time" value={form.endTime} onChange={(v) => set("endTime", v)} />
                 {rangeOk && <span className="cal-ed-dur">{formatDuration(durationMins)}</span>}
+                <button
+                  type="button"
+                  className={`cal-ed-assist-btn${showAssistant ? " active" : ""}`}
+                  onClick={() => setShowAssistant((v) => !v)}
+                  aria-expanded={showAssistant}
+                >
+                  <CalendarSearch size={14} /> Scheduling assistant
+                </button>
               </div>
               {!rangeOk && start && end && (
                 <div className="cal-ed-warn" role="alert"><AlertTriangle size={14} /> The meeting must end after it starts.</div>
+              )}
+              {showAssistant && rangeOk && (
+                <SchedulingAssistant
+                  people={assistantPeople}
+                  availability={availability}
+                  loading={!availability && !avail.error}
+                  error={avail.key === availKey ? avail.error : ""}
+                  dayStart={dayStart}
+                  start={start}
+                  end={end}
+                  onMoveStart={moveStartTo}
+                  onShiftDay={shiftDay}
+                />
               )}
               {conflicts.length > 0 && (
                 <div className="cal-ed-conflict">

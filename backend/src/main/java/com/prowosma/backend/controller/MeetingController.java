@@ -35,6 +35,7 @@ public class MeetingController {
     private final com.prowosma.backend.service.MeetingActionItemService actionItemService;
     private final com.prowosma.backend.repository.RaidRepository raidRepository;
     private final com.prowosma.backend.repository.DecisionRepository decisionRepository;
+    private final com.prowosma.backend.service.AvailabilityService availabilityService;
 
     @GetMapping
     public PagedResponse<Meeting> getAll(
@@ -70,6 +71,19 @@ public class MeetingController {
                 meetingRepository.findByWorkspaceIdAndStatusOrderByMeetingDateDesc(wsId, status),
                 page, Math.min(size, 200));
         return PagedResponse.of(meetingRepository.findByWorkspaceId(wsId, pr));
+    }
+
+    /**
+     * Scheduling assistant free/busy: for each email, when they're already in a meeting between
+     * from and to (UTC; at most 14 days). Times only, never titles. excludeId leaves out the meeting
+     * being edited.
+     */
+    @GetMapping("/availability")
+    public List<Map<String, Object>> availability(@RequestParam List<String> emails,
+                                                  @RequestParam String from,
+                                                  @RequestParam String to,
+                                                  @RequestParam(required = false) String excludeId) {
+        return availabilityService.availability(emails, parseUtc(from), parseUtc(to), excludeId);
     }
 
     @GetMapping("/{id}")
