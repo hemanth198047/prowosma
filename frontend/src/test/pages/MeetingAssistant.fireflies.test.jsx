@@ -116,10 +116,12 @@ beforeEach(() => {
 describe("Fireflies on the Meeting Assistant page", () => {
   it("the Fireflies card appears only when an admin has set it up; an older server that doesn't know about it changes nothing", async () => {
     await open([], FF_CAPS({ ready: true, enabled: true }));
+    fireEvent.click(await screen.findByRole("button", { name: /Send a notetaker/ }));                      // one way at a time: choose it
     expect(screen.getByRole("region", { name: "Fireflies notetaker" })).toBeInTheDocument();
     cleanup();
     await open([], FF_CAPS({ ready: false, enabled: false, reason: "The Fireflies integration isn't turned on for this workspace." }));
     expect(screen.queryByRole("region", { name: "Fireflies notetaker" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Send a notetaker/ })).toBeNull();            // not even offered
     cleanup();
     await open([], FF_CAPS(undefined));
     expect(screen.queryByRole("region", { name: "Fireflies notetaker" })).toBeNull();
@@ -143,6 +145,7 @@ describe("Fireflies on the Meeting Assistant page", () => {
     api.getAssistantCapabilities.mockResolvedValue({ data: FF_CAPS({ ready: true, enabled: true }) });
     const buttons = await screen.findAllByRole("button", { name: "Save" });
     fireEvent.click(buttons[buttons.length - 1]);
+    fireEvent.click(await screen.findByRole("button", { name: /Send a notetaker/ }));                      // offered at once
     expect(await screen.findByRole("region", { name: "Fireflies notetaker" })).toBeInTheDocument();
   });
 

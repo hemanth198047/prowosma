@@ -269,3 +269,10 @@
 /* Header action buttons line up with the title row's 36px controls */
 .page-header-action .btn-primary,
 .page-header-action .btn-secondary { min-height: var(--control-h); }
+
+/* Phones: mobile-fixes.css stacks .page-header-block into a column, which turned
+   the title's 240px flex-basis into a 240px HEIGHT — a big empty gap under every
+   page title. Let it size to its text. */
+@media (max-width: 768px) {
+  .pg-title-row .pg-title-text { flex: 0 0 auto; }
+}

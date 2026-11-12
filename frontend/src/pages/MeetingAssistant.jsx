@@ -28,6 +28,8 @@ import {
   submitLabel, localInputValue, formatClock, ACCEPTS_TRANSCRIPT, WAITING_FOR_TRANSCRIPT, MAX_UPLOAD_BYTES,
 } from "../utils/meetingStatus";
 import "../styles/pages/meeting-assistant.css";
+import "../styles/pages/meeting-assistant-v2.css";
+import { Bot, FileText, Info, Link2, Mic, Plus } from "lucide-react";
 
 const TABS = ["Summary", "MOM", "Notes", "Transcript", "Actions", "Projects and Tasks"];
 const DOC_TYPE = { Summary: "SUMMARY", MOM: "MOM", Notes: "NOTES" };
@@ -39,7 +41,7 @@ const fmt = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "mediu
 
 function StatusChip({ status }) {
   const m = statusMeta(status);
-  return <span className={`ma-chip ${m.tone}`}><span aria-hidden="true">{m.icon}</span>{m.label}</span>;
+  return <span className={`ma-chip ${m.tone}`}><span className="ma2-dot" aria-hidden="true" />{m.label}</span>;
 }
 
 /* ── Transcript viewer. Shows exactly what was stored: speakers as the source named them (unknown stays
@@ -235,29 +237,21 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
     run(() => updateMeetingAccess(session.id, { sharedWith: next }), "Access updated");
   };
 
+  const waiting = WAITING_FOR_TRANSCRIPT.includes(session.status);
+  const hasTranscript = (session.segmentCount || 0) > 0;
+  const canAddTranscript = session.canManage && !session.simulated && ACCEPTS_TRANSCRIPT.includes(session.status);
+
   return (
-    <section className="ma-card" aria-label={`Details for ${session.title}`}>
-      <div className="ma-row-top">
-        <h2 style={{ margin: 0 }}>{session.title}</h2>
+    <section className="ma-card ma2-detail" aria-label={`Details for ${session.title}`}>
+      {/* 1 — what this meeting is and where it stands */}
+      <header className="ma2-detail-head">
+        <div className="ma2-detail-title">
+          <h2>{session.title}</h2>
+          <div className="ma-meta">{providerName(session.provider)} · requested by {session.requestedBy}</div>
+        </div>
         <button className="ma-btn" onClick={onClose}>Close</button>
-      </div>
-      <div className="ma-meta">{providerName(session.provider)} · requested by {session.requestedBy}</div>
-      <p style={{ margin: "10px 0 4px" }} aria-live="polite"><StatusChip status={session.status} /> {session.statusDetail}</p>
-
-      {WAITING_FOR_TRANSCRIPT.includes(session.status) && !session.simulated && <MeetingCheckStatus session={session} />}
-      {session.provider === "GOOGLE_MEET" && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED") && (
-        <GoogleMeetTranscriptGuide defaultOpen={session.status === "FAILED" || session.lastCheck?.code === "NO_TRANSCRIPT_YET"} />
-      )}
-
-      <SessionRecordingInfo session={session} onChanged={onChanged} />
-      <SessionFirefliesInfo session={session} firefliesCaps={firefliesCaps} waiting={WAITING_FOR_TRANSCRIPT.includes(session.status)} onChanged={onChanged} />
-      {recordingCaps?.ready && session.canManage && !session.simulated && (WAITING_FOR_TRANSCRIPT.includes(session.status) || session.status === "FAILED")
-        && (!session.recording || ["DELETED", "EXPIRED"].includes(session.recording.state)) && (
-        <details className="ma-guide">
-          <summary>Have a recording of this meeting? Upload it</summary>
-          <div className="ma-guide-body"><RecordingUpload recording={recordingCaps} sessionId={session.id} onDone={onChanged} /></div>
-        </details>
-      )}
+      </header>
+      <p className="ma2-status" aria-live="polite"><StatusChip status={session.status} /> <span>{session.statusDetail}</span></p>
 
       {session.status === "FAILED" && (
         <div className="ma-failure" role="alert">
@@ -267,71 +261,108 @@ function SessionDetail({ session, members, projects, isAdmin, devEnabled, google
       )}
 
       <div className="ma-actions">
-        {canCancelSession(session) && (
-          <button className="ma-btn danger" disabled={busy}
-            onClick={() => run(() => cancelMeetingSession(session.id), "Cancelled")}>Cancel</button>)}
         {canRetrySession(session) && (
           <button className="ma-btn primary" disabled={busy}
             onClick={() => run(() => retryMeetingSession(session.id), "Retrying")}>Retry</button>)}
         {session.canGenerate && aiReady && session.status === "READY_FOR_REVIEW" && (
           <button className="ma-btn" disabled={busy}
             onClick={() => run(() => generateMeetingOutputs(session.id), "Generating a new version")}>Regenerate</button>)}
-        {session.canManage && googleConnected && session.provider === "GOOGLE_MEET" && WAITING_FOR_TRANSCRIPT.includes(session.status) && (
+        {session.canManage && googleConnected && session.provider === "GOOGLE_MEET" && waiting && (
           <button className="ma-btn" disabled={busy}
             onClick={() => run(() => fetchMeetingTranscriptNow(session.id), "Checked Google Meet")}>{busy ? "Checking Google…" : "Check Google Meet now"}</button>)}
+        {canCancelSession(session) && (
+          <button className="ma-btn danger" disabled={busy}
+            onClick={() => run(() => cancelMeetingSession(session.id), "Cancelled")}>Cancel</button>)}
       </div>
 
-      {session.canManage && !session.simulated && ACCEPTS_TRANSCRIPT.includes(session.status) && (
-        <div style={{ marginTop: 12 }}><AddTranscript session={session} onChanged={onChanged} /></div>
+      {/* 2 — while it waits: how the transcript will arrive, and the one next step */}
+      {(waiting || session.status === "FAILED") && !session.simulated && (
+        <div className="ma2-waiting">
+          {waiting && <MeetingCheckStatus session={session} />}
+          {session.provider === "GOOGLE_MEET" && (
+            <GoogleMeetTranscriptGuide defaultOpen={session.status === "FAILED" || session.lastCheck?.code === "NO_TRANSCRIPT_YET"} />
+          )}
+        </div>
       )}
+      <SessionRecordingInfo session={session} onChanged={onChanged} />
+      <SessionFirefliesInfo session={session} firefliesCaps={firefliesCaps} waiting={waiting} onChanged={onChanged} />
 
-      <h3 style={{ fontSize: 13, margin: "16px 0 4px" }}>History</h3>
-      <ol className="ma-timeline">
-        {(session.history || []).map((h, i) => (
-          <li key={i}>{fmt(h.at)} — {statusMeta(h.to).label}{h.note ? ` (${h.note})` : ""}</li>
-        ))}
-      </ol>
-
-      {session.canManage && (
-        <fieldset style={{ border: 0, padding: 0, marginTop: 16 }}>
-          <legend className="ma-legend">Who can open the results</legend>
-          <p className="ma-hint">Being in the meeting doesn't give access. Choose who can see this one.</p>
-          <div className="ma-field">
-            <label htmlFor="ma-vis">Visibility</label>
-            <select id="ma-vis" value={session.visibility} disabled={busy}
-              onChange={(e) => run(() => updateMeetingAccess(session.id, { visibility: e.target.value }), "Access updated")}>
-              <option value="PRIVATE">Only me, the people below, and admins</option>
-              <option value="WORKSPACE">Everyone in this workspace</option>
-            </select>
-          </div>
-          <div className="ma-checks">
-            {members.filter((m) => m.email && m.email.toLowerCase() !== (session.requestedBy || "").toLowerCase()).map((m) => (
-              <label key={m.id || m.email}>
-                <input type="checkbox" disabled={busy} checked={(session.sharedWith || []).includes(m.email.toLowerCase())}
-                  onChange={() => toggleShare(m.email.toLowerCase())} />
-                {m.name || m.email}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-
-      {session.simulated && devEnabled && isAdmin && (
-        <div className="ma-card" style={{ borderStyle: "dashed" }}>
-          <strong>Simulation controls (development only)</strong>
-          <p className="ma-hint">Moves this simulated meeting through the lifecycle. No real meeting is involved.</p>
-          <div className="ma-field">
-            <label htmlFor="ma-dev">Move to</label>
-            <select id="ma-dev" value={devStatus} onChange={(e) => setDevStatus(e.target.value)}>
-              {ALL_STATUSES.map((s) => <option key={s} value={s}>{statusMeta(s).label}</option>)}
-            </select>
-          </div>
-          <button className="ma-btn" disabled={busy}
-            onClick={() => run(() => devAdvanceMeetingSession(session.id, devStatus), "Updated")}>Apply</button>
+      {canAddTranscript && !hasTranscript && (
+        <div className="ma2-next">
+          <AddTranscript session={session} onChanged={onChanged} />
+          {recordingCaps?.ready && (waiting || session.status === "FAILED")
+            && (!session.recording || ["DELETED", "EXPIRED"].includes(session.recording.state)) && (
+            <details className="ma-guide">
+              <summary>Have a recording of this meeting? Upload it</summary>
+              <div className="ma-guide-body"><RecordingUpload recording={recordingCaps} sessionId={session.id} onDone={onChanged} /></div>
+            </details>
+          )}
         </div>
       )}
 
+      {/* 3 — the results */}
       <ResultTabs session={session} members={members} projects={projects} aiReady={aiReady} aiReason={aiReason} onChanged={onChanged} />
+
+      {/* 4 — less frequent things, folded away */}
+      <div className="ma2-more">
+        {canAddTranscript && hasTranscript && (
+          <details className="ma2-fold">
+            <summary>Replace the transcript</summary>
+            <div className="ma2-fold-body"><AddTranscript session={session} onChanged={onChanged} /></div>
+          </details>
+        )}
+        {session.canManage && (
+          <details className="ma2-fold">
+            <summary>Who can see this meeting</summary>
+            <fieldset className="ma2-fold-body" style={{ border: 0, margin: 0 }}>
+              <legend className="sr-only">Who can open the results</legend>
+              <p className="ma-hint">Being in the meeting doesn't give access. Choose who can see this one.</p>
+              <div className="ma-field">
+                <label htmlFor="ma-vis">Visibility</label>
+                <select id="ma-vis" value={session.visibility} disabled={busy}
+                  onChange={(e) => run(() => updateMeetingAccess(session.id, { visibility: e.target.value }), "Access updated")}>
+                  <option value="PRIVATE">Only me, the people below, and admins</option>
+                  <option value="WORKSPACE">Everyone in this workspace</option>
+                </select>
+              </div>
+              <div className="ma-checks">
+                {members.filter((m) => m.email && m.email.toLowerCase() !== (session.requestedBy || "").toLowerCase()).map((m) => (
+                  <label key={m.id || m.email}>
+                    <input type="checkbox" disabled={busy} checked={(session.sharedWith || []).includes(m.email.toLowerCase())}
+                      onChange={() => toggleShare(m.email.toLowerCase())} />
+                    {m.name || m.email}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </details>
+        )}
+        <details className="ma2-fold">
+          <summary>History</summary>
+          <ol className="ma-timeline ma2-fold-body">
+            {(session.history || []).length === 0 && <li>No changes yet.</li>}
+            {(session.history || []).map((h, i) => (
+              <li key={i}>{fmt(h.at)} — {statusMeta(h.to).label}{h.note ? ` (${h.note})` : ""}</li>
+            ))}
+          </ol>
+        </details>
+        {session.simulated && devEnabled && isAdmin && (
+          <details className="ma2-fold">
+            <summary>Simulation controls (development only)</summary>
+            <div className="ma2-fold-body">
+              <p className="ma-hint">Moves this simulated meeting through the lifecycle. No real meeting is involved.</p>
+              <div className="ma-field">
+                <label htmlFor="ma-dev">Move to</label>
+                <select id="ma-dev" value={devStatus} onChange={(e) => setDevStatus(e.target.value)}>
+                  {ALL_STATUSES.map((st) => <option key={st} value={st}>{statusMeta(st).label}</option>)}
+                </select>
+              </div>
+              <button className="ma-btn" disabled={busy}
+                onClick={() => run(() => devAdvanceMeetingSession(session.id, devStatus), "Updated")}>Apply</button>
+            </div>
+          </details>
+        )}
+      </div>
     </section>
   );
 }
@@ -358,6 +389,7 @@ export default function MeetingAssistant() {
   const [simulated, setSimulated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [way, setWay] = useState("upload");
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -448,142 +480,191 @@ export default function MeetingAssistant() {
   const googleEnabled = !!googlePlatform?.enabled;
   const googleConnected = !!googlePlatform?.connectedForMe;
 
-  return (
-    <div>
-      <PageHeader icon="🤖" title="Meeting Assistant"
-        description="Register a meeting, send a notetaker, or upload a transcript you already have — and turn it into minutes, tasks and projects." />
+  // Ways to bring a meeting in. Only the ones this workspace can actually use are offered.
+  const recordingReady = !!caps?.recording?.ready;
+  const firefliesReady = !!caps?.fireflies?.ready;
+  const ways = [
+    { id: "upload", icon: FileText, title: "Upload a transcript",
+      desc: "Already have the text from Meet, Teams or Zoom? Paste it or choose a file.", recommended: !live },
+    ...(recordingReady ? [{ id: "record", icon: Mic, title: "Record in your browser",
+      desc: "Prowosma records the meeting tab's audio and writes the transcript." }] : []),
+    ...(firefliesReady ? [{ id: "fireflies", icon: Bot, title: "Send a notetaker",
+      desc: "A Fireflies notetaker joins the call and brings the transcript back." }] : []),
+    { id: "link", icon: Link2, title: live ? "Send the assistant" : "Register a meeting link",
+      desc: live ? "Paste a Meet or Teams link and the assistant joins the call." : "Save a Meet or Teams link now, add the transcript after." },
+  ];
+  const openCreated = async (id) => { await refresh(); setSelectedId(id); };
 
+  const registerForm = (
+    <form className="ma-card ma2-way-panel" onSubmit={submit} aria-label="Register a meeting" noValidate>
+      <h2>{live ? "Send the assistant to a meeting" : "Register a meeting link"}</h2>
       {caps && !live && (
         <div className="ma-banner" role="note">
-          <span aria-hidden="true">ℹ️</span>
+          <Info size={16} aria-hidden="true" />
           <span>{caps.note}</span>
         </div>
       )}
       {caps?.googleConfigured && googleEnabled && !googleConnected && (
-        <div className="ma-banner" role="note">
-          <span aria-hidden="true">🔗</span>
+        <div className="ma-banner ma2-banner-soft" role="note">
+          <Link2 size={16} aria-hidden="true" />
           <span>Connect your Google account to import Google Meet transcripts automatically.{" "}
             <a href="/integrations/meeting-platforms">Connect Google</a></span>
         </div>
       )}
 
-      <UploadTranscriptPanel projects={projects} aiReady={!!caps?.aiReady} aiReason={caps?.aiReason}
-        autoCreate={!!(caps?.autoCreateTasks || caps?.autoCreateProjects)} limits={caps?.transcriptUpload}
-        onCreated={async (id) => { await refresh(); setSelectedId(id); }} />
+      <div className="ma-field">
+        <label htmlFor="ma-url">Meeting link</label>
+        <input id="ma-url" type="url" inputMode="url" autoComplete="off" placeholder="Paste a Meet or Teams link"
+          value={url} onChange={(e) => setUrl(e.target.value)}
+          aria-invalid={check.state === "bad"} aria-describedby="ma-url-status" />
+        <div id="ma-url-status" aria-live="polite">
+          {check.state === "checking" && <span className="ma-hint">Checking…</span>}
+          {check.state === "ok" && <span className="ma-ok">✓ {providerName(check.data.provider)} link</span>}
+          {check.state === "bad" && <span className="ma-error">{check.data?.message}</span>}
+          {check.state === "ok" && check.data.warning && <div className="ma-warn">{check.data.warning}</div>}
+          {providerOff && <div className="ma-error">This platform isn't enabled yet. Ask an admin to turn it on under Integrations → Meeting Platforms.</div>}
+        </div>
+      </div>
 
-      {caps?.recording?.ready && (
-        <RecordMeetingPanel recording={caps.recording} onCreated={async (id) => { await refresh(); setSelectedId(id); }} />
+      <div className="ma2-two">
+        <div className="ma-field">
+          <label htmlFor="ma-title">Title (optional)</label>
+          <input id="ma-title" type="text" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div className="ma-field">
+          <label htmlFor="ma-project">Project</label>
+          <select id="ma-project" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">Detect from discussion</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+        <legend className="ma-legend">When</legend>
+        <div className="ma-radio">
+          <label><input type="radio" name="ma-when" checked={when === "now"} onChange={() => setWhen("now")} /> Now</label>
+          <label><input type="radio" name="ma-when" checked={when === "later"} onChange={() => setWhen("later")} /> Schedule</label>
+        </div>
+        {when === "later" && (
+          <div className="ma-field">
+            <label htmlFor="ma-when-at">Start time</label>
+            <input id="ma-when-at" type="datetime-local" min={localInputValue()} value={scheduled}
+              onChange={(e) => setScheduled(e.target.value)} />
+          </div>
+        )}
+      </fieldset>
+
+      {(check.state === "ok" ? check.data.provider === "GOOGLE_MEET" : !url.trim()) && <GoogleMeetTranscriptGuide title="Before you start your meeting: how to turn on a transcript in Google Meet" />}
+
+      {caps?.devFixturesEnabled && admin && (
+        <label className="ma-hint" style={{ display: "block", margin: "8px 0" }}>
+          <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} /> Create as a simulated meeting (development)
+        </label>
       )}
 
-      {caps?.fireflies?.ready && <FirefliesPanel onCreated={async (id) => { await refresh(); setSelectedId(id); }} />}
+      {formError && <p className="ma-error" role="alert">{formError}</p>}
+      <div className="ma2-submit">
+        <button type="submit" className="ma-btn primary" disabled={!canSubmit}>{submitting ? "Working…" : label}</button>
+        {!live && <span className="ma-hint">This saves the meeting. It doesn't send anything into the call.</span>}
+      </div>
+    </form>
+  );
 
-      <div className="ma-grid">
-        <form className="ma-card" onSubmit={submit} aria-label="Register a meeting" noValidate>
-          <h2>Add a meeting</h2>
+  return (
+    <div className="ma2-page">
+      <PageHeader title="Meeting Assistant"
+        description="Turn a meeting into a summary, minutes, tasks and projects. You review everything before anything is created."
+        action={selected ? (
+          <button type="button" className="btn-primary pg-btn" onClick={() => setSelectedId(null)}>
+            <Plus size={15} aria-hidden="true" />Add a meeting
+          </button>
+        ) : null} />
 
-          <div className="ma-field">
-            <label htmlFor="ma-url">Meeting link</label>
-            <input id="ma-url" type="url" inputMode="url" autoComplete="off" placeholder="Paste a Meet or Teams link"
-              value={url} onChange={(e) => setUrl(e.target.value)}
-              aria-invalid={check.state === "bad"} aria-describedby="ma-url-status" />
-            <div id="ma-url-status" aria-live="polite">
-              {check.state === "checking" && <span className="ma-hint">Checking…</span>}
-              {check.state === "ok" && <span className="ma-ok">✓ {providerName(check.data.provider)} link</span>}
-              {check.state === "bad" && <span className="ma-error">{check.data?.message}</span>}
-              {check.state === "ok" && check.data.warning && <div className="ma-warn">{check.data.warning}</div>}
-              {providerOff && <div className="ma-error">This platform isn't enabled yet. Ask an admin to turn it on under Integrations → Meeting Platforms.</div>}
-            </div>
-          </div>
-
-          {(check.state === "ok" ? check.data.provider === "GOOGLE_MEET" : !url.trim()) && <GoogleMeetTranscriptGuide title="Before you start your meeting: how to turn on a transcript in Google Meet" />}
-
-          <div className="ma-field">
-            <label htmlFor="ma-title">Title (optional)</label>
-            <input id="ma-title" type="text" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-
-          <div className="ma-field">
-            <label htmlFor="ma-project">Project</label>
-            <select id="ma-project" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">Detect from discussion</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend className="ma-legend">When</legend>
-            <div className="ma-radio">
-              <label><input type="radio" name="ma-when" checked={when === "now"} onChange={() => setWhen("now")} /> Now</label>
-              <label><input type="radio" name="ma-when" checked={when === "later"} onChange={() => setWhen("later")} /> Schedule</label>
-            </div>
-            {when === "later" && (
-              <div className="ma-field">
-                <label htmlFor="ma-when-at">Start time</label>
-                <input id="ma-when-at" type="datetime-local" min={localInputValue()} value={scheduled}
-                  onChange={(e) => setScheduled(e.target.value)} />
-              </div>
-            )}
-          </fieldset>
-
-          {caps?.devFixturesEnabled && admin && (
-            <label className="ma-hint" style={{ display: "block", marginBottom: 8 }}>
-              <input type="checkbox" checked={simulated} onChange={(e) => setSimulated(e.target.checked)} /> Create as a simulated meeting (development)
-            </label>
+      <div className="ma2-layout">
+        {/* Your meetings — always in view */}
+        <section className="ma2-list" aria-label="Your meetings">
+          <h2 className="pg-section-title">Your meetings <span>· {sessions.length}</span></h2>
+          {loading ? <p className="ma-hint">Loading…</p> : sessions.length === 0 ? (
+            <div className="ma-empty">No meetings yet. Add your first one on the right.</div>
+          ) : (
+            <ul className="ma-list">
+              {sessions.map((s) => (
+                <li key={s.id} className="ma-row" aria-current={s.id === selectedId}>
+                  <button className="ma-row-title" onClick={() => setSelectedId(s.id)}>{s.title}</button>
+                  <div className="ma2-row-line">
+                    <StatusChip status={s.status} />
+                    {s.simulated && <span className="ma-chip ma-sim">Simulated</span>}
+                  </div>
+                  <div className="ma-meta">
+                    {providerName(s.provider)} · {s.scheduledFor ? `Scheduled ${fmt(s.scheduledFor)}` : `Added ${fmt(s.createdAt)}`}
+                  </div>
+                  {(canCancelSession(s) || canRetrySession(s)) && (
+                    <div className="ma-actions">
+                      {canRetrySession(s) && (
+                        <button className="ma-btn primary ma2-sm" onClick={async () => {
+                          try { await retryMeetingSession(s.id); await refresh(); }
+                          catch (e) { toast(apiErrorMessage(e, "Couldn't retry."), "error"); }
+                        }}>Retry</button>)}
+                      {canCancelSession(s) && (
+                        <button className="ma-btn danger ma2-sm" onClick={async () => {
+                          try { await cancelMeetingSession(s.id); await refresh(); }
+                          catch (e) { toast(apiErrorMessage(e, "Couldn't cancel."), "error"); }
+                        }}>Cancel</button>)}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
+        </section>
 
-          {formError && <p className="ma-error" role="alert">{formError}</p>}
-          <button type="submit" className="ma-btn primary" disabled={!canSubmit}>{submitting ? "Working…" : label}</button>
-          {!live && <p className="ma-hint">“Register meeting” records the meeting. It doesn't send anything into the call.</p>}
-        </form>
-
-        <div>
-          {selected && (
+        <div className="ma2-main">
+          {selected ? (
             <SessionDetail session={selected} members={members} projects={projects} isAdmin={admin}
               devEnabled={!!caps?.devFixturesEnabled} googleConnected={googleConnected}
               aiReady={!!caps?.aiReady} aiReason={caps?.aiReason} recordingCaps={caps?.recording} firefliesCaps={caps?.fireflies}
               onChanged={refresh} onClose={() => setSelectedId(null)} />
-          )}
-          <section className="ma-card" aria-label="Your meetings" style={selected ? { marginTop: 16 } : undefined}>
-            <h2>Meetings</h2>
-            {loading ? <p className="ma-hint">Loading…</p> : sessions.length === 0 ? (
-              <div className="ma-empty">No meetings yet. Paste a link on the left to add one.</div>
-            ) : (
-              <ul className="ma-list">
-                {sessions.map((s) => (
-                  <li key={s.id} className="ma-row" aria-current={s.id === selectedId}>
-                    <div className="ma-row-top">
-                      <button className="ma-row-title" onClick={() => setSelectedId(s.id)}>{s.title}</button>
-                      <span>
-                        {s.simulated && <span className="ma-chip ma-sim">Simulated</span>}{" "}
-                        <StatusChip status={s.status} />
+          ) : (
+            <>
+              <section className="ma2-start" aria-labelledby="ma2-start-title">
+                <h2 id="ma2-start-title">Add a meeting</h2>
+                <p className="ma2-start-sub">How do you want to bring it in?</p>
+                <div className="ma2-ways" role="group" aria-label="Ways to add a meeting">
+                  {ways.map((w) => (
+                    <button key={w.id} type="button" className="ma2-way" aria-pressed={way === w.id} onClick={() => setWay(w.id)}>
+                      <span className="ma2-way-icon" aria-hidden="true"><w.icon size={18} /></span>
+                      <span className="ma2-way-text">
+                        <span className="ma2-way-title">{w.title}{w.recommended && <span className="ma2-badge">Recommended</span>}</span>
+                        <span className="ma2-way-desc">{w.desc}</span>
                       </span>
-                    </div>
-                    <div className="ma-meta">
-                      {providerName(s.provider)} · {s.scheduledFor ? `Scheduled ${fmt(s.scheduledFor)}` : `Added ${fmt(s.createdAt)}`}
-                    </div>
-                    <div className="ma-meta">{s.statusDetail}</div>
-                    <div className="ma-actions">
-                      {canCancelSession(s) && (
-                        <button className="ma-btn danger" onClick={async () => {
-                          try { await cancelMeetingSession(s.id); await refresh(); }
-                          catch (e) { toast(apiErrorMessage(e, "Couldn't cancel."), "error"); }
-                        }}>Cancel</button>)}
-                      {canRetrySession(s) && (
-                        <button className="ma-btn primary" onClick={async () => {
-                          try { await retryMeetingSession(s.id); await refresh(); }
-                          catch (e) { toast(apiErrorMessage(e, "Couldn't retry."), "error"); }
-                        }}>Retry</button>)}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {way === "upload" && (
+                <UploadTranscriptPanel projects={projects} aiReady={!!caps?.aiReady} aiReason={caps?.aiReason}
+                  autoCreate={!!(caps?.autoCreateTasks || caps?.autoCreateProjects)} limits={caps?.transcriptUpload}
+                  initialProjectId={projectId} onCreated={openCreated} />
+              )}
+              {way === "record" && recordingReady && <RecordMeetingPanel recording={caps.recording} onCreated={openCreated} />}
+              {way === "fireflies" && firefliesReady && <FirefliesPanel onCreated={openCreated} />}
+              {way === "link" && registerForm}
+
+              {admin && caps && (
+                <details className="ma2-fold ma2-admin">
+                  <summary>Assistant settings (admins)</summary>
+                  <div className="ma2-fold-body">
+                    <RecordingSettingsCard recording={caps.recording} onChanged={reloadCaps} />
+                    <FirefliesSettingsCard fireflies={caps.fireflies} onChanged={reloadCaps} />
+                  </div>
+                </details>
+              )}
+            </>
+          )}
         </div>
       </div>
-
-      {admin && caps && <RecordingSettingsCard recording={caps.recording} onChanged={reloadCaps} />}
-      {admin && caps && <FirefliesSettingsCard fireflies={caps.fireflies} onChanged={reloadCaps} />}
     </div>
   );
 }

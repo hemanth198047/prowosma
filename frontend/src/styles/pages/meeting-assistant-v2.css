@@ -1,0 +1,115 @@
+/* Meeting Assistant — calmer layout: meetings on the left; on the right
+   either one meeting, or "Add a meeting" with one way shown at a time. */
+
+.ma2-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+.ma2-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.ma2-main .ma-card + .ma-card { margin-top: 0; }
+
+/* Cards: flat, same language as the rest of the app */
+.ma2-page .ma-card { border-radius: var(--radius-lg); box-shadow: none; padding: 20px 22px; background: var(--bg-card, #fff); }
+.ma2-page .ma-card h2 { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+.ma2-page .ma-btn { border-width: 1px; border-radius: var(--radius-md); font-weight: 600; min-height: 34px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; }
+.ma2-page .ma-btn.primary { background: var(--brand-500); border-color: var(--brand-500); }
+.ma2-page .ma-btn.danger { color: var(--danger-text); border-color: #F5C2BC; background: var(--bg-card, #fff); }
+.ma2-page .ma-field input[type="text"], .ma2-page .ma-field input[type="url"],
+.ma2-page .ma-field input[type="datetime-local"], .ma2-page .ma-field select { border-width: 1px; border-radius: var(--radius-md); }
+.ma2-page .ma-field label, .ma2-page .ma-legend { color: var(--text-secondary); font-weight: 600; font-size: 12.5px; }
+.ma2-page .ma-hint { color: var(--text-muted); font-size: 12.5px; }
+.ma2-page .ma-banner { border-radius: var(--radius-md); align-items: flex-start; margin-bottom: 14px; background: var(--warning-soft); border-color: #F3D9A8; color: var(--text-primary); }
+.ma2-page .ma2-banner-soft { background: var(--brand-50); border-color: var(--brand-100); }
+.ma2-page .ma-banner svg { flex-shrink: 0; margin-top: 1px; color: var(--text-secondary); }
+
+/* Your meetings */
+.ma2-list { position: sticky; top: 0; }
+.ma2-list .pg-section-title { margin-bottom: 10px; }
+.ma2-list .ma-list { gap: 6px; }
+.ma2-list .ma-row { border-width: 1px; border-radius: var(--radius-md); padding: 10px 12px; background: var(--bg-card, #fff); display: flex; flex-direction: column; gap: 4px; }
+.ma2-list .ma-row:hover { border-color: var(--border-strong); }
+.ma2-list .ma-row[aria-current="true"] { border-color: var(--brand-500); box-shadow: 0 0 0 1px var(--brand-500) inset; }
+.ma2-list .ma-row-title { font-size: 14px; font-weight: 600; padding: 0 !important; white-space: normal; text-align: left; line-height: 1.35; }
+.ma2-list .ma-row-title:hover { color: var(--brand-600); }
+.ma2-list .ma-row-title:active:not(:disabled) { transform: none; }
+.ma2-list .ma-row-title::after { content: ""; position: absolute; inset: 0; } /* whole card opens the meeting */
+.ma2-list .ma-row { position: relative; }
+.ma2-list .ma-actions { position: relative; z-index: 1; margin-top: 4px; }
+.ma2-row-line { display: flex; gap: 6px; flex-wrap: wrap; }
+.ma2-list .ma-meta { margin: 0; }
+.ma2-sm { min-height: 28px !important; padding: 0 10px !important; font-size: 12.5px !important; }
+
+/* Add a meeting — the chooser */
+.ma2-start h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.ma2-start-sub { margin: 2px 0 12px; color: var(--text-secondary); font-size: 14px; }
+.ma2-ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .ma2-ways { grid-template-columns: 1fr; } }
+.ma2-way {
+  display: flex !important; align-items: flex-start; gap: 12px;
+  padding: 14px !important; text-align: left; white-space: normal;
+  background: var(--bg-card, #fff); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  color: var(--text-primary); font-size: 14px !important; font-weight: 400;
+}
+.ma2-way:hover { border-color: var(--border-strong); }
+.ma2-way:active:not(:disabled) { transform: none; }
+.ma2-way[aria-pressed="true"] { border-color: var(--brand-500); box-shadow: 0 0 0 1px var(--brand-500) inset; background: var(--brand-50); }
+.ma2-way:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+.ma2-way-icon { width: 34px; height: 34px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: var(--brand-50); color: var(--brand-600); }
+.ma2-way[aria-pressed="true"] .ma2-way-icon { background: var(--bg-card, #fff); }
+.ma2-way-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ma2-way-title { font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ma2-way-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+.ma2-badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--success-soft); color: var(--success-text); }
+
+.ma2-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ma2-submit { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+
+/* One meeting */
+.ma2-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ma2-detail-title h2 { margin: 0 !important; font-size: 20px !important; }
+.ma2-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; font-size: 14px; color: var(--text-secondary); }
+.ma2-waiting { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.ma2-next { margin-top: 14px; }
+.ma2-next .ma-card { background: var(--bg-page); }
+.ma2-page .ma-tabs { margin-top: 20px; }
+
+/* Folded sections */
+.ma2-more { margin-top: 20px; border-top: 1px solid var(--border); }
+.ma2-fold { border-bottom: 1px solid var(--border); }
+.ma2-fold > summary {
+  list-style: none; cursor: pointer; padding: 12px 2px;
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+}
+.ma2-fold > summary::-webkit-details-marker { display: none; }
+.ma2-fold > summary::before { content: "›"; display: inline-block; width: 12px; color: var(--text-muted); transition: transform 0.15s; font-size: 16px; }
+.ma2-fold[open] > summary::before { transform: rotate(90deg); }
+.ma2-fold > summary:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; border-radius: 4px; }
+.ma2-fold-body { padding: 0 2px 14px 20px; }
+.ma2-admin { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card, #fff); padding: 0 16px; }
+.ma2-admin .ma-card { box-shadow: none; }
+
+/* Dark */
+[data-theme="dark"] .ma2-page .ma-card,
+[data-theme="dark"] .ma2-list .ma-row,
+[data-theme="dark"] .ma2-way,
+[data-theme="dark"] .ma2-admin { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .ma2-way[aria-pressed="true"] { background: rgba(124,128,255,0.12); border-color: var(--brand-400); }
+[data-theme="dark"] .ma2-way-icon { background: rgba(124,128,255,0.16); color: #C7C8F5; }
+[data-theme="dark"] .ma2-next .ma-card { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .ma2-more, [data-theme="dark"] .ma2-fold { border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .ma2-page .ma-banner { background: rgba(251,197,107,0.08); border-color: rgba(251,197,107,0.25); }
+[data-theme="dark"] .ma2-page .ma2-banner-soft { background: rgba(124,128,255,0.1); border-color: rgba(124,128,255,0.25); }
+
+@media (max-width: 1000px) {
+  .ma2-layout { grid-template-columns: 1fr; }
+  .ma2-list { position: static; }
+}
+@media (max-width: 600px) { .ma2-two { grid-template-columns: 1fr; } }
+.ma2-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* Dark: the meeting's own buttons, fields and selects used light surfaces */
+[data-theme="dark"] .ma2-page .ma-btn:not(.primary) { background: transparent; color: #fff; border-color: rgba(255,255,255,0.18); }
+[data-theme="dark"] .ma2-page .ma-btn.danger { color: var(--danger-text); border-color: rgba(252,165,165,0.35); }
+[data-theme="dark"] .ma2-page select,
+[data-theme="dark"] .ma2-page input[type="text"],
+[data-theme="dark"] .ma2-page input[type="url"],
+[data-theme="dark"] .ma2-page input[type="datetime-local"],
+[data-theme="dark"] .ma2-page textarea { background: rgba(255,255,255,0.04); color: #fff; border-color: rgba(255,255,255,0.14); }

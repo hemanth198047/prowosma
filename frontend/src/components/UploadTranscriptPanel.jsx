@@ -13,13 +13,13 @@ const ACCEPT = ".txt,.vtt,.srt,.docx,text/plain,text/vtt";
 const FALLBACK_MAX = 5_000_000;
 const mb = (bytes) => Math.round(bytes / 1_000_000);
 
-export default function UploadTranscriptPanel({ projects = [], aiReady = true, aiReason = "", autoCreate = false, limits, onCreated }) {
+export default function UploadTranscriptPanel({ projects = [], aiReady = true, aiReason = "", autoCreate = false, limits, onCreated, initialProjectId = "" }) {
   const { show: toast } = useToast();
   const max = limits?.maxBytes || FALLBACK_MAX;
   const [file, setFile] = useState(null);
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(initialProjectId || "");
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [warnings, setWarnings] = useState([]);

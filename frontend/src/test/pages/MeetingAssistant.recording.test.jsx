@@ -110,10 +110,12 @@ beforeEach(() => {
 describe("Recording on the Meeting Assistant page", () => {
   it("the record card appears only when an admin has turned recording on and set up speech-to-text", async () => {
     await open([], CAPS_WITH(REC_CAPS));
+    fireEvent.click(await screen.findByRole("button", { name: /Record in your browser/ }));                // one way at a time: choose it
     expect(screen.getByRole("region", { name: "Record a meeting" })).toBeInTheDocument();
     cleanup();
     await open([], CAPS_WITH({ ...REC_CAPS, ready: false, reason: "Recording isn't turned on for this workspace." }));
     expect(screen.queryByRole("region", { name: "Record a meeting" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Record in your browser/ })).toBeNull();      // not even offered
     cleanup();
     await open([], CAPS_WITH(undefined));                                                   // an older server that doesn't know about recording
     expect(screen.queryByRole("region", { name: "Record a meeting" })).toBeNull();
@@ -138,6 +140,7 @@ describe("Recording on the Meeting Assistant page", () => {
     api.getAssistantCapabilities.mockResolvedValue({ data: CAPS_WITH(REC_CAPS) });          // the server now says it is ready
     const card = (await screen.findByText(/Recording & speech-to-text/)).closest("details");        // the page now has more than one admin card, each with its own Save
     fireEvent.click(within(card).getByRole("button", { name: "Save" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Record in your browser/ }));                // the way to record is offered at once
     expect(await screen.findByRole("region", { name: "Record a meeting" })).toBeInTheDocument();
   });
 
@@ -189,6 +192,7 @@ describe("Recording on the Meeting Assistant page", () => {
 
   it("the whole page, with the record card, has no accessibility violations in the parts this change added", async () => {
     await open([], CAPS_WITH(REC_CAPS));
+    fireEvent.click(await screen.findByRole("button", { name: /Record in your browser/ }));
     expect(await axe(screen.getByRole("region", { name: "Record a meeting" }))).toHaveNoViolations();
   });
 });

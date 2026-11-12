@@ -165,6 +165,7 @@ describe("'Check Google Meet now'", () => {
 describe("The guide on the registration form", () => {
   it("is there before a link is pasted, so people read it before their meeting", async () => {
     render(<MeetingAssistant />);
+    fireEvent.click(await screen.findByRole("button", { name: /Register a meeting link/ }));
     await screen.findByLabelText("Meeting link");
     expect(screen.getByText(FORM_GUIDE)).toBeInTheDocument();
     expect(screen.getByText(FORM_GUIDE).closest("details")).not.toHaveAttribute("open");
@@ -173,6 +174,7 @@ describe("The guide on the registration form", () => {
   it("stays for a Google Meet link and goes away for a Teams link", async () => {
     api.validateMeetingUrl.mockResolvedValue({ data: { valid: true, provider: "GOOGLE_MEET" } });
     render(<MeetingAssistant />);
+    fireEvent.click(await screen.findByRole("button", { name: /Register a meeting link/ }));
     await screen.findByLabelText("Meeting link");
     typeUrl("https://meet.google.com/abc-defg-hij");
     expect(await screen.findByText(/Google Meet link/)).toBeInTheDocument();
@@ -184,6 +186,7 @@ describe("The guide on the registration form", () => {
 
   it("opening it does not submit the form or change anything", async () => {
     render(<MeetingAssistant />);
+    fireEvent.click(await screen.findByRole("button", { name: /Register a meeting link/ }));
     await screen.findByLabelText("Meeting link");
     fireEvent.click(screen.getByText(FORM_GUIDE));
     expect(api.createMeetingSession).not.toHaveBeenCalled();

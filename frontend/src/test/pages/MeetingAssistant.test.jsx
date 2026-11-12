@@ -73,11 +73,14 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+// The link form is one of the ways to add a meeting; pick it first.
+const chooseLink = async () => fireEvent.click(await screen.findByRole("button", { name: /Register a meeting link/ }));
 const typeUrl = (v) => fireEvent.change(screen.getByLabelText("Meeting link"), { target: { value: v } });
 
 describe("MeetingAssistant page", () => {
   it("is honest: tells people live joining isn't available and labels the button 'Register meeting'", async () => {
     render(<MeetingAssistant />);
+    await chooseLink();
     expect(await screen.findByRole("button", { name: "Register meeting" })).toBeDisabled();
     expect(await screen.findByRole("note")).toHaveTextContent("can't join meetings live");     // appears once the capabilities have loaded
     expect(screen.queryByRole("button", { name: "Send Meeting Assistant" })).toBeNull();
@@ -86,6 +89,7 @@ describe("MeetingAssistant page", () => {
   it("shows the server's plain-language reason for a bad link and keeps submit disabled", async () => {
     api.validateMeetingUrl.mockResolvedValue({ data: { valid: false, errorCode: "UNSUPPORTED_PLATFORM", message: "Zoom isn't supported yet." } });
     render(<MeetingAssistant />);
+    await chooseLink();
     await screen.findByRole("button", { name: "Register meeting" });
     typeUrl("https://zoom.us/j/123456789");
     expect(await screen.findByText("Zoom isn't supported yet.")).toBeInTheDocument();
@@ -95,6 +99,7 @@ describe("MeetingAssistant page", () => {
   it("blocks submit and explains when the platform isn't enabled by an admin", async () => {
     api.validateMeetingUrl.mockResolvedValue({ data: { valid: true, provider: "MS_TEAMS", providerEnabled: false } });
     render(<MeetingAssistant />);
+    await chooseLink();
     await screen.findByRole("button", { name: "Register meeting" });
     typeUrl("https://teams.microsoft.com/meet/123456789012");
     expect(await screen.findByText(/isn't enabled yet/)).toBeInTheDocument();
@@ -106,6 +111,7 @@ describe("MeetingAssistant page", () => {
     api.createMeetingSession.mockResolvedValue({ data: SESSION });
     api.listMeetingSessions.mockResolvedValueOnce({ data: [] }).mockResolvedValue({ data: [SESSION] });
     render(<MeetingAssistant />);
+    await chooseLink();
     await screen.findByRole("button", { name: "Register meeting" });
     typeUrl("https://meet.google.com/abc-defg-hij");
     await screen.findByText(/Google Meet link/);
@@ -123,6 +129,7 @@ describe("MeetingAssistant page", () => {
     api.createMeetingSession.mockRejectedValue({ response: { status: 409, data: { error: "DUPLICATE_SESSION",
       message: "The assistant is already assigned to this meeting occurrence." } } });
     render(<MeetingAssistant />);
+    await chooseLink();
     await screen.findByRole("button", { name: "Register meeting" });
     typeUrl("https://meet.google.com/abc-defg-hij");
     await screen.findByText(/Google Meet link/);
@@ -283,11 +290,13 @@ describe("MeetingAssistant page", () => {
   it("prompts people to connect Google only when it is set up, enabled, and they haven't connected", async () => {
     api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, googleConfigured: true } });
     render(<MeetingAssistant />);
+    await chooseLink();
     expect(await screen.findByText(/Connect your Google account to import/)).toBeInTheDocument();
     cleanup();
     api.getAssistantCapabilities.mockResolvedValue({ data: { ...CAPS, googleConfigured: true,
       platforms: [{ ...CAPS.platforms[0], connectedForMe: true }] } });
     render(<MeetingAssistant />);
+    await chooseLink();
     await screen.findByRole("button", { name: "Register meeting" });
     expect(screen.queryByText(/Connect your Google account to import/)).toBeNull();
   });
@@ -315,6 +324,16 @@ describe("MeetingAssistant page", () => {
     } finally {
       window.history.pushState({}, "", "/");
     }
+  });
+
+  it("offers one way at a time to add a meeting, transcript upload first", async () => {
+    render(<MeetingAssistant />);
+    const upload = await screen.findByRole("button", { name: /Upload a transcript/ });
+    expect(upload).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("form", { name: "Register a meeting" })).toBeNull();
+    await chooseLink();
+    expect(await screen.findByRole("form", { name: "Register a meeting" })).toBeInTheDocument();
+    expect(upload).toHaveAttribute("aria-pressed", "false");
   });
 
   it("has no automatically detectable accessibility violations", async () => {
