@@ -1,3 +1,4 @@
+import PersonAvatar from "../components/people/PersonAvatar";
 import React from "react";
 import { unwrapList } from "../api/client";
 import client from "../api/client";
@@ -505,7 +506,7 @@ export default function Team() {
             return (
               <div key={m.id} className="team-member-card">
                 <div className="team-member-header">
-                  <MemberAvatar member={m} size={48} />
+                  <PersonAvatar person={m} size={48} />
                   <div className="team-member-info">
                     <div className="team-member-name">{m.name}</div>
                     <div className="team-member-email">{m.email}</div>
@@ -601,7 +602,7 @@ export default function Team() {
             return (
               <div key={m.id} className="assignment-section">
                 <div className="assignment-header">
-                  <MemberAvatar member={m} size={32} />
+                  <PersonAvatar person={m} size={32} />
                   <span style={{ fontWeight: 600, fontSize: "14px" }}>
                     {m.name}
                   </span>

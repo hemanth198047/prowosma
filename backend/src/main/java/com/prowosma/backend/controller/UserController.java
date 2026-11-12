@@ -21,6 +21,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ActivityLogService activityLogService;
+    private final com.prowosma.backend.service.OrgService orgService;
 
     // Get current user profile
     @GetMapping("/me")
@@ -45,6 +46,12 @@ public class UserController {
      * same passwordEncoder.matches(...) pattern already used for
      * change-password elsewhere in this codebase (see AuthService).
      */
+    /** Edit your own contact card in the current workspace. Body (all optional): phone, location, timeZone, bio. */
+    @PutMapping("/me/contact")
+    public ResponseEntity<?> updateMyContact(@RequestBody Map<String, Object> body, Authentication auth) {
+        return ResponseEntity.ok(orgService.updateMyContact(auth.getName(), body == null ? Map.of() : body));
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<?> deleteMyAccount(
             @RequestBody Map<String, String> body,

@@ -20,6 +20,7 @@ public class TeamMemberController {
     private final TeamMemberService    teamMemberService;
     private final TeamMemberRepository teamMemberRepository;
     private final WorkspaceContext     workspaceContext;
+    private final com.prowosma.backend.service.OrgService orgService;
 
     @GetMapping
     public List<TeamMember> getAll() {
@@ -27,6 +28,19 @@ public class TeamMemberController {
     }
 
     // F04 — resolve current user's role by email, scoped to active workspace
+    /** Everyone with reporting line and contact details, for the org chart and people cards. */
+    @GetMapping("/org")
+    public List<Map<String, Object>> orgChart() {
+        return orgService.orgChart();
+    }
+
+    /** Admin: set manager, job title, department and contact details (all optional). */
+    @PutMapping("/{id}/org")
+    public Map<String, Object> updateOrg(@PathVariable String id, @RequestBody Map<String, Object> body,
+                                         Authentication auth) {
+        return orgService.updateOrg(id, body == null ? Map.of() : body, auth != null ? auth.getName() : null);
+    }
+
     @GetMapping("/by-email")
     public ResponseEntity<?> getByEmail(
             @RequestParam String email,

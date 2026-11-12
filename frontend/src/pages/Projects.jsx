@@ -25,6 +25,8 @@ import { getMeetingsForProject } from "../api/meetings";
 import { apiErrorMessage } from "../utils/apiError";
 import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
+import ProjectTeamModal from "../components/ProjectTeamModal";
+import PersonAvatar from "../components/people/PersonAvatar";
 import { statusText, statusClass } from "../utils/statusText";
 
 const COLORS = [
@@ -707,7 +709,11 @@ function ProjectCard({
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
+  const [teamSaved, setTeamSaved] = useState(null);
   const { enabled: accessEnabled, can } = useAccess();
+  const team = teamSaved || p;
+  const teamEmails = team.memberEmails || [];
 
   return (
     <div
@@ -766,6 +772,9 @@ function ProjectCard({
           {showAccess && (
             <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
           )}
+          {showTeam && (
+            <ProjectTeamModal project={team} onClose={() => setShowTeam(false)} onSaved={(saved) => saved && setTeamSaved(saved)} />
+          )}
           <p className="project-desc">{p.description}</p>
           {p.dueDate && (() => {
             const closed = ["COMPLETED", "DONE", "CANCELLED", "ARCHIVED"].includes(String(p.status).toUpperCase());
@@ -776,6 +785,23 @@ function ProjectCard({
               </div>
             );
           })()}
+          <div className="project-team-row">
+            {teamEmails.length > 0 ? (
+              <div className="project-team-stack" aria-label={`${teamEmails.length} people on ${p.name}`}>
+                {teamEmails.slice(0, 5).map((e) => <PersonAvatar key={e} email={e} size={26} />)}
+                {teamEmails.length > 5 && (
+                  <button type="button" className="project-team-more" onClick={(ev) => { ev.stopPropagation(); setShowTeam(true); }}>
+                    +{teamEmails.length - 5}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="project-team-empty">No team yet</span>
+            )}
+            <button type="button" className="project-team-btn" onClick={(ev) => { ev.stopPropagation(); setShowTeam(true); }}>
+              {teamEmails.length ? "Team" : "Add team"}
+            </button>
+          </div>
           <div className="progress-bar">
             <div
               className="progress-fill"

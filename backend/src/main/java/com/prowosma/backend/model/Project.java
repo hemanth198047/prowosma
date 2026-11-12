@@ -96,4 +96,20 @@ public class Project {
     private java.util.Map<String, String> roleAssignments = new java.util.HashMap<>();
     /** People who approve work on this project (emails). */
     private java.util.List<String> approverEmails = new java.util.ArrayList<>();
+
+    // ── Project team ───────────────────────────────────────────────────────────
+    /**
+     * Role and allocation of each person in memberEmails. memberEmails stays the single list of who is on
+     * the project (it also drives access); this only adds detail, and is pruned to memberEmails on every change.
+     */
+    private java.util.List<TeamEntry> teamDetails = new java.util.ArrayList<>();
+
+    @lombok.Data
+    public static class TeamEntry {
+        private String email;
+        private String projectRole;          // free text, e.g. "Project manager", "Designer"
+        private Integer allocationPercent;   // 0-100, share of the person's time on this project
+        private java.time.LocalDateTime addedAt = java.time.LocalDateTime.now();
+        private String addedBy;
+    }
 }

@@ -6,7 +6,7 @@
 export const RESTRICTED_LANDING = "/tasks";
 
 const ALLOWED_PREFIXES = [
-  "/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/search", "/team", "/profile",
+  "/projects", "/tasks", "/kanban", "/calendar", "/gantt", "/docs", "/search", "/team", "/org-chart", "/profile",
   // planning, knowledge and insight areas (each scoped on the server to what the person may see)
   "/goals", "/sprints", "/epics", "/releases", "/roadmap", "/change-requests", "/portfolio-plus", "/decisions",
   "/channels", "/sops", "/reports", "/analytics", "/time-tracking", "/ai", "/ai-intelligence",

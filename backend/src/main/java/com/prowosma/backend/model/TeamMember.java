@@ -27,6 +27,10 @@ public class TeamMember {
     private String title;                                                       // job title / position
     private String department;                                                  // team/department
     private String location;                                                    // city or timezone region
+    // ── Org chart / contact card ──────────────────────────────────────────
+    private String managerId;                                                   // TeamMember id of this person's manager (null = top of the org)
+    private String phone;                                                       // work phone, shown on the contact card
+    private String timeZone;                                                    // IANA zone, e.g. "Asia/Kolkata" — shows the person's local time
     private java.util.List<String> mentorFor = new java.util.ArrayList<>();    // skills this person can mentor
     private java.util.List<String> lookingToLearn = new java.util.ArrayList<>();// skills they want to develop
     private String availability = "FULL";                                       // FULL | PARTIAL | UNAVAILABLE

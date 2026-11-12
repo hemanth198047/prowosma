@@ -62,6 +62,8 @@ public class ProjectService {
             } catch (Exception ignored) {}
         }
         visibility.prepareNewProject(project);
+        // The team (roles, allocation) is only set through updateTeam(), which validates it.
+        project.setTeamDetails(new java.util.ArrayList<>());
         Project saved = projectRepository.save(project);
         activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
                 "PROJECT_CREATED", null, saved.getName(), null,
@@ -121,6 +123,7 @@ public class ProjectService {
         Project existing = getById(id);
         visibility.requireCanManageProject(existing);
         visibility.applyAccessChange(existing, visibilityValue, departmentIds, memberEmails, roles, approvers);
+        existing.setTeamDetails(pruneTeamDetails(existing.getMemberEmails(), existing.getTeamDetails()));
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
         activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
@@ -313,4 +316,84 @@ public class ProjectService {
             "breakdown", breakdown);
     }
 
+
+    /**
+     * Sets who is on the project team, with each person's project role and allocation. Body entries:
+     * { email, projectRole, allocationPercent }. The emails become memberEmails (so team members can see a
+     * members-only project); same permission as changing access.
+     */
+    public Project updateTeam(String id, List<java.util.Map<String, Object>> members, String requesterEmail) {
+        Project existing = getById(id);
+        visibility.requireCanManageProject(existing);
+        List<java.util.Map<String, Object>> rows = members == null ? List.of() : members;
+        if (rows.size() > 500) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "A project team can have at most 500 people.");
+        List<String> emails = new java.util.ArrayList<>();
+        for (java.util.Map<String, Object> r : rows) {
+            Object e = r == null ? null : r.get("email");
+            if (e instanceof String str && !str.isBlank()) emails.add(str.trim());
+        }
+        // Canonicalises the emails and rejects anyone who isn't in the workspace.
+        visibility.applyAccessChange(existing, null, null, emails, null, null);
+
+        java.util.Map<String, Project.TeamEntry> before = new java.util.HashMap<>();
+        if (existing.getTeamDetails() != null)
+            for (Project.TeamEntry t : existing.getTeamDetails())
+                if (t.getEmail() != null) before.put(t.getEmail().toLowerCase(), t);
+
+        java.util.Map<String, java.util.Map<String, Object>> input = new java.util.HashMap<>();
+        for (java.util.Map<String, Object> r : rows)
+            if (r != null && r.get("email") instanceof String str) input.put(str.trim().toLowerCase(), r);
+
+        List<Project.TeamEntry> details = new java.util.ArrayList<>();
+        for (String email : existing.getMemberEmails()) {
+            String key = email.toLowerCase();
+            Project.TeamEntry t = before.getOrDefault(key, null);
+            if (t == null) {
+                t = new Project.TeamEntry();
+                t.setEmail(email);
+                t.setAddedBy(requesterEmail);
+            }
+            t.setEmail(email);
+            java.util.Map<String, Object> r = input.get(key);
+            if (r != null) {
+                t.setProjectRole(cleanRole(r.get("projectRole")));
+                t.setAllocationPercent(cleanAllocation(r.get("allocationPercent")));
+            }
+            details.add(t);
+        }
+        existing.setTeamDetails(details);
+        existing.setUpdatedAt(LocalDateTime.now());
+        Project saved = projectRepository.save(existing);
+        activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
+                "PROJECT_TEAM_CHANGED", null, String.valueOf(details.size()), null,
+                saved.getId(), null, null);
+        return saved;
+    }
+
+    /** Team details for people still in memberEmails, in memberEmails order. */
+    static List<Project.TeamEntry> pruneTeamDetails(List<String> memberEmails, List<Project.TeamEntry> details) {
+        List<Project.TeamEntry> out = new java.util.ArrayList<>();
+        if (memberEmails == null || details == null) return out;
+        java.util.Map<String, Project.TeamEntry> byEmail = new java.util.HashMap<>();
+        for (Project.TeamEntry t : details) if (t != null && t.getEmail() != null) byEmail.putIfAbsent(t.getEmail().toLowerCase(), t);
+        for (String e : memberEmails) {
+            Project.TeamEntry t = e == null ? null : byEmail.get(e.toLowerCase());
+            if (t != null) out.add(t);
+        }
+        return out;
+    }
+
+    static String cleanRole(Object raw) {
+        if (!(raw instanceof String s)) return null;
+        String t = s.trim();
+        if (t.isEmpty()) return null;
+        return t.length() > 60 ? t.substring(0, 60) : t;
+    }
+
+    static Integer cleanAllocation(Object raw) {
+        if (!(raw instanceof Number n)) return null;
+        int v = (int) Math.round(n.doubleValue());
+        return Math.max(0, Math.min(100, v));
+    }
 }

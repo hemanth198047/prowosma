@@ -1,3 +1,4 @@
+import { apiErrorMessage } from "../../utils/apiError";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Users, Clock, MapPin, AlignLeft, Folder, Tag, AlertTriangle, Video, Trash2 } from "lucide-react";
@@ -144,7 +145,7 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
         agenda: form.agenda,
       });
     } catch (e) {
-      setError(e?.response?.data?.message || "Couldn't save the meeting. Please try again.");
+      setError(apiErrorMessage(e, "Couldn't save the meeting. Please try again."));
       setSaving(false);
     }
   };

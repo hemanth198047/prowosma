@@ -129,6 +129,24 @@ public class ProjectController {
                 (List<String>) body.get("approverEmails")));
     }
 
+    /**
+     * The project team: body { members: [ { email, projectRole, allocationPercent } ] } replaces the
+     * whole team. Same permission as changing the project's access.
+     */
+    @PutMapping("/{id}/team")
+    @SuppressWarnings("unchecked")
+    public Project updateTeam(@PathVariable String id, @RequestBody Map<String, Object> body,
+                              org.springframework.security.core.Authentication auth) {
+        Object raw = body == null ? null : body.get("members");
+        if (raw != null && !(raw instanceof List<?>))
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "members must be a list");
+        List<Map<String, Object>> members = new java.util.ArrayList<>();
+        if (raw instanceof List<?> list)
+            for (Object o : list) if (o instanceof Map<?, ?> m) members.add((Map<String, Object>) m);
+        return visibility.redact(projectService.updateTeam(id, members, auth != null ? auth.getName() : null));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete Project by ID",

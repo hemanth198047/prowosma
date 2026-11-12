@@ -34,6 +34,7 @@ const DeploymentAnalytics = lazy(() => import("./pages/DeploymentAnalytics"));
 import KnowledgeGraph      from "./pages/KnowledgeGraph";
 import MagicLogin   from "./pages/MagicLogin";
 const Team = lazy(() => import("./pages/Team"));
+const OrgChart = lazy(() => import("./pages/OrgChart"));
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth";
 const ImportExport = lazy(() => import("./pages/ImportExport"));
@@ -93,6 +94,7 @@ import { useAccess } from "./hooks/useAccess";
 import { isPathAllowedForRestricted, RESTRICTED_LANDING } from "./utils/accessAreas";
 import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmDialog";
+import PeopleProvider from "./components/people/PeopleProvider";
 const Docs = lazy(() => import("./pages/Docs"));
 import Meetings  from "./pages/Meetings";
 import Sops      from "./pages/Sops";
@@ -230,7 +232,9 @@ export default function App() {
           <AccessProvider>
           <ToastProvider>
           <ConfirmProvider>
-            <AppShell />
+            <PeopleProvider>
+              <AppShell />
+            </PeopleProvider>
           </ConfirmProvider>
           </ToastProvider>
           </AccessProvider>
@@ -286,6 +290,7 @@ function SidebarNav({ onNav, badges }) {
           <NavLink to="/time-tracking" onClick={onNav}>⏱ Time</NavLink>
           <NavLink to="/ai" onClick={onNav}>🤖 AI Assistant</NavLink>
           <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
+          <NavLink to="/org-chart" onClick={onNav}>🏢 Org chart</NavLink>
         </div>
         <div style={{ flex: 1 }} />
         <div className="sidebar-bottom-links">
@@ -363,6 +368,7 @@ function SidebarNav({ onNav, badges }) {
       </SidebarGroup>
       <SidebarGroup label="Team" icon="👥" defaultOpen={false}>
         <NavLink to="/team"     onClick={onNav}>👥 Members</NavLink>
+        <NavLink to="/org-chart" onClick={onNav}>🏢 Org chart</NavLink>
         <NavLink to="/activity" onClick={onNav}>📋 Activity Log</NavLink>
       </SidebarGroup>
 
@@ -522,6 +528,7 @@ function AppShell() {
       "/reports":           "Reports",
       "/search":            "Search",
       "/team":              "Team",
+      "/org-chart":         "Org chart",
       "/activity":          "Activity Log",
       "/ai-assistant":      "AI Assistant",
       "/time-tracking":     "Time & Billing",
@@ -787,6 +794,14 @@ function AppShell() {
                     element={
                       <ProtectedRoute>
                         <Team />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/org-chart"
+                    element={
+                      <ProtectedRoute>
+                        <OrgChart />
                       </ProtectedRoute>
                     }
                   />
