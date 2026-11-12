@@ -117,8 +117,27 @@
   --brand-700: #7dd3fc;
   --brand-800: #bae6fd;
 
+  /* Tokens added with the Studio + Atlas foundation */
+  --text-primary:   #e2eff8;
+  --text-secondary: #aecde3;
+  --text-muted:     #8cb4d0;
+  --border-strong:  #1e3a5a;
+  --input-border:   #1e3a5a;
+  --card-border:    #122640;
+  --success-text:   #6EE7A8;
+  --warning-text:   #FBC56B;
+  --danger-text:    #FCA5A5;
+  --success-soft:   rgba(30, 142, 90, 0.18);
+  --warning-soft:   rgba(193, 125, 34, 0.2);
+  --danger-soft:    rgba(200, 55, 45, 0.2);
+
   color-scheme: dark;
 }
+/* Status pill families on dark surfaces */
+[data-theme="dark"] .badge { background: #112338; color: #cce0f0; }
+[data-theme="dark"] .badge-active, [data-theme="dark"] .badge-open, [data-theme="dark"] .badge-scheduled, [data-theme="dark"] .badge-on_track { background: rgba(47, 111, 237, 0.2); color: #9DC1FF; }
+[data-theme="dark"] .badge-todo, [data-theme="dark"] .badge-planning, [data-theme="dark"] .badge-draft, [data-theme="dark"] .badge-backlog, [data-theme="dark"] .badge-not_started, [data-theme="dark"] .badge-pending { background: rgba(124, 92, 191, 0.22); color: #CBB8F5; }
+[data-theme="dark"] .badge-on_hold, [data-theme="dark"] .badge-paused, [data-theme="dark"] .badge-behind { background: rgba(234, 122, 44, 0.2); color: #FDBA8C; }
 [data-theme="dark"] {
   --bg-main: rgba(3, 11, 24, 0.96);
 }

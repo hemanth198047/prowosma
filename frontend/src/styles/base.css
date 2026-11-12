@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap");
 
 /* =========================================================
    PROWOSMA — PROFESSIONAL DESIGN SYSTEM
@@ -11,14 +11,17 @@
      separate indigo "accent" scale) — consolidated to one family so
      nothing is fighting for attention. --accent-* kept as an alias so
      any component still referencing it directly keeps working. */
+  /* Studio indigo. 500 is the primary action / link colour (5.9:1 on
+     white); 600/700 are its hover and pressed steps and the text colour
+     on brand-50 tints. */
   --brand-50: #EEEEFD;
   --brand-100: #E1E1FB;
-  --brand-200: #C7C7F7;
-  --brand-400: #7D7FF0;
-  --brand-500: #5B5FEE;
-  --brand-600: #4740D4;
-  --brand-700: #3732A8;
-  --brand-900: #201D63;
+  --brand-200: #C7C8F5;
+  --brand-400: #7C7FE8;
+  --brand-500: #4B4FD8;
+  --brand-600: #3F42C4;
+  --brand-700: #3437A6;
+  --brand-900: #1E2066;
 
   --accent-50: var(--brand-50);
   --accent-100: var(--brand-100);
@@ -41,7 +44,16 @@
   /*  Semantic — muted rather than neon-saturated, per brief  */
   --success: #1E8E5A;
   --warning: #C17D22;
-  --danger: #D64545;
+  --danger: #C8372D;
+  /* Text-safe steps of the semantic colours (4.5:1+ on white and on their
+     own -soft tint). The base colours above are for dots, bars and icons;
+     amber at #C17D22 is only 3.2:1, too light for text. */
+  --success-text: #17663F;
+  --warning-text: #8A4B05;
+  --danger-text: #B42318;
+  --success-soft: #E7F6EE;
+  --warning-soft: #FDF1DE;
+  --danger-soft: #FDECEA;
   --purple: #7C5CBF;
   --info: var(--brand-500);
 
@@ -60,33 +72,35 @@
   /*  Surfaces — neutral, not hue-tinted (previously a pale sky-blue tint
      on every page background, which read as decorative branding rather
      than a working surface) */
-  --bg-page: #FAFAFA;
+  --bg-page: #F4F5F8;
   --bg-card: #ffffff;
   --bg-input: #ffffff;
-  --border: #E4E4E9;
+  --border: #E2E5EC;
+  --border-strong: #D7DBE4;   /* inputs, secondary buttons */
 
   /* ── Design Switcher tokens (overridden by DesignSwitcher.applyDesign) ── */
   /* These defaults reproduce the current Prowosma appearance exactly.      */
   /* Clearing all applyDesign overrides restores these values automatically.  */
-  --sidebar-bg:          #0B1220;
-  --sidebar-text:        rgba(255,255,255,0.68);
-  --sidebar-active-bg:   rgba(91,95,238,0.16);
+  --sidebar-bg:          #14172B;
+  --sidebar-text:        rgba(255,255,255,0.72);
+  --sidebar-active-bg:   rgba(124,128,255,0.18);
   --sidebar-active-text: #ffffff;
-  --sidebar-label:       rgba(255,255,255,0.4);
+  --sidebar-label:       rgba(255,255,255,0.45);
   --topbar-bg:           #ffffff;
 
   /* ── Extended design tokens ── */
   --card-bg:             #ffffff;
-  --card-border:         #E4E4E9;
+  --card-border:         #E2E5EC;
   --card-shadow:         var(--elevation-1);
-  --text-primary:        #1e293b;
-  --text-muted:          #64748b;
+  --text-primary:        #172033;
+  --text-secondary:      #4A5265;
+  --text-muted:          #5D6577;
   --text-on-brand:       #ffffff;
   --input-bg:            #ffffff;
-  --input-border:        #E4E4E9;
+  --input-border:        #D7DBE4;
   --search-bg:           #f8fafc;
-  --search-border:       #E4E4E9;
-  --btn-primary-bg:      var(--brand-600);
+  --search-border:       #E2E5EC;
+  --btn-primary-bg:      var(--brand-500);
   --btn-primary-text:    #ffffff;
 
   /* AI insight card — flat, not a gradient wash */
@@ -133,7 +147,7 @@
   /* Canvas vs surface — a real background step (not the ~2% difference
      --bg-page/--bg-card had before) so a card reads as a distinct object
      sitting on the page even before its shadow is noticed. */
-  --bg-canvas: #F3F4F8;
+  --bg-canvas: #F4F5F8;
   --surface-1: #ffffff;   /* cards, list rows */
   --surface-2: #ffffff;   /* topbar, dropdowns — same fill in light mode, differentiated by --elevation-2's tighter shadow; dark theme gives this its own step */
 
@@ -144,8 +158,10 @@
 
 
   /*  Typography  */
+  /* Public Sans: an open-licence (OFL) workhorse with tabular figures,
+     sturdy at 12-14px in dense tables, and less ubiquitous than Inter. */
   --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Type scale — intentional steps, not ad-hoc px values per component.
      Weight discipline: 800 reserved for hero numbers/greetings only,
@@ -175,14 +191,17 @@
 
   /*  Radius — tightened from the previous 6/10/14/18 scale for a
      crisper, less "rounded SaaS card" feel */
-  --radius-sm: 5px;
-  --radius-md: 7px;
-  --radius-lg: 11px;
-  --radius-xl: 15px;
+  --radius-sm: 6px;   /* chips, small icon buttons */
+  --radius-md: 8px;   /* buttons, inputs, menus */
+  --radius-lg: 10px;  /* panels, cards, tables */
+  --radius-xl: 14px;  /* dialogs */
+  /* Control heights */
+  --control-h-sm: 32px;
+  --control-h: 36px;
   --radius-full: 9999px;
 
   /*  Layout  */
-  --sidebar-w: 256px;
+  --sidebar-w: 240px;
   --topbar-h: 60px;
 }
 
@@ -202,9 +221,9 @@ html {
 body {
   font-family: var(--font-sans);
   background: var(--bg-page);
-  color: var(--gray-800);
+  color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -226,18 +245,20 @@ button {
 }
 
 .btn-primary {
-  background: var(--brand-600);
+  background: var(--brand-500);
   color: #fff;
-  padding: 9px 18px;
+  min-height: var(--control-h);
+  padding: 0 14px;
   border-radius: var(--radius-md);
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  justify-content: center;
 }
 .btn-primary:hover {
-  background: var(--brand-700);
+  background: var(--brand-600);
 }
 .btn-primary:active {
-  background: var(--brand-900);
+  background: var(--brand-700);
 }
 .btn-primary:disabled {
   opacity: 0.5;
@@ -246,17 +267,18 @@ button {
 
 .btn-secondary {
   background: var(--bg-card);
-  color: var(--gray-700);
-  padding: 9px 18px;
+  color: var(--text-primary);
+  min-height: var(--control-h);
+  padding: 0 14px;
   border-radius: var(--radius-md);
-  font-weight: 700;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-xs);
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  justify-content: center;
 }
 .btn-secondary:hover {
   background: var(--gray-50);
   border-color: var(--gray-300);
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-icon {
@@ -287,9 +309,9 @@ button {
 input,
 textarea,
 select {
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
-  padding: 9px 13px;
+  padding: 8px 12px;
   font-size: 14px;
   font-family: var(--font-sans);
   width: 100%;
@@ -304,7 +326,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--brand-500);
-  box-shadow: 0 0 0 3px rgba(91, 95, 238, 0.14);
+  box-shadow: 0 0 0 3px rgba(75, 79, 216, 0.16);
 }
 input::placeholder,
 textarea::placeholder {

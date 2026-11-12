@@ -101,77 +101,54 @@
 
 /*  Badges  */
 .badge {
-  font-size: 11px;
-  padding: 3px 9px;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 9px;
   border-radius: var(--radius-full);
   font-weight: 600;
-  letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  /* Same fix as .role-badge in workspace.css: without this, a badge
-     sitting in a flex row next to a flex:1 sibling can get compressed
-     below its own text's natural width and visually spill past its pill
-     background instead of the row simply running out of horizontal
-     space gracefully. */
+  gap: 6px;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  /* Without nowrap/flex-shrink a badge next to a flex:1 sibling can be
+     squeezed below its text width and spill past its pill. */
   white-space: nowrap;
   flex-shrink: 0;
 }
-.badge-active {
-  background: #e0f2fe;
-  color: var(--brand-700);
+/* A dot in the status colour, so status never relies on the pill tint alone.
+   Only on status badges (badge-<status>); tag/role/count badges stay plain. */
+.badge[class*="badge-"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--badge-dot, currentColor);
+  flex-shrink: 0;
 }
-.badge-done {
-  background: #d1fae5;
-  color: var(--success-text, #065f46);
+/* Status families — one look per meaning, shared by every module:
+   blue = open/active, green = done, violet = not started,
+   amber = in flight / paused, red = at risk, grey = closed. */
+.badge-active, .badge-open, .badge-scheduled, .badge-on_track {
+  background: #E8F0FE; color: #1D4FB0; --badge-dot: #2F6FED;
 }
-.badge-achieved {
-  background: #d1fae5;
-  color: var(--success-text, #065f46);
+.badge-done, .badge-achieved, .badge-completed, .badge-closed, .badge-approved, .badge-released, .badge-resolved {
+  background: var(--success-soft); color: var(--success-text); --badge-dot: var(--success);
 }
-.badge-inactive {
-  background: var(--gray-100);
-  color: var(--gray-600);
+.badge-todo, .badge-planning, .badge-draft, .badge-backlog, .badge-not_started, .badge-pending {
+  background: #F1EEFC; color: #5B3FA8; --badge-dot: #7C5CBF;
 }
-.badge-todo {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-.badge-in_progress {
-  background: #fef3c7;
-  color: #92400e;
-}
-/* Statuses that previously had no pill style and showed as plain text
-   (e.g. a project ON_HOLD or COMPLETED). Same palette as the pills above:
-   blue = active/open, green = done, violet = not started, amber = in flight,
-   orange = paused, red = needs attention, grey = closed/inactive. */
-.badge-completed, .badge-closed, .badge-approved, .badge-on_track, .badge-released, .badge-resolved {
-  background: #d1fae5;
-  color: #065f46;
-}
-.badge-planning, .badge-draft, .badge-backlog, .badge-not_started, .badge-pending {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-.badge-in_review, .badge-review, .badge-testing {
-  background: #fef3c7;
-  color: #92400e;
+.badge-in_progress, .badge-in_review, .badge-review, .badge-testing {
+  background: var(--warning-soft); color: var(--warning-text); --badge-dot: var(--warning);
 }
 .badge-on_hold, .badge-paused, .badge-behind {
-  background: #ffedd5;
-  color: #9a3412;
+  background: #FFEFE3; color: #9A3412; --badge-dot: #EA7A2C;
 }
 .badge-at_risk, .badge-blocked, .badge-overdue, .badge-rejected, .badge-off_track {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-soft); color: var(--danger-text); --badge-dot: var(--danger);
 }
-.badge-cancelled, .badge-canceled, .badge-archived {
-  background: var(--gray-100);
-  color: var(--gray-600);
-}
-.badge-open, .badge-scheduled {
-  background: #e0f2fe;
-  color: #0369a1;
+.badge-inactive, .badge-cancelled, .badge-canceled, .badge-archived {
+  background: var(--gray-100); color: var(--gray-600); --badge-dot: var(--gray-400);
 }
 
 /*  Card Actions  */
@@ -931,3 +908,9 @@
 .presence-dot.online  { background: var(--success); }
 .presence-dot.offline { background: var(--gray-300); }
 
+
+/* ── Priority tag (components/ui/PriorityTag.jsx) ─────────────── */
+.priority-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.priority-tag--high { color: var(--danger-text); }
+.priority-tag--medium { color: var(--warning-text); }
+.priority-tag--low { color: var(--text-secondary, #4A5265); }
