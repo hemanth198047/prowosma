@@ -7,6 +7,9 @@ export const getMeetings      = (wsId, params) =>
 // either (MeetingController only exposes root + /{id}, no /doc/{docId}
 // sub-path), unlike api/decisions.js's getDecisionsByDoc which is actively
 // called from Docs.jsx and has now had its matching backend endpoint built.
+// Calendar: every meeting starting inside [from, to] (Dates, sent as UTC).
+export const getMeetingsInRange = (from, to) =>
+  client.get("/meetings", { params: { from: from.toISOString(), to: to.toISOString() } });
 export const getMeeting       = (id)    => client.get(`/meetings/${id}`);
 export const createMeeting    = (data)  => client.post("/meetings", data);
 export const updateMeeting    = (id, data) => client.put(`/meetings/${id}`, data);

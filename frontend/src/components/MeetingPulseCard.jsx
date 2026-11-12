@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getDashboardMeetingPulse } from "../api/dashboard";
+import { parseServerDateTime } from "../utils/serverTime";
 
 function fmtTime(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return parseServerDateTime(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 /**

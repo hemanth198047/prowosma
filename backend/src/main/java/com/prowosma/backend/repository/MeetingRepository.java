@@ -14,6 +14,10 @@ public interface MeetingRepository extends MongoRepository<Meeting, String> {
     List<Meeting> findByWorkspaceIdAndStatusOrderByMeetingDateDesc(String wsId, String status);
     Page<Meeting> findByWorkspaceId(String workspaceId, Pageable pageable);
 
+    // Calendar view: meetings that start inside the visible date range.
+    List<Meeting> findByWorkspaceIdAndMeetingDateBetweenOrderByMeetingDateAsc(
+            String workspaceId, java.time.LocalDateTime from, java.time.LocalDateTime to);
+
     // ── Meeting Continuity ──────────────────────────────────────────
     // Latest meeting in the workspace overall — used to set previousMeetingId
     // at creation time so the chain is O(1) to walk, never a full date scan.

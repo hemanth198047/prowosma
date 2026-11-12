@@ -23,14 +23,15 @@ import MeetingContinuityPanel from "../components/MeetingContinuityPanel";
 import MeetingTrendsPanel from "../components/MeetingTrendsPanel";
 
 import "../styles/pages/meetings.css";
+import { parseServerDateTime, toLocalInputValue } from "../utils/serverTime";
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString([], { day:"numeric", month:"short", year:"numeric" });
+  return parseServerDateTime(iso).toLocaleDateString([], { day:"numeric", month:"short", year:"numeric" });
 }
 function fmtTime(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  return parseServerDateTime(iso).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
 }
 function projectNameFor(projects, id) {
   return projects?.find(p => p.id === id)?.name || "Unknown project";
@@ -60,14 +61,14 @@ const STATUS_BADGE_COLOR = {
 // ── Meeting Form Modal ─────────────────────────────────────────
 const EMPTY = {
   title:"", agenda:"", notes:"", attendees:"",
-  meetingDate: new Date().toISOString().slice(0,16), status:"COMPLETED",
+  meetingDate: toLocalInputValue(new Date()), status:"COMPLETED",
   meetingType: "OTHER", projectDiscussions: [],
 };
 
 function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }) {
   const [form, setForm]     = useState(() => initial
     ? { ...initial, attendees: initial.attendees?.join(", ") || "",
-        meetingDate: initial.meetingDate?.slice(0,16) || "",
+        meetingDate: toLocalInputValue(parseServerDateTime(initial.meetingDate)),
         meetingType: initial.meetingType || "OTHER" }
     : { ...EMPTY, ...(prefill?.form || {}) });
   const [projectBlocks, setProjectBlocks] = useState(() =>

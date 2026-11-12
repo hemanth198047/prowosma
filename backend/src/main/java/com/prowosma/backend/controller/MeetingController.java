@@ -40,9 +40,24 @@ public class MeetingController {
     public PagedResponse<Meeting> getAll(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size) {
         String wsId = workspaceContext.getWorkspaceId();
+        // Calendar range query: every meeting starting in [from, to], unpaged
+        // apart from a hard cap, oldest first. Times are UTC.
+        if (from != null && to != null) {
+            LocalDateTime fromDt = parseUtc(from);
+            LocalDateTime toDt   = parseUtc(to);
+            if (fromDt == null || toDt == null || toDt.isBefore(fromDt))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid from/to range");
+            if (java.time.Duration.between(fromDt, toDt).toDays() > 62)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Range may span at most 62 days");
+            List<Meeting> inRange = meetingRepository
+                .findByWorkspaceIdAndMeetingDateBetweenOrderByMeetingDateAsc(wsId, fromDt, toDt);
+            return PagedResponse.ofList(inRange, 0, Math.max(inRange.size(), 1));
+        }
         org.springframework.data.domain.PageRequest pr =
             org.springframework.data.domain.PageRequest.of(page, Math.min(size, 200),
                 org.springframework.data.domain.Sort.by("meetingDate").descending());
@@ -84,8 +99,13 @@ public class MeetingController {
             if (patch.containsKey("projectId"))   m.setProjectId((String) patch.get("projectId"));
             if (patch.containsKey("durationMins") && patch.get("durationMins") instanceof Number)
                 m.setDurationMins(((Number) patch.get("durationMins")).intValue());
-            if (patch.containsKey("meetingDate") && patch.get("meetingDate") != null)
-                m.setMeetingDate(LocalDateTime.parse((String) patch.get("meetingDate")));
+            if (patch.containsKey("location"))    m.setLocation((String) patch.get("location"));
+            if (patch.containsKey("meetingDate") && patch.get("meetingDate") != null) {
+                LocalDateTime when = parseUtc(String.valueOf(patch.get("meetingDate")));
+                if (when == null)
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid meetingDate");
+                m.setMeetingDate(when);
+            }
             @SuppressWarnings("unchecked")
             List<String> attendees = (List<String>) patch.get("attendees");
             if (attendees != null) m.setAttendees(attendees);
@@ -359,5 +379,26 @@ public class MeetingController {
         m.setUpdatedAt(LocalDateTime.now());
         meetingRepository.save(m);
         return touched;
+    }
+
+    /**
+     * Meeting times are stored as UTC LocalDateTime. Accepts "...Z" or an
+     * explicit offset (converted to UTC) as well as a plain local date-time
+     * (taken as already UTC, matching how create() stores it). Null if
+     * unparseable.
+     */
+    static LocalDateTime parseUtc(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String s = raw.trim();
+        try {
+            return java.time.OffsetDateTime.parse(s)
+                .withOffsetSameInstant(java.time.ZoneOffset.UTC)
+                .toLocalDateTime();
+        } catch (java.time.format.DateTimeParseException ignored) { }
+        try {
+            return LocalDateTime.parse(s);
+        } catch (java.time.format.DateTimeParseException ignored) {
+            return null;
+        }
     }
 }
