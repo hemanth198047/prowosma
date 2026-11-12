@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -161,6 +162,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody(
             "INTERNAL_ERROR",
             "An unexpected error occurred. Please try again.",
+            null
+        ));
+    }
+
+    /**
+     * Unknown URL (no controller and no static file) → 404, logged quietly.
+     * Without this, the catch-all below reported every mistyped or disabled
+     * path (e.g. /swagger-ui.html while Swagger is off) as a 500 with a full
+     * stack trace.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResource(NoResourceFoundException ex) {
+        log.debug("No resource: {}", ex.getResourcePath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(
+            "NOT_FOUND",
+            "No resource at /" + ex.getResourcePath(),
             null
         ));
     }

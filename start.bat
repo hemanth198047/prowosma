@@ -238,7 +238,7 @@ set /a WAITCOUNT=0
 
 :waitloop
 set /a WAITCOUNT+=1
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:9090/swagger-ui.html' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:9090/actuator/health/liveness' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if not errorlevel 1 (
     set READY=1
     goto waitdone
@@ -270,7 +270,7 @@ echo ================================================
 echo   Prowosma is starting up
 echo ================================================
 echo   Backend:   http://localhost:9090
-echo   Swagger:   http://localhost:9090/swagger-ui.html
+echo   Swagger:   http://localhost:9090/swagger-ui.html  (needs SWAGGER_ENABLED=true in backend\.env)
 echo   Frontend:  http://localhost:5173
 echo ================================================
 echo.
