@@ -1,0 +1,137 @@
+/* ==========================================================================
+   Docs — Studio + Atlas
+   Block styles (headings, lists, to-dos, callouts, quotes, code had none, so
+   everything rendered as plain lines), a centred reading column, a calmer
+   page tree with actions on hover.
+   ========================================================================== */
+
+/* ── Page tree ───────────────────────────────────────────────────────────── */
+.docs-sidebar { background: var(--bg-page); border-right: 1px solid var(--border); }
+.docs-new-page-btn { border-radius: var(--radius-md) !important; height: var(--control-h); font-weight: 600; }
+.docs-tree-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.05em; color: var(--text-muted); }
+
+.doc-tree-item-row {
+  margin: 1px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.doc-tree-item-row:hover { background: var(--bg-card, #fff); }
+.doc-tree-item-row.is-active { background: var(--brand-50); }
+.doc-tree-item-row:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+.doc-tree-item-top { display: flex; align-items: center; gap: 4px; height: 30px; min-width: 0; }
+.doc-tree-chevron-btn {
+  display: inline-flex !important; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0 !important; flex-shrink: 0;
+  border: 0; background: none; color: var(--text-muted); border-radius: 4px;
+}
+.doc-tree-chevron-btn:hover { background: var(--gray-100); color: var(--text-primary); }
+.doc-tree-chevron-btn svg { transition: transform 0.15s; }
+.doc-tree-chevron-btn svg.open { transform: rotate(90deg); }
+.doc-tree-item-icon { width: 20px; display: inline-flex; justify-content: center; font-size: 14px; color: var(--text-muted); flex-shrink: 0; }
+.doc-tree-item-name {
+  flex: 1; min-width: 0;
+  font-size: 13.5px; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.doc-tree-item-name.active { color: var(--brand-700); font-weight: 600; }
+/* actions sit at the row's end, shown on hover / keyboard focus / open menu */
+.doc-tree-item-row .doc-tree-item-actions {
+  display: inline-flex; align-items: center; gap: 0; margin: 0 2px 0 auto;
+  opacity: 0; transition: opacity 0.1s;
+  position: static; padding: 0; background: none; border: 0; box-shadow: none;
+}
+.doc-tree-item-row:hover .doc-tree-item-actions,
+.doc-tree-item-row:focus-within .doc-tree-item-actions,
+.doc-tree-item-actions:has([aria-expanded="true"]) { opacity: 1; }
+.doc-tree-act {
+  display: inline-flex !important; align-items: center; justify-content: center;
+  width: 24px !important; height: 24px !important; padding: 0 !important;
+  border: 0; border-radius: 4px; background: none; color: var(--text-muted);
+}
+.doc-tree-act:hover { background: var(--gray-100); color: var(--text-primary); }
+
+/* ── Editor chrome ───────────────────────────────────────────────────────── */
+.docs-topbar { background: var(--bg-card, #fff); border-bottom: 1px solid var(--border); }
+.docs-topbar-right button { border-radius: var(--radius-sm); font-weight: 600; }
+.docs-editor-body { background: var(--bg-card, #fff); }
+/* one centred reading column: title, tags, toolbar and blocks line up */
+.docs-editor-body > * { max-width: 760px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+.docs-blocks-wrap { padding: 4px 0 80px; }
+.doc-block { padding: 2px 40px; max-width: none; border-radius: var(--radius-sm); }
+.doc-format-bar { border-radius: var(--radius-md); }
+.doc-emoji-btn { border-radius: var(--radius-md); }
+.docs-title { font-size: 34px !important; font-weight: 700 !important; letter-spacing: -0.02em; color: var(--text-primary); }
+
+/* ── Blocks ──────────────────────────────────────────────────────────────── */
+.doc-block { display: flex; align-items: flex-start; gap: 8px; }
+.doc-block .doc-block-input { flex: 1; min-width: 0; font-size: 15px; line-height: 1.65; color: var(--text-primary); }
+.doc-block--heading1 { margin-top: 18px; }
+.doc-block--heading1 .doc-block-input { font-size: 26px; font-weight: 700; line-height: 1.3; letter-spacing: -0.015em; }
+.doc-block--heading2 { margin-top: 14px; }
+.doc-block--heading2 .doc-block-input { font-size: 20px; font-weight: 700; line-height: 1.35; }
+.doc-block--heading3 { margin-top: 10px; }
+.doc-block--heading3 .doc-block-input { font-size: 17px; font-weight: 600; line-height: 1.4; }
+.doc-list-dot, .doc-list-num {
+  flex-shrink: 0; min-width: 18px; line-height: 1.65; font-size: 15px;
+  color: var(--text-secondary); text-align: right;
+}
+.doc-list-num { font-variant-numeric: tabular-nums; }
+.doc-todo-cb { margin-top: 6px !important; width: 16px !important; height: 16px; }
+.doc-block--quote { position: relative; }
+.doc-block--quote .doc-quote-line { align-self: stretch; width: 3px; flex-shrink: 0; border-radius: 2px; background: var(--border-strong); }
+.doc-block--quote .doc-block-input { color: var(--text-secondary); font-style: italic; }
+.doc-block--callout {
+  margin: 6px 40px; padding: 12px 14px;
+  background: var(--brand-50); border: 1px solid var(--brand-100); border-radius: var(--radius-md);
+}
+.doc-callout-emoji { flex-shrink: 0; line-height: 1.65; }
+.doc-block--code {
+  margin: 6px 40px; padding: 12px 14px;
+  background: #F6F7FA; border: 1px solid var(--border); border-radius: var(--radius-md);
+}
+.doc-block--code .doc-block-input { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13.5px; }
+.doc-block--divider { padding-top: 8px; padding-bottom: 8px; }
+.doc-block-actions { right: 8px; border-radius: var(--radius-sm); }
+.doc-block-actions button { display: inline-flex; align-items: center; }
+
+.doc-add-block {
+  margin: 6px 40px; padding: 6px 0; width: auto;
+  color: var(--text-muted); font-size: 13.5px; cursor: pointer;
+}
+.doc-add-block:hover { color: var(--brand-600); }
+
+/* ── Dark ────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .docs-sidebar { background: var(--bg-page); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .doc-tree-item-row:hover { background: rgba(255,255,255,0.05); }
+[data-theme="dark"] .doc-tree-item-row.is-active { background: rgba(124,128,255,0.16); }
+[data-theme="dark"] .doc-tree-item-name.active { color: #C7C8F5; }
+[data-theme="dark"] .doc-tree-act:hover,
+[data-theme="dark"] .doc-tree-chevron-btn:hover { background: rgba(255,255,255,0.08); }
+[data-theme="dark"] .docs-topbar,
+[data-theme="dark"] .docs-editor-body { background: var(--bg-card); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .doc-block--callout { background: rgba(124,128,255,0.1); border-color: rgba(124,128,255,0.25); }
+[data-theme="dark"] .doc-block--code { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .doc-block-actions { background: var(--bg-card); }
+
+/* Title, tags and toolbar sit in the same centred column as the blocks */
+.docs-editor-wrap > .docs-header,
+.docs-editor-wrap > .doc-tags-row {
+  width: 100%;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+.docs-editor-wrap > .docs-header { padding-top: 28px; }
+.docs-editor-wrap > .doc-format-bar { padding-left: max(16px, calc((100% - 760px) / 2 + 36px)); padding-right: 16px; }
+
+/* Tree: hidden actions take no room, so names aren't cut short */
+.doc-tree-item-row .doc-tree-item-actions { display: none; opacity: 1; }
+.doc-tree-item-row:hover .doc-tree-item-actions,
+.doc-tree-item-row:focus-within .doc-tree-item-actions,
+.doc-tree-item-actions:has([aria-expanded="true"]) { display: inline-flex; }
+/* the title is an <input>; the dark theme gave it a dark fill with dark text */
+[data-theme="dark"] .docs-title,
+[data-theme="dark"] .docs-title:focus { color: #fff; background: transparent !important; }

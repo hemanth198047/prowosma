@@ -5,6 +5,12 @@ import client from "../api/client";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { statusText } from "../utils/statusText";
+import StatusPill from "../components/ui/StatusPill";
+import "../styles/pages/bpm-v2.css";
+import {
+  Zap, Bot, UserCheck, GitBranch, Cog, Split, CircleStop, Play, Pause, Check, X, Minus,
+  FolderKanban, SquareCheckBig, Target, Users, Workflow, Plus, Pencil, Trash2, CheckCircle2,
+} from "lucide-react";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 const api = {
@@ -20,22 +26,22 @@ const api = {
 
 // ── Node type metadata ────────────────────────────────────────────────────────
 const NODE_TYPES = [
-  { type:"TRIGGER",        label:"Trigger",       icon:"⚡", color:"#1E8E5A", bg:"#ecfdf5", desc:"Entry point — starts the workflow" },
-  { type:"AI_STEP",        label:"AI Step",       icon:"🤖", color:"#5B5FEE", bg:"var(--brand-50)", desc:"AI performs a task, optionally reviewed by human" },
-  { type:"HUMAN_APPROVAL", label:"Human Review",  icon:"👤", color:"#C17D22", bg:"#fffbeb", desc:"Pauses and waits for a human decision" },
-  { type:"CONDITION",      label:"Condition",     icon:"⬡",  color:"#7C5CBF", bg:"#f5f3ff", desc:"Routes flow based on a variable" },
-  { type:"ACTION",         label:"Action",        icon:"⚙️", color:"#3b82f6", bg:"#eff6ff", desc:"Runs an automated action" },
-  { type:"FORK",           label:"Fork",          icon:"⑂",  color:"#ec4899", bg:"#fdf2f8", desc:"Splits into parallel branches" },
-  { type:"END",            label:"End",           icon:"⏹",  color:"#64748b", bg:"var(--gray-50)", desc:"Terminates the workflow" },
+  { type:"TRIGGER",        label:"Trigger",       icon:Zap, color:"#1E8E5A", bg:"#ecfdf5", desc:"Entry point — starts the workflow" },
+  { type:"AI_STEP",        label:"AI Step",       icon:Bot, color:"#5B5FEE", bg:"var(--brand-50)", desc:"AI performs a task, optionally reviewed by human" },
+  { type:"HUMAN_APPROVAL", label:"Human Review",  icon:UserCheck, color:"#C17D22", bg:"#fffbeb", desc:"Pauses and waits for a human decision" },
+  { type:"CONDITION",      label:"Condition",     icon:GitBranch, color:"#7C5CBF", bg:"#f5f3ff", desc:"Routes flow based on a variable" },
+  { type:"ACTION",         label:"Action",        icon:Cog, color:"#3b82f6", bg:"#eff6ff", desc:"Runs an automated action" },
+  { type:"FORK",           label:"Fork",          icon:Split, color:"#ec4899", bg:"#fdf2f8", desc:"Splits into parallel branches" },
+  { type:"END",            label:"End",           icon:CircleStop, color:"#64748b", bg:"var(--gray-50)", desc:"Terminates the workflow" },
 ];
 
 const STATUS_META = {
-  RUNNING:       { label:"Running",        color:"#0ea5e9", bg:"rgba(14,165,233,.1)",  icon:"▶" },
-  WAITING_HUMAN: { label:"Needs Review",   color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:"⏸" },
-  WAITING_AI:    { label:"AI Processing",  color:"#5B5FEE", bg:"rgba(99,102,241,.1)",  icon:"🤖" },
-  COMPLETED:     { label:"Completed",      color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:"✓" },
-  FAILED:        { label:"Failed",         color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:"✕" },
-  CANCELLED:     { label:"Cancelled",      color:"#64748b", bg:"rgba(100,116,139,.1)", icon:"—" },
+  RUNNING:       { label:"Running",        color:"#0ea5e9", bg:"rgba(14,165,233,.1)",  icon:Play },
+  WAITING_HUMAN: { label:"Needs review",   color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:Pause },
+  WAITING_AI:    { label:"AI processing",  color:"#5B5FEE", bg:"rgba(99,102,241,.1)",  icon:Bot },
+  COMPLETED:     { label:"Completed",      color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:Check },
+  FAILED:        { label:"Failed",         color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:X },
+  CANCELLED:     { label:"Cancelled",      color:"#64748b", bg:"rgba(100,116,139,.1)", icon:Minus },
 };
 
 // ── Built-in templates ────────────────────────────────────────────────────────
@@ -43,7 +49,7 @@ const TEMPLATES = [
   {
     name:"Project Approval",
     description:"AI reviews the project brief, then a manager approves or rejects it.",
-    category:"PRODUCT", icon:"📁",
+    category:"PRODUCT", icon:FolderKanban,
     nodes:[
       {id:"t1",  type:"TRIGGER",        label:"Project Submitted",    x:340,y:40,  config:{}},
       {id:"a1",  type:"AI_STEP",        label:"AI Brief Analysis",    x:340,y:160, config:{prompt:"Analyse this project brief. Identify goals, risks, feasibility, resource needs, and give a recommendation (APPROVE/REJECT) with justification.",requiresHumanReview:true}},
@@ -64,7 +70,7 @@ const TEMPLATES = [
   {
     name:"Task Escalation",
     description:"Auto-escalate overdue tasks: AI assesses urgency, team lead decides action.",
-    category:"PRODUCT", icon:"✅",
+    category:"PRODUCT", icon:SquareCheckBig,
     nodes:[
       {id:"t1", type:"TRIGGER",        label:"Task Overdue",        x:340,y:40,  config:{}},
       {id:"a1", type:"AI_STEP",        label:"AI Urgency Assessment",x:340,y:160, config:{prompt:"Assess this overdue task's urgency. Check due date, assignee workload, task priority, and dependencies. Recommend: ESCALATE, REASSIGN, or EXTEND.",requiresHumanReview:false}},
@@ -85,7 +91,7 @@ const TEMPLATES = [
   {
     name:"Goal Review Cycle",
     description:"Quarterly goal review: AI generates report, leadership approves next cycle.",
-    category:"PRODUCT", icon:"🎯",
+    category:"PRODUCT", icon:Target,
     nodes:[
       {id:"t1", type:"TRIGGER",        label:"Quarter End",           x:340,y:40,  config:{}},
       {id:"a1", type:"AI_STEP",        label:"AI Progress Report",    x:340,y:160, config:{prompt:"Generate a comprehensive goal progress report. Analyse achievements vs targets, identify blockers, highlight wins, and recommend adjustments for next quarter.",requiresHumanReview:true}},
@@ -106,7 +112,7 @@ const TEMPLATES = [
   {
     name:"New Member Onboarding",
     description:"Automated onboarding: AI creates a personalised plan, manager assigns mentor.",
-    category:"HR", icon:"👥",
+    category:"HR", icon:Users,
     nodes:[
       {id:"t1", type:"TRIGGER",        label:"Member Joined",          x:340,y:40,  config:{}},
       {id:"a1", type:"AI_STEP",        label:"AI Onboarding Plan",     x:340,y:160, config:{prompt:"Create a 30-60-90 day onboarding plan for a new team member. Include learning goals, key people to meet, tools to set up, and first week tasks. Tailor to their role.",requiresHumanReview:true}},
@@ -205,7 +211,7 @@ function WorkflowCanvas({ process, onChange }) {
             onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="transparent"; }}>
             <span style={{ width:28, height:28, borderRadius:"7px", background:m.bg,
               display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:"14px", flexShrink:0, border:`1px solid ${m.color}22` }}>{m.icon}</span>
+              fontSize:"14px", flexShrink:0, border:`1px solid ${m.color}22` }}><m.icon size={15} aria-hidden="true" /></span>
             <div>
               <div style={{ fontSize:"11px", fontWeight:700, color:"#334155", lineHeight:1.2 }}>{m.label}</div>
               <div style={{ fontSize:"9px", color:"#94a3b8", lineHeight:1.3 }}>{m.desc}</div>
@@ -295,7 +301,7 @@ function WorkflowCanvas({ process, onChange }) {
                 {/* Header */}
                 <div style={{ display:"flex", alignItems:"center", gap:"6px", padding:"7px 10px",
                   background:meta.bg, borderBottom:`1.5px solid ${meta.color}33` }}>
-                  <span style={{ fontSize:"14px" }}>{meta.icon}</span>
+                  <span style={{ display:"inline-flex" }}>{meta.icon && <meta.icon size={14} aria-hidden="true" />}</span>
                   <span style={{ fontSize:"9px", fontWeight:800, color:meta.color,
                     textTransform:"uppercase", letterSpacing:".05em", flex:1 }}>{meta.label}</span>
                   <button onClick={e=>{e.stopPropagation();deleteNode(node.id);}}
@@ -351,7 +357,7 @@ function WorkflowCanvas({ process, onChange }) {
           <div style={{ padding:"12px 14px", background:selectedMeta?.bg,
             borderBottom:`2px solid ${selectedMeta?.color}33`,
             display:"flex", alignItems:"center", gap:"8px" }}>
-            <span style={{ fontSize:"18px" }}>{selectedMeta?.icon}</span>
+            <span style={{ display:"inline-flex" }}>{selectedMeta?.icon && <selectedMeta.icon size={18} aria-hidden="true" />}</span>
             <div style={{ flex:1 }}>
               <div style={{ fontWeight:800, fontSize:"12px", color:selectedMeta?.color,
                 textTransform:"uppercase", letterSpacing:".05em" }}>{selectedMeta?.label}</div>
@@ -500,7 +506,7 @@ function WorkflowCanvas({ process, onChange }) {
                 return other ? (
                   <div key={t.id} style={{ fontSize:"11px", color:"#334155",
                     display:"flex", alignItems:"center", gap:"5px", marginBottom:"3px" }}>
-                    <span style={{ color:om?.color, fontSize:"12px" }}>{om?.icon}</span>
+                    <span style={{ color:om?.color, display:"inline-flex" }}>{om?.icon && <om.icon size={12} aria-hidden="true" />}</span>
                     <span style={{ color:"#94a3b8" }}>{dir}</span>
                     <span style={{ fontWeight:600 }}>{other.label}</span>
                     {t.label&&<span style={{ color:"#94a3b8", fontSize:"10px" }}>({t.label})</span>}
@@ -545,7 +551,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
         </div>
         <span style={{ padding:"4px 12px", borderRadius:"var(--radius-full)", fontSize:"12px",
           fontWeight:700, background:sm.bg, color:sm.color }}>
-          {sm.icon} {sm.label}
+          <sm.icon size={13} aria-hidden="true" /> {sm.label}
         </span>
         <button onClick={onClose} style={{ background:"none", border:"none",
           cursor:"pointer", fontSize:"16px", color:"#94a3b8", padding:"4px" }}>✕</button>
@@ -571,7 +577,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:"14px", background: isWaiting?meta.color:isDone?"var(--success)":isFailed?"var(--danger)":"var(--gray-400)",
                   border:"3px solid #fff", boxShadow:"0 0 0 2px "+(isWaiting?meta.color:isDone?"var(--success)":"var(--border)") }}>
-                  {isWaiting ? meta.icon : isDone ? "✓" : isFailed ? "✕" : meta.icon}
+                  {isDone ? <Check size={14} aria-hidden="true" /> : isFailed ? <X size={14} aria-hidden="true" /> : (meta?.icon ? <meta.icon size={14} aria-hidden="true" /> : null)}
                 </div>
 
                 {/* Body */}
@@ -857,51 +863,28 @@ export default function BpmStudio() {
   if (view==="designer" && editing) return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column", minHeight:0 }}>
       {/* Designer toolbar */}
-      <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 16px",
-        background:"#fff", borderBottom:"1px solid var(--border)", flexShrink:0 }}>
-        <button onClick={()=>setView("dashboard")}
-          style={{ padding:"6px 12px", borderRadius:"8px", border:"1px solid var(--border)",
-            background:"var(--gray-50)", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"#334155" }}>
-          ← Back
-        </button>
-        <input value={editing.name||""} onChange={e=>setEditing(p=>({...p,name:e.target.value}))}
-          placeholder="Workflow name…"
-          style={{ flex:1, maxWidth:280, padding:"7px 12px", borderRadius:"8px",
-            border:"1.5px solid var(--border)", fontSize:"14px", fontWeight:700,
-            color:"#0f172a", outline:"none" }}
-          onFocus={e=>e.target.style.borderColor="var(--brand-500)"}
-          onBlur={e=>e.target.style.borderColor="var(--border)"} />
-        <input value={editing.description||""} onChange={e=>setEditing(p=>({...p,description:e.target.value}))}
-          placeholder="Description…"
-          style={{ flex:2, padding:"7px 12px", borderRadius:"8px",
-            border:"1px solid var(--border)", fontSize:"12px", color:"#334155", outline:"none" }} />
-        <select value={editing.category||"PRODUCT"} onChange={e=>setEditing(p=>({...p,category:e.target.value}))}
-          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid var(--border)",
-            fontSize:"12px", fontWeight:600, color:"#334155" }}>
+      <div className="bpm-designer-bar">
+        <button type="button" className="btn-secondary bpm-btn" onClick={()=>setView("dashboard")}>← Back</button>
+        <input className="bpm-name-input" value={editing.name||""} aria-label="Workflow name"
+          onChange={e=>setEditing(p=>({...p,name:e.target.value}))}
+          placeholder="Workflow name" />
+        <input className="bpm-desc-input" value={editing.description||""} aria-label="Description"
+          onChange={e=>setEditing(p=>({...p,description:e.target.value}))}
+          placeholder="Description" />
+        <select className="bpm-select" aria-label="Category" value={editing.category||"PRODUCT"} onChange={e=>setEditing(p=>({...p,category:e.target.value}))}>
           {["PRODUCT","HR","FINANCE","IT","LEGAL","CUSTOM"].map(c=>(
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>{c === "HR" || c === "IT" ? c : statusText(c)}</option>
           ))}
         </select>
-        <select value={editing.status||"DRAFT"} onChange={e=>setEditing(p=>({...p,status:e.target.value}))}
-          style={{ padding:"7px 10px", borderRadius:"8px", border:"1px solid var(--border)",
-            fontSize:"12px", fontWeight:600,
-            color: editing.status==="ACTIVE"?"var(--success)":editing.status==="ARCHIVED"?"var(--gray-400)":"var(--warning)" }}>
+        <select className="bpm-select" aria-label="Status" value={editing.status||"DRAFT"} onChange={e=>setEditing(p=>({...p,status:e.target.value}))}>
           <option value="DRAFT">Draft</option>
           <option value="ACTIVE">Active</option>
           <option value="ARCHIVED">Archived</option>
         </select>
-        <div style={{ marginLeft:"auto", display:"flex", gap:"6px" }}>
-          <span style={{ fontSize:"11px", color:"#94a3b8", display:"flex", alignItems:"center" }}>
-            {editing.nodes?.length||0} nodes · {editing.transitions?.length||0} edges
-          </span>
-          <button onClick={handleSave}
-            style={{ padding:"8px 20px", borderRadius:"9px", border:"none",
-              background:"var(--brand-600)", color:"#fff",
-              fontSize:"13px", fontWeight:800, cursor:"pointer",
-              boxShadow:"var(--elevation-2)" }}>
-            Save
-          </button>
-        </div>
+        <span className="bpm-designer-count">
+          {editing.nodes?.length||0} {(editing.nodes?.length||0) === 1 ? "step" : "steps"} · {editing.transitions?.length||0} {(editing.transitions?.length||0) === 1 ? "connection" : "connections"}
+        </span>
+        <button type="button" className="btn-primary bpm-btn" onClick={handleSave}>Save</button>
       </div>
 
       {/* Canvas */}
@@ -932,291 +915,161 @@ export default function BpmStudio() {
   );
 
   // ── DASHBOARD VIEW ──────────────────────────────────────────────────────────
+  const stats = [
+    { label:"Workflows",    value:processes.length, icon:Workflow },
+    { label:"Active runs",  value:running,          icon:Play },
+    { label:"Needs review", value:pendingDecisions, icon:Pause, tone: pendingDecisions > 0 ? "warn" : null },
+    { label:"Completed",    value:completed,        icon:CheckCircle2 },
+  ];
   return (
-    <div>
-      <PageHeader icon="🔀" title="Workflow Studio"
-        description="Design, automate, and run business processes with AI steps and human decisions" />
+    <div className="bpm-page">
+      <PageHeader title="Workflow Studio"
+        description="Design, automate, and run business processes with AI steps and human decisions"
+        action={
+          <button type="button" className="btn-primary pg-btn" onClick={newProcess}>
+            <Plus size={15} aria-hidden="true" />New workflow
+          </button>
+        } />
 
-      {/* Stats row */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px",
-        marginBottom:"20px" }}>
-        {[
-          { label:"Workflows",     value:processes.length,  icon:"🔀", color:"#5B5FEE" },
-          { label:"Active Runs",   value:running,           icon:"▶",  color:"#0ea5e9" },
-          { label:"Needs Review",  value:pendingDecisions,  icon:"⏸",  color:"#C17D22" },
-          { label:"Completed",     value:completed,         icon:"✓",  color:"#1E8E5A" },
-        ].map(s => (
-          <div key={s.label} style={{ background:"#fff", border:`1.5px solid ${s.color}22`,
-            borderRadius:"12px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px",
-            boxShadow:"var(--elevation-1)" }}>
-            <div style={{ width:40, height:40, borderRadius:"10px", background:`${s.color}18`,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:"18px", flexShrink:0 }}>{s.icon}</div>
-            <div>
-              <div style={{ fontSize:"22px", fontWeight:800, color:s.color, lineHeight:1 }}>{s.value}</div>
-              <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600, marginTop:"2px" }}>{s.label}</div>
-            </div>
+      <div className="pg-summary" aria-label="Summary">
+        {stats.map(s => (
+          <div key={s.label} className={"pg-stat" + (s.tone === "warn" ? " bpm-stat--warn" : "")}>
+            <span className="pg-stat-num">{s.value}</span>
+            <span className="pg-stat-label">{s.label.toLowerCase()}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 380px", gap:"16px", alignItems:"start" }}>
+      <div className="bpm-layout">
 
-        {/* LEFT — My Workflows */}
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-            <span style={{ fontWeight:800, fontSize:"15px", color:"#0f172a" }}>My Workflows</span>
-            <span style={{ fontSize:"11px", color:"#94a3b8",
-              background:"var(--gray-100)", padding:"2px 8px", borderRadius:"var(--radius-full)" }}>
-              {processes.length}
-            </span>
-            <div style={{ marginLeft:"auto", display:"flex", gap:"6px" }}>
-              <button onClick={newProcess}
-                style={{ padding:"7px 16px", borderRadius:"9px", border:"none",
-                  background:"var(--brand-600)", color:"#fff",
-                  fontSize:"12px", fontWeight:700, cursor:"pointer",
-                  boxShadow:"var(--elevation-2)" }}>
-                + New Workflow
-              </button>
-            </div>
-          </div>
+        {/* LEFT — My workflows + recent runs */}
+        <div className="bpm-main">
+          <h2 className="pg-section-title">My workflows <span>· {processes.length}</span></h2>
 
           {loading ? (
-            <div style={{ textAlign:"center", padding:"40px", color:"#94a3b8" }}>Loading…</div>
+            <div className="pg-empty"><p>Loading…</p></div>
           ) : processes.length===0 ? (
-            <div style={{ background:"#fff", border:"1px dashed var(--border)", borderRadius:"16px",
-              padding:"48px 24px", textAlign:"center" }}>
-              <div style={{ fontSize:"48px", marginBottom:"12px" }}>🔀</div>
-              <div style={{ fontWeight:700, fontSize:"16px", color:"#1e293b", marginBottom:"8px" }}>
-                No workflows yet
-              </div>
-              <div style={{ fontSize:"13px", color:"#64748b", marginBottom:"20px" }}>
-                Create one from scratch or pick a template from the library →
-              </div>
-              <button onClick={newProcess}
-                style={{ padding:"10px 24px", borderRadius:"9px", border:"none",
-                  background:"var(--brand-600)", color:"#fff",
-                  fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
-                + Create Workflow
+            <div className="pg-empty">
+              <h2>No workflows yet</h2>
+              <p>Create one from scratch, or start from a template in the library.</p>
+              <button type="button" className="btn-primary pg-btn" onClick={newProcess}>
+                <Plus size={15} aria-hidden="true" />Create workflow
               </button>
             </div>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+            <div className="bpm-list">
               {processes.map(p => {
                 const pInstances = instances.filter(i=>i.processId===p.id);
                 const pWaiting   = pInstances.filter(i=>i.status==="WAITING_HUMAN").length;
                 const pRunning   = pInstances.filter(i=>i.status==="RUNNING").length;
                 return (
-                  <div key={p.id} style={{ background:"#fff", border:"1px solid var(--border)",
-                    borderRadius:"14px", padding:"14px 16px",
-                    boxShadow:"var(--elevation-1)", transition:"box-shadow var(--transition-fast)" }}
-                    onMouseEnter={e=>e.currentTarget.style.boxShadow="var(--elevation-2)"}
-                    onMouseLeave={e=>e.currentTarget.style.boxShadow="var(--elevation-1)"}>
-                    <div style={{ display:"flex", alignItems:"flex-start", gap:"12px" }}>
-                      <div style={{ width:40, height:40, borderRadius:"10px",
-                        background:"rgba(99,102,241,.1)", display:"flex",
-                        alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>
-                        🔀
+                  <article key={p.id} className="bpm-card">
+                    <div className="bpm-card-icon" aria-hidden="true"><Workflow size={18} /></div>
+                    <div className="bpm-card-body">
+                      <div className="bpm-card-head">
+                        <h3>{p.name}</h3>
+                        <StatusPill status={p.status} />
+                        {p.category && <span className="bpm-chip">{statusText(p.category)}</span>}
                       </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:"8px",
-                          flexWrap:"wrap", marginBottom:"3px" }}>
-                          <span style={{ fontWeight:800, fontSize:"14px", color:"#0f172a" }}>
-                            {p.name}
-                          </span>
-                          <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                            borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
-                            background: p.status==="ACTIVE"?"#dcfce7":p.status==="ARCHIVED"?"var(--gray-100)":"#fef3c7",
-                            color: p.status==="ACTIVE"?"#15803d":p.status==="ARCHIVED"?"var(--gray-500)":"var(--warning)" }}>
-                            {statusText(p.status)}
-                          </span>
-                          <span style={{ fontSize:"10px", color:"#94a3b8",
-                            background:"var(--gray-50)", padding:"2px 7px", borderRadius:"var(--radius-full)" }}>
-                            {p.category}
-                          </span>
-                        </div>
-                        {p.description && (
-                          <div style={{ fontSize:"12px", color:"#64748b",
-                            marginBottom:"8px", lineHeight:1.5 }}>{p.description}</div>
-                        )}
-                        <div style={{ display:"flex", gap:"12px", fontSize:"11px", color:"#94a3b8" }}>
-                          <span>{p.nodes?.length||0} nodes</span>
-                          <span>▶ {p.runCount||0} runs</span>
-                          {pRunning>0&&<span style={{ color:"#0ea5e9", fontWeight:700 }}>▶ {pRunning} running</span>}
-                          {pWaiting>0&&<span style={{ color:"#C17D22", fontWeight:700 }}>{pWaiting} waiting review</span>}
-                        </div>
-                      </div>
-                      <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
-                        {startingFor===p.id ? (
-                          <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
-                            <input value={startVars} onChange={e=>setStartVars(e.target.value)}
-                              placeholder='{"key":"value"}'
-                              style={{ width:"160px", padding:"5px 8px", borderRadius:"7px",
-                                border:"1px solid var(--border)", fontSize:"11px" }} />
-                            <button onClick={handleStart}
-                              style={{ padding:"6px 12px", borderRadius:"7px", border:"none",
-                                background:"var(--success)", color:"#fff", fontSize:"11px",
-                                fontWeight:700, cursor:"pointer" }}>
-                              ▶ Start
-                            </button>
-                            <button onClick={()=>setStartingFor(null)}
-                              style={{ padding:"6px 10px", borderRadius:"7px",
-                                border:"1px solid var(--border)", background:"#fff",
-                                fontSize:"11px", cursor:"pointer", color:"#64748b" }}>
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <button onClick={()=>setStartingFor(p.id)}
-                              style={{ padding:"6px 14px", borderRadius:"8px", border:"none",
-                                background:"var(--success)", color:"#fff", fontSize:"11px",
-                                fontWeight:700, cursor:"pointer" }}>
-                              ▶ Run
-                            </button>
-                            <button onClick={()=>{setEditing({...p});setView("designer");}}
-                              style={{ padding:"6px 12px", borderRadius:"8px",
-                                border:"1px solid var(--border)", background:"#fff",
-                                fontSize:"11px", fontWeight:600, cursor:"pointer", color:"#334155" }}>
-                              Edit
-                            </button>
-                            <button onClick={()=>handleDelete(p.id)}
-                              style={{ padding:"6px 10px", borderRadius:"8px",
-                                border:"1px solid #fee2e2", background:"#fff",
-                                fontSize:"11px", cursor:"pointer", color:"#D64545" }}>
-                              🗑
-                            </button>
-                          </>
-                        )}
+                      {p.description && <p className="bpm-card-desc">{p.description}</p>}
+                      <div className="bpm-card-meta">
+                        <span>{p.nodes?.length||0} {(p.nodes?.length||0) === 1 ? "step" : "steps"}</span>
+                        <span>{p.runCount||0} {(p.runCount||0) === 1 ? "run" : "runs"}</span>
+                        {pRunning>0 && <span className="bpm-meta--info">{pRunning} running</span>}
+                        {pWaiting>0 && <span className="bpm-meta--warn">{pWaiting} waiting for review</span>}
                       </div>
                     </div>
-                  </div>
+                    <div className="bpm-card-actions">
+                      <button type="button" className="btn-primary bpm-btn" onClick={()=>setStartingFor(p.id)}>
+                        <Play size={13} aria-hidden="true" />Run
+                      </button>
+                      <button type="button" className="btn-secondary bpm-btn" onClick={()=>{setEditing({...p});setView("designer");}}>
+                        <Pencil size={13} aria-hidden="true" />Edit
+                      </button>
+                      <button type="button" className="bpm-icon-btn" onClick={()=>handleDelete(p.id)}
+                        title="Delete workflow" aria-label={`Delete ${p.name}`}>
+                        <Trash2 size={15} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </article>
                 );
               })}
             </div>
           )}
 
-          {/* Recent Runs */}
+          {/* Recent runs */}
           {instances.length > 0 && (
-            <div style={{ marginTop:"24px" }}>
-              <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a", marginBottom:"12px",
-                display:"flex", alignItems:"center", gap:"8px" }}>
-                Recent Runs
-                {pendingDecisions > 0 && (
-                  <span style={{ fontSize:"11px", fontWeight:800, padding:"2px 9px",
-                    borderRadius:"var(--radius-full)", background:"#fef3c7", color:"#C17D22" }}>
-                    {pendingDecisions} needs review
-                  </span>
-                )}
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
+            <section className="bpm-runs" aria-label="Recent runs">
+              <h2 className="pg-section-title">
+                Recent runs <span>· {Math.min(instances.length, 8)}</span>
+                {pendingDecisions > 0 && <span className="bpm-review-pill">{pendingDecisions} need{pendingDecisions === 1 ? "s" : ""} review</span>}
+              </h2>
+              <ul className="bpm-run-list">
                 {instances.slice(0,8).map(inst => {
                   const sm = STATUS_META[inst.status]||STATUS_META.RUNNING;
                   const lastStep = inst.history?.[inst.history.length-1];
+                  const open = () => { setViewInstance(inst); setView("runner"); };
                   return (
-                    <div key={inst.id}
-                      onClick={()=>{ setViewInstance(inst); setView("runner"); }}
-                      style={{ background:"#fff", border:`1px solid ${inst.status==="WAITING_HUMAN"?"#f59e0b44":"var(--border)"}`,
-                        borderRadius:"10px", padding:"10px 14px", cursor:"pointer",
-                        display:"flex", alignItems:"center", gap:"12px",
-                        transition:"all .13s" }}
-                      onMouseEnter={e=>{ e.currentTarget.style.background="var(--gray-50)"; }}
-                      onMouseLeave={e=>{ e.currentTarget.style.background="var(--surface-1)"; }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>{ setViewInstance(inst); setView("runner"); })?.(e); } }}>
-                      <span style={{ fontSize:"16px", width:28, textAlign:"center" }}>{sm.icon}</span>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:700, fontSize:"12px", color:"#1e293b" }}>
-                          {inst.processName}
-                        </div>
-                        <div style={{ fontSize:"10px", color:"#94a3b8" }}>
-                          {lastStep ? `Step: ${lastStep.nodeLabel}` : "Starting…"} ·{" "}
-                          {new Date(inst.startedAt).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
-                        </div>
-                      </div>
-                      <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                        borderRadius:"var(--radius-full)", background:sm.bg, color:sm.color,
-                        whiteSpace:"nowrap" }}>
-                        {sm.label}
-                      </span>
-                    </div>
+                    <li key={inst.id}>
+                      <button type="button" className={"bpm-run" + (inst.status==="WAITING_HUMAN" ? " bpm-run--waiting" : "")} onClick={open}>
+                        <span className="bpm-run-icon" style={{ color: sm.color, background: sm.bg }} aria-hidden="true"><sm.icon size={14} /></span>
+                        <span className="bpm-run-text">
+                          <span className="bpm-run-name">{inst.processName}</span>
+                          <span className="bpm-run-sub">
+                            {lastStep ? `Step: ${lastStep.nodeLabel}` : "Starting…"} ·{" "}
+                            {new Date(inst.startedAt).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+                          </span>
+                        </span>
+                        <span className="bpm-run-status" style={{ color: sm.color, background: sm.bg }}>{sm.label}</span>
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
         </div>
 
-        {/* RIGHT — Template Library */}
-        <div style={{ position:"sticky", top:80 }}>
-          <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a",
-            marginBottom:"12px", display:"flex", alignItems:"center", gap:"8px" }}>
-            Template Library
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+        {/* RIGHT — Template library */}
+        <aside className="bpm-templates" aria-label="Template library">
+          <h2 className="pg-section-title">Template library</h2>
+          <div className="bpm-tpl-list">
             {TEMPLATES.map((tpl,i) => (
-              <div key={i} style={{ background:"#fff", border:"1px solid var(--border)",
-                borderRadius:"12px", padding:"12px 14px",
-                transition:"all .15s", cursor:"pointer" }}
-                onMouseEnter={e=>{ e.currentTarget.style.borderColor="var(--brand-200)"; e.currentTarget.style.boxShadow="var(--elevation-1)"; }}
-                onMouseLeave={e=>{ e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.boxShadow="none"; }}>
-                <div style={{ display:"flex", alignItems:"flex-start", gap:"10px",
-                  marginBottom:"8px" }}>
-                  <span style={{ fontSize:"20px" }}>{tpl.icon}</span>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700, fontSize:"13px", color:"#1e293b",
-                      marginBottom:"3px" }}>{tpl.name}</div>
-                    <div style={{ fontSize:"11px", color:"#64748b",
-                      lineHeight:1.5 }}>{tpl.description}</div>
+              <div key={i} className="bpm-tpl">
+                <div className="bpm-tpl-head">
+                  <span className="bpm-card-icon bpm-card-icon--sm" aria-hidden="true">{tpl.icon && <tpl.icon size={15} />}</span>
+                  <div>
+                    <h3>{tpl.name}</h3>
+                    <p>{tpl.description}</p>
                   </div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <span style={{ fontSize:"10px", color:"#94a3b8" }}>
-                    {tpl.nodes.length} nodes · {tpl.transitions.length} edges
-                  </span>
-                  <button onClick={()=>loadTemplate(tpl)}
-                    style={{ padding:"5px 14px", borderRadius:"7px", border:"none",
-                      background:"var(--brand-600)", color:"#fff",
-                      fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
-                    Use Template →
-                  </button>
+                <div className="bpm-tpl-foot">
+                  <span>{tpl.nodes.length} steps · {tpl.transitions.length} connections</span>
+                  <button type="button" className="btn-secondary bpm-btn" onClick={()=>loadTemplate(tpl)}>Use template</button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </aside>
       </div>
 
-      {/* Start vars modal */}
+      {/* Start dialog */}
       {startingFor && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.4)",
-          display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}
-          onClick={()=>setStartingFor(null)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setStartingFor(null))?.(e); } }}>
-          <div style={{ background:"#fff", borderRadius:"16px", padding:"24px",
-            width:"460px", boxShadow:"var(--elevation-3)" }}
-            onClick={e=>e.stopPropagation()} role="presentation">
-            <div style={{ fontWeight:800, fontSize:"16px", color:"#0f172a",
-              marginBottom:"6px" }}>▶ Start Workflow</div>
-            <div style={{ fontSize:"12px", color:"#64748b", marginBottom:"16px" }}>
-              Optionally pass initial variables as JSON. Leave as <code>{"{}"}</code> for defaults.
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setStartingFor(null); }} role="presentation">
+          <div className="modal bpm-start-modal" role="dialog" aria-modal="true" aria-labelledby="bpm-start-title">
+            <h2 id="bpm-start-title">Start workflow</h2>
+            <p className="bpm-start-help">
+              Optionally pass starting variables as JSON. Leave as <code>{"{}"}</code> for the defaults.
+            </p>
+            <div className="form-group">
+              <label htmlFor={"bpm-studio-initial-variables-json"}>Starting variables (JSON)</label>
+              <textarea rows={5} value={startVars} onChange={e=>setStartVars(e.target.value)}
+                className="bpm-vars" id={"bpm-studio-initial-variables-json"} />
             </div>
-            <label style={{ fontSize:"11px", fontWeight:700, color:"#64748b",
-              display:"block", marginBottom:"5px" }} htmlFor={"bpm-studio-initial-variables-json"}>Initial Variables (JSON)</label>
-            <textarea rows={5} value={startVars} onChange={e=>setStartVars(e.target.value)}
-              style={{ width:"100%", padding:"10px", borderRadius:"9px",
-                border:"1.5px solid var(--border)", fontSize:"12px", fontFamily:"monospace",
-                resize:"vertical", lineHeight:1.5, boxSizing:"border-box" }} id={"bpm-studio-initial-variables-json"} />
-            <div style={{ display:"flex", gap:"8px", marginTop:"14px", justifyContent:"flex-end" }}>
-              <button onClick={()=>setStartingFor(null)}
-                style={{ padding:"8px 18px", borderRadius:"9px",
-                  border:"1px solid var(--border)", background:"#fff", fontSize:"12px",
-                  fontWeight:600, cursor:"pointer", color:"#334155" }}>
-                Cancel
-              </button>
-              <button onClick={handleStart}
-                style={{ padding:"8px 24px", borderRadius:"9px", border:"none",
-                  background:"var(--success)", color:"#fff",
-                  fontSize:"12px", fontWeight:800, cursor:"pointer",
-                  boxShadow:"var(--elevation-2)" }}>
-                ▶ Start Now
+            <div className="bpm-start-actions">
+              <button type="button" className="btn-secondary" onClick={()=>setStartingFor(null)}>Cancel</button>
+              <button type="button" className="btn-primary" onClick={handleStart}>
+                <Play size={14} aria-hidden="true" />Start now
               </button>
             </div>
           </div>

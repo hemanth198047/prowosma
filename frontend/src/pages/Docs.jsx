@@ -11,6 +11,9 @@ import DocAccessModal from "../components/DocAccessModal";
 import { useAccess } from "../hooks/useAccess";
 
 import "../styles/pages/docs.css";
+import "../styles/pages/docs-v2.css";
+import ActionMenu from "../components/ui/ActionMenu";
+import { ChevronRight, FileText, FilePlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { statusText } from "../utils/statusText";
 import { useConfirm } from "../hooks/useConfirm";
 // ═══════════════════════════════════════════════════════
@@ -1020,7 +1023,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
       <div className="doc-block-actions">
         {index > 0       && <button title="Move up"    onMouseDown={e => { e.preventDefault(); onMoveUp(block.id); }}>↑</button>}
         {index < total-1 && <button title="Move down"  onMouseDown={e => { e.preventDefault(); onMoveDown(block.id); }}>↓</button>}
-        <button title="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}>🗑</button>
+        <button title="Delete block" aria-label="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}><Trash2 size={13} aria-hidden="true" /></button>
       </div>
     </div>
   );
@@ -1082,7 +1085,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
       <div className="doc-block-actions">
         {index > 0       && <button title="Move up"    onMouseDown={e => { e.preventDefault(); onMoveUp(block.id); }}>↑</button>}
         {index < total-1 && <button title="Move down"  onMouseDown={e => { e.preventDefault(); onMoveDown(block.id); }}>↓</button>}
-        <button title="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}>🗑</button>
+        <button title="Delete block" aria-label="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}><Trash2 size={13} aria-hidden="true" /></button>
       </div>
     </div>
   );
@@ -1197,7 +1200,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
       <div className="doc-block-actions">
         {index > 0       && <button title="Move up"    onMouseDown={e => { e.preventDefault(); onMoveUp(block.id); }}>↑</button>}
         {index < total-1 && <button title="Move down"  onMouseDown={e => { e.preventDefault(); onMoveDown(block.id); }}>↓</button>}
-        <button title="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}>🗑</button>
+        <button title="Delete block" aria-label="Delete block" onMouseDown={e => { e.preventDefault(); onDelete(block.id, "up"); }}><Trash2 size={13} aria-hidden="true" /></button>
       </div>
     </Wrapper>
   );
@@ -1320,7 +1323,7 @@ function BlockEditor({ content, onContentChange, allDocs, onOpenDoc, allTasks, o
           onDecisionCreated={onDecisionCreated}
         />
       ))}
-      <div className="doc-add-block" onClick={addBlock} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (addBlock)?.(e); } }}>+ Click to add block</div>
+      <div className="doc-add-block" onClick={addBlock} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (addBlock)?.(e); } }}>+ Add a block</div>
     </div>
   );
 }
@@ -1472,27 +1475,33 @@ function TreeNode({ node, depth, activeId, onOpen, onNew, onDelete, onRename }) 
   const [open, setOpen] = useState(depth < 1);
   const hasKids = node.children?.length > 0;
   const isActive = node.id === activeId;
+  const name = node.title || "Untitled";
 
   return (
     <div>
-      <div className="doc-tree-item-row" style={{ paddingLeft: 8 + depth * 14 }}
-        onClick={() => onOpen(node)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => onOpen(node))?.(e); } }}>
-        {/* Top row: chevron + icon + name */}
+      <div className={`doc-tree-item-row${isActive ? " is-active" : ""}`} style={{ paddingLeft: 6 + depth * 14 }}
+        onClick={() => onOpen(node)} role="button" tabIndex={0} aria-current={isActive ? "page" : undefined}
+        onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen(node); } }}>
         <div className="doc-tree-item-top">
-          <button className="doc-tree-chevron-btn"
+          <button type="button" className="doc-tree-chevron-btn" tabIndex={hasKids ? 0 : -1}
+            aria-label={hasKids ? (open ? `Collapse ${name}` : `Expand ${name}`) : undefined}
+            aria-expanded={hasKids ? open : undefined}
             onClick={e => { e.stopPropagation(); setOpen(v=>!v); }}>
-            {hasKids ? (open ? "▾" : "▸") : ""}
+            {hasKids && <ChevronRight size={14} className={open ? "open" : ""} aria-hidden="true" />}
           </button>
-          <span className="doc-tree-item-icon">{node.emoji || "📄"}</span>
-          <span className={`doc-tree-item-name${isActive ? " active" : ""}`}>
-            {node.title || "Untitled"}
+          <span className="doc-tree-item-icon" aria-hidden="true">{node.emoji || <FileText size={14} />}</span>
+          <span className={`doc-tree-item-name${isActive ? " active" : ""}`}>{name}</span>
+          {/* Actions: on hover or keyboard focus, never a permanent row */}
+          <span className="doc-tree-item-actions" onClick={e => e.stopPropagation()} role="presentation">
+            <button type="button" className="doc-tree-act" title="Add a sub-page" aria-label={`Add a sub-page to ${name}`}
+              onClick={e => { e.stopPropagation(); onNew(node.id); }}><Plus size={14} aria-hidden="true" /></button>
+            <ActionMenu label={`More actions for ${name}`} className="doc-tree-act" items={[
+              { label: "Rename", icon: Pencil, onSelect: () => onRename(node) },
+              { label: "Add sub-page", icon: FilePlus, onSelect: () => onNew(node.id) },
+              "divider",
+              { label: "Delete", icon: Trash2, danger: true, onSelect: () => onDelete(node) },
+            ]} />
           </span>
-        </div>
-        {/* Action buttons shown below on hover */}
-        <div className="doc-tree-item-actions" onClick={e => e.stopPropagation()} role="presentation">
-          <button onClick={e => { e.stopPropagation(); onNew(node.id); }}>+ Sub-page</button>
-          <button onClick={e => { e.stopPropagation(); onRename(node); }}>✎ Rename</button>
-          <button className="delete" onClick={e => { e.stopPropagation(); onDelete(node); }}>✕ Delete</button>
         </div>
       </div>
       {open && hasKids && node.children.map(c => (
