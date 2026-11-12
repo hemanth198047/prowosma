@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, NavLink, Link, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 const Tasks = lazy(() => import("./pages/Tasks"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Categories = lazy(() => import("./pages/Categories"));
 import Breadcrumb from "./components/Breadcrumb";
-import SidebarBadge from "./components/SidebarBadge";
+import SidebarNav from "./components/shell/SidebarNav";
+import TopbarTrail from "./components/shell/TopbarTrail";
+import { Menu, X, PanelLeft, Search as SearchIcon } from "lucide-react";
 import GlobalLoadingBar from "./components/GlobalLoadingBar";
 const Search = lazy(() => import("./pages/Search"));
 import "./App.css";
@@ -74,7 +76,6 @@ const Licensing = lazy(() => import("./pages/Licensing"));
 const WhiteLabel = lazy(() => import("./pages/WhiteLabel"));
 const JiraBoard          = lazy(() => import("./pages/JiraBoard"));
 const JiraBoardSettings  = lazy(() => import("./pages/JiraBoardSettings"));
-import WorkspaceSwitcher from "./components/WorkspaceSwitcher";
 const WorkflowGuide = lazy(() => import('./pages/WorkflowGuide'));
 const WorkspaceSetup = lazy(() => import("./pages/WorkspaceSetup"));
 const Gantt = lazy(() => import("./pages/Gantt"));
@@ -83,7 +84,6 @@ const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const TimeTracking = lazy(() => import("./pages/TimeTracking"));
 import ProfileSettings from "./pages/ProfileSettings";
 const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
-import CanDo from "./components/CanDo";
 import RoleBadge from "./components/RoleBadge";
 import { useRole } from "./hooks/useRole";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -245,162 +245,6 @@ export default function App() {
 }
 
 
-// ── Collapsible sidebar group ─────────────────────────────────
-function SidebarGroup({ label, icon, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="sidebar-group">
-      <button className="sidebar-group-header" onClick={() => setOpen(v => !v)}>
-        <span className="sidebar-group-icon">{icon}</span>
-        <span className="sidebar-group-label">{label}</span>
-        <span className="sidebar-group-chevron">{open ? "▾" : "▸"}</span>
-      </button>
-      {open && <div className="sidebar-group-items">{children}</div>}
-    </div>
-  );
-}
-
-// ── Main sidebar navigation ───────────────────────────────────
-function SidebarNav({ onNav, badges }) {
-  const { restricted, can } = useAccess();
-  if (restricted) {
-    // Department / assigned-work access: only the areas that are scoped to them. The API refuses the rest.
-    return (
-      <>
-        <WorkspaceSwitcher />
-        <div className="sidebar-quicklinks">
-          <NavLink to="/tasks" onClick={onNav}>✅ My Tasks</NavLink>
-          <NavLink to="/kanban" onClick={onNav}>🗂 Kanban</NavLink>
-          <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
-          <NavLink to="/projects" onClick={onNav}>📁 Projects</NavLink>
-          {can("USE_MEETING_ASSISTANT") && <NavLink to="/meeting-assistant" onClick={onNav}>🤖 Meeting Assistant</NavLink>}
-          <NavLink to="/gantt" onClick={onNav}>📅 Gantt</NavLink>
-          <NavLink to="/goals" onClick={onNav}>🎯 Goals</NavLink>
-          <NavLink to="/sprints" onClick={onNav}>🏃 Sprints</NavLink>
-          <NavLink to="/epics" onClick={onNav}>🗃 Epics</NavLink>
-          <NavLink to="/roadmap" onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
-          <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
-          <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>
-          <NavLink to="/docs" onClick={onNav}>📄 Docs</NavLink>
-          <NavLink to="/sops" onClick={onNav}>📖 SOPs</NavLink>
-          <NavLink to="/decisions" onClick={onNav}>🧠 Decisions</NavLink>
-          <NavLink to="/channels" onClick={onNav}>💬 Channels</NavLink>
-          <NavLink to="/reports" onClick={onNav}>📋 Reports</NavLink>
-          <NavLink to="/analytics" onClick={onNav}>📈 Analytics</NavLink>
-          <NavLink to="/time-tracking" onClick={onNav}>⏱ Time</NavLink>
-          <NavLink to="/ai" onClick={onNav}>🤖 AI Assistant</NavLink>
-          <NavLink to="/team" onClick={onNav}>👥 Members</NavLink>
-          <NavLink to="/org-chart" onClick={onNav}>🏢 Org chart</NavLink>
-        </div>
-        <div style={{ flex: 1 }} />
-        <div className="sidebar-bottom-links">
-          <NavLink to="/profile" onClick={onNav}>👤 Profile</NavLink>
-        </div>
-      </>
-    );
-  }
-  return (
-    <>
-      <WorkspaceSwitcher />
-
-      <div className="sidebar-quicklinks">
-        <NavLink to="/" end onClick={onNav} className="sidebar-quicklink">
-          <span>📊</span><span>Dashboard</span>
-        </NavLink>
-        {can("USE_MEETING_ASSISTANT") && (
-          <NavLink to="/meeting-assistant" onClick={onNav} className="sidebar-quicklink">
-            <span>🤖</span><span>Meeting Assistant</span>
-          </NavLink>
-        )}
-      </div>
-
-      <SidebarGroup label="Work" icon="⚡">
-        <NavLink to="/projects" onClick={onNav} style={{ display: "flex", alignItems: "center" }}>
-          📁 Projects
-          <SidebarBadge count={badges?.overdueProjects} />
-        </NavLink>
-        <NavLink to="/tasks"    onClick={onNav} style={{ display: "flex", alignItems: "center" }}>
-          ✅ Tasks
-          <SidebarBadge count={badges?.overdueTasksOnly} />
-        </NavLink>
-        <NavLink to="/goals"    onClick={onNav}>🎯 Goals</NavLink>
-        <NavLink to="/kanban"      onClick={onNav}>🗂 Kanban</NavLink>
-        <NavLink to="/jira-board"  onClick={onNav}>📌 Jira Board</NavLink>
-        <NavLink to="/epics"    onClick={onNav}>🗃 Epics</NavLink>
-        <NavLink to="/deployments" onClick={onNav}>🚀 Deployments</NavLink>
-        <NavLink to="/knowledge-graph" onClick={onNav}>🕸 Knowledge Graph</NavLink>
-        <NavLink to="/sprints"  onClick={onNav}>🏃 Sprints</NavLink>
-        <NavLink to="/gantt"    onClick={onNav}>📅 Gantt</NavLink>
-        <NavLink to="/calendar" onClick={onNav}>🗓 Calendar</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Knowledge" icon="📚" defaultOpen={false}>
-        <NavLink to="/docs"      onClick={onNav}>📄 Docs</NavLink>
-        <NavLink to="/meetings"  onClick={onNav}>🎙 Meetings</NavLink>
-        <NavLink to="/sops"      onClick={onNav}>📖 SOPs</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Insights" icon="📊" defaultOpen={false}>
-        <NavLink to="/analytics"    onClick={onNav}>📈 Analytics</NavLink>
-        <NavLink to="/portfolio"    onClick={onNav}>📦 Portfolio</NavLink>
-        <NavLink to="/roadmap"      onClick={onNav}>🗺️ Roadmap & RAID</NavLink>
-        <NavLink to="/change-requests" onClick={onNav}>🔧 Change Requests</NavLink>
-        <NavLink to="/portfolio-plus" onClick={onNav}>🏗 Portfolio+</NavLink>
-        <NavLink to="/kpis"         onClick={onNav}>📊 KPI Tracker</NavLink>
-        <NavLink to="/executive"    onClick={onNav}>📊 Executive</NavLink>
-        <NavLink to="/roi"          onClick={onNav}>💰 ROI Engine</NavLink>
-        <NavLink to="/scenarios"    onClick={onNav}>🔮 Scenarios</NavLink>
-        <NavLink to="/decisions"    onClick={onNav}>🧠 Decisions</NavLink>
-        <NavLink to="/reports"      onClick={onNav}>📋 Reports</NavLink>
-        <NavLink to="/time-tracking" onClick={onNav}>⏱ Time & Billing</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Automate" icon="⚙️" defaultOpen={false}>
-        <NavLink to="/bpm"          onClick={onNav}>🔀 BPM Studio</NavLink>
-        <NavLink to="/automations"  onClick={onNav}>⚡ Automations</NavLink>
-        <NavLink to="/import-export" onClick={onNav}>📦 Import / Export</NavLink>
-        <NavLink to="/integrations" onClick={onNav}>🔌 Integrations</NavLink>
-        <NavLink to="/import"       onClick={onNav}>📥 Import</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Collaborate" icon="💬" defaultOpen={false}>
-        <NavLink to="/channels"    onClick={onNav}>💬 Channels</NavLink>
-      </SidebarGroup>
-      <SidebarGroup label="Team" icon="👥" defaultOpen={false}>
-        <NavLink to="/team"     onClick={onNav}>👥 Members</NavLink>
-        <NavLink to="/org-chart" onClick={onNav}>🏢 Org chart</NavLink>
-        <NavLink to="/activity" onClick={onNav}>📋 Activity Log</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="Configure" icon="🔧" defaultOpen={false}>
-        <NavLink to="/categories"   onClick={onNav}>🏷 Categories</NavLink>
-        <NavLink to="/custom-fields" onClick={onNav}>⚙️ Custom Fields</NavLink>
-        <CanDo action="manageSettings">
-          <NavLink to="/workspace-settings" onClick={onNav}>🏢 Workspace</NavLink>
-        </CanDo>
-        <CanDo action="adminOnly">
-          <NavLink to="/admin"     onClick={onNav}>🛡 Admin Centre</NavLink>
-          <NavLink to="/access-control" onClick={onNav}>🔐 Access Control</NavLink>
-        </CanDo>
-        <NavLink to="/white-label" onClick={onNav}>🎨 White-label</NavLink>
-        <NavLink to="/jira-board/settings" onClick={onNav}>⚙️ Jira Settings</NavLink>
-        <NavLink to="/developer" onClick={onNav}>🛠 Developer</NavLink>
-      </SidebarGroup>
-
-      <SidebarGroup label="AI" icon="🤖" defaultOpen={false}>
-        <NavLink to="/ai"             onClick={onNav}>🤖 AI Assistant</NavLink>
-        <NavLink to="/ai-intelligence" onClick={onNav}>🧠 AI Intelligence</NavLink>
-        <NavLink to="/ai-settings"    onClick={onNav}>✨ AI Settings</NavLink>
-      </SidebarGroup>
-
-      <div style={{ flex: 1 }} />
-      <div className="sidebar-bottom-links">
-        <NavLink to="/profile" onClick={onNav}>👤 Profile</NavLink>
-      </div>
-    </>
-  );
-}
-
 function AppShell() {
   // Global ESC key — close any open modal overlay
   useEffect(() => {
@@ -414,7 +258,7 @@ function AppShell() {
   }, []);
 
   const { user } = useAuth();
-  const { restricted, loading: accessLoading, capabilities: accessCapabilities, can } = useAccess();
+  const { restricted, loading: accessLoading, capabilities: accessCapabilities } = useAccess();
 
   // Pages that render full-screen OUTSIDE the app shell: no sidebar/topbar,
   // and — just as important — none of the shell's authenticated background
@@ -557,14 +401,18 @@ function AppShell() {
 
   return (
     <div className="app">
-      {!isLoginPage && <nav className={`sidebar ${menuOpen ? "open" : ""}`}>
-              <div className="sidebar-top">
+      {!isLoginPage && <nav className={`sidebar ${menuOpen ? "open" : ""}`} aria-label="Main">
+              <div className="sidebar-top sb-brand">
+                <Link to="/" className="sb-brand-link" onClick={() => setMenuOpen(false)}>
+                  <img src="/logo-icon.png" alt="" className="sb-brand-img" />
+                  <span className="sb-brand-name">Prowosma</span>
+                </Link>
                 <button
                   className="menu-close"
                   onClick={() => setMenuOpen(false)}
                   aria-label="Close menu"
                 >
-                  ✕
+                  <X size={18} aria-hidden="true" />
                 </button>
               </div>
               <SidebarNav onNav={() => setMenuOpen(false)} badges={badges} />
@@ -576,8 +424,8 @@ function AppShell() {
 
             <div className="content-wrapper">
               {!isLoginPage && <div className="mobile-header">
-                <button className="menu-btn" onClick={() => setMenuOpen(true)}>
-                  ☰
+                <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+                  <Menu size={20} aria-hidden="true" />
                 </button>
                 <div className="mobile-logo">
                   <img src="/logo-icon.png" alt="" className="logo-icon" />
@@ -585,24 +433,18 @@ function AppShell() {
                 </div>
               </div>}
               {!isLoginPage && <div className="topbar">
-                {/* Left: sidebar toggle + logo */}
+                {/* Left: menu button (narrow screens) + where you are */}
                 <button className="topbar-sidebar-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="Toggle sidebar">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <path d="M9 3v18"/>
-                  </svg>
+                  <PanelLeft size={16} aria-hidden="true" />
                 </button>
-                <div className="topbar-logo-row">
-                  <img src="/logo-icon.png" alt="" className="topbar-logo-img" />
-                  <span className="topbar-logo-txt">Prowosma</span>
-                </div>
-                {/* Centre: search */}
+                <TopbarTrail />
+                {/* Search — opens the command palette (⌘K works anywhere) */}
                 <div className="topbar-search-wrap">
-                  {(<Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <Link to="/search" className="topbar-search-btn" onClick={() => setShowPalette(true)}>
+                    <SearchIcon size={14} aria-hidden="true" />
                     <span className="topbar-search-placeholder">Search anything…</span>
                     <span className="topbar-search-kbd">⌘K</span>
-                  </Link>)}
+                  </Link>
                 </div>
                 {/* Right cluster */}
                 <div className="topbar-right-cluster">

@@ -1,0 +1,233 @@
+/* ==========================================================================
+   APP FRAME — Studio + Atlas (stage 2)
+   Dark grouped sidebar with line icons; a slim light top bar that names the
+   current page. Loaded after every other sheet so it settles the old
+   sidebar/topbar rules without !important. Responsive behaviour (the
+   slide-out menu below 1024px) still comes from themes.css/mobile-fixes.css.
+   ========================================================================== */
+
+/* ── Sidebar shell ───────────────────────────────────────────────────────── */
+.app .sidebar {
+  background: var(--sidebar-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;            /* the middle part scrolls, brand + profile stay */
+}
+.app .sidebar-top.sb-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px 12px 18px;
+  margin: 0;
+  border-bottom: none;
+}
+.sb-brand-link {
+  display: flex !important;   /* beats the generic .sidebar a padding/border */
+  align-items: center;
+  gap: 9px;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: none !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+.sb-brand-img { height: 22px; width: auto; }
+.app .sidebar .menu-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.6);
+}
+.app .sidebar .menu-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+/* Workspace switcher sits in a quiet framed button under the brand */
+.app .sidebar .workspace-switcher { margin: 0 10px 8px; }
+.app .sidebar .workspace-selector {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+.app .sidebar .workspace-selector:hover { background: rgba(255, 255, 255, 0.07); }
+.app .sidebar .workspace-avatar-sm { width: 26px; height: 26px; border-radius: 6px; font-size: 11px; }
+.app .sidebar .workspace-label { text-transform: none; letter-spacing: 0; font-size: 11px; color: rgba(255,255,255,0.45); }
+
+.sb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 0 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.14) transparent;
+}
+.sb-list { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+
+/* ── Links ───────────────────────────────────────────────────────────────── */
+.app .sidebar a.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-text);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.app .sidebar a.sb-link .sb-icon { flex-shrink: 0; color: rgba(255, 255, 255, 0.55); transition: color 0.12s; }
+.app .sidebar a.sb-link .sb-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.app .sidebar a.sb-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.app .sidebar a.sb-link:hover .sb-icon { color: rgba(255, 255, 255, 0.85); }
+.app .sidebar a.sb-link.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  font-weight: 600;
+}
+.app .sidebar a.sb-link.active .sb-icon { color: #A9ACFF; }
+.app .sidebar a.sb-link:focus-visible {
+  outline: 2px solid var(--brand-400);
+  outline-offset: -2px;
+}
+
+/* ── Groups ──────────────────────────────────────────────────────────────── */
+.sb-group { margin-top: 10px; }
+.app .sidebar .sb-group-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 14px 0 20px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--sidebar-label);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.app .sidebar .sb-group-head:hover { color: rgba(255, 255, 255, 0.85); }
+.app .sidebar .sb-group-head:focus-visible { outline: 2px solid var(--brand-400); outline-offset: -2px; }
+.sb-group-label { flex: 1; text-align: left; }
+.sb-chevron { opacity: 0.7; transition: transform 0.15s; }
+.sb-chevron.open { transform: rotate(90deg); }
+.sb-group-items { display: flex; flex-direction: column; gap: 1px; padding: 2px 10px 0; }
+
+/* ── Bottom (profile) ────────────────────────────────────────────────────── */
+.sb-bottom {
+  flex-shrink: 0;
+  padding: 8px 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.app .topbar {
+  gap: 12px;
+  padding: 0 16px 0 24px;
+  height: var(--topbar-h);
+  background: var(--bg-card, #fff);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+.topbar-trail {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.topbar-trail-section { color: var(--text-muted); font-weight: 500; }
+.topbar-trail-sep { color: var(--border-strong); }
+.topbar-trail-current {
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app .topbar-search-wrap { flex: 1; max-width: 420px; margin-left: auto; }
+.app .topbar-right-cluster { margin-left: 0; gap: 4px; }
+.app .topbar-search-btn {
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+  border-color: var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.app .topbar-search-btn:hover {
+  background: var(--bg-card, #fff);
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+.app .topbar-search-btn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 1px; }
+.app .topbar-search-kbd {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Calmer icon buttons: a plain tint on hover instead of the rainbow ring */
+.app .topbar .theme-toggle:hover,
+.app .topbar .notif-bell-btn:hover,
+.app .topbar .theme-switcher-btn:hover {
+  background: var(--gray-100);
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: none;
+  border-color: transparent;
+}
+
+/* The panel button only matters where the sidebar slides out. The global
+   button padding (8px 16px) would squeeze its icon to nothing, so reset it. */
+.app .topbar-sidebar-toggle { padding: 0; width: 34px; height: 34px; color: var(--text-secondary); }
+@media (min-width: 1024px) {
+  .app .topbar-sidebar-toggle { display: none; }
+}
+@media (max-width: 1023px) {
+  .app .sidebar .menu-close { display: flex; }
+  .app .topbar { padding-left: 12px; }
+}
+@media (max-width: 1199px) {
+  .app .topbar-search-wrap { flex: 0 0 auto; }
+}
+
+/* Filter crumbs inside a page (e.g. Tasks › Overdue) */
+.breadcrumb-bar { margin-bottom: 12px; }
+.app .breadcrumb-link { color: var(--brand-600); }
+.app .breadcrumb-link:hover { background: var(--brand-50); }
+.app .breadcrumb-current { color: var(--text-secondary); }
+
+/* ── Phone header (topbar is hidden ≤768px) ─────────────────────────────── */
+.app .mobile-header { background: var(--sidebar-bg); }
+.app .menu-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] .app .topbar { background: var(--bg-card); border-bottom-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .topbar-trail-sep { color: rgba(255,255,255,0.25); }
+[data-theme="dark"] .app .topbar-search-btn { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+[data-theme="dark"] .app .topbar-search-kbd { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+[data-theme="dark"] .app .topbar .theme-toggle:hover,
+[data-theme="dark"] .app .topbar .notif-bell-btn:hover,
+[data-theme="dark"] .app .topbar .theme-switcher-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+[data-theme="dark"] .app .sidebar a.sb-link { color: var(--sidebar-text); }
+[data-theme="dark"] .app .sidebar a.sb-link:hover { color: #fff; background: rgba(255,255,255,0.06); }
+[data-theme="dark"] .app .sidebar a.sb-link.active { color: #fff; background: var(--sidebar-active-bg); }

@@ -21,6 +21,10 @@ export default function Breadcrumb() {
     crumbs.push({ ...route, path: location.pathname });
   }
 
+  // The top bar already says which page this is; the crumbs here only earn
+  // their place when a filter narrows the page (Tasks › Overdue).
+  const pageCrumbs = crumbs.length;
+
   const projectId = searchParams.get("projectId");
   const status = searchParams.get("status");
   const filter = searchParams.get("filter");
@@ -44,10 +48,10 @@ export default function Breadcrumb() {
   if (highlight)
     crumbs.push({ label: "Highlighted Item", icon: "🎯", path: null });
 
-  if (crumbs.length <= 1) return null;
+  if (crumbs.length === pageCrumbs) return null;
 
   return (
-    <div className="breadcrumb-bar">
+    <nav className="breadcrumb-bar" aria-label="Filters">
       {crumbs.map((crumb, i) => (
         <span key={i} className="breadcrumb-item">
           {i > 0 && <span className="breadcrumb-sep">›</span>}
@@ -56,15 +60,15 @@ export default function Breadcrumb() {
               className="breadcrumb-link"
               onClick={() => navigate(crumb.path)}
             >
-              {crumb.icon} {crumb.label}
+              {crumb.label}
             </button>
           ) : (
             <span className="breadcrumb-current">
-              {crumb.icon} {crumb.label}
+              {crumb.label}
             </span>
           )}
         </span>
       ))}
-    </div>
+    </nav>
   );
 }
