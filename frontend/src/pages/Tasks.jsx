@@ -28,6 +28,9 @@ import TaskDrawer from "../components/TaskDrawer";
 
 import "../styles/pages/tasks.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
+import { AlertTriangle } from "lucide-react";
+import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -316,7 +319,7 @@ function StatusDropdown({ task, onUpdate }) {
           setOpen((o) => !o);
         })?.(e); } }}
       >
-        {task.status.replace("_", " ")}
+        {statusText(task.status)}
         <span style={{ fontSize: "10px", marginLeft: "4px" }}>▼</span>
       </div>
       {open && (
@@ -848,7 +851,11 @@ export default function Tasks() {
             })}
           </span>
         )}
-        {t.dueDate && <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>}
+        {t.dueDate && (isTaskOverdue(t)
+          ? <span className="task-meta" style={{ marginTop: "2px", color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(t.dueDate).toLocaleDateString()}
+            </span>
+          : <span className="task-meta" style={{ marginTop: "2px" }}>📅 {new Date(t.dueDate).toLocaleDateString()}</span>)}
         {t.tags?.length > 0 && (
           <div className="task-meta" style={{ marginTop: "2px" }}>
             {t.tags.map(tag => <span key={tag} className="task-tag">{tag}</span>)}
@@ -983,9 +990,11 @@ export default function Tasks() {
           style={{ width: "200px" }}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search tasks"
           placeholder="🔍 Search tasks..."
         />
         <select
+          aria-label="Filter by status"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
@@ -995,6 +1004,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by priority"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
         >
@@ -1004,6 +1014,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by project"
           value={filterProject}
           onChange={(e) => setFilterProject(e.target.value)}
         >
@@ -1024,6 +1035,7 @@ export default function Tasks() {
             ))}
         </select>
         <select
+          aria-label="Filter by assignee"
           value={filterAssignee}
           onChange={(e) => setFilterAssignee(e.target.value)}
         >
@@ -1034,6 +1046,7 @@ export default function Tasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by due date"
           value={filterSpecial}
           onChange={(e) => setFilterSpecial(e.target.value)}
         >
@@ -1185,7 +1198,7 @@ export default function Tasks() {
                       style={{ fontSize: "10px", padding: "2px 8px",
                         background: project.status === "ACTIVE" ? "rgba(5,150,105,0.12)" : "var(--gray-100)",
                         color: project.status === "ACTIVE" ? "#15803d" : "var(--gray-600)" }}>
-                      {project.status}
+                      {statusText(project.status)}
                     </span>
                   )}
                 </div>
@@ -1283,7 +1296,7 @@ export default function Tasks() {
                     onClick={() => toggleGoalExpanded(goal.id)} style={{ cursor: "pointer" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => toggleGoalExpanded(goal.id))?.(e); } }}>
                     <span className="goal-steps-icon">{"🎯"}</span>
                     <span className="goal-steps-title">{goal.title}</span>
-                    <span className={"goal-steps-status " + goal.status.toLowerCase()}>{goal.status}</span>
+                    <span className={"goal-steps-status " + goal.status.toLowerCase()}>{statusText(goal.status)}</span>
                     <div className="goal-steps-progress-bar">
                       <div className="goal-steps-progress-fill" style={{ width: (goal.progress || 0) + "%" }} />
                     </div>

@@ -4,6 +4,8 @@ import {
   deleteAttachment,
   getAttachmentUrl,
 } from "../api/tasks";
+import { useToast } from "./ToastContext";
+import { useConfirm } from "../hooks/useConfirm";
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -22,6 +24,8 @@ function fileIcon(type) {
 }
 
 export default function FileAttachments({ task, onRefresh }) {
+  const { show: showToast } = useToast();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -40,7 +44,7 @@ export default function FileAttachments({ task, onRefresh }) {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10485760) {
-      alert("File too large. Max 10MB.");
+      showToast("File too large. Max 10MB.", "error");
       return;
     }
     setUploading(true);
@@ -51,7 +55,7 @@ export default function FileAttachments({ task, onRefresh }) {
       await addAttachment(task.id, formData);
       onRefresh();
     } catch {
-      alert("Upload failed. Please try again.");
+      showToast("Upload failed. Please try again.", "error");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -59,7 +63,7 @@ export default function FileAttachments({ task, onRefresh }) {
   };
 
   const handleDelete = async (attachmentId) => {
-    if (window.confirm("Delete this attachment?")) {
+    if (await confirm({ title: "Delete this attachment?", danger: true, confirmText: "Delete" })) {
       await deleteAttachment(task.id, attachmentId);
       onRefresh();
     }

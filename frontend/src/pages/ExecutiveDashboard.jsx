@@ -9,6 +9,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
 } from "recharts";
 import "../styles/pages/analytics.css";
+import { statusText } from "../utils/statusText";
 
 const getAISummary = () => client.get("/ai/executive-summary");
 const getRisks     = () => client.get("/ai/risks");
@@ -228,7 +229,7 @@ export default function ExecutiveDashboard() {
                 return (
                   <tr key={p.id}>
                     <td className="exec-table-name">{p.name}</td>
-                    <td><span className={`portfolio-status-chip portfolio-status-${p.status?.toLowerCase()}`}>{p.status}</span></td>
+                    <td><span className={`portfolio-status-chip portfolio-status-${p.status?.toLowerCase()}`}>{statusText(p.status)}</span></td>
                     <td><span style={{ color, fontWeight:700 }}>{h}%</span></td>
                     <td>
                       <div className="exec-mini-bar">

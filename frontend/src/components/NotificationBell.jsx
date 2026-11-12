@@ -8,6 +8,7 @@ import {
 } from "../api/notifications";
 import client from "../api/client";
 import { useToast } from "./ToastContext";
+import { useConfirm } from "../hooks/useConfirm";
 
 const TYPE_COLOR = { INFO:"var(--brand-500)", WARNING:"var(--warning)", SUCCESS:"var(--success)", ERROR:"var(--danger)" };
 const TYPE_ICON  = { INFO:"ℹ️", WARNING:"⚠️", SUCCESS:"✅", ERROR:"❌" };
@@ -36,6 +37,7 @@ const bulkMarkRead       = (ids)        => client.patch("/notifications/bulk-rea
 
 export default function NotificationBell() {
   const { show: toast } = useToast();
+  const confirm = useConfirm();
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount,   setUnreadCount]   = useState(0);
@@ -181,7 +183,7 @@ export default function NotificationBell() {
               )}
               {notifications.length > 0 && (
                 <button className="btn-link" style={{ fontSize:"11px", color:"#D64545" }}
-                  onClick={async () => { if(window.confirm("Clear all?")) { await deleteAllNotifications(); setNotifications([]); setUnreadCount(0); } }}>
+                  onClick={async () => { if(await confirm({ title: "Clear all notifications?", danger: true, confirmText: "Clear all" })) { await deleteAllNotifications(); setNotifications([]); setUnreadCount(0); } }}>
                   Clear
                 </button>
               )}

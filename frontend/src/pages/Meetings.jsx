@@ -24,6 +24,7 @@ import MeetingTrendsPanel from "../components/MeetingTrendsPanel";
 
 import "../styles/pages/meetings.css";
 import { parseServerDateTime, toLocalInputValue } from "../utils/serverTime";
+import { statusText } from "../utils/statusText";
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return "—";
@@ -432,7 +433,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
           </div>
         </div>
         <div className="meet-card-right" onClick={e => e.stopPropagation()} role="presentation">
-          <span className={`meet-status meet-status--${m.status?.toLowerCase()}`}>{m.status}</span>
+          <span className={`meet-status meet-status--${m.status?.toLowerCase()}`}>{statusText(m.status)}</span>
           <button onClick={() => onEdit(m)} title="Edit">✎</button>
           <button onClick={() => onDelete(m)} title="Delete" className="meet-delete-btn">🗑</button>
         </div>

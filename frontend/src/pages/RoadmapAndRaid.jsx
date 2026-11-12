@@ -5,6 +5,7 @@ import client from "../api/client";
 import { getProjects } from "../api/projects";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { statusText } from "../utils/statusText";
 
 const getRaid        = (projectId) => client.get("/raid", { params: projectId ? { projectId } : {} });
 const createRaid     = (data)      => client.post("/raid", data);
@@ -304,7 +305,7 @@ function RaidPanel({ projectId }) {
               </span>
               <span>
                 <span className="raid-status-badge"
-                  style={{ color: STATUS_COLORS[e.status] || "var(--gray-500)" }}>{e.status}</span>
+                  style={{ color: STATUS_COLORS[e.status] || "var(--gray-500)" }}>{statusText(e.status)}</span>
               </span>
               <span className="raid-mitigation">{e.mitigation || "—"}</span>
               <span style={{ display:"flex", gap:"4px" }}>

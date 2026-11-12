@@ -4,6 +4,7 @@ import { applyDesign } from "../utils/designUtils";
 import client from "../api/client";
 
 import "../styles/pages/white-label.css";
+import { useToast } from "../components/ToastContext";
 /* ── API helpers ─────────────────────────────────────────────────── */
 const getBranding  = ()     => client.get("/workspaces/branding");
 const saveBranding = (data) => client.put("/workspaces/branding", data);
@@ -148,6 +149,7 @@ function LivePreview({ brand }) {
 
 /* ═══ MAIN PAGE ════════════════════════════════════════════════════ */
 export default function WhiteLabel() {
+  const { show: showToast } = useToast();
   const { activeWorkspace } = useAuth();
   const [tab, setTab] = useState("brand");
   const [saving, setSaving] = useState(false);
@@ -231,7 +233,7 @@ export default function WhiteLabel() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      alert("Save failed: " + (e?.response?.data?.message || e.message));
+      showToast("Save failed: " + (e?.response?.data?.message || e.message), "error");
     } finally {
       setSaving(false);
     }

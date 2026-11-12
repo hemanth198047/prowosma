@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { statusText } from "../utils/statusText";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 const api = {
@@ -584,7 +585,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                       borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
                       background: isWaiting?meta.color+"18":isDone?"#dcfce7":isFailed?"#fee2e2":"var(--gray-100)",
                       color: isWaiting?meta.color:isDone?"#15803d":isFailed?"#b91c1c":"var(--gray-500)" }}>
-                      {h.status}
+                      {statusText(h.status)}
                     </span>
                     {h.completedAt && (
                       <span style={{ fontSize:"10px", color:"#94a3b8" }}>
@@ -1027,7 +1028,7 @@ export default function BpmStudio() {
                             borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
                             background: p.status==="ACTIVE"?"#dcfce7":p.status==="ARCHIVED"?"var(--gray-100)":"#fef3c7",
                             color: p.status==="ACTIVE"?"#15803d":p.status==="ARCHIVED"?"var(--gray-500)":"var(--warning)" }}>
-                            {p.status}
+                            {statusText(p.status)}
                           </span>
                           <span style={{ fontSize:"10px", color:"#94a3b8",
                             background:"var(--gray-50)", padding:"2px 7px", borderRadius:"var(--radius-full)" }}>

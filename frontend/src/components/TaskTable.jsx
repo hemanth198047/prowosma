@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "./ToastContext";
+import { AlertTriangle } from "lucide-react";
+import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
@@ -90,7 +92,7 @@ export default function TaskTable({
         <thead>
           <tr style={{ background: "var(--gray-50)", borderBottom: "2px solid var(--border)" }}>
             <Th style={{ width: 36 }}>
-              <input type="checkbox" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
+              <input type="checkbox" aria-label="Select all tasks" checked={allSelected} onChange={(e) => onSelectAll(e.target.checked)} />
             </Th>
             <Th style={{}} sortKey="title"    activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Title</Th>
             <Th style={{ width: 150 }}    sortKey="status"   activeSort={sortKey} sortDir={sortDir} onSort={onSortClick}>Status</Th>
@@ -192,7 +194,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
   return (
     <tr style={{ background: highlighted ? "color-mix(in srgb, var(--warning) 12%, transparent)" : selected ? "var(--brand-50)" : "transparent" }}>
       <td style={cellStyle}>
-        <input type="checkbox" checked={selected} onChange={onToggleSelect} />
+        <input type="checkbox" aria-label={`Select ${task.title}`} checked={selected} onChange={onToggleSelect} />
       </td>
 
       {/* Title — click to edit inline, click the expand icon to open the drawer */}
@@ -201,6 +203,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           {editingTitle ? (
             <input
              
+              aria-label="Task title"
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
               onBlur={() => { setEditingTitle(false); if (titleDraft.trim() && titleDraft !== task.title) save({ title: titleDraft.trim() }); }}
@@ -219,6 +222,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
       {/* Status */}
       <td style={cellStyle}>
         <select
+          aria-label={`Status of ${task.title}`}
           value={task.status}
           onChange={(e) => save({ status: e.target.value })}
           disabled={busyField === "status"}
@@ -231,6 +235,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
       {/* Priority */}
       <td style={cellStyle}>
         <select
+          aria-label={`Priority of ${task.title}`}
           value={task.priority}
           onChange={(e) => save({ priority: e.target.value })}
           disabled={busyField === "priority"}
@@ -243,6 +248,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
       {/* Project */}
       <td style={cellStyle}>
         <select
+          aria-label={`Project of ${task.title}`}
           value={task.projectId || ""}
           title={projects.find((p) => p.id === task.projectId)?.name || undefined}
           onChange={(e) => save({ projectId: e.target.value || null })}
@@ -284,8 +290,10 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
         )}
       </td>
 
-      {/* Due date */}
+      {/* Due date — overdue open tasks get the Dashboard's red date and warning icon */}
       <td style={cellStyle}>
+        <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {isTaskOverdue(task) && <AlertTriangle size={11} color={OVERDUE_COLOR} aria-hidden="true" style={{ flexShrink: 0 }} />}
         <input
           type="date"
           value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
@@ -318,8 +326,10 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           // Due dates are for work still ahead — a date input with no
           // floor let any past date through with nothing stopping it.
           min={new Date().toISOString().slice(0, 10)}
-          style={{ ...inputStyle, cursor: "pointer" }}
+          aria-label={isTaskOverdue(task) ? "Due date (overdue)" : "Due date"}
+          style={{ ...inputStyle, cursor: "pointer", ...(isTaskOverdue(task) ? { color: OVERDUE_COLOR, fontWeight: 600 } : {}) }}
         />
+        </span>
       </td>
 
       {/* Tags */}
@@ -327,6 +337,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
         {editingTags ? (
           <input
            
+            aria-label="Tags, separated by commas"
             value={tagsDraft}
             onChange={(e) => setTagsDraft(e.target.value)}
             onBlur={() => { setEditingTags(false); save({ tags: tagsDraft.split(",").map((x) => x.trim()).filter(Boolean) }); }}

@@ -36,6 +36,7 @@ import CanDo from "../components/CanDo";
 import { useAuth } from "../hooks/useAuth";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 
 const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
@@ -473,7 +474,7 @@ export default function Team() {
         <>
         {members.length > 1 && (
           <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"10px" }}>
-            <select value={memberSort} onChange={e=>setMemberSort(e.target.value)} style={{ fontSize:"12px" }}>
+            <select aria-label="Sort members" value={memberSort} onChange={e=>setMemberSort(e.target.value)} style={{ fontSize:"12px" }}>
               <option value="">Sort by: Default</option>
               <option value="name">Sort by: Name</option>
               <option value="role">Sort by: Role</option>
@@ -650,7 +651,7 @@ export default function Team() {
                             color: statusColor[t.status],
                           }}
                         >
-                          {t.status}
+                          {statusText(t.status)}
                         </span>
                         <button
                           className="btn-secondary"
@@ -724,7 +725,7 @@ export default function Team() {
                       color: statusColor[t.status],
                     }}
                   >
-                    {t.status}
+                    {statusText(t.status)}
                   </span>
                   <button
                     className="btn-primary"

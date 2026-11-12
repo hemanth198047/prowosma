@@ -10,6 +10,7 @@ RadialBarChart, RadialBar, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from "recharts";
 import "../styles/pages/analytics.css";
+import { statusText } from "../utils/statusText";
 
 const HEALTH_META = {
   HEALTHY:  { label:"Healthy",  color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
@@ -114,7 +115,7 @@ function CriticalPathPanel({ data, loading, onClose }) {
                 </div>
               </div>
             </div>
-            <span className={`cp-task-status cp-status-${t.status?.toLowerCase()}`}>{t.status}</span>
+            <span className={`cp-task-status cp-status-${t.status?.toLowerCase()}`}>{statusText(t.status)}</span>
           </div>
         ))}
         {allTasks.length === 0 && <div className="empty-state" style={{padding:"20px"}}>No tasks with dependencies found. Add task dependencies to compute critical path.</div>}

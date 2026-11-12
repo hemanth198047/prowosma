@@ -4,6 +4,7 @@ import { getBillingSummary, startCheckout, openBillingPortal, startTrial } from 
 
 import "../styles/pages/licensing.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { statusText } from "../utils/statusText";
 /* ══════════════════════════════════════════════════════════════════
    PLAN DEFINITIONS — every feature in the application
    ══════════════════════════════════════════════════════════════════ */
@@ -526,7 +527,7 @@ export default function Licensing() {
           <div>
             <strong>Current plan: {summary.planName}</strong>
             {" — "}{summary.seatsUsed} / {summary.seatLimit < 0 ? "∞" : summary.seatLimit} seats used
-            {summary.status && summary.status !== "none" && ` · ${summary.status}`}
+            {summary.status && summary.status !== "none" && ` · ${statusText(summary.status)}`}
             {summary.cancelAtPeriodEnd && " · cancels at period end"}
             {!summary.stripeConfigured && (
               <span style={{color:"#b45309"}}> · Payments aren't configured on this server yet</span>
@@ -565,7 +566,11 @@ export default function Licensing() {
             <div key={plan.id}
               className={"lic-plan-card"+(active?" lic-plan-card--active":"")}
               style={active?{borderColor:plan.color,boxShadow:`0 0 0 2px ${plan.colorLight},0 8px 32px ${plan.colorLight}`}:{}}
-              onClick={()=>setActivePlan(plan.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setActivePlan(plan.id))?.(e); } }}>
+              // Clicking the card only highlights the plan; its button does the choosing.
+              // Not a keyboard "button" itself (that nested one interactive control inside
+              // another) — keyboard users reach the plan's button, and focusing it
+              // highlights the card the same way a click does.
+              onClick={()=>setActivePlan(plan.id)} onFocus={()=>setActivePlan(plan.id)} role="presentation">
 
               {plan.badge && <div className="lic-plan-badge" style={{background:plan.color}}>{plan.badge}</div>}
 

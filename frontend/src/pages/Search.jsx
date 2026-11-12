@@ -4,6 +4,7 @@ import { globalSearch } from "../api/search";
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/search.css";
+import { statusText } from "../utils/statusText";
 export default function Search() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState({
@@ -195,7 +196,7 @@ export default function Search() {
                     )}
                   </div>
                   <span className={`badge badge-${p.status?.toLowerCase()}`}>
-                    {p.status}
+                    {statusText(p.status)}
                   </span>
                   <span className="search-result-arrow">→</span>
                 </div>
@@ -257,7 +258,7 @@ export default function Search() {
                           color: statusColor[t.status],
                         }}
                       >
-                        {t.status}
+                        {statusText(t.status)}
                       </span>
                     </div>
                   </div>
@@ -306,7 +307,7 @@ export default function Search() {
                     </div>
                   </div>
                   <span className={`badge badge-${g.status?.toLowerCase()}`}>
-                    {g.status}
+                    {statusText(g.status)}
                   </span>
                   <span className="search-result-arrow">→</span>
                 </div>

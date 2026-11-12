@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useIntegrations } from "../hooks/useIntegrations";
+import { useToast } from "./ToastContext";
 
 // ── Confluence page picker modal ──────────────────────────────────────────
 function ConfluencePickerModal({ onSelect, onClose, searchConfluence, confluenceSpaces }) {
+  const { show: showToast } = useToast();
   const [query,   setQuery]   = useState("");
   const [results, setResults] = useState([]);
   const [spaces,  setSpaces]  = useState([]);
@@ -218,12 +220,12 @@ function ConfluencePickerModal({ onSelect, onClose, searchConfluence, confluence
               </div>
               <button
                 onClick={async()=>{
-                  if(!newPage.spaceKey||!newPage.title){ alert("Space and title required"); return; }
+                  if(!newPage.spaceKey||!newPage.title){ showToast("Space and title required", "warning"); return; }
                   try {
                     const pg = await window.__confluenceCreate(newPage.spaceKey,newPage.title,newPage.content);
                     const viewUrl = pg._links ? (pg._links.base||"")+pg._links.webui : "#";
                     onSelect({ title:newPage.title, url:viewUrl, id:pg.id, type:"confluence" });
-                  } catch(e){ alert(e.message); }
+                  } catch(e){ showToast(e.message, "error"); }
                 }}
                 style={{ padding:"10px", borderRadius:"9px", border:"none",
                   background:"#0052CC", color:"#fff", fontWeight:800,
@@ -241,6 +243,7 @@ function ConfluencePickerModal({ onSelect, onClose, searchConfluence, confluence
 
 // ── Slack send modal ──────────────────────────────────────────────────────
 function SlackSendModal({ context, onClose, slackNotify }) {
+  const { show: showToast } = useToast();
   const [title,   setTitle]   = useState(context?.title || "");
   const [message, setMessage] = useState(context?.message || "");
   const [color,   setColor]   = useState("#6366f1");
@@ -253,7 +256,7 @@ function SlackSendModal({ context, onClose, slackNotify }) {
       await slackNotify(title, message, color);
       setSent(true);
       setTimeout(onClose, 1200);
-    } catch(e) { alert(e.message); }
+    } catch(e) { showToast(e.message, "error"); }
     finally { setSending(false); }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { addTimeLog, deleteTimeLog } from "../api/tasks";
+import { useConfirm } from "../hooks/useConfirm";
 
 function formatTime(minutes) {
   if (minutes < 60) return `${minutes}m`;
@@ -9,6 +10,7 @@ function formatTime(minutes) {
 }
 
 export default function TimeTracker({ task, onRefresh }) {
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState("");
   const [description, setDescription] = useState("");
@@ -73,7 +75,7 @@ export default function TimeTracker({ task, onRefresh }) {
   };
 
   const handleDelete = async (logId) => {
-    if (window.confirm("Delete this time log?")) {
+    if (await confirm({ title: "Delete this time log?", danger: true, confirmText: "Delete" })) {
       await deleteTimeLog(task.id, logId);
       onRefresh();
     }

@@ -25,6 +25,7 @@ import { getMeetingsForProject } from "../api/meetings";
 import { apiErrorMessage } from "../utils/apiError";
 import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
+import { statusText, statusClass } from "../utils/statusText";
 
 const COLORS = [
   "var(--brand-500)",
@@ -47,6 +48,7 @@ function ProjectForm({
   onCategoryCreated,
   onGoalCreated,
 }) {
+  const { show: showToast } = useToast();
   const [form, setForm] = useState(
     initial || {
       name: "",
@@ -109,7 +111,7 @@ function ProjectForm({
       setShowNewCat(false);
     } catch (e) {
       const msg = apiErrorMessage(e, e.message);
-      alert("Failed to create category: " + msg);
+      showToast("Failed to create category: " + msg, "error");
     } finally {
       setCatSaving(false);
     }
@@ -136,7 +138,7 @@ function ProjectForm({
       setShowNewGoal(false);
     } catch (e) {
       const msg = apiErrorMessage(e, e.message);
-      alert("Failed to create goal: " + msg);
+      showToast("Failed to create goal: " + msg, "error");
     } finally {
       setGoalSaving(false);
     }
@@ -741,8 +743,8 @@ function ProjectCard({
                 {p.name}
               </button>
             </h3>
-            <span className={`badge badge-${p.status?.toLowerCase()}`}>
-              {p.status}
+            <span className={`badge badge-${statusClass(p.status)}`}>
+              {statusText(p.status)}
             </span>
           </div>
           {cat && (
@@ -765,6 +767,15 @@ function ProjectCard({
             <ProjectAccessModal project={p} onClose={() => setShowAccess(false)} onSaved={() => window.location.reload()} />
           )}
           <p className="project-desc">{p.description}</p>
+          {p.dueDate && (() => {
+            const closed = ["COMPLETED", "DONE", "CANCELLED", "ARCHIVED"].includes(String(p.status).toUpperCase());
+            const overdue = !closed && new Date(p.dueDate) < new Date(new Date().toDateString());
+            return (
+              <div className={"project-due" + (overdue ? " project-due--overdue" : "")}>
+                {overdue ? `📅 ⚠ Overdue · ${formatDate(p.dueDate)}` : `📅 Due ${formatDate(p.dueDate)}`}
+              </div>
+            );
+          })()}
           <div className="progress-bar">
             <div
               className="progress-fill"
@@ -993,7 +1004,7 @@ export default function Projects() {
       setParentForNew(null);
       load();
     } catch (err) {
-      alert(err.response?.data?.message || "Error saving project");
+      showToast(err.response?.data?.message || "Error saving project", "error");
     }
   };
 
@@ -1125,8 +1136,9 @@ export default function Projects() {
         }
       />
 
-      <div className="filter-bar">
+      <div className="filter-bar filter-bar--inline">
         <select
+          aria-label="Filter by category"
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
         >
@@ -1137,6 +1149,9 @@ export default function Projects() {
             </option>
           ))}
         </select>
+        <span className="filter-bar-count" aria-live="polite">
+          {filtered.length} {filtered.length === 1 ? "project" : "projects"}
+        </span>
       </div>
 
       <div className="cards-grid" onClick={(e) => e.stopPropagation()} role="presentation">

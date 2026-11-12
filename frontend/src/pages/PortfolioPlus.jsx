@@ -13,6 +13,7 @@ import {
   getProgrammes, createProgramme, updateProgramme, deleteProgramme,
   addMilestone, toggleMilestone,
 } from "../api/portfolio";
+import { statusText } from "../utils/statusText";
 
 // ─────────────────────────────────────────────────────────────
 // RELEASE MANAGEMENT
@@ -145,7 +146,7 @@ function ReleasesTab({ projects }) {
                   onClick={async()=>{
                     const res = await client.post(`/releases/${r.id}/generate-changelog`);
                     if (res.data.autoChangelog) {
-                      alert("Changelog:\n\n" + res.data.autoChangelog);
+                      await confirm({ title: "Changelog", message: res.data.autoChangelog, confirmText: "Close", cancelText: null });
                       load();
                     }
                   }}>📋</button>
@@ -412,7 +413,7 @@ function ProgrammesTab({ projects }) {
                     <span className="pplus-status-chip"
                       style={{color:STATUS_COLOR[prog.status]||"var(--gray-500)",
                         background:`${STATUS_COLOR[prog.status]||"var(--gray-500)"}1a`}}>
-                      {prog.status}
+                      {statusText(prog.status)}
                     </span>
                     {linkedProjs.map(p=>(
                       <span key={p.id} className="pplus-link-chip">📁 {p.name}</span>

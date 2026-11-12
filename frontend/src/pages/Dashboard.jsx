@@ -22,6 +22,8 @@ import {
 import MeetingPulseCard from "../components/MeetingPulseCard";
 
 import "../styles/pages/dashboard.css";
+import { statusText, statusClass } from "../utils/statusText";
+import { useToast } from "../components/ToastContext";
 
 /* ── icon map — one consistent line-icon language instead of emoji ── */
 const ICONS = {
@@ -262,7 +264,7 @@ function GoalCard({ g, navigate }) {
       <div className="cc3-item-card-top">
         <span className="cc3-item-dot" style={{ background: "#8b5cf6" }} />
         <span className="cc3-item-name">{g.title}</span>
-        <span className={`badge badge-${g.status?.toLowerCase()}`} style={{ fontSize:9, padding:"1px 6px" }}>{g.status}</span>
+        <span className={`badge badge-${statusClass(g.status)}`} style={{ fontSize:9, padding:"1px 6px" }}>{statusText(g.status)}</span>
       </div>
       <div className="cc3-item-bar">
         <div className="cc3-item-fill" style={{ width:`${pct}%`, background: color }} />
@@ -516,7 +518,7 @@ function TaskRow({ task, navigate }) {
         fontWeight: 700, flexShrink: 0,
         background: statusColor + "22", color: statusColor,
       }}>
-        {task.status?.replace("_", " ")}
+        {statusText(task.status)}
       </span>
     </div>
   );
@@ -524,6 +526,7 @@ function TaskRow({ task, navigate }) {
 
 export default function Dashboard() {
   const { user, activeWorkspace } = useAuth();
+  const { show: showToast } = useToast();
   const navigate  = useNavigate();
   const { can }   = useAccess();
   const [summary,     setSummary]     = useState(null);
@@ -566,8 +569,8 @@ export default function Dashboard() {
   }, [activeWorkspace?.id]);
 
   const handleSendReminder = async () => {
-    try   { await client.post("/reminders/send-now"); alert("Reminder sent!"); }
-    catch { alert("Failed to send reminder. Check email configuration."); }
+    try   { await client.post("/reminders/send-now"); showToast("Reminder sent!", "success"); }
+    catch { showToast("Failed to send reminder. Check email configuration.", "error"); }
   };
 
   if (loading) return (

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getDependencies, addDependency, removeDependency } from "../api/tasks";
+import { statusText } from "../utils/statusText";
+import { useToast } from "./ToastContext";
 
 const statusColor = {
   TODO: "#6366f1",
@@ -8,6 +10,7 @@ const statusColor = {
 };
 
 export default function TaskDependencies({ task, allTasks, onRefresh }) {
+  const { show: showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [deps, setDeps] = useState({
     blockedBy: [],
@@ -41,7 +44,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
       setSearch("");
       onRefresh();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to add dependency");
+      showToast(err.response?.data?.message || "Failed to add dependency", "error");
     }
   };
 
@@ -123,7 +126,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                     <button
                       className="btn-icon"
@@ -162,7 +165,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                   </div>
                 ))}
@@ -204,7 +207,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh }) {
                         fontSize: "10px",
                       }}
                     >
-                      {t.status}
+                      {statusText(t.status)}
                     </span>
                   </div>
                 ))}

@@ -450,7 +450,7 @@ export default function KpiTracker() {
             </button>
           ))}
         </div>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ fontSize:"12px" }}>
+        <select aria-label="Sort KPIs" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ fontSize:"12px" }}>
           <option value="">Sort by: Default</option>
           <option value="name">Sort by: Name</option>
           <option value="status">Sort by: Status (needs attention first)</option>

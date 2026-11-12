@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ConfirmContext } from "../hooks/useConfirm";
 
 /**
@@ -6,6 +6,11 @@ import { ConfirmContext } from "../hooks/useConfirm";
  *   const confirm = useConfirm();
  *   const ok = await confirm({ title: "Delete project?", message: "...", danger: true });
  *   if (ok) { ... }
+ *
+ * Also used for plain messages (replacing the browser's alert()):
+ *   await confirm({ title: "Your backup codes", message: codes, confirmText: "Done", cancelText: null });
+ * cancelText: null shows a single button. Line breaks in `message` are kept,
+ * and long messages scroll, so codes or a changelog stay readable and selectable.
  */
 export function ConfirmProvider({ children }) {
   const [dialog, setDialog] = useState(null);
@@ -25,12 +30,36 @@ export function ConfirmProvider({ children }) {
   const handleConfirm = () => { dialog?.resolve(true);  setDialog(null); };
   const handleCancel  = () => { dialog?.resolve(false); setDialog(null); };
 
+  // Keyboard: focus goes into the dialog (to Cancel for destructive actions,
+  // so Enter never deletes by accident), Escape cancels, and focus returns
+  // to where it was afterwards.
+  const confirmRef = useRef(null);
+  const cancelRef  = useRef(null);
+  useEffect(() => {
+    if (!dialog) return undefined;
+    const previous = document.activeElement;
+    const target = dialog.danger && dialog.cancelText !== null ? cancelRef.current : confirmRef.current;
+    target?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); dialog.cancelText === null ? handleConfirm() : handleCancel(); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      if (previous && typeof previous.focus === "function") previous.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when a new dialog opens
+  }, [dialog]);
+
+  const multiline = typeof dialog?.message === "string" && dialog.message.includes("\n");
+
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
       {dialog && (
         <div
-          onClick={handleCancel}
+          // Only a click on the backdrop itself cancels; clicks inside the dialog don't.
+          onClick={(e) => { if (e.target === e.currentTarget) handleCancel(); }}
           style={{
             position:       "fixed",
             inset:          0,
@@ -43,7 +72,10 @@ export function ConfirmProvider({ children }) {
           }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (handleCancel)?.(e); } }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby={dialog.message ? "confirm-dialog-message" : undefined}
             style={{
               background:   "#fff",
               borderRadius: "14px",
@@ -57,10 +89,10 @@ export function ConfirmProvider({ children }) {
               alignItems:   "center",
               gap:          "12px",
               textAlign:    "center",
-            }} role="presentation"
+            }}
           >
             {/* Icon */}
-            <div style={{
+            <div aria-hidden="true" style={{
               fontSize:     "36px",
               lineHeight:   1,
               marginBottom: "4px",
@@ -69,7 +101,7 @@ export function ConfirmProvider({ children }) {
             </div>
 
             {/* Title */}
-            <h3 style={{
+            <h3 id="confirm-dialog-title" style={{
               margin:     0,
               fontSize:   "18px",
               fontWeight: 700,
@@ -80,11 +112,15 @@ export function ConfirmProvider({ children }) {
 
             {/* Message */}
             {dialog.message && (
-              <p style={{
+              <p id="confirm-dialog-message" style={{
                 margin:     0,
                 fontSize:   "14px",
                 color:      "#64748b",
                 lineHeight: 1.6,
+                whiteSpace: "pre-wrap",
+                wordBreak:  "break-word",
+                userSelect: "text",
+                ...(multiline ? { textAlign: "left", width: "100%", maxHeight: "50vh", overflowY: "auto" } : {}),
               }}>
                 {dialog.message}
               </p>
@@ -98,7 +134,8 @@ export function ConfirmProvider({ children }) {
               width:         "100%",
               justifyContent:"center",
             }}>
-              <button
+              {dialog.cancelText !== null && <button
+                ref={cancelRef}
                 onClick={handleCancel}
                 style={{
                   padding:      "9px 20px",
@@ -113,10 +150,10 @@ export function ConfirmProvider({ children }) {
                 }}
               >
                 {dialog.cancelText}
-              </button>
+              </button>}
               <button
+                ref={confirmRef}
                 onClick={handleConfirm}
-               
                 style={{
                   padding:      "9px 20px",
                   borderRadius: "8px",
