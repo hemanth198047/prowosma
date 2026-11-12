@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { PeopleContext } from "../../context/PeopleContext";
 import { useAuth } from "../../hooks/useAuth";
 import { getOrgChart } from "../../api/org";
+import { getTeamMembers } from "../../api/team";
 import { unwrapList } from "../../api/client";
 import PersonCard from "./PersonCard";
 import "../../styles/people.css";
@@ -16,7 +17,7 @@ const HOVER_CLOSE_MS = 300;
 export default function PeopleProvider({ children }) {
   const { activeWorkspace } = useAuth();
   const wsId = activeWorkspace?.id || null;
-  const [state, setState] = useState({ wsId: null, people: [], loaded: false });
+  const [state, setState] = useState({ wsId: null, people: [], loaded: false, orgAvailable: true });
   const [card, setCard] = useState(null); // { personId, rect, pinned }
   const loading = useRef(null);
   const openTimer = useRef(null);
@@ -25,9 +26,16 @@ export default function PeopleProvider({ children }) {
   const load = useCallback(() => {
     const key = wsId;
     loading.current = key;
+    const done = (people, orgAvailable) => {
+      if (loading.current === key) setState({ wsId: key, people, loaded: true, orgAvailable });
+    };
+    // The org endpoint adds reporting lines and contact details. If the server doesn't have it yet
+    // (an older backend), fall back to the plain member list so people can still be found and shown.
     return getOrgChart()
-      .then((res) => { if (loading.current === key) setState({ wsId: key, people: unwrapList(res), loaded: true }); })
-      .catch(() => { if (loading.current === key) setState({ wsId: key, people: [], loaded: true }); });
+      .then((res) => done(unwrapList(res), true))
+      .catch(() => getTeamMembers()
+        .then((res) => done(unwrapList(res), false))
+        .catch(() => done([], false)));
   }, [wsId]);
 
   const ensureLoaded = useCallback(() => {
@@ -73,9 +81,9 @@ export default function PeopleProvider({ children }) {
   const showPerson = useCallback((personId) => setCard((c) => (c ? { ...c, personId, pinned: true } : c)), []);
 
   const value = useMemo(() => ({
-    people, byId, byEmail, loaded: state.loaded && state.wsId === wsId,
+    people, byId, byEmail, loaded: state.loaded && state.wsId === wsId, orgAvailable: state.orgAvailable,
     ensureLoaded, reload: load, openCard, hoverCard, leaveCard, keepCard, closeCard,
-  }), [people, byId, byEmail, state.loaded, state.wsId, wsId, ensureLoaded, load, openCard, hoverCard, leaveCard, keepCard, closeCard]);
+  }), [people, byId, byEmail, state.loaded, state.orgAvailable, state.wsId, wsId, ensureLoaded, load, openCard, hoverCard, leaveCard, keepCard, closeCard]);
 
   return (
     <PeopleContext.Provider value={value}>

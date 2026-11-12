@@ -23,7 +23,7 @@ function rowsFrom(project) {
  * Saving replaces the project's member list, so it is the same list the Access dialog shows.
  */
 export default function ProjectTeamModal({ project, onClose, onSaved }) {
-  const { people, byEmail, ensureLoaded } = usePeople();
+  const { people, byEmail, ensureLoaded, loaded } = usePeople();
   const toast = useToast();
   const confirm = useConfirm();
   const [rows, setRows] = useState(() => rowsFrom(project));
@@ -84,7 +84,9 @@ export default function ProjectTeamModal({ project, onClose, onSaved }) {
       const status = e?.response?.status;
       setError(status === 403
         ? "Only the project's creator, a department admin of its departments, or a workspace admin can change the team."
-        : apiErrorMessage(e, "Couldn't save the team. Please try again."));
+        : status === 404 || status === 405 || status >= 500
+          ? "The server couldn't save the team. If you just updated the app, restart the backend so it has the project-team feature, then try again."
+          : apiErrorMessage(e, "Couldn't save the team. Please try again."));
       setSaving(false);
     }
   };
@@ -113,7 +115,14 @@ export default function ProjectTeamModal({ project, onClose, onSaved }) {
           </div>
           {query.trim() && (
             <div className="ptm-results" role="listbox" aria-label="Matching people">
-              {candidates.length === 0 && <div className="ptm-none">No one else matches.</div>}
+              {candidates.length === 0 && (
+                <div className="ptm-none">
+                  {!loaded ? "Loading people…"
+                    : people.length === 0 ? "Couldn't load the workspace's people. Check that the backend is running the latest version."
+                    : people.every((x) => !x.email || inTeam.has(x.email.toLowerCase())) ? "Everyone in the workspace is already on this team."
+                    : "No one else matches."}
+                </div>
+              )}
               {candidates.map((p) => (
                 <button key={p.id} type="button" role="option" aria-selected="false" className="ptm-result" onClick={() => add(p)}>
                   <PersonAvatar person={p} size={28} showName interactive={false} subtitle={p.title || p.email} />
