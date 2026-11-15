@@ -1,5 +1,6 @@
 /** Admin settings for the Fireflies integration. The API key is write-only: once saved it is never shown again. */
 import { useCallback, useEffect, useState } from "react";
+import SecretInput from "./ui/SecretInput";
 import { useToast } from "./ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import { getAssistantSettings, updateAssistantSettings, testFireflies } from "../api/meetingAssistant";
@@ -61,7 +62,7 @@ export default function FirefliesSettingsCard({ fireflies, onChanged }) {
       </label>
       <div className="ma-field">
         <label htmlFor="ff-key">Fireflies API key</label>
-        <input id="ff-key" type="password" autoComplete="new-password" placeholder={keySaved ? "A key is saved — type to replace it" : ""} value={key} onChange={(e) => setKey(e.target.value)} />
+        <SecretInput id="ff-key" placeholder={keySaved ? "A key is saved — type to replace it" : ""} value={key} onChange={(e) => setKey(e.target.value)} />
         {keySaved && <button type="button" className="ma-btn danger ma-small" disabled={busy} onClick={() => save({ clearFirefliesApiKey: true })}>Remove the saved key</button>}
       </div>
       {error && <div className="ma-error" role="alert">{error}</div>}

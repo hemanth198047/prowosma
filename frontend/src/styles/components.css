@@ -918,3 +918,17 @@
 [data-theme="dark"] .priority-tag.priority-tag--high { color: var(--danger-text); }
 [data-theme="dark"] .priority-tag.priority-tag--medium { color: var(--warning-text); }
 [data-theme="dark"] .priority-tag.priority-tag--low { color: var(--text-secondary); }
+
+/* SecretInput — an API key box drawn as dots, with a Show / Hide button */
+.secret-input-wrap { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
+.secret-input-wrap .secret-input { width: 100%; padding-right: 40px; }
+.secret-input--masked { -webkit-text-security: disc; text-security: disc; }
+.secret-input-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  display: inline-flex !important; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0 !important;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted);
+}
+.secret-input-toggle:hover { background: var(--gray-100); color: var(--text-primary); }
+.secret-input-toggle:active:not(:disabled) { transform: translateY(-50%); }
+[data-theme="dark"] .secret-input-toggle:hover { background: rgba(255,255,255,0.08); }

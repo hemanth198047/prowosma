@@ -3,6 +3,7 @@
  * how long audio is kept. The API key is write-only — once saved it is never shown again.
  */
 import { useCallback, useEffect, useState } from "react";
+import SecretInput from "./ui/SecretInput";
 import { useToast } from "./ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import { getAssistantSettings, updateAssistantSettings, testSpeechToText } from "../api/meetingAssistant";
@@ -94,7 +95,7 @@ export default function RecordingSettingsCard({ recording, onChanged }) {
       </div>
       <div className="ma-field">
         <label htmlFor="stt-key">API key (leave empty if your server needs none)</label>
-        <input id="stt-key" type="password" autoComplete="new-password" placeholder={keySaved ? "A key is saved — type to replace it" : ""} value={key} onChange={(e) => setKey(e.target.value)} />
+        <SecretInput id="stt-key" placeholder={keySaved ? "A key is saved — type to replace it" : ""} value={key} onChange={(e) => setKey(e.target.value)} />
         {keySaved && <button type="button" className="ma-btn danger ma-small" disabled={busy} onClick={() => save({ clearSttApiKey: true })}>Remove the saved key</button>}
       </div>
       <div className="ma-fields">

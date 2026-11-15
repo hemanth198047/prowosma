@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SecretInput from "../components/ui/SecretInput";
 import {
   getAISettings,
   saveAISettings,
@@ -431,18 +432,17 @@ export default function AISettings() {
 
         <div className="form-row" style={{ marginTop: "0" }}>
           <div className="form-group" style={{ flex: 2 }}>
-            <label style={{ fontWeight: 700 }}>
+            <label htmlFor="ai-api-key" style={{ fontWeight: 700 }}>
               API Key
               {form.apiKey && testResult === "ok" && <span style={{ color:"var(--success)",marginLeft:8,fontSize:11 }}>✓ Verified</span>}
               {form.apiKey && testResult === "fail" && <span style={{ color:"var(--danger)",marginLeft:8,fontSize:11 }}>✗ Invalid key</span>}
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
-              <input
-                type="password"
+              <SecretInput
+                id="ai-api-key"
                 value={form.apiKey}
                 onChange={(e) => handleKeyChange(e.target.value)}
                 placeholder={selectedProvider.keyHint}
-                style={{ flex: 1 }}
               />
               {form.apiKey && (
                 <button className="btn-secondary"
