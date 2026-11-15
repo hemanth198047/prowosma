@@ -56,6 +56,11 @@ public class SecurityController {
                 .toList();
     }
     private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
+
+    /** How long a sign-in token lasts (same setting JwtUtil uses). A session older than this can't authenticate any more. */
+    @org.springframework.beans.factory.annotation.Value("${jwt.expiration:86400000}")
+    private long tokenLifetimeMs = 86_400_000L;
+
     private final com.prowosma.backend.repository.WorkspaceConfigRepository workspaceConfigRepository;
 
     // ── 2FA: begin setup — generate secret + QR ──────────────
@@ -300,6 +305,9 @@ public class SecurityController {
             user.setLoginSessions(new ArrayList<>());
         // Mark all existing as not-current
         user.getLoginSessions().forEach(s -> s.setCurrent(false));
+        // Forget sessions whose token has already expired - they can never be used again, and leaving them in the list
+        // used to push out sessions that WERE still in use (see the history limit below).
+        com.prowosma.backend.util.SessionHistory.pruneExpired(user.getLoginSessions(), LocalDateTime.now(), tokenLifetimeMs);
 
         // Enforce the workspace's concurrency cap (if configured) by
         // evicting the oldest session(s) before adding the new one — this
@@ -321,10 +329,12 @@ public class SecurityController {
         session.setDevice(parseDevice(ua));
         session.setCurrent(current);
         user.getLoginSessions().add(session);
-        // Keep last 10 sessions only
-        if (user.getLoginSessions().size() > 10)
-            user.setLoginSessions(user.getLoginSessions()
-                    .subList(user.getLoginSessions().size() - 10, user.getLoginSessions().size()));
+        // Bound the remembered history. This used to keep only the last 10, so the 11th sign-in within a token's lifetime
+        // (another browser, a phone, an automated demo tool signing in repeatedly) silently deleted a session that was still
+        // in use: its next request got 401 and the person was thrown back to the login page mid-task. Expired sessions are
+        // pruned above; this limit only applies to live ones, and the admin's concurrency cap (above) still decides real eviction.
+        user.setLoginSessions(com.prowosma.backend.util.SessionHistory.keepNewest(
+                user.getLoginSessions(), com.prowosma.backend.util.SessionHistory.LIMIT));
         user.setLastLoginAt(LocalDateTime.now());
         user.setLastLoginIp(ip);
         userRepository.save(user);

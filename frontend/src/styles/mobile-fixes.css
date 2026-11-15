@@ -370,18 +370,3 @@
   .topbar-logo-txt { display: none; }          /* logo icon stays */
 }
 
-/* ── Phones: Getting Started no longer sits on top of the chat button ───────
-   Same widget, moved to the bottom-left and sized to its content, so the
-   assistant button (bottom-right) and the page stay usable. */
-@media (max-width: 768px) {
-  .onboarding-widget {
-    left: 12px;
-    right: auto;
-    bottom: 16px;
-    width: auto;
-    max-width: calc(100vw - 104px);
-  }
-  .onboarding-widget .onboarding-panel {
-    width: min(320px, calc(100vw - 24px));
-  }
-}

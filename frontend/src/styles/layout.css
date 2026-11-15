@@ -105,7 +105,6 @@
   min-height: 100vh;
 }
 
-
 /* Elevation Tier 2 — Raised: sticky over the scrolling canvas below it,
    so it needs to read as nearer than a Tier 1 card, not just outlined.
    The border still does the crisp-edge work; --elevation-2 is what
@@ -251,7 +250,6 @@
   overflow-y: auto;
   padding: 28px 32px;
 }
-
 
 .overlay {
   display: none;
@@ -824,7 +822,6 @@
   padding: 2px 6px;
 }
 
-
 /*  Topbar icon buttons  all consistent  */
 .theme-toggle,
 .notif-bell-btn,
@@ -1077,7 +1074,6 @@
 /* ========================================
    REAL-TIME: CONNECTION STATUS + LIVE FEED
    /* = */
-
 
 /* Connection status dot in topbar */
 .ws-status {
@@ -1412,7 +1408,6 @@
 [data-theme="dark"] .pwa-modal-title   { color: var(--gray-100); }
 [data-theme="dark"] .pwa-modal-feature { background: #0a1e35; border-color: #1e3a5a; }
 
-
 /* PWA manual install steps */
 .pwa-install-steps {
   display: flex; flex-direction: column; gap: 12px;
@@ -1457,115 +1452,13 @@
    ONBOARDING CHECKLIST
    /* = */
 
-.onboarding-widget {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 7000;
-  width: 320px;
-  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.15));
-}
-.onboarding-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: box-shadow 0.15s;
-  gap: 10px;
-}
-.onboarding-toggle:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-.onboarding-toggle-left  { display: flex; align-items: center; gap: 10px; }
-.onboarding-toggle-icon  { font-size: 22px; }
-.onboarding-toggle-title { font-size: 13px; font-weight: 700; color: var(--gray-800); }
-.onboarding-toggle-sub   { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
-.onboarding-toggle-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.onboarding-chevron      { font-size: 10px; color: var(--gray-400); }
-
 /* Ring progress */
-.onboarding-ring { position: relative; width: 36px; height: 36px; }
-.onboarding-ring-pct {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 800; color: var(--gray-600);
-}
 
 /* Panel */
-.onboarding-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  margin-bottom: 8px;
-  overflow: hidden;
-  animation: cp-in 0.2s ease;
-}
-.onboarding-panel-header {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  padding: 16px 16px 10px;
-}
-.onboarding-panel-title { font-size: 14px; font-weight: 800; color: var(--gray-800); }
-.onboarding-panel-sub   { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
-.onboarding-dismiss {
-  background: transparent; border: none;
-  font-size: 14px; color: var(--gray-400); cursor: pointer;
-  padding: 2px 4px; border-radius: var(--radius-sm);
-  transition: color 0.1s;
-}
-.onboarding-dismiss:hover { color: var(--gray-700); }
 
 /* Progress bar */
-.onboarding-progress-bar {
-  height: 4px; background: var(--gray-100);
-  margin: 0 16px 12px;
-  border-radius: 2px; overflow: hidden;
-}
-.onboarding-progress-fill {
-  height: 100%; border-radius: 2px;
-  transition: width 0.5s ease;
-}
 
 /* Steps list */
-.onboarding-steps { display: flex; flex-direction: column; padding-bottom: 8px; }
-.onboarding-step {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px;
-  cursor: pointer;
-  transition: background 0.1s;
-  border-top: 1px solid var(--gray-50);
-}
-.onboarding-step:hover:not(.done) { background: var(--brand-50); }
-.onboarding-step.done { opacity: 0.55; cursor: default; }
-.onboarding-step-check {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; flex-shrink: 0;
-  transition: all 0.2s;
-}
-.onboarding-step-check.checked {
-  background: var(--success); border-color: var(--success); color: #fff;
-}
-.onboarding-step-body  { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.onboarding-step-icon  { font-size: 16px; flex-shrink: 0; }
-.onboarding-step-title { font-size: 12px; font-weight: 600; color: var(--gray-800); }
-.onboarding-step-title.done-text { text-decoration: line-through; color: var(--gray-400); }
-.onboarding-step-desc  { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
-.onboarding-step-action {
-  font-size: 11px; font-weight: 600; color: var(--brand-500);
-  white-space: nowrap; flex-shrink: 0;
-}
-
-[data-theme="dark"] .onboarding-toggle,
-[data-theme="dark"] .onboarding-panel  { background: #071525; border-color: #1e3a5a; }
-[data-theme="dark"] .onboarding-toggle-title,
-[data-theme="dark"] .onboarding-step-title { color: var(--gray-200); }
-[data-theme="dark"] .onboarding-step:hover:not(.done) { background: #1e1f35; }
-[data-theme="dark"] .onboarding-step { border-color: #0a1e35; }
 
 /*  Page header dark mode  */
 [data-theme="dark"] .page-header-block {
@@ -1646,7 +1539,6 @@
 /* ========================================
    UPGRADE / LICENSING CTA
    /* = */
-
 
 /*  Topbar Upgrade button — previously a gold-to-purple-to-indigo
    gradient with a triple colored glow and an infinite shimmer sweep

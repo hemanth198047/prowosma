@@ -974,11 +974,9 @@
 [data-theme="dark"] .live-clock-tz     { color: #6b90b0; }
 [data-theme="dark"] .live-clock        { border-color: #1e3a5a; }
 
-
 /* ========================================
    DARK MODE  COMPREHENSIVE TEXT VISIBILITY FIXES
    /* = */
-
 
 /* Topbar icons always visible */
 [data-theme="dark"] .notif-bell-btn         { color: #8cb4d0; }
@@ -1430,18 +1428,6 @@
 /* ========================================
    DARK MODE  ONBOARDING & PWA
    /* = */
-
-[data-theme="dark"] .onboarding-toggle,
-[data-theme="dark"] .onboarding-panel   { background: #071525; border-color: #1e3a5a; }
-[data-theme="dark"] .onboarding-toggle-title { color: #cce0f0; }
-[data-theme="dark"] .onboarding-toggle-sub   { color: #6b90b0; }
-[data-theme="dark"] .onboarding-panel-title  { color: #e2eff8; }
-[data-theme="dark"] .onboarding-panel-sub    { color: #6b90b0; }
-[data-theme="dark"] .onboarding-step         { border-color: #1e3a5a; }
-[data-theme="dark"] .onboarding-step:hover:not(.done) { background: #0a1e35; }
-[data-theme="dark"] .onboarding-step-title   { color: #cce0f0; }
-[data-theme="dark"] .onboarding-step-desc    { color: #6b90b0; }
-[data-theme="dark"] .onboarding-progress-bar { background: #1e3a5a; }
 [data-theme="dark"] .pwa-modal          { background: #071525; border-color: #1e3a5a; }
 [data-theme="dark"] .pwa-modal-title    { color: #e2eff8; }
 [data-theme="dark"] .pwa-modal-desc     { color: #8cb4d0; }
@@ -1483,7 +1469,6 @@
 /* ========================================
    DESIGN SWITCHER
    /* = */
-
 
 /* Trigger button */
 .ds-wrapper { position: relative; }
@@ -1913,7 +1898,6 @@
    FONT SWITCHER
    /* = */
 
-
 .fs-wrap { position: relative; }
 
 /* Trigger  same pill style as DesignSwitcher */
@@ -2316,7 +2300,6 @@
 /* ========================================
    CHATBOT WIDGET
    /* = */
-
 
 /*  FAB (floating action button)  */
 .cb-fab {

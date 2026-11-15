@@ -52,7 +52,6 @@ import LiveActivityFeed from "./components/LiveActivityFeed";
 import ConnectionStatus from "./components/ConnectionStatus";
 import AIStatus from "./components/AIStatus";
 import PWAInstallBanner from "./components/PWAInstallBanner";
-import OnboardingChecklist from "./components/OnboardingChecklist";
 import CommandPalette from "./components/CommandPalette";
 import ShortcutsHelp from "./components/ShortcutsHelp";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -463,7 +462,6 @@ function AppShell() {
               {!restricted && <ChatBot />}
               {!restricted && <LiveActivityFeed />}
               <PWAInstallBanner />
-              <OnboardingChecklist />
               {showPalette && (
                 <CommandPalette
                   onClose={() => setShowPalette(false)}
