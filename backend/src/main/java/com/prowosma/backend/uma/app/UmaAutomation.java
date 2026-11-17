@@ -28,7 +28,7 @@ import java.util.List;
 @Slf4j
 public class UmaAutomation {
     static final Duration JOIN_PATIENCE = Duration.ofMinutes(20);
-    public static final Duration FIRST_LOOK = Duration.ofMinutes(3);
+    public static final Duration FIRST_LOOK = Duration.ofMinutes(1);
     static final Duration CALENDAR_EVERY = Duration.ofMinutes(10);
     static final Duration CALENDAR_AHEAD = Duration.ofDays(7);
 
@@ -61,7 +61,7 @@ public class UmaAutomation {
             g.setRequestedBy(by);
             m.setGoogle(g);
             // Start looking soon after the start: Google says "in progress" until the meeting really ends, which is often earlier than planned.
-            Instant check = start.plus(Duration.ofMinutes(10));
+            Instant check = start.plus(Duration.ofMinutes(1));
             queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_GOOGLE, by, check.isBefore(Instant.now()) ? Instant.now() : check);
             note.append("Google Meet's transcript is read when it ends. ");
         }

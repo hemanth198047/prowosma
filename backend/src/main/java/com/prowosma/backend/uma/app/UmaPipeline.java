@@ -148,14 +148,25 @@ public class UmaPipeline {
             return;
         }
         boolean live = d.kind() == com.prowosma.backend.meetingassistant.FirefliesMatcher.Kind.LIVE;
-        String at = java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(zoneOf(m)).format(Instant.now());
-        m.setStatusDetail(live ? "Fireflies is in the meeting. Its transcript is fetched as soon as the meeting ends (checked " + at + ")."
-                : since.compareTo(Duration.ofHours(1)) < 0
-                ? "Waiting for Fireflies' transcript - it usually arrives a few minutes after the meeting ends (checked " + at + ")."
-                : "Fireflies hasn't produced a transcript yet (checked " + at + "). Very short meetings, or meetings where the notetaker wasn't let in, may not get one.");
+        boolean preparing = d.kind() == com.prowosma.backend.meetingassistant.FirefliesMatcher.Kind.MATCH;   // listed, no text yet
+        f.setInMeeting(live);
+        if (live && !"ENDED".equals(m.getLiveState())) {
+            m.setLiveState("IN_PROGRESS");
+            if (m.getLiveSource() == null) m.setLiveSource("Fireflies");
+            if (m.getStartedAt() == null) m.setStartedAt(Instant.now());
+        }
+        if (preparing && !"ENDED".equals(m.getLiveState())) {          // Fireflies has left and is writing the transcript
+            m.setLiveState("ENDED"); m.setLiveSource("Fireflies");
+            if (m.getEndedAt() == null) m.setEndedAt(Instant.now());
+        }
+        m.setStatusDetail(live ? "Fireflies is in the meeting."
+                : preparing || "ENDED".equals(m.getLiveState()) ? "Fireflies is preparing the transcript."
+                : since.compareTo(Duration.ofHours(1)) < 0 ? "Waiting to hear from Fireflies."
+                : "Fireflies hasn't produced a transcript. Very short meetings, or meetings where the notetaker wasn't let in, may not get one.");
         store.save(m);
-        // Often while it matters, then less often.
-        queue.pollAgain(job, live ? Duration.ofMinutes(2) : since.compareTo(Duration.ofHours(1)) < 0 ? Duration.ofMinutes(3) : Duration.ofMinutes(15));
+        // Every minute while the meeting runs or the transcript is being prepared, then less often.
+        queue.pollAgain(job, live || preparing || since.compareTo(Duration.ofMinutes(30)) < 0 ? Duration.ofMinutes(1)
+                : since.compareTo(Duration.ofHours(2)) < 0 ? Duration.ofMinutes(3) : Duration.ofMinutes(15));
     }
 
     private static java.time.ZoneId zoneOf(UmaMeeting m) {
@@ -178,10 +189,15 @@ public class UmaPipeline {
             case "FAIL" -> fail(job, m, c.code(), c.note(), c.recovery(), false);
             default -> {
                 UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
-                // Fireflies' note ("asks to join, admit it", "in the meeting") is more useful; Google's waits quietly beside it.
-                boolean firefliesBusy = automation.pendingCapture(fresh).stream()
-                        .anyMatch(j -> FIREFLIES_JOIN.equals(j.getType()) || FETCH_FIREFLIES.equals(j.getType()));
-                if (!firefliesBusy) fresh.setStatusDetail(c.note());
+                // Google is the authority on whether the call itself is running.
+                if ("IN_PROGRESS".equals(c.live())) {
+                    fresh.setLiveState("IN_PROGRESS"); fresh.setLiveSource("Google Meet");
+                    if (c.startedAt() != null) fresh.setStartedAt(c.startedAt());
+                } else if ("ENDED".equals(c.live())) {
+                    fresh.setLiveState("ENDED"); fresh.setLiveSource("Google Meet");
+                    if (c.startedAt() != null) fresh.setStartedAt(c.startedAt());
+                    if (c.endedAt() != null) fresh.setEndedAt(c.endedAt());
+                }
                 if (fresh.getGoogle() != null) fresh.getGoogle().setLastNote(c.note());
                 store.save(fresh);
                 queue.pollAgain(job, c.again());

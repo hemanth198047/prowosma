@@ -47,7 +47,7 @@ const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,
 const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
 
 function Pill({ status, label }) {
-  const tone = label === "Waiting for transcript" || label === "Scheduled" ? "info" : TONE[status] || "neutral";
+  const tone = ["Waiting for transcript", "Scheduled", "In progress", "Getting transcript"].includes(label) ? "info" : TONE[status] || "neutral";
   return <span className={`uma-pill uma-pill--${tone}`}><span className="uma-dot" aria-hidden="true" />{label || status}</span>;
 }
 
@@ -641,6 +641,30 @@ function ProviderCards() {
   );
 }
 
+function HowItWorks() {
+  const [open, setOpen] = useState(() => { try { return localStorage.getItem("uma.howItWorks") !== "closed"; } catch { return true; } });
+  const toggle = (e) => {
+    const isOpen = e.currentTarget.open;
+    setOpen(isOpen);
+    try { localStorage.setItem("uma.howItWorks", isOpen ? "open" : "closed"); } catch { /* private window */ }
+  };
+  return (
+    <details className="uma-how" open={open} onToggle={toggle}>
+      <summary>How it works</summary>
+      <ol className="uma-how-steps">
+        <li><strong>Start or plan the meeting.</strong> Click <em>Meet now</em> for a meeting right away, or <em>Add → Schedule a Google Meet</em> for later.
+          (Meetings already in your Google Calendar can be added for you: <em>Connections</em>.)</li>
+        <li><strong>Join it from Prowosma</strong> with <em>Join meeting</em>. Fireflies' notetaker joins by itself. In Google Meet, click <em>Admit</em> when it asks to join.</li>
+        <li><strong>Talk as usual.</strong> When you're done, the host chooses <em>End call for everyone</em> (or everyone leaves). Prowosma notices within about a minute.</li>
+        <li><strong>Wait a few minutes.</strong> The transcript usually takes 2-10 minutes, then you'll see <em>Your meeting summary is ready</em>.</li>
+        <li><strong>Review and create tasks.</strong> Check the decisions and action items, then click <em>Create task</em> on the ones you want.</li>
+      </ol>
+      <p className="uma-fine">No Fireflies? Click <em>Record meeting</em> before you start and share the meeting tab (Chrome or Edge).
+        Already have a recording or a transcript? Use <em>Upload recording</em> or <em>Add → Import transcript</em>.</p>
+    </details>
+  );
+}
+
 function Dashboard({ openDialog }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -674,6 +698,8 @@ function Dashboard({ openDialog }) {
           </div>
         </div>
       )}
+
+      <HowItWorks />
 
       <div className="uma-stats">
         <div className="pg-stat"><span className="pg-stat-num">{data.inProgress.length}</span><span className="pg-stat-label">Processing</span></div>
@@ -1160,61 +1186,12 @@ function Detail({ id, team, projects }) {
         </div>
       )}
       {m.status === "CREATED" && (
-        <div className="uma-note" role="status">
-          <Link2 size={15} aria-hidden="true" />
-          <div>
-            <strong>{m.statusDetail || "Waiting for the meeting's content."}</strong>
-            {waiting && (d.capture.lastCheckAt || d.capture.nextCheckAt) && (
-              <p className="uma-fine">
-                {d.capture.lastCheckAt && <>Last checked {new Date(d.capture.lastCheckAt).toLocaleTimeString([], { timeStyle: "short" })}. </>}
-                {d.capture.nextCheckAt && new Date(d.capture.nextCheckAt) > new Date() && <>Next check {new Date(d.capture.nextCheckAt).toLocaleTimeString([], { timeStyle: "short" })}.</>}
-              </p>
-            )}
-            {m.meetingUrl && !m.meetingAt && !m.calendarLink && <p><a href={m.meetingUrl} target="_blank" rel="noreferrer noopener">Open the meeting link</a></p>}
-          </div>
-          {waiting && d.canManage && d.capture.pending.some((t) => t !== "FIREFLIES_JOIN") && (
-            <button type="button" className="btn-secondary pg-btn uma-note-action" disabled={busy}
-              onClick={() => run(() => checkUmaMeeting(id), "Checking now…")}><RefreshCw size={14} aria-hidden="true" />Check now</button>
-          )}
-        </div>
+        <MeetingPanel m={m} d={d} id={id} ffConnected={ffConnected} busy={busy} run={run} nowTick={nowTick}
+          onRecord={() => setRecordNow(true)} onAdd={() => setAddRecording(true)} />
       )}
-      {m.status === "CREATED" && (m.meetingAt || m.calendarLink) && (
-        <div className="uma-auto">
-          <div className="uma-auto-facts">
-            {m.meetingAt && <span><strong>{when(m.meetingAt)}</strong>{m.meetingEndAt ? ` – ${new Date(m.meetingEndAt).toLocaleTimeString([], { timeStyle: "short" })}` : ""}</span>}
-            {m.meetingUrl && <a href={m.meetingUrl} target="_blank" rel="noreferrer noopener">Join link</a>}
-            {m.calendarLink && <a href={m.calendarLink} target="_blank" rel="noreferrer noopener">Open in Google Calendar</a>}
-            {m.attendees?.length > 0 && <span className="uma-fine">{m.attendees.length} invited</span>}
-          </div>
-          {d.canManage && ffConnected && (
-            <label className="uma-check">
-              <input type="checkbox" checked={!!m.autoFireflies} disabled={busy}
-                onChange={(e) => run(() => setUmaAutoFireflies(id, e.target.checked),
-                  e.target.checked ? "Fireflies' notetaker will join when it starts." : "Fireflies won't join automatically.")} />
-              <span>Send the Fireflies notetaker automatically when it starts</span>
-            </label>
-          )}
-        </div>
-      )}
-      {canAddContent && (
+      {m.status === "FAILED" && canAddContent && (
         <div className="uma-add-content">
-          {m.status === "CREATED" && m.meetingUrl && m.meetingAt && new Date(m.meetingAt) <= new Date(nowTick)
-            && (!m.meetingEndAt || new Date(m.meetingEndAt) > new Date(nowTick)) && (
-            <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"><Video size={14} aria-hidden="true" />Join meeting</a>
-          )}
-          {m.status === "CREATED" && (
-            <button type="button" className="btn-primary pg-btn" onClick={() => setRecordNow(true)}><Circle size={12} fill="currentColor" aria-hidden="true" />Record it now</button>
-          )}
-          {m.meetingUrl && ffConnected && (
-            <button type="button" className="btn-secondary pg-btn" disabled={busy}
-              onClick={() => run(() => sendUmaNotetaker(id), "Fireflies' notetaker is joining. The transcript will arrive by itself after the meeting.")}>
-              Send Fireflies notetaker</button>
-          )}
-          {/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(m.meetingUrl || "") && (
-            <button type="button" className="btn-secondary pg-btn" disabled={busy}
-              onClick={() => run(() => fetchUmaGoogle(id), "Checking Google Meet for the transcript…")}>Get transcript from Google Meet</button>
-          )}
-          <button type="button" className={m.status === "CREATED" ? "btn-secondary pg-btn" : "btn-primary pg-btn"} onClick={() => setAddRecording(true)}><Upload size={14} aria-hidden="true" />Add the recording</button>
+          <button type="button" className="btn-primary pg-btn" onClick={() => setAddRecording(true)}><Upload size={14} aria-hidden="true" />Add the recording or transcript</button>
         </div>
       )}
       {m.status === "CAPTURING" && (
@@ -1260,6 +1237,101 @@ function Detail({ id, team, projects }) {
       {addRecording && <UploadDialog existingId={id} projects={projects} onClose={() => setAddRecording(false)}
         onDone={() => { setAddRecording(false); load(); }} />}
     </div>
+  );
+}
+
+const hhmm = (iso) => (iso ? new Date(iso).toLocaleTimeString([], { timeStyle: "short" }) : "");
+
+/**
+ * The one place that says, in plain words, where a meeting stands before its summary exists:
+ * Scheduled -> In progress -> Ended, getting the transcript. One Join button; backup actions only while it can still help.
+ */
+function MeetingPanel({ m, d, id, ffConnected, busy, run, nowTick, onRecord, onAdd }) {
+  const c = d.capture || {};
+  const future = m.meetingAt && new Date(m.meetingAt) > new Date(nowTick);
+  const phase = c.phase || (future ? "SCHEDULED" : c.pending?.length ? "STARTED" : "NONE");
+  const live = phase === "SCHEDULED" || phase === "STARTED" || phase === "IN_PROGRESS";
+  const ffAuto = ffConnected && m.autoFireflies;
+  const isMeet = /meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(m.meetingUrl || "");
+
+  let headline, detail = [];
+  if (phase === "SCHEDULED") {
+    headline = `Starts ${when(m.meetingAt)}.`;
+    detail.push(ffAuto ? "Fireflies' notetaker joins by itself when it starts. In Google Meet, click Admit when it asks to join."
+      : ffConnected ? "Nothing will record it unless you switch Fireflies on below." : "To have it recorded, connect Fireflies (Connections) or record it from this browser.");
+  } else if (phase === "STARTED") {
+    headline = "The meeting time has started.";
+    if (c.firefliesJoining) detail.push("Fireflies' notetaker is on its way. In Google Meet, click Admit when it asks to join.");
+    else if (c.firefliesSent) detail.push("Fireflies' notetaker was sent. If it's waiting to be let in, click Admit in Google Meet.");
+    if (c.googleWatching) detail.push("Prowosma asks Google Meet every minute whether the call is running.");
+  } else if (phase === "IN_PROGRESS") {
+    headline = `In progress${c.startedAt ? ` since ${hhmm(c.startedAt)}` : ""}.`;
+    if (c.firefliesInMeeting) detail.push("Fireflies is in the call, taking notes.");
+    else if (c.firefliesJoining) detail.push("Fireflies' notetaker is on its way. Click Admit in Google Meet when it asks.");
+    else if (c.firefliesSent) detail.push("Fireflies' notetaker was sent. If it's waiting to be let in, click Admit in Google Meet.");
+    detail.push("The meeting ends when everyone has left, or when the host chooses \"End call for everyone\". Prowosma notices within about a minute.");
+  } else if (phase === "ENDED") {
+    headline = `Ended${c.endedAt ? ` at ${hhmm(c.endedAt)}` : ""}. Getting the transcript…`;
+    detail.push("This usually takes 2-10 minutes. You can leave this page; the summary appears here by itself.");
+  } else {
+    headline = "Waiting for this meeting's recording or transcript.";
+    detail.push("Nothing is set to capture it automatically. Add the recording or transcript below.");
+  }
+  const steps = [
+    ["Meeting", phase === "ENDED" ? "done" : phase === "IN_PROGRESS" || phase === "STARTED" ? "now" : "next"],
+    ["Transcript", phase === "ENDED" ? "now" : "next"],
+    ["Summary", "next"],
+  ];
+
+  return (
+    <section className="uma-mp" aria-label="Where this meeting stands">
+      <ol className="uma-steps-bar">
+        {steps.map(([label, state]) => (
+          <li key={label} className={`uma-step uma-step--${state}`}>
+            <span className="uma-step-dot" aria-hidden="true">{state === "done" ? <Check size={12} /> : null}</span>{label}
+            <span className="sr-only">{state === "done" ? " (done)" : state === "now" ? " (now)" : ""}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="uma-mp-body" role="status" aria-live="polite">
+        <p className="uma-mp-headline">{phase === "ENDED" && <Loader2 size={15} className="uma-spin" aria-hidden="true" />}{headline}</p>
+        {detail.map((t) => <p key={t} className="uma-mp-detail">{t}</p>)}
+        {c.lastCheckAt && (phase !== "SCHEDULED") && (
+          <p className="uma-fine">Last checked {hhmm(c.lastCheckAt)}{c.nextCheckAt && new Date(c.nextCheckAt) > new Date(nowTick) ? `, next check ${hhmm(c.nextCheckAt)}` : ""}.
+            {d.canManage && c.pending?.some((t) => t !== "FIREFLIES_JOIN") && (
+              <> <button type="button" className="uma-link" disabled={busy} onClick={() => run(() => checkUmaMeeting(id), "Checking now…")}>Check now</button></>
+            )}
+          </p>
+        )}
+      </div>
+      <div className="uma-mp-actions">
+        {m.meetingUrl && live && (
+          <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"><Video size={15} aria-hidden="true" />Join meeting</a>
+        )}
+        {m.calendarLink && <a className="uma-link" href={m.calendarLink} target="_blank" rel="noreferrer noopener">Open in Google Calendar</a>}
+      </div>
+      {d.canManage && (
+        <div className="uma-mp-more">
+          {phase === "SCHEDULED" && ffConnected && (
+            <label className="uma-check">
+              <input type="checkbox" checked={!!m.autoFireflies} disabled={busy}
+                onChange={(e) => run(() => setUmaAutoFireflies(id, e.target.checked),
+                  e.target.checked ? "Fireflies will join by itself when it starts." : "Fireflies won't join this meeting.")} />
+              <span>Fireflies joins by itself</span>
+            </label>
+          )}
+          {(phase === "STARTED" || phase === "IN_PROGRESS") && ffConnected && m.meetingUrl && !c.firefliesInMeeting && (
+            <button type="button" className="uma-link" disabled={busy}
+              onClick={() => run(() => sendUmaNotetaker(id), "Fireflies is on its way. Click Admit in Google Meet when it asks.")}>Fireflies didn't arrive? Send it now</button>
+          )}
+          {live && <button type="button" className="uma-link" onClick={onRecord}>No notetaker? Record from this browser</button>}
+          {phase === "NONE" && isMeet && (
+            <button type="button" className="uma-link" disabled={busy} onClick={() => run(() => fetchUmaGoogle(id), "Asking Google Meet for the transcript…")}>Get Google Meet's transcript</button>
+          )}
+          <button type="button" className="uma-link" onClick={onAdd}>Have a recording or transcript? Add it</button>
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -490,7 +490,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
 
         dueNow(); pipeline.drain();                      // still running
         assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("CREATED");
-        assertThat(detail(id).at("/meeting/statusDetail").asText()).contains("in progress");
+        assertThat(detail(id).get("statusLabel").asText()).isEqualTo("In progress");
 
         gg().end = gg().start.plusSeconds(600);
         dueNow(); pipeline.drain();                      // ended, transcript ready → imported and analysed
@@ -705,6 +705,57 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         MvcResult chk = mvc.perform(as(post(BASE + "/meetings/" + id + "/check"), ownerToken(), workspaceId)).andReturn();
         assertThat(chk.getResponse().getStatus()).as(chk.getResponse().getContentAsString()).isEqualTo(200);
         pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+    }
+
+    /** The person ends the call in Google Meet: Prowosma notices within a minute and says what it is waiting for. */
+    @Test
+    void meetingEnd_isDetectedFromGoogleMeet_andEachStepIsLabelledPlainly() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectGoogle();
+        java.time.Instant start = java.time.Instant.now().minusSeconds(300);
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://meet.google.com/abc-defg-hij", "meetingAt", start.toString(), "durationMinutes", 60)))).andReturn();
+        String id = json(link).get("id").asText();
+        org.bson.Document job = mongoTemplate.getCollection("uma_jobs").find(new org.bson.Document("type", "FETCH_GOOGLE")).first();
+        assertThat(job.getDate("runAfter").toInstant()).as("Google is asked from the first minute").isBefore(java.time.Instant.now().plusSeconds(5));
+
+        gg().start = start.plusSeconds(30); gg().end = null;                 // call running
+        dueNow(); pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.get("statusLabel").asText()).isEqualTo("In progress");
+        assertThat(d.at("/capture/phase").asText()).isEqualTo("IN_PROGRESS");
+        assertThat(d.at("/capture/googleWatching").asBoolean()).isTrue();
+        assertThat(java.time.Instant.parse(d.at("/capture/nextCheckAt").asText())).as("asks again in a minute")
+                .isBefore(java.time.Instant.now().plusSeconds(75));
+
+        gg().end = java.time.Instant.now(); gg().transcriptState = "STARTED"; // host ended the call; Google still writing
+        dueNow(); pipeline.drain();
+        d = detail(id);
+        assertThat(d.get("statusLabel").asText()).isEqualTo("Getting transcript");
+        assertThat(d.at("/capture/endedAt").asText()).isNotBlank();
+        assertThat(d.at("/capture/liveSource").asText()).isEqualTo("Google Meet");
+
+        gg().transcriptState = "FILE_GENERATED";
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+    }
+
+    @Test
+    void firefliesBeingInTheCall_marksTheMeetingInProgress_andLeavingMarksItEnded() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://zoom.us/j/123456789", "meetingAt", java.time.Instant.now().toString(), "autoFireflies", true)))).andReturn();
+        String id = json(link).get("id").asText();
+        ff().live = true; ff().date = java.time.Instant.now().toString(); ff().meetingLink = "https://zoom.us/j/123456789";
+        dueNow(); pipeline.drain();                                          // Fireflies sent
+        dueNow(); pipeline.drain();                                          // Fireflies: in the call
+        JsonNode d = detail(id);
+        assertThat(d.get("statusLabel").asText()).isEqualTo("In progress");
+        assertThat(d.at("/capture/firefliesInMeeting").asBoolean()).isTrue();
+        ff().live = false;                                                   // left; transcript ready right away in this script
+        dueNow(); pipeline.drain();
         assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
     }
 

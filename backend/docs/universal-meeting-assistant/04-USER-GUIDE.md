@@ -7,6 +7,46 @@ Turn a meeting into a summary, the decisions, and action items you can approve a
 
 ![Dashboard](img/11-dashboard-after.png)
 
+## The quick version
+
+1. **Start or plan the meeting.** Click **Meet now** for a meeting right away, or **Add → Schedule a Google Meet** for later.
+   (Meetings already in your Google Calendar can be added for you: **Connections → Add my upcoming Google Meet meetings**.)
+2. **Join it from Prowosma** with **Join meeting**. Fireflies' notetaker joins by itself. In Google Meet, click **Admit** when it asks to join.
+3. **Talk as usual.** When you're done, the host chooses **End call for everyone** (or everyone leaves). Prowosma notices within about a minute.
+4. **Wait a few minutes.** The transcript usually takes 2-10 minutes, then you'll see **Your meeting summary is ready**.
+5. **Review and create tasks.** Check the decisions and action items, then click **Create task** on the ones you want.
+
+No Fireflies? Click **Record meeting** before you start and share the meeting tab (Chrome or Edge).
+Already have a recording or transcript? Use **Upload recording** or **Add → Import transcript**.
+
+### What the meeting page tells you
+
+| You see | What it means | What you do |
+|---|---|---|
+| **Scheduled** - "Starts 10:30" | Not started yet. Fireflies will join by itself at the start time. | Nothing. Click **Join meeting** when it's time. |
+| **In progress** | Google Meet (or Fireflies) says the call is running. | Talk. In Meet, admit Fireflies if it's waiting. |
+| **Getting transcript** - "Ended at 10:52" | The call has ended; the transcript is being prepared (2-10 min). | Nothing. You can leave the page. |
+| **Ready for review** | The summary, decisions and action items are ready. | Review and create tasks. |
+
+### Questions people ask
+
+**How does Prowosma know the meeting has ended?** It asks Google Meet every minute (through your connected Google account) and Fireflies every
+minute while the meeting runs. A Google Meet call has ended when **everyone has left** - the Fireflies notetaker counts as someone - or when
+the host chooses **End call for everyone**. If you only click the red button to leave, the call keeps going while others (or Fireflies) are
+still in it, so Prowosma still shows *In progress*.
+
+**Why "Getting transcript" for a few minutes after the end?** Google and Fireflies need a few minutes to write the transcript. Prowosma picks
+it up as soon as it exists. *Check now* asks again immediately.
+
+**Do I have to send Fireflies?** No. It joins by itself at the start time (one minute after you click *Meet now*). The only thing you may need to
+do is click **Admit** in Google Meet. If it didn't arrive, the meeting page shows *Fireflies didn't arrive? Send it now* during the meeting.
+
+**When do I use Record meeting?** Only when Fireflies isn't available: start it before the meeting, choose the meeting tab, tick
+*Share tab audio*, and press *Stop and summarise* at the end.
+
+**Why didn't a very short test meeting get a summary?** Meetings of a minute or less may not get a transcript from Fireflies. Talk for a few
+minutes when you test.
+
 ## Three ways to add a meeting
 
 | | Use it when | What happens |

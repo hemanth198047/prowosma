@@ -83,10 +83,14 @@ public class UmaGoogleMeet {
     }
 
     /** What one look at Google found. WAIT = look again later; DONE = transcript stored; FAIL = give up with a reason. */
-    public record Check(String outcome, String note, Duration again, String code, String recovery) {
-        static Check waitFor(String note, Duration again) { return new Check("WAIT", note, again, null, null); }
-        static Check done(String note) { return new Check("DONE", note, null, null, null); }
-        static Check fail(String code, String note, String recovery) { return new Check("FAIL", note, null, code, recovery); }
+    /** live = what Google says about the call itself: NOT_STARTED | IN_PROGRESS | ENDED (null when unknown). */
+    public record Check(String outcome, String note, Duration again, String code, String recovery, String live, Instant startedAt, Instant endedAt) {
+        static Check waitFor(String note, Duration again) { return new Check("WAIT", note, again, null, null, null, null, null); }
+        static Check waitLive(String note, Duration again, String live, Instant started, Instant ended) {
+            return new Check("WAIT", note, again, null, null, live, started, ended);
+        }
+        static Check done(String note) { return new Check("DONE", note, null, null, null, "ENDED", null, null); }
+        static Check fail(String code, String note, String recovery) { return new Check("FAIL", note, null, code, recovery, null, null, null); }
     }
 
     public Check fetch(UmaMeeting m) {
@@ -105,20 +109,23 @@ public class UmaGoogleMeet {
                 if (now.isAfter(anchor.plus(Duration.ofHours(24))))
                     return Check.fail("NO_MEET_SESSION", "Google has no record of this meeting taking place around its time.",
                             "Check the meeting time and link, or upload the recording.");
-                return Check.waitFor("Waiting for the meeting to happen.", Duration.ofMinutes(10));
+                // Not started yet: look every minute around the planned time, less often later.
+                boolean nearStart = now.isBefore(anchor.plus(Duration.ofHours(2)));
+                return Check.waitLive("Nobody has joined the meeting yet.", Duration.ofMinutes(nearStart ? 1 : 10), "NOT_STARTED", null, null);
             }
             ConferenceSelector.Conference conf = pick.get();
-            if (conf.end() == null) return Check.waitFor("The meeting is in progress. Google's transcript is read after it ends.", Duration.ofMinutes(3));
+            // Google keeps the call "in progress" until the last person leaves (a notetaker counts) or the host ends it for everyone.
+            if (conf.end() == null) return Check.waitLive("The meeting is in progress.", Duration.ofMinutes(1), "IN_PROGRESS", conf.start(), null);
             List<GoogleMeetApi.TranscriptInfo> all = api.listTranscripts(token, conf.name());
             List<GoogleMeetApi.TranscriptInfo> ready = all.stream()
                     .filter(t -> "FILE_GENERATED".equals(t.state()) || ("ENDED".equals(t.state()) && t.end() != null && t.end().isBefore(now.minus(ENDED_PATIENCE))))
                     .sorted(Comparator.comparing(t -> t.start() == null ? Instant.MAX : t.start())).toList();
-            if (ready.size() < all.size()) return Check.waitFor("Google is still preparing the transcript.", Duration.ofMinutes(2));
+            if (ready.size() < all.size()) return Check.waitLive("The meeting ended. Google is preparing its transcript.", Duration.ofMinutes(1), "ENDED", conf.start(), conf.end());
             if (ready.isEmpty()) {
                 if (now.isAfter(conf.end().plus(NO_TRANSCRIPT_GRACE)))
                     return Check.fail("NO_TRANSCRIPT", "Google Meet has no transcript for this meeting. Transcription has to be turned on during the meeting.",
                             "Upload the recording, or send the Fireflies notetaker next time.");
-                return Check.waitFor("The meeting ended; waiting for Google's transcript.", Duration.ofMinutes(5));
+                return Check.waitLive("The meeting ended; waiting for a transcript.", Duration.ofMinutes(2), "ENDED", conf.start(), conf.end());
             }
             Map<String, String> names = api.listParticipants(token, conf.name());
             List<UmaSegment> segs = new ArrayList<>();
@@ -142,6 +149,9 @@ public class UmaGoogleMeet {
             UmaMeeting.GoogleLink g = m.getGoogle() == null ? new UmaMeeting.GoogleLink() : m.getGoogle();
             g.setConferenceRecord(conf.name());
             m.setGoogle(g);
+            m.setLiveState("ENDED"); m.setLiveSource("Google Meet");
+            if (m.getStartedAt() == null) m.setStartedAt(conf.start());
+            if (m.getEndedAt() == null) m.setEndedAt(conf.end());
             UmaMeeting.TranscriptInfo info = new UmaMeeting.TranscriptInfo();
             info.setOrigin("GOOGLE_MEET"); info.setEngine("Google Meet"); info.setSegmentCount(segs.size());
             info.setSpeakersKnown(segs.stream().anyMatch(x -> x.getSpeaker() != null)); info.setUpdatedAt(Instant.now());

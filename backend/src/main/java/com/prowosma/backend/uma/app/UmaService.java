@@ -112,7 +112,7 @@ public class UmaService {
         for (UmaMeeting m : visible) {
             Map<String, Object> row = summary(m);
             if (m.getStatus() == UmaStatus.CREATED && m.getMeetingAt() != null && m.getMeetingAt().isAfter(now)) upcoming.add(row);
-            else if (m.getStatus().isWorking() || "Waiting for transcript".equals(row.get("statusLabel"))) inProgress.add(row);
+            else if (m.getStatus().isWorking() || Set.of("In progress", "Getting transcript", "Waiting for transcript").contains(String.valueOf(row.get("statusLabel")))) inProgress.add(row);
             else if (m.getStatus() == UmaStatus.FAILED) failed.add(row);
             else if (m.getStatus() == UmaStatus.REVIEW_READY) review.add(row);
             if (m.getStatus() != UmaStatus.CANCELLED && recent.size() < 20) recent.add(row);
@@ -153,20 +153,43 @@ public class UmaService {
         return r;
     }
 
-    /** What people see: before the meeting "Scheduled"; after it, while a transcript is on its way, "Waiting for transcript". */
-    String label(UmaMeeting m) {
-        if (m.getStatus() != UmaStatus.CREATED) return m.getStatus().label();
-        boolean future = m.getMeetingAt() != null && m.getMeetingAt().isAfter(Instant.now());
-        if (future) return "Scheduled";
-        return automation.pendingCapture(m).isEmpty() ? m.getStatus().label() : "Waiting for transcript";
+    /** Where a meeting without content stands, in one word: SCHEDULED, IN_PROGRESS, ENDED, STARTED (should be running, nothing seen) or NONE. */
+    String phase(UmaMeeting m) {
+        if (m.getStatus() != UmaStatus.CREATED) return null;
+        if ("ENDED".equals(m.getLiveState())) return "ENDED";
+        if ("IN_PROGRESS".equals(m.getLiveState())) return "IN_PROGRESS";
+        if (m.getMeetingAt() != null && m.getMeetingAt().isAfter(Instant.now())) return "SCHEDULED";
+        return automation.pendingCapture(m).isEmpty() ? "NONE" : "STARTED";
     }
 
-    /** The automatic capture steps still waiting, and when they run next. */
+    /** What people see. */
+    String label(UmaMeeting m) {
+        String p = phase(m);
+        if (p == null) return m.getStatus().label();
+        return switch (p) {
+            case "SCHEDULED" -> "Scheduled";
+            case "IN_PROGRESS" -> "In progress";
+            case "ENDED" -> "Getting transcript";
+            case "STARTED" -> "Waiting for transcript";
+            default -> m.getStatus().label();
+        };
+    }
+
+    /** Everything the meeting page needs to say plainly what is happening and what happens next. */
     Map<String, Object> capture(UmaMeeting m) {
         Map<String, Object> r = new LinkedHashMap<>();
         if (m.getStatus() != UmaStatus.CREATED) { r.put("pending", List.of()); return r; }
         List<com.prowosma.backend.uma.model.UmaJob> jobs = automation.pendingCapture(m);
-        r.put("pending", jobs.stream().map(com.prowosma.backend.uma.model.UmaJob::getType).distinct().toList());
+        List<String> types = jobs.stream().map(com.prowosma.backend.uma.model.UmaJob::getType).distinct().toList();
+        r.put("pending", types);
+        r.put("phase", phase(m));
+        r.put("startedAt", m.getStartedAt());
+        r.put("endedAt", m.getEndedAt());
+        r.put("liveSource", m.getLiveSource());
+        r.put("firefliesJoining", types.contains(UmaPipeline.FIREFLIES_JOIN));
+        r.put("firefliesSent", m.getFireflies() != null && m.getFireflies().getNotetakerSentAt() != null);
+        r.put("firefliesInMeeting", m.getFireflies() != null && m.getFireflies().isInMeeting());
+        r.put("googleWatching", types.contains(UmaPipeline.FETCH_GOOGLE));
         jobs.stream().filter(j -> !UmaPipeline.FIREFLIES_JOIN.equals(j.getType())).map(com.prowosma.backend.uma.model.UmaJob::getRunAfter)
                 .filter(Objects::nonNull).min(Comparator.naturalOrder()).ifPresent(t -> r.put("nextCheckAt", t));
         Instant last = null;

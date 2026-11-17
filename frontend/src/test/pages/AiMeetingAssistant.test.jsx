@@ -203,21 +203,47 @@ describe("AI Meeting Assistant (simulated API)", () => {
     expect(screen.getByRole("menuitem", { name: "Import from Fireflies" })).toBeInTheDocument();
   });
 
-  it("offers the Fireflies notetaker and Google Meet for a Meet link meeting", async () => {
+  const linkMeeting = (meetingOver, capture) => meeting({
+    meeting: { id: "x1", title: "Design review", status: "CREATED", source: "MEETING_LINK", provider: "GOOGLE_MEET",
+      meetingUrl: "https://meet.google.com/abc-defg-hij", calendarLink: "https://calendar.google.com/e", autoFireflies: true,
+      meetingAt: "2099-01-01T10:00:00Z", meetingEndAt: "2099-01-01T10:30:00Z", ...meetingOver },
+    statusLabel: "Scheduled", insights: null, segments: [], capture,
+  });
+
+  it("before the meeting: when it starts, that Fireflies joins by itself, and one Join button", async () => {
     api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
-    api.getUmaMeeting.mockResolvedValue(meeting({
-      meeting: { id: "x1", title: "Design review", status: "CREATED", source: "MEETING_LINK", provider: "GOOGLE_MEET",
-        meetingUrl: "https://meet.google.com/abc-defg-hij", statusDetail: "After the meeting, add its recording or transcript here." },
-      statusLabel: "Waiting for content", insights: null, segments: [],
-    }));
-    api.sendUmaNotetaker.mockResolvedValue({ data: {} });
-    api.fetchUmaGoogle.mockResolvedValue({ data: {} });
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({}, { phase: "SCHEDULED", pending: ["FIREFLIES_JOIN", "FETCH_GOOGLE"], firefliesJoining: true }));
     at("/ai-meeting-assistant/x1");
-    fireEvent.click(await screen.findByRole("button", { name: "Send Fireflies notetaker" }));
+    expect(await screen.findByText(/^Starts /)).toBeInTheDocument();
+    expect(await screen.findByText(/joins by itself when it starts/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Join/ })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /Send it now/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Get Google Meet/ })).not.toBeInTheDocument();
+  });
+
+  it("during the meeting: says how it ends, and offers Fireflies again only if it isn't in the call", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
+    api.sendUmaNotetaker.mockResolvedValue({ data: {} });
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ meetingAt: "2026-01-01T10:00:00Z" },
+      { phase: "IN_PROGRESS", startedAt: "2026-01-01T10:01:00Z", pending: ["FETCH_FIREFLIES", "FETCH_GOOGLE"], firefliesSent: true, firefliesInMeeting: false }));
+    at("/ai-meeting-assistant/x1");
+    expect(await screen.findByText(/^In progress since/)).toBeInTheDocument();
+    expect(screen.getByText(/End call for everyone/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /Fireflies didn't arrive\? Send it now/ }));
     await waitFor(() => expect(api.sendUmaNotetaker).toHaveBeenCalledWith("x1"));
-    fireEvent.click(screen.getByRole("button", { name: "Get transcript from Google Meet" }));
-    await waitFor(() => expect(api.fetchUmaGoogle).toHaveBeenCalledWith("x1"));
-    expect(screen.getByRole("button", { name: /Record it now/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Record from this browser/ })).toBeInTheDocument();
+  });
+
+  it("after the meeting: says when it ended and that the transcript is on its way, no Join button", async () => {
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ meetingAt: "2026-01-01T10:00:00Z" },
+      { phase: "ENDED", endedAt: "2026-01-01T10:14:00Z", liveSource: "Google Meet", pending: ["FETCH_GOOGLE"], lastCheckAt: "2026-01-01T10:15:00Z" }));
+    api.checkUmaMeeting.mockResolvedValue({ data: { checks: 1 } });
+    at("/ai-meeting-assistant/x1");
+    expect(await screen.findByText(/^Ended at .* Getting the transcript/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Join meeting/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Record from this browser/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Check now" }));
+    await waitFor(() => expect(api.checkUmaMeeting).toHaveBeenCalledWith("x1"));
   });
 
   it("says plainly what setup is missing", async () => {

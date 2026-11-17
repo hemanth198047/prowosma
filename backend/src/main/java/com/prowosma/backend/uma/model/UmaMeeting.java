@@ -45,6 +45,11 @@ public class UmaMeeting {
     private String calendarLink;              // the event in Google Calendar
     private List<String> attendees = new ArrayList<>();
     private boolean autoFireflies;            // send the Fireflies notetaker automatically when it starts
+    // What Prowosma has seen of the meeting itself (from Google Meet, or from Fireflies being in it)
+    private String liveState;                 // null (not seen yet) | IN_PROGRESS | ENDED
+    private Instant startedAt;
+    private Instant endedAt;
+    private String liveSource;                // "Google Meet" | "Fireflies"
     private GoogleLink google;
     private TranscriptInfo transcript;
     private int insightsVersion;
@@ -82,6 +87,7 @@ public class UmaMeeting {
     public static class FirefliesLink {
         private String transcriptId;              // set once the transcript was imported (a transcript is imported into one meeting only)
         private Instant notetakerSentAt;          // when the notetaker was asked to join
+        private boolean inMeeting;                // Fireflies reported being in the call at the last check
         private String notetakerSentBy;
         private Instant lastCheckAt;
         private int checks;
