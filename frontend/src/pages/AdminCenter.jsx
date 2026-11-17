@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { resetAiMeetingAssistantEnabled } from "../hooks/useAiMeetingAssistantEnabled";
 import { unwrapList } from "../api/client";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
@@ -656,7 +657,11 @@ function FeatureFlags() {
     const next = { ...flags, [key]: !isOn };
     setFlags(next);
     setSaving(true);
-    try { await saveFeatureFlag({ key, enabled: next[key] }); toast(`Feature ${next[key] ? "enabled" : "disabled"}`, "success"); }
+    try {
+      await saveFeatureFlag({ key, enabled: next[key] });
+      toast(`Feature ${next[key] ? "enabled" : "disabled"}`, "success");
+      if (key === "universalMeetingAssistant") resetAiMeetingAssistantEnabled();   // the menu item appears/disappears straight away
+    }
     catch { toast("Save failed", "error"); }
     finally { setSaving(false); }
   };
