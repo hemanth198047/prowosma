@@ -14,6 +14,7 @@ Behind the workspace feature flag **`universalMeetingAssistant`** (off by defaul
 | [06-VALIDATION](06-VALIDATION.md) | Tests, real end-to-end runs, quality and speed benchmarks |
 | [07-SECURITY-REVIEW](07-SECURITY-REVIEW.md) | Controls, findings that need a decision, residual risks |
 | [08-READINESS](08-READINESS.md) | Phase status, limitations, production checklist, proposal for the legacy assistant |
+| [09-CONNECTIONS-SETUP](09-CONNECTIONS-SETUP.md) | **Google Meet, Fireflies and browser recording: what to set up and how** |
 
 ## Files changed outside the new module
 

@@ -136,6 +136,68 @@ public class UmaController {
         }
     }
 
+    // ── browser capture ──
+    public record CaptureBody(String meetingId, String title, String projectId, String meetingAt, String timezone, boolean consent) {}
+
+    @PostMapping("/meetings/capture")
+    public ResponseEntity<UmaMeeting> startCapture(@RequestBody CaptureBody b, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.startCapture(ctx(auth), b.meetingId(), b.title(), b.projectId(),
+                instant(b.meetingAt()), b.timezone(), b.consent()));
+    }
+
+    /** One short piece of recorded audio, as the raw request body. */
+    @PutMapping("/meetings/{id}/capture/{track}/{seq}")
+    public Map<String, Object> capturePiece(@PathVariable String id, @PathVariable String track, @PathVariable int seq,
+                                            @RequestParam(defaultValue = "0") long startMs, @RequestParam(defaultValue = "0") long durationMs,
+                                            HttpServletRequest request, Authentication auth) throws IOException {
+        UmaService.Ctx c = ctx(auth);
+        if (request.getContentLengthLong() > UmaService.MAX_PIECE_BYTES)
+            throw new UmaException(HttpStatus.CONTENT_TOO_LARGE, "PIECE_TOO_LARGE", "That piece of audio is too large.");
+        byte[] audio = request.getInputStream().readNBytes((int) UmaService.MAX_PIECE_BYTES + 1);
+        return service.capturePiece(c, id, track, seq, startMs, durationMs, audio);
+    }
+
+    @PostMapping("/meetings/{id}/capture/finish")
+    public UmaMeeting finishCapture(@PathVariable String id, Authentication auth) { return service.finishCapture(ctx(auth), id); }
+
+    // ── Fireflies ──
+    @GetMapping("/connections/fireflies")
+    public Map<String, Object> firefliesStatus(Authentication auth) { return service.firefliesStatus(ctx(auth)); }
+
+    public record KeyBody(String apiKey) {}
+
+    @PutMapping("/connections/fireflies")
+    public Map<String, Object> saveFireflies(@RequestBody KeyBody b, Authentication auth) { return service.saveFirefliesKey(ctx(auth), b.apiKey()); }
+
+    @DeleteMapping("/connections/fireflies")
+    public Map<String, Object> removeFireflies(Authentication auth) { return service.removeFirefliesKey(ctx(auth)); }
+
+    @GetMapping("/fireflies/recent")
+    public List<Map<String, Object>> firefliesRecent(Authentication auth) { return service.firefliesRecent(ctx(auth)); }
+
+    public record FirefliesImportBody(String transcriptId, String projectId) {}
+
+    @PostMapping("/meetings/fireflies")
+    public ResponseEntity<UmaMeeting> importFireflies(@RequestBody FirefliesImportBody b, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.importFromFireflies(ctx(auth), b.transcriptId(), b.projectId()));
+    }
+
+    @PostMapping("/meetings/{id}/fireflies/notetaker")
+    public UmaMeeting sendNotetaker(@PathVariable String id, Authentication auth) { return service.sendFirefliesNotetaker(ctx(auth), id); }
+
+    // ── Google Meet ──
+    @GetMapping("/connections/google")
+    public Map<String, Object> googleStatus(Authentication auth) { return service.googleStatus(ctx(auth)); }
+
+    @PostMapping("/connections/google/authorize")
+    public Map<String, Object> googleAuthorize(Authentication auth) { return service.googleAuthorize(ctx(auth)); }
+
+    @DeleteMapping("/connections/google")
+    public Map<String, Object> googleDisconnect(Authentication auth) { return service.googleDisconnect(ctx(auth)); }
+
+    @PostMapping("/meetings/{id}/google/fetch")
+    public UmaMeeting fetchGoogle(@PathVariable String id, Authentication auth) { return service.fetchFromGoogle(ctx(auth), id); }
+
     @PostMapping("/meetings/{id}/retry") public UmaMeeting retry(@PathVariable String id, Authentication auth) { return service.retry(ctx(auth), id); }
     @PostMapping("/meetings/{id}/regenerate") public UmaMeeting regenerate(@PathVariable String id, Authentication auth) { return service.regenerate(ctx(auth), id); }
     @PostMapping("/meetings/{id}/cancel") public UmaMeeting cancel(@PathVariable String id, Authentication auth) { return service.cancel(ctx(auth), id); }

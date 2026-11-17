@@ -49,6 +49,21 @@ public class UmaJobQueue {
         throw new IllegalStateException("Could not enqueue " + key);
     }
 
+    /** Like {@link #enqueue} but not before {@code at}. */
+    public UmaJob enqueueAt(String org, String meetingId, String type, String requestedBy, Instant at) {
+        UmaJob j = enqueue(org, meetingId, type, requestedBy);
+        mongo.updateFirst(new Query(Criteria.where("_id").is(j.getId()).and("status").is("QUEUED")),
+                new Update().set("runAfter", at), UmaJob.class);
+        return j;
+    }
+
+    /** Waiting for something outside (e.g. a notetaker's transcript): check again later without using up an attempt. */
+    public void pollAgain(UmaJob j, java.time.Duration after) {
+        mongo.updateFirst(new Query(Criteria.where("_id").is(j.getId()).and("lockedBy").is(j.getLockedBy())),
+                new Update().set("status", "QUEUED").set("runAfter", Instant.now().plus(after)).inc("attempts", -1)
+                        .unset("leaseUntil").unset("lockedBy").set("updatedAt", Instant.now()), UmaJob.class);
+    }
+
     /** Claims the next job that is due (or whose worker's lease expired). */
     public Optional<UmaJob> claimNext(String workerId) {
         Instant now = Instant.now();

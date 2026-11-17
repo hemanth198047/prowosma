@@ -19,6 +19,17 @@ Turn a meeting into a summary, the decisions, and action items you can approve a
 
 Before uploading you must confirm that **everyone in the meeting knew it was being recorded and transcribed**.
 
+## Record a meeting live, or let a notetaker do it
+
+- **Record meeting** — records the meeting tab (and your microphone) in Chrome or Edge while the meeting runs. Choose the meeting tab and switch on **Share tab audio** when the browser asks; press **Stop and summarise** at the end.
+- **Send Fireflies notetaker** — on a meeting added by link, while it's running: Fireflies joins, and the transcript arrives by itself afterwards.
+- **Google Meet** — once you've connected your Google account (**Connections**), the transcript of a Meet meeting you added is read automatically after the meeting (transcription must be on in the meeting).
+- **Add → Import from Fireflies** — pick a recent Fireflies meeting.
+
+Setup for each: [09-CONNECTIONS-SETUP](09-CONNECTIONS-SETUP.md).
+
+![Record a meeting](img/15-record-dialog.png)
+
 ## While it's processing
 
 The meeting shows **Processing** with a progress bar. You can leave the page — it keeps going. When it's done you'll see **"Your meeting summary is ready."**

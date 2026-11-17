@@ -177,3 +177,23 @@
 /* The shared mobile stylesheet sizes title blocks to their content; let long titles wrap on this page. */
 .uma-page .pg-title-text { flex: 1 1 240px; max-width: 100%; }
 .uma-page .pg-title-text h1 { overflow-wrap: anywhere; }
+
+/* recording in the browser */
+.uma-steps { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--text-secondary); }
+.uma-rec { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.uma-rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: uma-pulse 1.4s ease-in-out infinite; }
+.uma-rec-clock { font-size: 24px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+@keyframes uma-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .uma-rec-dot { animation: none; } }
+
+/* connections */
+.uma-conn { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+.uma-conn h3 { margin: 0 0 4px; font-size: 15px; }
+.uma-conn-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.uma-conn-row > div:first-child, .uma-conn-row input { flex: 1 1 240px; }
+.uma-ok { display: inline-flex; align-items: center; gap: 6px; color: var(--success-text); font-weight: 600; }
+.uma-fflist { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.uma-fflist li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--border); }
+.uma-fflist li:first-child { border-top: 0; }
+.uma-fflist li > div { flex: 1; min-width: 0; }
+.uma-fflist strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }

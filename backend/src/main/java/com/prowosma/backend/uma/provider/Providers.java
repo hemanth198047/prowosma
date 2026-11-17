@@ -14,10 +14,11 @@ final class Providers {
         public List<String> hosts() { return List.of("meet.google.com"); }
         public List<String> permissionsRequired() { return List.of("Read your Meet conference records and transcripts (meetings.space.readonly)", "Read your calendar events (calendar.events.readonly)"); }
         public List<Capability> capabilities() {
-            return List.of(upload(), importTranscript(),
-                    new Capability("postMeetingTranscript", "Fetch Google's transcript after the meeting", State.POSSIBLE, "Meet REST API; needs a Workspace edition with transcription turned on."),
+            return List.of(upload(), importTranscript(), browserRecording(), firefliesNotetaker(), firefliesImport(),
+                    new Capability("postMeetingTranscript", "Read Google's transcript after the meeting", State.IMPLEMENTED,
+                            "Each person connects their Google account (Connections). Needs Workspace with transcription turned on in the meeting, and the server's Google OAuth client."),
                     new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Recordings are saved to the organiser's Drive."),
-                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Google offers no general bot API (the Meet Media API is a limited preview)."),
+                    ownBot("Google offers no general bot API (the Meet Media API is a limited preview). Use the Fireflies notetaker or browser recording."),
                     new Capability("calendar", "Find meetings in Google Calendar", State.POSSIBLE, "Google Calendar API (OAuth)."));
         }
     }
@@ -28,10 +29,10 @@ final class Providers {
         public List<String> hosts() { return List.of("teams.microsoft.com", "teams.live.com"); }
         public List<String> permissionsRequired() { return List.of("OnlineMeetingTranscript.Read.All (admin consent + application access policy)", "Calendars.Read"); }
         public List<Capability> capabilities() {
-            return List.of(upload(), importTranscript(),
+            return List.of(upload(), importTranscript(), browserRecording(), firefliesNotetaker(), firefliesImport(),
                     new Capability("postMeetingTranscript", "Fetch the Teams transcript after the meeting", State.POSSIBLE, "Microsoft Graph; needs an admin to approve the app for the organisation."),
                     new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Microsoft Graph, same approval."),
-                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Needs a separate Windows-hosted media bot service."),
+                    ownBot("Needs a separate Windows-hosted media bot service. Use the Fireflies notetaker or browser recording."),
                     new Capability("calendar", "Find meetings in Outlook / Microsoft 365", State.POSSIBLE, "Microsoft Graph calendar (OAuth)."));
         }
     }
@@ -42,10 +43,10 @@ final class Providers {
         public List<String> hosts() { return List.of("zoom.us", "zoom.com", "zoomgov.com"); }
         public List<String> permissionsRequired() { return List.of("cloud_recording:read (recordings and audio transcripts)", "meeting:read"); }
         public List<Capability> capabilities() {
-            return List.of(upload(), importTranscript(),
+            return List.of(upload(), importTranscript(), browserRecording(), firefliesNotetaker(), firefliesImport(),
                     new Capability("postMeetingTranscript", "Fetch Zoom's transcript after the meeting", State.POSSIBLE, "Cloud Recording API; paid plan with audio transcripts on."),
                     new Capability("postMeetingRecording", "Fetch the cloud recording", State.POSSIBLE, "Cloud Recording API + 'recording completed' webhook."),
-                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Meeting SDK bots need Zoom's app review before joining other organisations' meetings."),
+                    ownBot("Meeting SDK bots need Zoom's app review before joining other organisations' meetings. Use the Fireflies notetaker or browser recording."),
                     new Capability("calendar", "Find meetings", State.POSSIBLE, "Through your Google or Microsoft calendar."));
         }
     }
@@ -56,10 +57,10 @@ final class Providers {
         public List<String> hosts() { return List.of("webex.com"); }
         public List<String> permissionsRequired() { return List.of("meeting:transcripts_read", "meeting:recordings_read"); }
         public List<Capability> capabilities() {
-            return List.of(upload(), importTranscript(),
+            return List.of(upload(), importTranscript(), browserRecording(), firefliesNotetaker(), firefliesImport(),
                     new Capability("postMeetingTranscript", "Fetch the Webex transcript after the meeting", State.POSSIBLE, "Meetings API; transcription must be on."),
                     new Capability("postMeetingRecording", "Fetch the recording", State.POSSIBLE, "Recordings API."),
-                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "No general bot API for this."),
+                    ownBot("No general bot API for this. Use the Fireflies notetaker or browser recording."),
                     new Capability("calendar", "Find meetings", State.POSSIBLE, "Through your Google or Microsoft calendar."));
         }
     }
@@ -69,6 +70,6 @@ final class Providers {
         public String displayName() { return "Any other platform"; }
         public List<String> hosts() { return List.of(); }
         public List<String> permissionsRequired() { return List.of(); }
-        public List<Capability> capabilities() { return List.of(upload(), importTranscript()); }
+        public List<Capability> capabilities() { return List.of(upload(), importTranscript(), browserRecording()); }
     }
 }

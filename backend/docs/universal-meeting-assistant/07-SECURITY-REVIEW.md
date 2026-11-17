@@ -22,6 +22,15 @@ Scope: the new module (`uma`), its endpoints, the self-hosted speech-to-text ser
 | Secrets | No keys in code or config; operator keys come from environment variables; workspace keys stay encrypted (`FieldEncryptionService`) and are only decrypted in memory to call the engine | review |
 | Third-party disclosure | The upload dialog says where audio and text are sent. With the self-hosted engines, nothing leaves your servers | review |
 
+### Connections (added later)
+
+| Risk | Control |
+|---|---|
+| Fireflies key exposure | Only workspace admins can save or remove it; it is checked with Fireflies first, stored encrypted (refused if the server has no `ENCRYPTION_KEY`), and never returned to the browser. The Fireflies client only ever sends it to `api.fireflies.ai`. |
+| Google account access | Each person connects their own account (OAuth with PKCE, existing service). Only `meetings.space.readonly` is requested — no Drive, Calendar or Gmail. Tokens are stored encrypted; "Disconnect" removes them. A transcript is read with the connection of the person who added the meeting; a Meet session is imported into one meeting only. |
+| Browser recording | The browser itself asks the person what to share; consent box required; pieces are checked to be audio before storing; per-recording size and length caps; pieces after Stop are refused; cancelling deletes them; audio files deleted after transcription (retention). |
+| Third-party processing | Fireflies and Google already hold these meetings; importing copies the transcript text into Prowosma. Workspaces using a hosted AI provider send that text on to it. |
+
 ## Findings (outside the new module) — need your decision
 
 1. **The app logs every API response body to stdout** (`RequestLoggingFilter`, active in all environments, first 1 000 characters). This includes the **login response with the session token**, and content such as tasks, documents and the existing Meeting Assistant's transcripts. I only excluded the new feature's path. Recommendation: limit this filter to a local/dev profile, or log status and timing only. *Not changed — it affects the whole app.*

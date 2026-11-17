@@ -98,6 +98,7 @@ public class UmaTranscriber {
         if (engine == null) throw new UmaException(HttpStatus.FAILED_DEPENDENCY, "NO_STT", notReadyReason(org),
                 "Set up a speech-to-text server, then press Retry.");
         UmaMeeting.Recording rec = m.getRecording();
+        if (rec != null && !rec.getPieces().isEmpty()) return transcribePieces(m, engine, heartbeat);
         if (rec == null || rec.getFileKey() == null)
             throw new UmaException(HttpStatus.GONE, "NO_RECORDING", "The recording is no longer stored.", "Upload the recording again.");
 
@@ -176,6 +177,83 @@ public class UmaTranscriber {
         } finally {
             if (dir != null) deleteQuietly(dir);
         }
+    }
+
+    /**
+     * A meeting recorded in the browser: each short piece of each track (the meeting tab and the recording person's microphone)
+     * is transcribed on its own and its result saved, so an interrupted run carries on with the next piece. When all are done they
+     * are merged on the meeting clock; the microphone's echo of the meeting is removed (RecordingMerger, shared with the existing assistant).
+     */
+    private Outcome transcribePieces(UmaMeeting m, Engine engine, IntConsumer heartbeat) {
+        String org = m.getOrganizationId();
+        long started = System.currentTimeMillis();
+        UmaMeeting.Recording rec = m.getRecording();
+        List<UmaMeeting.Piece> pieces = new ArrayList<>(rec.getPieces());
+        pieces.sort(Comparator.comparingLong(UmaMeeting.Piece::getStartMs).thenComparing(UmaMeeting.Piece::getTrack));
+        rec.setChunksTotal(pieces.size());
+        String language = m.getTranscript() == null ? null : m.getTranscript().getLanguage();
+        int done = 0;
+        try {
+            for (UmaMeeting.Piece p : pieces) {
+                if (p.isTranscribed()) { done++; continue; }
+                heartbeat.accept(done);
+                if (p.getFileKey() == null) { p.setTranscribed(true); done++; continue; }      // already deleted: nothing to hear
+                byte[] audio;
+                try (InputStream in = files.openStream(p.getFileKey())) { audio = in.readAllBytes(); }
+                String kind = com.prowosma.backend.meetingassistant.RecordingRules.audioKind(audio);
+                String ext = kind == null ? "webm" : kind;
+                SpeechToTextClient.Result r = engine.client().transcribe(engine.settings(), audio,
+                        com.prowosma.backend.meetingassistant.RecordingRules.mimeOf(ext), p.getTrack().toLowerCase() + "-" + p.getSeq() + "." + ext);
+                if (language == null && r.language() != null && !r.language().isBlank()) language = r.language();
+                p.getPhrases().clear();
+                for (SpeechToTextClient.Segment seg : r.segments()) {
+                    UmaMeeting.Phrase ph = new UmaMeeting.Phrase();
+                    ph.setStartMs(seg.startMs()); ph.setEndMs(seg.endMs()); ph.setText(seg.text()); ph.setNoSpeechProb(seg.noSpeechProb());
+                    p.getPhrases().add(ph);
+                }
+                p.setTranscribed(true);
+                done++;
+                rec.setPieces(pieces);
+                rec.setChunksDone(done);
+                m.setProgressPercent((int) Math.round(80.0 * done / pieces.size()));
+                store.save(m);
+            }
+        } catch (SttException e) {
+            String code = "STT_" + e.getKind().name();
+            throw new UmaException(e.isTransient() ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.BAD_GATEWAY, code, e.getMessage(),
+                    e.isTransient() ? "This usually passes. Press Retry in a few minutes." : "An admin needs to check the speech-to-text settings, then press Retry.");
+        } catch (IOException e) {
+            throw new UmaException(HttpStatus.SERVICE_UNAVAILABLE, "AUDIO_IO", "We couldn't read the recorded audio.", "Press Retry.");
+        }
+
+        List<com.prowosma.backend.meetingassistant.RecordingMerger.Piece> merged = new ArrayList<>();
+        for (UmaMeeting.Piece p : pieces) {
+            List<com.prowosma.backend.meetingassistant.RecordingMerger.Seg> segs = new ArrayList<>();
+            for (UmaMeeting.Phrase ph : p.getPhrases())
+                segs.add(new com.prowosma.backend.meetingassistant.RecordingMerger.Seg(ph.getStartMs(), ph.getEndMs(), ph.getText(), ph.getNoSpeechProb()));
+            merged.add(new com.prowosma.backend.meetingassistant.RecordingMerger.Piece(p.getTrack(), p.getStartMs(), segs));
+        }
+        String me = rec.getRecorderName() == null || rec.getRecorderName().isBlank() ? com.prowosma.backend.meetingassistant.RecordingMerger.YOU : rec.getRecorderName();
+        List<UmaSegment> out = new ArrayList<>();
+        int seq = 0;
+        long end = 0;
+        for (com.prowosma.backend.meetingassistant.RecordingMerger.Line l : com.prowosma.backend.meetingassistant.RecordingMerger.merge(merged)) {
+            UmaSegment u = new UmaSegment();
+            u.setOrganizationId(org); u.setMeetingId(m.getId()); u.setSeq(++seq);
+            u.setStartMs(l.startMs()); u.setEndMs(l.endMs());
+            u.setSpeaker(com.prowosma.backend.meetingassistant.RecordingMerger.YOU.equals(l.speaker()) ? me : l.speaker());
+            u.setText(l.text());
+            out.add(u);
+            end = Math.max(end, l.endMs());
+        }
+        if (out.isEmpty())
+            throw new UmaException(HttpStatus.UNPROCESSABLE_CONTENT, "NO_SPEECH", "No speech was heard in this recording.",
+                    "Check that you shared the meeting tab with “Share tab audio” ticked, and that your microphone wasn't muted.");
+        store.replaceSegments(org, m.getId(), out);
+        long dur = pieces.stream().mapToLong(p -> p.getStartMs() + p.getDurationMs()).max().orElse(end);
+        rec.setDurationMs(dur);
+        store.save(m);
+        return new Outcome(language, out.size(), engine.label(), engine.model(), System.currentTimeMillis() - started);
     }
 
     private static String extension(String name) {

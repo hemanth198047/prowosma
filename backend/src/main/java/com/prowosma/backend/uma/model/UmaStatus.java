@@ -30,7 +30,7 @@ public enum UmaStatus {
             ANALYZING, EnumSet.of(REVIEW_READY, FAILED, CANCELLED, ANALYZING),
             REVIEW_READY, EnumSet.of(COMPLETED, ANALYZING, CANCELLED),
             COMPLETED, EnumSet.of(ANALYZING, REVIEW_READY),
-            FAILED, EnumSet.of(QUEUED, ANALYZING, CANCELLED),
+            FAILED, EnumSet.of(QUEUED, ANALYZING, CANCELLED, CREATED),       // CREATED: wait for a notetaker's transcript again
             CANCELLED, EnumSet.noneOf(UmaStatus.class));
 
     public boolean canMoveTo(UmaStatus to) { return NEXT.get(this).contains(to); }

@@ -39,6 +39,8 @@ public class UmaMeeting {
     private Instant consentAt;
 
     private Recording recording;
+    private FirefliesLink fireflies;
+    private GoogleLink google;
     private TranscriptInfo transcript;
     private int insightsVersion;
 
@@ -56,6 +58,48 @@ public class UmaMeeting {
         private int chunksTotal;
         private int chunksDone;                   // transcription resumes from here after an interruption
         private Instant deletedAt;
+        // Browser capture: short pieces per track, uploaded while the meeting runs. Empty for an uploaded file.
+        private String recorderName;              // the person recording; their microphone lines are labelled with this name
+        private Instant lastPieceAt;
+        private List<Piece> pieces = new ArrayList<>();
+    }
+
+    @Data
+    public static class GoogleLink {
+        private String requestedBy;               // whose Google connection reads the transcript
+        private String conferenceRecord;          // set once imported (a Meet session is imported into one meeting only)
+        private Instant lastCheckAt;
+        private int checks;
+        private String lastNote;                  // what Google said at the last check, in plain words
+    }
+
+    @Data
+    public static class FirefliesLink {
+        private String transcriptId;              // set once the transcript was imported (a transcript is imported into one meeting only)
+        private Instant notetakerSentAt;          // when the notetaker was asked to join
+        private String notetakerSentBy;
+        private Instant lastCheckAt;
+        private int checks;
+    }
+
+    @Data
+    public static class Piece {
+        private String track;                     // MIC (the person recording) | TAB (the meeting's audio)
+        private int seq;
+        private long startMs;                     // on the meeting clock
+        private long durationMs;
+        private String fileKey;                   // null once deleted
+        private long sizeBytes;
+        private boolean transcribed;
+        private List<Phrase> phrases = new ArrayList<>();   // speech-to-text result, kept until the pieces are merged
+    }
+
+    @Data
+    public static class Phrase {
+        private long startMs;                     // relative to the piece
+        private long endMs;
+        private String text;
+        private Double noSpeechProb;
     }
 
     @Data

@@ -70,7 +70,19 @@ Reading the numbers:
 
 Not measured: 1–2 hour recordings, concurrent meetings, GPU, hosted engines.
 
-## 6. Problems found by validation and fixed
+## 6. Live capture and connections (second round)
+
+| What | How it was checked | Result |
+|---|---|---|
+| Browser recording — server side | API tests: tab + mic pieces → one transcript; duplicate pieces ignored; non-audio refused; Stop with nothing → clear message; pieces after Stop refused; cancel removes the audio | 3 tests pass |
+| Browser recording — in a real browser | Real Chromium recorded and uploaded pieces while running; real faster-whisper + Qwen2.5-7B produced the transcript, the recorder's name on mic lines, and an action item with its date | Works end to end. **Not automated:** choosing a real meeting tab in the browser's share dialog (Chromium waits for a person; with fake capture devices the "tab" track carried the fake audio). Same browser code as the existing assistant's recorder. |
+| Fireflies — connect, list, import | **Your real Fireflies account** (key held in the environment's secret store, never seen by us): key accepted, 10 recent meetings listed, one 8-minute meeting imported (130 lines, 2 named speakers) and analysed by Qwen2.5-7B: 3 action items, all with line references, owners left unassigned (none clearly said) | Works. Fireflies returned no transcript text for 6 of the 10 meetings (see 09-CONNECTIONS-SETUP §2); the error message now says why. |
+| Fireflies — live notetaker | Scripted Fireflies API: notetaker sent with the meeting link; while Fireflies reports the meeting live → keeps waiting; afterwards → transcript fetched and analysed | Tests pass. Not run against a live meeting yet. |
+| Google Meet | Scripted Google API: Meet link added by a connected user → checked automatically after the meeting; in progress → waiting; ended → transcript with participant names → summary. Without a connection → clear message, nothing scheduled | Tests pass. **Not run against Google** — needs your OAuth client (09-CONNECTIONS-SETUP §3). |
+| Regression | Whole backend suite | **726 passed, 0 failed** (229 existing-assistant tests) |
+| Frontend | Whole suite | 498 passed; the same 10 `Login.twoFactor` failures as on `main` |
+
+## 7. Problems found by validation and fixed
 
 | Found by | Problem | Fix |
 |---|---|---|

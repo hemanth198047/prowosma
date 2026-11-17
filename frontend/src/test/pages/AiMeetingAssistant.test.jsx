@@ -13,11 +13,14 @@ vi.mock("../../api/projects", () => ({ getProjects: () => Promise.resolve({ data
 const api = vi.hoisted(() => ({
   getUmaDashboard: vi.fn(), getUmaMeeting: vi.fn(), getUmaProviders: vi.fn(), uploadUmaRecording: vi.fn(),
   approveUmaAction: vi.fn(), editUmaAction: vi.fn(), askUma: vi.fn(), retryUmaMeeting: vi.fn(),
+  getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["detectUmaLink", "addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "registerUmaLink",
     "regenerateUmaMeeting", "cancelUmaMeeting", "completeUmaMeeting", "deleteUmaMeeting", "shareUmaMeeting", "editUmaSegment",
-    "rejectUmaAction", "approveUmaActions", "exportUma"].map((k) => [k, vi.fn()])),
+    "rejectUmaAction", "approveUmaActions", "exportUma", "getUmaFirefliesRecent", "importUmaFireflies",
+    "startUmaCapture", "uploadUmaPiece", "finishUmaCapture", "saveUmaFirefliesKey", "removeUmaFireflies", "getUmaGoogle",
+    "authorizeUmaGoogle", "disconnectUmaGoogle"].map((k) => [k, vi.fn()])),
   ...api,
 }));
 
@@ -63,6 +66,7 @@ describe("AI Meeting Assistant (simulated API)", () => {
     toastShow.mockReset();
     api.getUmaProviders.mockResolvedValue({ data: [] });
     api.getUmaDashboard.mockResolvedValue(dash());
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: false } });
   });
 
   it("starts with a clear empty state and the three ways in", async () => {
@@ -71,7 +75,27 @@ describe("AI Meeting Assistant (simulated API)", () => {
     expect(await screen.findByText("Turn a meeting into notes and tasks")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Upload recording/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: /Import transcript/ }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /Add meeting link/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Record meeting/ }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /Add/ }));
+    expect(screen.getByRole("menuitem", { name: "Add meeting link" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Import from Fireflies" })).toBeInTheDocument();
+  });
+
+  it("offers the Fireflies notetaker and Google Meet for a Meet link meeting", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
+    api.getUmaMeeting.mockResolvedValue(meeting({
+      meeting: { id: "x1", title: "Design review", status: "CREATED", source: "MEETING_LINK", provider: "GOOGLE_MEET",
+        meetingUrl: "https://meet.google.com/abc-defg-hij", statusDetail: "After the meeting, add its recording or transcript here." },
+      statusLabel: "Waiting for content", insights: null, segments: [],
+    }));
+    api.sendUmaNotetaker.mockResolvedValue({ data: {} });
+    api.fetchUmaGoogle.mockResolvedValue({ data: {} });
+    at("/ai-meeting-assistant/x1");
+    fireEvent.click(await screen.findByRole("button", { name: "Send Fireflies notetaker" }));
+    await waitFor(() => expect(api.sendUmaNotetaker).toHaveBeenCalledWith("x1"));
+    fireEvent.click(screen.getByRole("button", { name: "Get transcript from Google Meet" }));
+    await waitFor(() => expect(api.fetchUmaGoogle).toHaveBeenCalledWith("x1"));
+    expect(screen.getByRole("button", { name: /Record it now/ })).toBeInTheDocument();
   });
 
   it("says plainly what setup is missing", async () => {

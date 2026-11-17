@@ -7,7 +7,7 @@
 | 1. Assessment | **Done** | 01-ASSESSMENT |
 | 2. Foundation (flag, routes, APIs, collections, provider abstraction, state machine, dashboard) | **Done** | 02-ARCHITECTURE; tests |
 | 3. Vertical slice: upload → transcription → summary → decisions → actions → approval → existing task creation, without Fireflies or a meeting provider | **Done and validated with real engines** | 06-VALIDATION §2–4 |
-| 4. Provider integrations (fetch transcripts/recordings from Meet, Teams, Zoom, Webex; calendar) | **Not started** — adapters and honest capability states exist; each integration needs a real account and admin approval from you | 01-ASSESSMENT §3 |
+| 4. Provider integrations | **Partly.** Browser recording (any app): built, pipeline verified with real Chromium audio; tab picking needs a person. Fireflies: import **verified with your real account**; live notetaker built (needs a running meeting to verify). Google Meet transcripts: built and tested against a scripted Google API; **needs your Google OAuth client to verify**. Teams/Zoom/Webex fetch and calendars: not started (need vendor apps and admin approval). | 06-VALIDATION §6, 09-CONNECTIONS-SETUP |
 | 5. Ask AI (one meeting) | **Done** | 06-VALIDATION |
 | 5. Cross-meeting intelligence (search and questions across meetings, recurring topics, open-action follow-up) | **Not started** | — |
 | 6. UX and performance | **Partly** — new page, mobile layout, progress and recovery; no load test | 06-VALIDATION §5 |
@@ -15,7 +15,7 @@
 
 ## Known limitations
 
-1. **The assistant cannot join a meeting.** No platform offers a general, supported bot API for this; live capture is out of scope. Users add the recording or transcript after the meeting.
+1. **Prowosma has no bot of its own that joins meetings.** Live capture works through the Fireflies notetaker (your subscription) or by recording the meeting tab in the browser.
 2. **No speaker identification for recordings** (no diarization). Lines show "Unknown speaker"; owners still come from names said aloud.
 3. **Quality depends on the AI model.** With the small self-hosted models we could test, the assistant missed some action items and occasionally labelled a statement as the wrong kind (e.g. a question as a decision). It did not invent owners or dates in any run. A hosted model (AI Settings) was not measured — no key was available.
 4. **The executive summary is not line-checked** the way decisions and actions are; it is written from the same transcript but can over-state. Every other statement carries line references.
@@ -42,6 +42,9 @@
 - [ ] Decide on the request-logging finding (07-SECURITY-REVIEW §1)
 - [ ] Load test with long recordings (1–2 h) on the production engine
 - [ ] Legal sign-off on recording consent wording for your regions
+- [ ] Google Cloud OAuth client created by your Workspace admin (09-CONNECTIONS-SETUP §3) and one real Meet meeting fetched
+- [ ] Fireflies key saved under Connections; one live meeting with the Fireflies notetaker
+- [ ] One real browser recording of a meeting tab (Chrome/Edge)
 
 ## Proposal: the legacy Meeting Assistant
 

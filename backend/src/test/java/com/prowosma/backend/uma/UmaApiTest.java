@@ -41,7 +41,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
         "app.uma.stt.base-url=http://stt.test",
         "app.uma.stt.model=fake-whisper",
         "app.meeting-assistant.jobs-enabled=false",
-        "file.upload.dir=${java.io.tmpdir}/uma-test-uploads"})
+        "file.upload.dir=${java.io.tmpdir}/uma-test-uploads",
+        "security.field-encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="})
 class UmaApiTest extends TwoWorkspaceTestBase {
 
     static final String BASE = "/api/v2/meeting-assistant";
@@ -55,21 +56,31 @@ class UmaApiTest extends TwoWorkspaceTestBase {
             return new OperatorHttp() { @Override public SttHttp stt() { return STT; } };
         }
         @Bean @Primary UmaAi umaTestAi(UmaFakes.Ai ai) { return new UmaAi(List.of(ai)); }
+        @Bean @Primary com.prowosma.backend.integration.FirefliesHttp umaFirefliesFake() { return new UmaFirefliesFake(); }
+        @Bean @Primary com.prowosma.backend.integration.GoogleHttp umaGoogleFake() { return new UmaGoogleFake(); }
     }
 
     @Autowired ObjectMapper om;
     @Autowired UmaPipeline pipeline;
     final UmaFakes.Stt stt = Fakes.STT;
+    @Autowired com.prowosma.backend.integration.FirefliesHttp firefliesHttp;
+    UmaFirefliesFake ff() { return (UmaFirefliesFake) firefliesHttp; }
+    @Autowired com.prowosma.backend.integration.GoogleHttp googleHttp;
+    @Autowired com.prowosma.backend.service.FieldEncryptionService crypto;
+    UmaGoogleFake gg() { return (UmaGoogleFake) googleHttp; }
     @Autowired UmaFakes.Ai ai;
 
     String raviId;
 
     @BeforeEach
     void reset() throws Exception {
-        for (String c : new String[]{"uma_meetings", "uma_segments", "uma_insights", "uma_jobs", "uma_audit", "uma_questions", "workspace_configs"})
+        for (String c : new String[]{"uma_meetings", "uma_segments", "uma_insights", "uma_jobs", "uma_audit", "uma_questions", "workspace_configs", "uma_settings"})
             mongoTemplate.remove(new Query(), c);
         mongoTemplate.remove(new Query(Criteria.where("sourceActionKey").regex("^uma:")), Task.class);
         stt.reset();
+        ff().reset();
+        gg().reset();
+        mongoTemplate.remove(new Query(), com.prowosma.backend.model.MeetingUserConnection.class);
         ai.reset();
         TeamMember ravi = new TeamMember();
         ravi.setOrganizationId(workspaceId); ravi.setEmail("ravi@test.com"); ravi.setName("Ravi Kumar"); ravi.setRole("MEMBER");
@@ -303,6 +314,203 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(m.get("status").asText()).isEqualTo("FAILED");
         assertThat(m.get("errorCode").asText()).isEqualTo("AI_BAD_OUTPUT");
         assertThat(ai.calls).hasSize(2);
+    }
+
+    // ── browser capture ──────────────────────────────────────────────────
+
+    String startCapture(String body) throws Exception {
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/capture"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(json(r).get("status").asText()).isEqualTo("CAPTURING");
+        return json(r).get("id").asText();
+    }
+
+    MvcResult piece(String id, String track, int seq, long startMs, byte[] audio) throws Exception {
+        return mvc.perform(as(put(BASE + "/meetings/" + id + "/capture/" + track + "/" + seq), ownerToken(), workspaceId)
+                .param("startMs", String.valueOf(startMs)).param("durationMs", "180000").contentType("audio/wav").content(audio)).andReturn();
+    }
+
+    @Test
+    void browserRecording_piecesFromTabAndMicBecomeOneTranscriptWithSpeakers() throws Exception {
+        enable(ownerToken(), workspaceId);
+        assertThat(mvc.perform(as(post(BASE + "/meetings/capture"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Live sync\",\"consent\":false}")).andReturn().getResponse().getStatus()).isEqualTo(400);
+        String id = startCapture("{\"title\":\"Live sync\",\"consent\":true}");
+        byte[] wav = OpenAiCompatibleSttClient.silentWav();
+        assertThat(json(piece(id, "TAB", 0, 0, wav)).get("stored").asBoolean()).isTrue();
+        assertThat(json(piece(id, "TAB", 0, 0, wav)).get("duplicate").asBoolean()).as("a retried piece is ignored").isTrue();
+        assertThat(json(piece(id, "MIC", 0, 600_000, wav)).get("stored").asBoolean()).isTrue();
+        assertThat(piece(id, "TAB", 1, 180_000, "not audio at all, just text".getBytes()).getResponse().getStatus()).isEqualTo(415);
+        assertThat(piece(id, "SCREEN", 2, 0, wav).getResponse().getStatus()).isEqualTo(400);
+
+        MvcResult f = mvc.perform(as(post(BASE + "/meetings/" + id + "/capture/finish"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(f).get("status").asText()).isEqualTo("QUEUED");
+        assertThat(piece(id, "TAB", 5, 900_000, wav).getResponse().getStatus()).as("no pieces after Stop").isEqualTo(409);
+
+        pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(stt.calls.get()).as("one call per piece").isEqualTo(2);
+        assertThat(d.get("segments")).hasSize(12);
+        assertThat(d.at("/segments/0/speaker").asText()).isEqualTo("Other participants");
+        assertThat(d.at("/segments/6/speaker").asText()).as("the microphone is the person recording").isEqualTo("Test Owner");
+        assertThat(d.at("/segments/6/startMs").asLong()).isEqualTo(600_000L);
+        assertThat(d.at("/meeting/transcript/speakersKnown").asBoolean()).isTrue();
+    }
+
+    @Test
+    void browserRecording_stoppedWithNothingRecordedSaysSo() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = startCapture("{\"consent\":true}");
+        MvcResult f = mvc.perform(as(post(BASE + "/meetings/" + id + "/capture/finish"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(f).get("status").asText()).isEqualTo("FAILED");
+        assertThat(json(f).get("errorCode").asText()).isEqualTo("NO_AUDIO");
+        assertThat(json(f).get("recoveryHint").asText()).contains("Share tab audio");
+    }
+
+    @Test
+    void browserRecording_canBeAttachedToARegisteredMeetingLink() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Design review\"}")).andReturn();
+        String id = json(link).get("id").asText();
+        assertThat(startCapture("{\"meetingId\":\"" + id + "\",\"consent\":true}")).isEqualTo(id);
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/cancel"), ownerToken(), workspaceId)).andReturn();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("CANCELLED");
+    }
+
+    // ── Fireflies (scripted Fireflies API) ──────────────────────────────
+
+    void connectFireflies() throws Exception {
+        MvcResult r = mvc.perform(as(put(BASE + "/connections/fireflies"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"apiKey\":\"ff-good-key\"}")).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+    }
+
+    @Test
+    void fireflies_onlyAdminsConnect_keyIsCheckedAndNeverShown() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult member = mvc.perform(as(put(BASE + "/connections/fireflies"), memberToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"apiKey\":\"ff-good-key\"}")).andReturn();
+        assertThat(member.getResponse().getStatus()).isEqualTo(403);
+        MvcResult bad = mvc.perform(as(put(BASE + "/connections/fireflies"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"apiKey\":\"wrong\"}")).andReturn();
+        assertThat(json(bad).get("code").asText()).isEqualTo("FIREFLIES_AUTH");
+        connectFireflies();
+        MvcResult st = mvc.perform(as(get(BASE + "/connections/fireflies"), memberToken(), workspaceId)).andReturn();
+        assertThat(json(st).get("connected").asBoolean()).isTrue();
+        assertThat(json(st).get("account").asText()).isEqualTo("Ops Team");
+        assertThat(st.getResponse().getContentAsString()).doesNotContain("ff-good-key");
+        String stored = mongoTemplate.getCollection("uma_settings").find().first().toJson();
+        assertThat(stored).as("stored encrypted").doesNotContain("ff-good-key");
+    }
+
+    @Test
+    void fireflies_importAMeetingOnce() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        MvcResult list = mvc.perform(as(get(BASE + "/fireflies/recent"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(list).get(0).get("title").asText()).isEqualTo("Weekly sync");
+        assertThat(json(list).get(0).get("imported").asBoolean()).isFalse();
+        ai.responder = c -> c.system().equals(com.prowosma.backend.uma.ai.InsightPrompts.EXTRACT_SYSTEM)
+                ? "{\"summary\":\"Launch review.\",\"actions\":[{\"title\":\"Complete the authentication API\",\"owner\":\"Ravi Kumar\",\"due\":\"by Friday\",\"evidence\":[2]}]}" : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/fireflies"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"transcriptId\":\"FFabc123\"}")).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.at("/meeting/provider").asText()).isEqualTo("GOOGLE_MEET");
+        assertThat(d.at("/segments/1/speaker").asText()).isEqualTo("Ravi Kumar");
+        assertThat(action(d, "Complete the authentication API").get("ownerMemberId").asText()).as("full name of a member → matched").isEqualTo(raviId);
+        MvcResult again = mvc.perform(as(post(BASE + "/meetings/fireflies"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"transcriptId\":\"FFabc123\"}")).andReturn();
+        assertThat(again.getResponse().getStatus()).isEqualTo(409);
+        assertThat(json(mvc.perform(as(get(BASE + "/fireflies/recent"), ownerToken(), workspaceId)).andReturn()).get(0).get("imported").asBoolean()).isTrue();
+    }
+
+    @Test
+    void fireflies_notetakerJoinsLiveAndTheTranscriptArrivesByItself() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Weekly sync\"}")).andReturn();
+        String id = json(link).get("id").asText();
+        ff().date = java.time.Instant.now().plusSeconds(60).toString();
+        MvcResult sent = mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn();
+        assertThat(sent.getResponse().getStatus()).as(sent.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(ff().requests.stream().anyMatch(b -> b.contains("addToLiveMeeting") && b.contains("meet.google.com/abc-defg-hij"))).isTrue();
+
+        // still running in Fireflies → keeps waiting
+        ff().live = true;
+        dueNow();
+        pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("CREATED");
+        assertThat(detail(id).at("/meeting/statusDetail").asText()).contains("Fireflies is in the meeting");
+
+        // finished → fetched, analysed
+        ff().live = false;
+        dueNow();
+        pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.at("/meeting/transcript/origin").asText()).isEqualTo("FIREFLIES");
+        assertThat(d.get("segments")).hasSize(3);
+    }
+
+    // ── Google Meet (scripted Google API) ───────────────────────────────
+
+    void connectGoogle() {
+        com.prowosma.backend.model.MeetingUserConnection c = new com.prowosma.backend.model.MeetingUserConnection();
+        c.setOrganizationId(workspaceId); c.setUserEmail(ownerEmail); c.setProvider("GOOGLE_MEET"); c.setAccount("owner@acme.test");
+        c.setAccessTokenEnc(crypto.encrypt("tok-123")); c.setAccessTokenExpiresAt(java.time.Instant.now().plusSeconds(3600));
+        mongoTemplate.save(c);
+    }
+
+    @Test
+    void googleMeet_transcriptIsReadAutomaticallyAfterTheMeeting() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectGoogle();
+        MvcResult st = mvc.perform(as(get(BASE + "/connections/google"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(st).get("connected").asBoolean()).isTrue();
+        assertThat(st.getResponse().getContentAsString()).doesNotContain("tok-123");
+
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Launch review\"}")).andReturn();
+        String id = json(link).get("id").asText();
+        assertThat(json(link).get("statusDetail").asText()).contains("read automatically after the meeting");
+        gg().start = java.time.Instant.now().plusSeconds(30);
+
+        dueNow(); pipeline.drain();                      // still running
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("CREATED");
+        assertThat(detail(id).at("/meeting/statusDetail").asText()).contains("in progress");
+
+        gg().end = gg().start.plusSeconds(600);
+        dueNow(); pipeline.drain();                      // ended, transcript ready → imported and analysed
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.at("/meeting/transcript/origin").asText()).isEqualTo("GOOGLE_MEET");
+        assertThat(d.get("segments")).hasSize(3);
+        assertThat(d.at("/segments/1/speaker").asText()).isEqualTo("Ravi Kumar");
+        assertThat(gg().urls.stream().anyMatch(u -> u.contains("abc-defg-hij"))).isTrue();
+    }
+
+    @Test
+    void googleMeet_needsAConnectedAccount() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\"}")).andReturn();
+        String id = json(link).get("id").asText();
+        assertThat(mongoTemplate.getCollection("uma_jobs").countDocuments()).as("nothing scheduled without a connection").isZero();
+        MvcResult f = mvc.perform(as(post(BASE + "/meetings/" + id + "/google/fetch"), ownerToken(), workspaceId)).andReturn();
+        assertThat(f.getResponse().getStatus()).isEqualTo(409);
+        assertThat(json(f).get("code").asText()).isEqualTo("GOOGLE_NOT_CONNECTED");
+    }
+
+    void dueNow() {
+        mongoTemplate.updateMulti(new Query(Criteria.where("status").is("QUEUED")),
+                new org.springframework.data.mongodb.core.query.Update().set("runAfter", java.time.Instant.now().minusSeconds(1)), "uma_jobs");
     }
 
     // ── input rules ──────────────────────────────────────────────────────

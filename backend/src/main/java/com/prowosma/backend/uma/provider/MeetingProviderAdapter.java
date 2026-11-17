@@ -56,5 +56,11 @@ public interface MeetingProviderAdapter {
 
     // shared capability rows
     static Capability upload() { return new Capability("uploadRecording", "Upload a recording", State.VERIFIED, "Transcribed by our own speech-to-text."); }
-    static Capability importTranscript() { return new Capability("importTranscript", "Import a transcript", State.IMPLEMENTED, "Paste text or a .vtt, .srt, .txt or .docx file."); }
+    static Capability importTranscript() { return new Capability("importTranscript", "Import a transcript", State.VERIFIED, "Paste text or a .vtt, .srt, .txt or .docx file."); }
+    static Capability browserRecording() { return new Capability("browserRecording", "Record it live from your browser", State.IMPLEMENTED,
+            "Chrome or Edge: share the meeting tab with its sound. Works with any meeting app; keep the tab open until you stop."); }
+    static Capability firefliesNotetaker() { return new Capability("firefliesNotetaker", "Join live with your Fireflies notetaker", State.IMPLEMENTED,
+            "Needs Fireflies connected (Connections). Fireflies joins the running meeting; its transcript is fetched automatically afterwards."); }
+    static Capability firefliesImport() { return new Capability("firefliesImport", "Import from Fireflies", State.VERIFIED, "Needs Fireflies connected (Connections)."); }
+    static Capability ownBot(String why) { return new Capability("liveJoin", "Join live with Prowosma's own bot", State.UNAVAILABLE, why); }
 }

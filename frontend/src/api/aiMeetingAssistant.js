@@ -57,3 +57,25 @@ export const approveUmaActions = (id, actionIds) => client.post(`${BASE}/meeting
 export const askUma = (id, question) => client.post(`${BASE}/meetings/${id}/ask`, { question }, { timeout: 0 });
 export const exportUma = (id, format) =>
   client.get(`${BASE}/meetings/${id}/export`, { params: { format }, responseType: "blob", ...fresh });
+
+// Recording in the browser: start, send short pieces while the meeting runs, then finish.
+export const startUmaCapture  = (data) => client.post(`${BASE}/meetings/capture`, data);
+export const uploadUmaPiece   = (id, track, seq, blob, startMs, durationMs) =>
+  client.put(`${BASE}/meetings/${id}/capture/${track}/${seq}`, blob, {
+    params: { startMs: Math.round(startMs), durationMs: Math.round(durationMs) },
+    headers: { "Content-Type": blob.type || "audio/webm" },
+    timeout: 120000,
+  });
+export const finishUmaCapture = (id) => client.post(`${BASE}/meetings/${id}/capture/finish`);
+
+// Connections and meeting apps
+export const getUmaFireflies     = ()      => client.get(`${BASE}/connections/fireflies`, fresh);
+export const saveUmaFirefliesKey = (apiKey) => client.put(`${BASE}/connections/fireflies`, { apiKey });
+export const removeUmaFireflies  = ()      => client.delete(`${BASE}/connections/fireflies`);
+export const getUmaFirefliesRecent = ()    => client.get(`${BASE}/fireflies/recent`, fresh);
+export const importUmaFireflies  = (transcriptId, projectId) => client.post(`${BASE}/meetings/fireflies`, { transcriptId, projectId });
+export const sendUmaNotetaker    = (id)    => client.post(`${BASE}/meetings/${id}/fireflies/notetaker`);
+export const getUmaGoogle        = ()      => client.get(`${BASE}/connections/google`, fresh);
+export const authorizeUmaGoogle  = ()      => client.post(`${BASE}/connections/google/authorize`);
+export const disconnectUmaGoogle = ()      => client.delete(`${BASE}/connections/google`);
+export const fetchUmaGoogle      = (id)    => client.post(`${BASE}/meetings/${id}/google/fetch`);

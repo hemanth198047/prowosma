@@ -38,14 +38,30 @@ public class UmaService {
     private final MeetingIntelligence intelligence;
     private final UmaTranscriber transcriber;
     private final MongoTemplate mongo;
+    private final com.prowosma.backend.repository.TeamMemberRepository members;
+    private final com.prowosma.backend.repository.UserRepository users;
+    private final com.prowosma.backend.uma.core.UmaFireflies fireflies;
+    private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
 
     @Value("${app.uma.max-upload-mb:500}") private long maxUploadMb = 500;
     @Value("${app.uma.recording-retention-hours:24}") private int retentionHours = 24;
 
     public UmaService(UmaFeature feature, UmaAccess access, UmaStore store, UmaJobQueue queue, ProviderRegistry providers,
-                      FileStorageService files, TaskService tasks, MeetingIntelligence intelligence, UmaTranscriber transcriber, MongoTemplate mongo) {
+                      FileStorageService files, TaskService tasks, MeetingIntelligence intelligence, UmaTranscriber transcriber, MongoTemplate mongo,
+                      com.prowosma.backend.repository.TeamMemberRepository members, com.prowosma.backend.repository.UserRepository users,
+                      com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet) {
         this.feature = feature; this.access = access; this.store = store; this.queue = queue; this.providers = providers;
         this.files = files; this.tasks = tasks; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
+        this.members = members; this.users = users; this.fireflies = fireflies; this.googleMeet = googleMeet;
+    }
+
+    /** The person's name as the workspace knows it (team member, else account), or null. */
+    String memberName(String org, String email) {
+        if (email == null) return null;
+        String n = members.findAllByEmailAndOrganizationId(email, org).stream().map(com.prowosma.backend.model.TeamMember::getName)
+                .filter(x -> x != null && !x.isBlank()).findFirst().orElse(null);
+        if (n == null) n = users.findByEmail(email).map(com.prowosma.backend.model.User::getName).filter(x -> x != null && !x.isBlank()).orElse(null);
+        return n == null ? null : n.strip();
     }
 
     public record Ctx(String org, UmaAccess.Caller caller) {}
@@ -111,6 +127,7 @@ public class UmaService {
         out.put("pendingActions", pendingActions);
         out.put("readiness", readiness(c.org()));
         out.put("canCreate", !c.caller().viewer() && !"NONE".equals(c.caller().role()));
+        out.put("isAdmin", c.caller().admin());
         return out;
     }
 
@@ -253,6 +270,197 @@ public class UmaService {
         return m;
     }
 
+    // ── browser capture ──────────────────────────────────────────────────
+
+    public static final long MAX_PIECE_BYTES = 6_000_000L;      // a 3-minute speech piece is about 1 MB
+    public static final int MAX_PIECES = 1000;
+
+    /** Starts recording in the browser: a new meeting, or the meeting a link was registered for. */
+    public UmaMeeting startCapture(Ctx c, String existingId, String title, String projectId, Instant meetingAt, String timezone, boolean consent) {
+        if (!consent) throw new UmaException(HttpStatus.BAD_REQUEST, "CONSENT_REQUIRED",
+                "Please confirm that everyone in the meeting knows it is being recorded and transcribed.");
+        UmaMeeting m;
+        if (existingId != null && !existingId.isBlank()) {
+            m = manageable(c, existingId);
+            if (m.getStatus() != UmaStatus.CREATED)
+                throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content. Start a new recording instead.");
+        } else {
+            m = store.save(newMeeting(c, title != null && !title.isBlank() ? title : "Recorded meeting", "BROWSER_CAPTURE", projectId, meetingAt, timezone));
+        }
+        UmaMeeting.Recording rec = new UmaMeeting.Recording();
+        rec.setFileName("browser recording");
+        rec.setMimeType("audio/webm");
+        rec.setRecorderName(recorderName(c));
+        rec.setLastPieceAt(Instant.now());
+        m.setRecording(rec);
+        m.setConsentConfirmed(true); m.setConsentBy(c.caller().email()); m.setConsentAt(Instant.now());
+        store.save(m);
+        m = store.transition(c.org(), m.getId(), UmaStatus.CAPTURING, c.caller().email(), "Recording in your browser…", "capture started");
+        store.audit(c.org(), m.getId(), c.caller().email(), "CAPTURE_STARTED", null);
+        return m;
+    }
+
+    private String recorderName(Ctx c) {
+        String email = c.caller().email();
+        return memberName(c.org(), email);
+    }
+
+    /** One short piece of one track. Safe to send twice (the second copy is ignored). */
+    public Map<String, Object> capturePiece(Ctx c, String id, String track, int seq, long startMs, long durationMs, byte[] audio) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CAPTURING)
+            throw new UmaException(HttpStatus.CONFLICT, "NOT_RECORDING", "This recording has already been finished.");
+        String t = "MIC".equalsIgnoreCase(track) ? "MIC" : "TAB".equalsIgnoreCase(track) ? "TAB" : null;
+        if (t == null || seq < 0 || startMs < 0 || durationMs < 0)
+            throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_PIECE", "That piece of audio wasn't labelled correctly.");
+        if (audio == null || audio.length == 0) throw new UmaException(HttpStatus.BAD_REQUEST, "EMPTY_PIECE", "That piece of audio was empty.");
+        if (audio.length > MAX_PIECE_BYTES) throw new UmaException(HttpStatus.CONTENT_TOO_LARGE, "PIECE_TOO_LARGE", "That piece of audio is too large.");
+        String kind = com.prowosma.backend.meetingassistant.RecordingRules.audioKind(audio);
+        if (kind == null) throw new UmaException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "NOT_AUDIO", "That piece isn't audio.");
+        List<UmaMeeting.Piece> have = m.getRecording() == null ? List.of() : m.getRecording().getPieces();
+        if (have.stream().anyMatch(p -> p.getTrack().equals(t) && p.getSeq() == seq)) return Map.of("stored", false, "duplicate", true);
+        if (have.size() >= MAX_PIECES) throw new UmaException(HttpStatus.CONFLICT, "TOO_LONG", "This recording has reached its length limit. Press Stop.");
+        long total = have.stream().mapToLong(UmaMeeting.Piece::getSizeBytes).sum() + audio.length;
+        if (total > maxUploadMb * 1024 * 1024) throw new UmaException(HttpStatus.CONTENT_TOO_LARGE, "TOO_LARGE", "This recording has reached its size limit. Press Stop.");
+
+        String key;
+        try { key = files.store(new com.prowosma.backend.uma.core.BytesUpload(audio, t.toLowerCase(Locale.ROOT) + "-" + seq + "." + kind,
+                com.prowosma.backend.meetingassistant.RecordingRules.mimeOf(kind))); }
+        catch (IOException e) { throw new UmaException(HttpStatus.BAD_REQUEST, "UPLOAD_REJECTED", e.getMessage() == null ? "The audio couldn't be stored." : e.getMessage()); }
+        UmaMeeting.Piece p = new UmaMeeting.Piece();
+        p.setTrack(t); p.setSeq(seq); p.setStartMs(startMs); p.setDurationMs(durationMs); p.setFileKey(key); p.setSizeBytes(audio.length);
+        // Atomic append, only while still recording and only if this piece isn't there yet (two tabs or a retry can race).
+        Query q = new Query(Criteria.where("_id").is(id).and("organizationId").is(c.org()).and("status").is(UmaStatus.CAPTURING)
+                .and("recording.pieces").not().elemMatch(Criteria.where("track").is(t).and("seq").is(seq)));
+        org.springframework.data.mongodb.core.query.Update u = new org.springframework.data.mongodb.core.query.Update()
+                .push("recording.pieces", p).set("recording.lastPieceAt", Instant.now()).set("updatedAt", Instant.now());
+        boolean stored = mongo.updateFirst(q, u, UmaMeeting.class).getModifiedCount() == 1;
+        if (!stored) { try { files.delete(key); } catch (IOException ignored) { } }
+        return Map.of("stored", stored, "duplicate", !stored);
+    }
+
+    public UmaMeeting finishCapture(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CAPTURING) return m;                      // already finished (double click, auto-finish)
+        if (m.getRecording() == null || m.getRecording().getPieces().isEmpty()) {
+            UmaMeeting f = store.transition(c.org(), id, UmaStatus.FAILED, c.caller().email(), "No audio was recorded.", "capture finished empty");
+            f.setErrorCode("NO_AUDIO"); f.setFailedStage(UmaStatus.CAPTURING);
+            f.setRecoveryHint("Start the recording again: choose the meeting tab and tick “Share tab audio”.");
+            return store.save(f);
+        }
+        m = store.transition(c.org(), id, UmaStatus.QUEUED, c.caller().email(), "Waiting to be transcribed…", "capture finished");
+        queue.enqueue(c.org(), id, UmaPipeline.TRANSCRIBE, c.caller().email());
+        store.audit(c.org(), id, c.caller().email(), "CAPTURE_FINISHED", m.getRecording().getPieces().size() + " pieces");
+        return m;
+    }
+
+    // ── Fireflies ────────────────────────────────────────────────────────
+
+    public Map<String, Object> firefliesStatus(Ctx c) { return fireflies.status(c.org()); }
+
+    public Map<String, Object> saveFirefliesKey(Ctx c, String key) {
+        requireAdmin(c);
+        Map<String, Object> r = fireflies.saveKey(c.org(), key, c.caller().email());
+        store.audit(c.org(), null, c.caller().email(), "FIREFLIES_CONNECTED", null);
+        return r;
+    }
+
+    public Map<String, Object> removeFirefliesKey(Ctx c) {
+        requireAdmin(c);
+        store.audit(c.org(), null, c.caller().email(), "FIREFLIES_DISCONNECTED", null);
+        return fireflies.removeKey(c.org());
+    }
+
+    private static void requireAdmin(Ctx c) {
+        if (!c.caller().admin()) throw new UmaException(HttpStatus.FORBIDDEN, "ADMIN_ONLY", "Only a workspace admin can change connections.");
+    }
+
+    public List<Map<String, Object>> firefliesRecent(Ctx c) {
+        access.requireCanCreate(c.caller());
+        return fireflies.recent(c.org());
+    }
+
+    /** Imports one Fireflies meeting as a new meeting (once per workspace). */
+    public UmaMeeting importFromFireflies(Ctx c, String transcriptId, String projectId) {
+        access.requireCanCreate(c.caller());
+        if (transcriptId == null || transcriptId.isBlank()) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_ID", "Choose a Fireflies meeting.");
+        if (fireflies.alreadyImported(c.org(), transcriptId))
+            throw new UmaException(HttpStatus.CONFLICT, "ALREADY_IMPORTED", "That Fireflies meeting has already been imported.");
+        com.prowosma.backend.integration.FirefliesApi.Transcript t = fireflies.transcript(c.org(), transcriptId)
+                .orElseThrow(() -> new UmaException(HttpStatus.CONFLICT, "NOT_READY", "Fireflies is still processing that meeting.", "Try again in a few minutes."));
+        if (t.live()) throw new UmaException(HttpStatus.CONFLICT, "STILL_LIVE", "That meeting is still running in Fireflies.", "Import it after it ends.");
+        UmaMeeting m = newMeeting(c, t.title() != null && !t.title().isBlank() ? t.title() : "Fireflies meeting", "FIREFLIES_IMPORT", projectId,
+                t.date(), null);
+        m.setMeetingUrl(t.meetingLink());
+        if (t.meetingLink() != null) {
+            try { m.setProvider(providers.detect(t.meetingLink()).provider().id()); } catch (UmaException ignored) { /* not a usable link */ }
+        }
+        m = store.save(m);
+        try {
+            fireflies.apply(m, t, c.caller().email());
+        } catch (RuntimeException e) {
+            store.deleteMeeting(c.org(), m.getId());
+            throw e;
+        }
+        queue.enqueue(c.org(), m.getId(), UmaPipeline.ANALYZE, c.caller().email());
+        return store.meeting(c.org(), m.getId()).orElseThrow();
+    }
+
+    /** Asks the Fireflies notetaker to join this meeting now; its transcript is fetched automatically afterwards. */
+    public UmaMeeting sendFirefliesNotetaker(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getMeetingUrl() == null) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_LINK", "This meeting has no link for the notetaker to join.");
+        if (m.getStatus() != UmaStatus.CREATED && m.getStatus() != UmaStatus.FAILED)
+            throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content.");
+        fireflies.sendNotetaker(c.org(), m.getMeetingUrl(), m.getTitle());
+        if (m.getStatus() == UmaStatus.FAILED) m = store.transition(c.org(), id, UmaStatus.CREATED, c.caller().email(), null, "notetaker sent again");
+        UmaMeeting.FirefliesLink f = m.getFireflies() == null ? new UmaMeeting.FirefliesLink() : m.getFireflies();
+        f.setNotetakerSentAt(Instant.now()); f.setNotetakerSentBy(c.caller().email()); f.setChecks(0);
+        m.setFireflies(f);
+        m.setErrorCode(null); m.setRecoveryHint(null);
+        m.setStatusDetail("Fireflies' notetaker is joining. The transcript is fetched automatically after the meeting.");
+        m = store.save(m);
+        queue.enqueueAt(c.org(), id, UmaPipeline.FETCH_FIREFLIES, c.caller().email(), Instant.now().plus(java.time.Duration.ofMinutes(5)));
+        store.audit(c.org(), id, c.caller().email(), "FIREFLIES_NOTETAKER_SENT", null);
+        return m;
+    }
+
+    // ── Google Meet ──────────────────────────────────────────────────────
+
+    public Map<String, Object> googleStatus(Ctx c) { return googleMeet.status(c.org(), c.caller().email()); }
+
+    public Map<String, Object> googleAuthorize(Ctx c) {
+        access.requireCanCreate(c.caller());
+        return Map.of("url", googleMeet.authorizeUrl(c.org(), c.caller().email()));
+    }
+
+    public Map<String, Object> googleDisconnect(Ctx c) {
+        googleMeet.disconnect(c.org(), c.caller().email());
+        return googleMeet.status(c.org(), c.caller().email());
+    }
+
+    /** Read Google's transcript for this Meet meeting now (and keep checking until it is there). */
+    public UmaMeeting fetchFromGoogle(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        if (com.prowosma.backend.uma.core.UmaGoogleMeet.meetingCode(m.getMeetingUrl()) == null)
+            throw new UmaException(HttpStatus.BAD_REQUEST, "NOT_A_MEET_LINK", "This meeting has no Google Meet link.");
+        if (m.getStatus() != UmaStatus.CREATED && m.getStatus() != UmaStatus.FAILED)
+            throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content.");
+        if (!googleMeet.connected(c.org(), c.caller().email()))
+            throw new UmaException(HttpStatus.CONFLICT, "GOOGLE_NOT_CONNECTED", "Your Google account isn't connected.",
+                    "Connect it under Connections on the AI Meeting Assistant page, then try again.");
+        if (m.getStatus() == UmaStatus.FAILED) m = store.transition(c.org(), id, UmaStatus.CREATED, c.caller().email(), null, "Google fetch again");
+        UmaMeeting.GoogleLink g = m.getGoogle() == null ? new UmaMeeting.GoogleLink() : m.getGoogle();
+        g.setRequestedBy(c.caller().email()); g.setChecks(0);
+        m.setGoogle(g);
+        m.setErrorCode(null); m.setRecoveryHint(null);
+        m.setStatusDetail("Checking Google Meet for this meeting's transcript…");
+        m = store.save(m);
+        queue.enqueue(c.org(), id, UmaPipeline.FETCH_GOOGLE, c.caller().email());
+        store.audit(c.org(), id, c.caller().email(), "GOOGLE_FETCH_REQUESTED", null);
+        return m;
+    }
+
     public UmaMeeting registerLink(Ctx c, String url, String title, String projectId, Instant meetingAt, String timezone) {
         ProviderRegistry.Detected d = providers.detect(url);
         UmaMeeting m = newMeeting(c, title != null && !title.isBlank() ? title : d.provider().displayName() + " meeting", "MEETING_LINK", projectId, meetingAt, timezone);
@@ -261,6 +469,16 @@ public class UmaService {
         m.setStatusDetail("After the meeting, add its recording or transcript here.");
         m = store.save(m);
         store.audit(c.org(), m.getId(), c.caller().email(), "MEETING_REGISTERED", d.provider().id());
+        if ("GOOGLE_MEET".equals(d.provider().id()) && com.prowosma.backend.uma.core.UmaGoogleMeet.meetingCode(d.url()) != null
+                && googleMeet.connected(c.org(), c.caller().email())) {
+            UmaMeeting.GoogleLink g = new UmaMeeting.GoogleLink();
+            g.setRequestedBy(c.caller().email());
+            m.setGoogle(g);
+            m.setStatusDetail("Google Meet's transcript is read automatically after the meeting.");
+            m = store.save(m);
+            Instant start = m.getMeetingAt() == null || m.getMeetingAt().isBefore(Instant.now()) ? Instant.now() : m.getMeetingAt();
+            queue.enqueueAt(c.org(), m.getId(), UmaPipeline.FETCH_GOOGLE, c.caller().email(), start.plus(java.time.Duration.ofMinutes(10)));
+        }
         return m;
     }
 
@@ -297,6 +515,7 @@ public class UmaService {
     public UmaMeeting cancel(Ctx c, String id) {
         UmaMeeting m = manageable(c, id);
         queue.cancel(c.org(), id);
+        if (m.getStatus() == UmaStatus.CAPTURING) { deleteRecordingFile(m); store.save(m); }   // a stopped recording isn't kept
         m = store.transition(c.org(), id, UmaStatus.CANCELLED, c.caller().email(), "Cancelled.", "cancelled");
         store.audit(c.org(), id, c.caller().email(), "CANCELLED", null);
         return m;
@@ -319,8 +538,14 @@ public class UmaService {
     }
 
     private void deleteRecordingFile(UmaMeeting m) {
-        if (m.getRecording() != null && m.getRecording().getFileKey() != null) {
+        if (m.getRecording() == null) return;
+        if (m.getRecording().getFileKey() != null) {
             try { files.delete(m.getRecording().getFileKey()); } catch (IOException ignored) { /* best effort; retention sweep tries again */ }
+        }
+        for (UmaMeeting.Piece p : m.getRecording().getPieces()) {
+            if (p.getFileKey() == null) continue;
+            try { files.delete(p.getFileKey()); } catch (IOException ignored) { }
+            p.setFileKey(null);
         }
     }
 
@@ -500,8 +725,9 @@ public class UmaService {
     /** Deletes recording files once their transcript is done and the retention window has passed. Run by the scheduler. */
     public int purgeRecordings() {
         Instant cutoff = Instant.now().minusSeconds(retentionHours * 3600L);
-        List<UmaMeeting> due = mongo.find(new Query(Criteria.where("recording.fileKey").ne(null).and("recording.deletedAt").is(null)
-                .and("transcript.origin").is("STT").and("updatedAt").lt(cutoff)).limit(100), UmaMeeting.class);
+        List<UmaMeeting> due = mongo.find(new Query(new Criteria().orOperator(
+                        Criteria.where("recording.fileKey").ne(null), Criteria.where("recording.pieces.fileKey").ne(null))
+                .and("recording.deletedAt").is(null).and("transcript.origin").is("STT").and("updatedAt").lt(cutoff)).limit(100), UmaMeeting.class);
         for (UmaMeeting m : due) {
             deleteRecordingFile(m);
             m.getRecording().setFileKey(null);

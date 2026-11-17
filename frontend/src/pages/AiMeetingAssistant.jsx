@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle2, Download, FileText, Link2, Loader2, MessageSquare,
-  RefreshCw, Send, Sparkles, Upload, X,
+  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
+  Plug, Plus, RefreshCw, Send, Sparkles, Upload, X,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 import { useToast } from "../components/ToastContext";
@@ -15,7 +15,10 @@ import {
   importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
   cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
+  getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
 } from "../api/aiMeetingAssistant";
+import AiMeetingRecorder from "../components/AiMeetingRecorder";
+import AiMeetingConnections from "../components/AiMeetingConnections";
 import "../styles/pages/ai-meeting-assistant.css";
 
 /* ── small helpers ─────────────────────────────────────────────────────── */
@@ -35,9 +38,9 @@ const TONE = {
   CREATED: "neutral", CAPTURING: "info", QUEUED: "info", TRANSCRIBING: "info", ANALYZING: "info",
   REVIEW_READY: "attention", COMPLETED: "success", FAILED: "danger", CANCELLED: "neutral",
 };
-const SOURCE = { RECORDING_UPLOAD: "Recording", TRANSCRIPT_IMPORT: "Transcript", MEETING_LINK: "Meeting link", BROWSER_CAPTURE: "Browser capture" };
+const SOURCE = { FIREFLIES_IMPORT: "Fireflies", RECORDING_UPLOAD: "Recording", TRANSCRIPT_IMPORT: "Transcript", MEETING_LINK: "Meeting link", BROWSER_CAPTURE: "Browser capture" };
 const STATE_TEXT = {
-  VERIFIED: "Works — tested", IMPLEMENTED: "Works — built in", POSSIBLE: "Possible later (needs setup)", UNAVAILABLE: "Not available",
+  VERIFIED: "Works — tested", IMPLEMENTED: "Built in", POSSIBLE: "Possible later (needs setup)", UNAVAILABLE: "Not available",
 };
 const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,.mkv,.mpeg,.mpga,audio/*,video/*";
 const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
@@ -306,6 +309,51 @@ function LinkDialog({ onClose, onDone, projects }) {
   );
 }
 
+function FirefliesImportDialog({ onClose, onDone, projects }) {
+  const { show: toast } = useToast();
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState("");
+  const [projectId, setProjectId] = useState("");
+  useEffect(() => {
+    getUmaFirefliesRecent().then((r) => setItems(r.data)).catch((e) => { setItems([]); setError(apiErrorMessage(e, "Fireflies couldn't be reached.")); });
+  }, []);
+  const pick = async (id) => {
+    setBusy(id); setError("");
+    try { const r = await importUmaFireflies(id, projectId || undefined); toast("Imported from Fireflies. Writing the summary now.", "success"); onDone(r.data); }
+    catch (e) { setError(apiErrorMessage(e, "That meeting couldn't be imported.")); setBusy(""); }
+  };
+  return (
+    <Dialog title="Import from Fireflies" onClose={onClose} wide>
+      <div className="uma-form">
+        <p className="uma-hint">Your most recent Fireflies meetings. Each can be imported once.</p>
+        {items === null ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Asking Fireflies…</p>
+          : items.length === 0 && !error ? <p className="uma-hint">No Fireflies meetings found for this account.</p> : (
+            <ul className="uma-fflist">
+              {items.map((x) => (
+                <li key={x.id}>
+                  <div><strong>{x.title || "Untitled meeting"}</strong><span className="uma-fine">{when(x.date)}{x.live ? " · still running" : ""}</span></div>
+                  {x.imported ? <span className="uma-fine">Imported</span> : (
+                    <button type="button" className="btn-secondary pg-btn" disabled={!!busy || x.live} onClick={() => pick(x.id)}>
+                      {busy === x.id ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : null}Import
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
+          <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">Choose later</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        {error && <p className="uma-error" role="alert">{error}</p>}
+      </div>
+    </Dialog>
+  );
+}
+
 /* ── dashboard ─────────────────────────────────────────────────────────── */
 
 function MeetingRow({ m }) {
@@ -351,7 +399,7 @@ function ProviderCards() {
                 return (
                   <li key={c.key} className={ok ? "ok" : c.state === "UNAVAILABLE" ? "no" : "later"} title={c.note || ""}>
                     {ok ? <Check size={13} aria-hidden="true" /> : <X size={13} aria-hidden="true" />}
-                    <span>{c.label}</span><em>{STATE_TEXT[c.state] || c.state}</em>
+                    <span>{c.label}</span><em>{STATE_TEXT[c.state] || c.state}{c.state !== "VERIFIED" && c.note ? ` — ${c.note}` : ""}</em>
                   </li>
                 );
               })}
@@ -408,10 +456,11 @@ function Dashboard({ openDialog }) {
         <div className="pg-empty uma-empty">
           <Sparkles size={28} aria-hidden="true" />
           <h2>Turn a meeting into notes and tasks</h2>
-          <p>Upload a recording or import a transcript. You'll get a summary, the decisions, and action items to approve as tasks.</p>
+          <p>Record a meeting in this browser, upload a recording, or import a transcript. You'll get a summary, the decisions, and action items to approve as tasks.</p>
           {data.canCreate && (
             <div className="uma-empty-actions">
-              <button type="button" className="btn-primary pg-btn" onClick={() => openDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
+              <button type="button" className="btn-primary pg-btn" onClick={() => openDialog("record")}><Circle size={13} fill="currentColor" aria-hidden="true" />Record meeting</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
               <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("import")}><FileText size={15} aria-hidden="true" />Import transcript</button>
             </div>
           )}
@@ -765,6 +814,9 @@ function Detail({ id, team, projects }) {
   const [focusLine, setFocusLine] = useState(null);
   const [busy, setBusy] = useState(false);
   const [addRecording, setAddRecording] = useState(false);
+  const [recordNow, setRecordNow] = useState(false);
+  const [ffConnected, setFfConnected] = useState(false);
+  useEffect(() => { getUmaFireflies().then((r) => setFfConnected(!!r.data?.connected)).catch(() => {}); }, []);
   const wasWorking = useRef(false);
 
   const [tick, setTick] = useState(0);
@@ -776,7 +828,7 @@ function Detail({ id, team, projects }) {
       .catch((e) => { if (live) setError(apiErrorMessage(e, "This meeting couldn't be loaded.")); });
     return () => { live = false; };
   }, [id, tick]);
-  const working = d && WORKING.has(d.meeting.status);
+  const working = d && (WORKING.has(d.meeting.status) || d.meeting.status === "CAPTURING");
   useEffect(() => {
     if (!working) {
       if (wasWorking.current && d?.meeting.status === "REVIEW_READY") toast(d.meeting.statusDetail || "Your meeting summary is ready.", "success");
@@ -851,7 +903,7 @@ function Detail({ id, team, projects }) {
         </div>
       </header>
 
-      {working && (
+      {working && d.meeting.status !== "CAPTURING" && (
         <div className="uma-working" role="status" aria-live="polite">
           <Loader2 size={16} className="uma-spin" aria-hidden="true" />
           <div>
@@ -885,7 +937,25 @@ function Detail({ id, team, projects }) {
       )}
       {canAddContent && (
         <div className="uma-add-content">
-          <button type="button" className="btn-primary pg-btn" onClick={() => setAddRecording(true)}><Upload size={14} aria-hidden="true" />Add the recording</button>
+          {m.status === "CREATED" && (
+            <button type="button" className="btn-primary pg-btn" onClick={() => setRecordNow(true)}><Circle size={12} fill="currentColor" aria-hidden="true" />Record it now</button>
+          )}
+          {m.meetingUrl && ffConnected && (
+            <button type="button" className="btn-secondary pg-btn" disabled={busy}
+              onClick={() => run(() => sendUmaNotetaker(id), "Fireflies' notetaker is joining. The transcript will arrive by itself after the meeting.")}>
+              Send Fireflies notetaker</button>
+          )}
+          {/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i.test(m.meetingUrl || "") && (
+            <button type="button" className="btn-secondary pg-btn" disabled={busy}
+              onClick={() => run(() => fetchUmaGoogle(id), "Checking Google Meet for the transcript…")}>Get transcript from Google Meet</button>
+          )}
+          <button type="button" className={m.status === "CREATED" ? "btn-secondary pg-btn" : "btn-primary pg-btn"} onClick={() => setAddRecording(true)}><Upload size={14} aria-hidden="true" />Add the recording</button>
+        </div>
+      )}
+      {m.status === "CAPTURING" && (
+        <div className="uma-working" role="status">
+          <span className="uma-rec-dot" aria-hidden="true" />
+          <div><strong>Being recorded in a browser.</strong><small> It will be processed when the recording is stopped.</small></div>
         </div>
       )}
       {m.status === "REVIEW_READY" && d.insights && (
@@ -921,6 +991,7 @@ function Detail({ id, team, projects }) {
           </div>
         </>
       )}
+      {recordNow && <AiMeetingRecorder meeting={m} onClose={() => setRecordNow(false)} onFinished={() => { setRecordNow(false); load(); }} />}
       {addRecording && <UploadDialog existingId={id} projects={projects} onClose={() => setAddRecording(false)}
         onDone={() => { setAddRecording(false); load(); }} />}
     </div>
@@ -937,11 +1008,12 @@ export default function AiMeetingAssistant() {
   const [projects, setProjects] = useState([]);
   const [readiness, setReadiness] = useState(null);
   const [canCreate, setCanCreate] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     getTeamMembers().then((r) => setTeam(list(r).filter((t) => t.role !== "VIEWER"))).catch(() => {});
     getProjects().then((r) => setProjects(list(r))).catch(() => {});
-    getUmaDashboard().then((r) => { setReadiness(r.data.readiness); setCanCreate(!!r.data.canCreate); }).catch(() => {});
+    getUmaDashboard().then((r) => { setReadiness(r.data.readiness); setCanCreate(!!r.data.canCreate); setIsAdmin(!!r.data.isAdmin); }).catch(() => {});
   }, []);
 
   const done = useMemo(() => (m) => { setDialog(null); window.dispatchEvent(new Event("uma:changed")); if (m?.id) navigate(`/ai-meeting-assistant/${m.id}`); }, [navigate]);
@@ -956,9 +1028,14 @@ export default function AiMeetingAssistant() {
           </div>
           {canCreate && (
             <div className="pg-title-actions">
-              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("link")}><Link2 size={15} aria-hidden="true" />Add meeting link</button>
-              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("import")}><FileText size={15} aria-hidden="true" />Import transcript</button>
-              <button type="button" className="btn-primary pg-btn" onClick={() => setDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("connections")}><Plug size={15} aria-hidden="true" />Connections</button>
+              <ActionMenu label="More ways to add a meeting" className="btn-secondary pg-btn" items={[
+                { label: "Add meeting link", icon: Link2, onSelect: () => setDialog("link") },
+                { label: "Import transcript", icon: FileText, onSelect: () => setDialog("import") },
+                { label: "Import from Fireflies", icon: Download, onSelect: () => setDialog("fireflies") },
+              ]}><Plus size={15} aria-hidden="true" />Add</ActionMenu>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
+              <button type="button" className="btn-primary pg-btn" onClick={() => setDialog("record")}><Circle size={13} fill="currentColor" aria-hidden="true" />Record meeting</button>
             </div>
           )}
         </header>
@@ -966,6 +1043,9 @@ export default function AiMeetingAssistant() {
       {id ? <Detail key={id} id={id} team={team} projects={projects} /> : <Dashboard openDialog={setDialog} />}
       {dialog === "upload" && <UploadDialog projects={projects} readiness={readiness} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === "import" && <ImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "fireflies" && <FirefliesImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "connections" && <AiMeetingConnections isAdmin={isAdmin} onClose={() => setDialog(null)} onChanged={() => window.dispatchEvent(new Event("uma:changed"))} />}
+      {dialog === "record" && <AiMeetingRecorder onClose={() => setDialog(null)} onFinished={(mid) => done({ id: mid })} />}
       {dialog === "link" && <LinkDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
     </div>
   );

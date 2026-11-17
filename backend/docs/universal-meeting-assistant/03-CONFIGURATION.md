@@ -31,6 +31,11 @@ All optional. Shown with their defaults.
 | `UMA_LLM_API_KEY` | *(empty)* | Key for it, if any. |
 | `UMA_LLM_PREFER` | `workspace` | Which model is tried first: `workspace` (the provider in AI Settings, then the self-hosted one as fallback) or `self-hosted`. |
 
+| `UMA_FIREFLIES_API_KEY` | *(empty)* | Fireflies key for the whole server. Usually an admin saves it in the app instead (Connections). |
+| `ENCRYPTION_KEY` | *(empty)* | Needed to store the Fireflies key and Google sign-ins (`openssl rand -base64 32`). Existing app setting. |
+| `GOOGLE_MEET_OAUTH_CLIENT_ID` / `GOOGLE_MEET_OAUTH_CLIENT_SECRET` | *(empty)* | Google OAuth client for reading Meet transcripts — see 09-CONNECTIONS-SETUP. Existing app settings, shared with the old assistant. |
+| `FRONTEND_URL` | `http://localhost:5173` | Used to build the Google redirect URI. Existing app setting. |
+
 Advanced (properties only): `app.uma.job-poll-ms` (5000), `app.uma.ai.single-pass-chars` (60000), `app.uma.ai.chunk-chars` (40000), `app.uma.ai.max-output-tokens` (4000), `app.uma.ai.ask-context-chars` (24000), `app.uma.retention-check-ms` (3600000).
 
 **Addresses set by the operator** (`UMA_STT_BASE_URL`, `UMA_LLM_BASE_URL`) may be plain `http` and private network addresses — only someone with access to the server configuration can set them. Addresses typed into the app by workspace admins (AI Settings, the existing assistant's speech-to-text setting) keep the stricter rule: public `https` only.
