@@ -140,17 +140,27 @@ public class UmaPipeline {
             }
         }
         Instant sent = f.getNotetakerSentAt() == null ? m.getCreatedAt() : f.getNotetakerSentAt();
-        if (sent != null && Duration.between(sent, Instant.now()).compareTo(FIREFLIES_GIVE_UP) > 0) {
+        Duration since = sent == null ? Duration.ZERO : Duration.between(sent, Instant.now());
+        if (since.compareTo(FIREFLIES_GIVE_UP) > 0) {
             store.save(m);
-            fail(job, m, "FIREFLIES_NO_TRANSCRIPT", "Fireflies' transcript for this meeting didn't arrive within 24 hours.",
-                    "If Fireflies recorded it, open Import from Fireflies and pick it. Otherwise add the recording.", false);
+            fail(job, m, "FIREFLIES_NO_TRANSCRIPT", "Fireflies didn't produce a transcript for this meeting within 24 hours.",
+                    "Very short meetings, or meetings where the notetaker wasn't let in, may not get one. If Fireflies has it, use Import from Fireflies.", false);
             return;
         }
         boolean live = d.kind() == com.prowosma.backend.meetingassistant.FirefliesMatcher.Kind.LIVE;
-        m.setStatusDetail(live ? "Fireflies is in the meeting. The transcript is fetched automatically when it ends."
-                : "Waiting for Fireflies' transcript. It usually arrives a few minutes after the meeting ends.");
+        String at = java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(zoneOf(m)).format(Instant.now());
+        m.setStatusDetail(live ? "Fireflies is in the meeting. Its transcript is fetched as soon as the meeting ends (checked " + at + ")."
+                : since.compareTo(Duration.ofHours(1)) < 0
+                ? "Waiting for Fireflies' transcript - it usually arrives a few minutes after the meeting ends (checked " + at + ")."
+                : "Fireflies hasn't produced a transcript yet (checked " + at + "). Very short meetings, or meetings where the notetaker wasn't let in, may not get one.");
         store.save(m);
-        queue.pollAgain(job, Duration.ofMinutes(live ? 5 : 10));
+        // Often while it matters, then less often.
+        queue.pollAgain(job, live ? Duration.ofMinutes(2) : since.compareTo(Duration.ofHours(1)) < 0 ? Duration.ofMinutes(3) : Duration.ofMinutes(15));
+    }
+
+    private static java.time.ZoneId zoneOf(UmaMeeting m) {
+        try { return m.getTimezone() == null ? java.time.ZoneId.of("UTC") : java.time.ZoneId.of(m.getTimezone()); }
+        catch (Exception e) { return java.time.ZoneId.of("UTC"); }
     }
 
     /** After a Google Meet meeting: read Google's own transcript through the connected account. */
@@ -198,6 +208,15 @@ public class UmaPipeline {
 
     private void fail(UmaJob job, UmaMeeting m, String code, String message, String recovery, boolean retryable) {
         String org = m.getOrganizationId();
+        boolean captureStep = FETCH_GOOGLE.equals(job.getType()) || FETCH_FIREFLIES.equals(job.getType()) || FIREFLIES_JOIN.equals(job.getType());
+        if (captureStep && !retryable && automation.otherCapturePending(m, job)) {
+            queue.dead(job, code);
+            UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
+            fresh.setStatusDetail(message + " Still waiting for the other source.");
+            store.save(fresh);
+            store.audit(org, fresh.getId(), "system", "CAPTURE_SOURCE_GAVE_UP", code);
+            return;
+        }
         if (retryable && job.getAttempts() < job.getMaxAttempts()) {
             queue.retryLater(job, code);
             UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);

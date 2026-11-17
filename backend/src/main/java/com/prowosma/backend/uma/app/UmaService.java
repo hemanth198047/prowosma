@@ -112,7 +112,7 @@ public class UmaService {
         for (UmaMeeting m : visible) {
             Map<String, Object> row = summary(m);
             if (m.getStatus() == UmaStatus.CREATED && m.getMeetingAt() != null && m.getMeetingAt().isAfter(now)) upcoming.add(row);
-            else if (m.getStatus().isWorking()) inProgress.add(row);
+            else if (m.getStatus().isWorking() || "Waiting for transcript".equals(row.get("statusLabel"))) inProgress.add(row);
             else if (m.getStatus() == UmaStatus.FAILED) failed.add(row);
             else if (m.getStatus() == UmaStatus.REVIEW_READY) review.add(row);
             if (m.getStatus() != UmaStatus.CANCELLED && recent.size() < 20) recent.add(row);
@@ -143,7 +143,7 @@ public class UmaService {
         r.put("source", m.getSource());
         r.put("provider", m.getProvider());
         r.put("status", m.getStatus());
-        r.put("statusLabel", m.getStatus().label());
+        r.put("statusLabel", label(m));
         r.put("statusDetail", m.getStatusDetail());
         r.put("progressPercent", m.getProgressPercent());
         r.put("meetingAt", m.getMeetingAt());
@@ -153,11 +153,45 @@ public class UmaService {
         return r;
     }
 
+    /** What people see: before the meeting "Scheduled"; after it, while a transcript is on its way, "Waiting for transcript". */
+    String label(UmaMeeting m) {
+        if (m.getStatus() != UmaStatus.CREATED) return m.getStatus().label();
+        boolean future = m.getMeetingAt() != null && m.getMeetingAt().isAfter(Instant.now());
+        if (future) return "Scheduled";
+        return automation.pendingCapture(m).isEmpty() ? m.getStatus().label() : "Waiting for transcript";
+    }
+
+    /** The automatic capture steps still waiting, and when they run next. */
+    Map<String, Object> capture(UmaMeeting m) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        if (m.getStatus() != UmaStatus.CREATED) { r.put("pending", List.of()); return r; }
+        List<com.prowosma.backend.uma.model.UmaJob> jobs = automation.pendingCapture(m);
+        r.put("pending", jobs.stream().map(com.prowosma.backend.uma.model.UmaJob::getType).distinct().toList());
+        jobs.stream().filter(j -> !UmaPipeline.FIREFLIES_JOIN.equals(j.getType())).map(com.prowosma.backend.uma.model.UmaJob::getRunAfter)
+                .filter(Objects::nonNull).min(Comparator.naturalOrder()).ifPresent(t -> r.put("nextCheckAt", t));
+        Instant last = null;
+        if (m.getFireflies() != null && m.getFireflies().getLastCheckAt() != null) last = m.getFireflies().getLastCheckAt();
+        if (m.getGoogle() != null && m.getGoogle().getLastCheckAt() != null && (last == null || m.getGoogle().getLastCheckAt().isAfter(last))) last = m.getGoogle().getLastCheckAt();
+        if (last != null) r.put("lastCheckAt", last);
+        return r;
+    }
+
+    /** "Check now" for a meeting waiting for its transcript. */
+    public Map<String, Object> checkNow(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CREATED) throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content.");
+        int n = automation.checkNow(m);
+        if (n == 0) throw new UmaException(HttpStatus.CONFLICT, "NOTHING_TO_CHECK", "Nothing is waiting to be fetched for this meeting.",
+                "Send the Fireflies notetaker, get the transcript from Google Meet, or add the recording.");
+        return Map.of("checks", n);
+    }
+
     public Map<String, Object> detail(Ctx c, String id) {
         UmaMeeting m = readable(c, id);
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("meeting", m);
-        r.put("statusLabel", m.getStatus().label());
+        r.put("statusLabel", label(m));
+        r.put("capture", capture(m));
         r.put("canManage", access.canManage(m, c.caller()));
         r.put("insights", store.insights(c.org(), id).orElse(null));
         r.put("segments", store.segments(c.org(), id));
@@ -425,7 +459,7 @@ public class UmaService {
         m.setErrorCode(null); m.setRecoveryHint(null);
         m.setStatusDetail("Fireflies' notetaker is joining. The transcript is fetched automatically after the meeting.");
         m = store.save(m);
-        queue.enqueueAt(c.org(), id, UmaPipeline.FETCH_FIREFLIES, c.caller().email(), Instant.now().plus(java.time.Duration.ofMinutes(5)));
+        queue.enqueueAt(c.org(), id, UmaPipeline.FETCH_FIREFLIES, c.caller().email(), Instant.now().plus(UmaAutomation.FIRST_LOOK));
         store.audit(c.org(), id, c.caller().email(), "FIREFLIES_NOTETAKER_SENT", null);
         return m;
     }

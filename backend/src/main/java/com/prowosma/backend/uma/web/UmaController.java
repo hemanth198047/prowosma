@@ -231,6 +231,9 @@ public class UmaController {
     @PostMapping("/meetings/{id}/google/fetch")
     public UmaMeeting fetchGoogle(@PathVariable String id, Authentication auth) { return service.fetchFromGoogle(ctx(auth), id); }
 
+    @PostMapping("/meetings/{id}/check")
+    public Map<String, Object> checkNow(@PathVariable String id, Authentication auth) { return service.checkNow(ctx(auth), id); }
+
     @PostMapping("/meetings/{id}/retry") public UmaMeeting retry(@PathVariable String id, Authentication auth) { return service.retry(ctx(auth), id); }
     @PostMapping("/meetings/{id}/regenerate") public UmaMeeting regenerate(@PathVariable String id, Authentication auth) { return service.regenerate(ctx(auth), id); }
     @PostMapping("/meetings/{id}/cancel") public UmaMeeting cancel(@PathVariable String id, Authentication auth) { return service.cancel(ctx(auth), id); }

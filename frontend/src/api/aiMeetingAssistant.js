@@ -86,3 +86,4 @@ export const setUmaGooglePrefs     = (prefs)       => client.put(`${BASE}/connec
 export const syncUmaCalendar       = ()            => client.post(`${BASE}/connections/google/sync`);
 export const scheduleUmaMeeting    = (data)        => client.post(`${BASE}/meetings/schedule`, data);
 export const setUmaAutoFireflies   = (id, on)      => client.put(`${BASE}/meetings/${id}/automation`, { autoFireflies: on });
+export const checkUmaMeeting       = (id)          => client.post(`${BASE}/meetings/${id}/check`);

@@ -29,6 +29,7 @@ class UmaGoogleFake implements GoogleHttp {
         if (url.contains("/participants")) return new Result(200, """
                 {"participants":[{"name":"conferenceRecords/c1/participants/p1","signedinUser":{"displayName":"Priya Sharma"}},
                                  {"name":"conferenceRecords/c1/participants/p2","signedinUser":{"displayName":"Ravi Kumar"}}]}""");
+        if (url.contains("/transcripts") && transcriptState == null) return new Result(200, "{\"transcripts\":[]}");     // transcription was off
         if (url.contains("/transcripts")) return new Result(200, """
                 {"transcripts":[{"name":"conferenceRecords/c1/transcripts/t1","state":"%s","startTime":"%s"%s}]}"""
                 .formatted(transcriptState, start, end == null ? "" : ",\"endTime\":\"" + end + "\""));

@@ -485,7 +485,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Launch review\"}")).andReturn();
         String id = json(link).get("id").asText();
-        assertThat(json(link).get("statusDetail").asText()).contains("transcript is read after it ends");
+        assertThat(json(link).get("statusDetail").asText()).contains("transcript is read when it ends");
         gg().start = java.time.Instant.now().plusSeconds(30);
 
         dueNow(); pipeline.drain();                      // still running
@@ -622,6 +622,59 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         dueNow(); pipeline.drain();
         assertThat(detail(id).at("/meeting/fireflies/notetakerSentBy").asText()).isEqualTo("automatic");
         assertThat(ff().requests.stream().filter(b -> b.contains("addToLiveMeeting")).count()).isEqualTo(3);
+    }
+
+    /** Reproduces a real test: a 30-minute meeting that ended after one minute must not sit untouched until its planned end. */
+    @Test
+    void meetingThatEndsEarly_isCheckedSoon_labelledHonestly_andCanBeCheckedNow() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        java.time.Instant start = java.time.Instant.now();
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://meet.google.com/abc-defg-hij", "title", "Weekly sync",
+                        "meetingAt", start.toString(), "durationMinutes", 30, "autoFireflies", true)))).andReturn();
+        String id = json(link).get("id").asText();
+        ff().live = true;
+        ff().date = start.toString();
+        dueNow(); pipeline.drain();                                         // start time: Fireflies is sent
+        org.bson.Document fetch = mongoTemplate.getCollection("uma_jobs").find(new org.bson.Document("type", "FETCH_FIREFLIES")).first();
+        java.time.Instant firstLook = fetch.getDate("runAfter").toInstant();
+        assertThat(firstLook).as("first look a few minutes after joining, not after the planned end")
+                .isBefore(start.plus(java.time.Duration.ofMinutes(10)));
+
+        JsonNode d = detail(id);
+        assertThat(d.get("statusLabel").asText()).isEqualTo("Waiting for transcript");
+        assertThat(d.at("/capture/pending").toString()).contains("FETCH_FIREFLIES");
+        assertThat(json(mvc.perform(as(get(BASE + "/dashboard"), ownerToken(), workspaceId)).andReturn()).at("/inProgress/0/id").asText()).isEqualTo(id);
+
+        // the meeting ended early: "Check now" fetches it straight away
+        ff().live = false;
+        MvcResult chk = mvc.perform(as(post(BASE + "/meetings/" + id + "/check"), ownerToken(), workspaceId)).andReturn();
+        assertThat(chk.getResponse().getStatus()).as(chk.getResponse().getContentAsString()).isEqualTo(200);
+        pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+    }
+
+    @Test
+    void oneCaptureRouteGivingUp_doesNotFailTheMeetingWhileTheOtherIsOnItsWay() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        connectGoogle();                                                     // existing-assistant connection: transcripts only
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://meet.google.com/abc-defg-hij", "meetingAt", java.time.Instant.now().minusSeconds(4 * 3600).toString(),
+                        "durationMinutes", 30)))).andReturn();
+        String id = json(link).get("id").asText();
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn();
+        ff().live = true;                                                    // Fireflies still busy
+        gg().start = java.time.Instant.now().minusSeconds(4 * 3600);        // Google: ended long ago, no transcript
+        gg().end = gg().start.plusSeconds(600);
+        gg().transcriptState = null;
+        mongoTemplate.getCollection("uma_jobs").updateMany(new org.bson.Document("type", "FETCH_GOOGLE"),
+                new org.bson.Document("$set", new org.bson.Document("runAfter", java.util.Date.from(java.time.Instant.now().minusSeconds(1)))));
+        pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).as("Fireflies is still on its way").isEqualTo("CREATED");
+        assertThat(d.at("/meeting/statusDetail").asText()).isNotBlank();
     }
 
     @Test

@@ -16,7 +16,7 @@ import {
   cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
-  getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies,
+  getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting,
 } from "../api/aiMeetingAssistant";
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
@@ -47,7 +47,8 @@ const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,
 const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
 
 function Pill({ status, label }) {
-  return <span className={`uma-pill uma-pill--${TONE[status] || "neutral"}`}><span className="uma-dot" aria-hidden="true" />{label || status}</span>;
+  const tone = label === "Waiting for transcript" || label === "Scheduled" ? "info" : TONE[status] || "neutral";
+  return <span className={`uma-pill uma-pill--${tone}`}><span className="uma-dot" aria-hidden="true" />{label || status}</span>;
 }
 
 function Refs({ evidence, onOpen }) {
@@ -957,7 +958,8 @@ function Detail({ id, team, projects }) {
       .catch((e) => { if (live) setError(apiErrorMessage(e, "This meeting couldn't be loaded.")); });
     return () => { live = false; };
   }, [id, tick]);
-  const working = d && (WORKING.has(d.meeting.status) || d.meeting.status === "CAPTURING");
+  const waiting = !!d && d.meeting.status === "CREATED" && (d.capture?.pending?.length || 0) > 0;
+  const working = d && (WORKING.has(d.meeting.status) || d.meeting.status === "CAPTURING" || waiting);
   useEffect(() => {
     if (!working) {
       if (wasWorking.current && d?.meeting.status === "REVIEW_READY") toast(d.meeting.statusDetail || "Your meeting summary is ready.", "success");
@@ -965,9 +967,9 @@ function Detail({ id, team, projects }) {
       return undefined;
     }
     wasWorking.current = true;
-    const t = setInterval(() => setTick((n) => n + 1), 4000);
+    const t = setInterval(() => setTick((n) => n + 1), waiting ? 15000 : 4000);   // waiting for a transcript: checks run every few minutes
     return () => clearInterval(t);
-  }, [working, d, toast]);
+  }, [working, waiting, d, toast]);
 
   const openLine = (n) => { setTab("transcript"); setFocusLine(n); };
   const run = async (fn, ok) => {
@@ -1032,7 +1034,7 @@ function Detail({ id, team, projects }) {
         </div>
       </header>
 
-      {working && d.meeting.status !== "CAPTURING" && (
+      {WORKING.has(m.status) && (
         <div className="uma-working" role="status" aria-live="polite">
           <Loader2 size={16} className="uma-spin" aria-hidden="true" />
           <div>
@@ -1060,8 +1062,18 @@ function Detail({ id, team, projects }) {
           <Link2 size={15} aria-hidden="true" />
           <div>
             <strong>{m.statusDetail || "Waiting for the meeting's content."}</strong>
-            {m.meetingUrl && <p><a href={m.meetingUrl} target="_blank" rel="noreferrer noopener">Open the meeting link</a></p>}
+            {waiting && (d.capture.lastCheckAt || d.capture.nextCheckAt) && (
+              <p className="uma-fine">
+                {d.capture.lastCheckAt && <>Last checked {new Date(d.capture.lastCheckAt).toLocaleTimeString([], { timeStyle: "short" })}. </>}
+                {d.capture.nextCheckAt && new Date(d.capture.nextCheckAt) > new Date() && <>Next check {new Date(d.capture.nextCheckAt).toLocaleTimeString([], { timeStyle: "short" })}.</>}
+              </p>
+            )}
+            {m.meetingUrl && !m.meetingAt && !m.calendarLink && <p><a href={m.meetingUrl} target="_blank" rel="noreferrer noopener">Open the meeting link</a></p>}
           </div>
+          {waiting && d.canManage && d.capture.pending.some((t) => t !== "FIREFLIES_JOIN") && (
+            <button type="button" className="btn-secondary pg-btn uma-note-action" disabled={busy}
+              onClick={() => run(() => checkUmaMeeting(id), "Checking now…")}><RefreshCw size={14} aria-hidden="true" />Check now</button>
+          )}
         </div>
       )}
       {m.status === "CREATED" && (m.meetingAt || m.calendarLink) && (

@@ -28,6 +28,7 @@ import java.util.List;
 @Slf4j
 public class UmaAutomation {
     static final Duration JOIN_PATIENCE = Duration.ofMinutes(20);
+    public static final Duration FIRST_LOOK = Duration.ofMinutes(3);
     static final Duration CALENDAR_EVERY = Duration.ofMinutes(10);
     static final Duration CALENDAR_AHEAD = Duration.ofDays(7);
 
@@ -50,7 +51,6 @@ public class UmaAutomation {
         if (m.getStatus() != UmaStatus.CREATED || m.getMeetingUrl() == null) return null;
         String org = m.getOrganizationId(), by = m.getCreatedBy();
         Instant start = m.getMeetingAt() == null ? Instant.now() : m.getMeetingAt();
-        Instant end = m.getMeetingEndAt() != null ? m.getMeetingEndAt() : start.plus(Duration.ofHours(1));
         StringBuilder note = new StringBuilder();
         if (m.isAutoFireflies() && fireflies.key(org).isPresent()) {
             queue.enqueueAt(org, m.getId(), UmaPipeline.FIREFLIES_JOIN, by, start.isBefore(Instant.now()) ? Instant.now() : start);
@@ -60,9 +60,10 @@ public class UmaAutomation {
             UmaMeeting.GoogleLink g = m.getGoogle() == null ? new UmaMeeting.GoogleLink() : m.getGoogle();
             g.setRequestedBy(by);
             m.setGoogle(g);
-            Instant check = end.plus(Duration.ofMinutes(5));
+            // Start looking soon after the start: Google says "in progress" until the meeting really ends, which is often earlier than planned.
+            Instant check = start.plus(Duration.ofMinutes(10));
             queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_GOOGLE, by, check.isBefore(Instant.now()) ? Instant.now() : check);
-            note.append("Google Meet's transcript is read after it ends. ");
+            note.append("Google Meet's transcript is read when it ends. ");
         }
         String text = note.length() == 0 ? "After the meeting, add its recording or transcript here." : note.toString().trim();
         m.setStatusDetail(text);
@@ -99,10 +100,34 @@ public class UmaAutomation {
         f.setNotetakerSentAt(Instant.now()); f.setNotetakerSentBy("automatic"); f.setChecks(0);
         m.setFireflies(f);
         note(m, "Fireflies' notetaker was sent to the meeting. The transcript is fetched automatically after it ends.");
-        Instant end = m.getMeetingEndAt() != null ? m.getMeetingEndAt() : Instant.now().plus(Duration.ofMinutes(30));
         queue.succeed(job);
-        queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_FIREFLIES, m.getCreatedBy(), end.isBefore(Instant.now()) ? Instant.now() : end.plus(Duration.ofMinutes(5)));
+        // Look a few minutes after joining and then regularly: meetings often end before their planned end.
+        queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_FIREFLIES, m.getCreatedBy(), Instant.now().plus(FIRST_LOOK));
         store.audit(org, m.getId(), "system", "FIREFLIES_NOTETAKER_SENT", "automatic");
+    }
+
+    static final java.util.Set<String> CAPTURE_JOBS = java.util.Set.of(UmaPipeline.FIREFLIES_JOIN, UmaPipeline.FETCH_FIREFLIES, UmaPipeline.FETCH_GOOGLE);
+
+    /** Capture steps still waiting for this meeting (automatic Fireflies join, Fireflies or Google transcript checks). */
+    public List<UmaJob> pendingCapture(UmaMeeting m) {
+        return queue.forMeeting(m.getOrganizationId(), m.getId()).stream()
+                .filter(j -> CAPTURE_JOBS.contains(j.getType()) && ("QUEUED".equals(j.getStatus()) || "RUNNING".equals(j.getStatus()))).toList();
+    }
+
+    /** Another way of getting this meeting's transcript is still on its way (so one route giving up must not fail the meeting). */
+    public boolean otherCapturePending(UmaMeeting m, UmaJob except) {
+        return pendingCapture(m).stream().anyMatch(j -> !j.getId().equals(except.getId()));
+    }
+
+    /** "Check now": run the waiting transcript checks straight away. */
+    public int checkNow(UmaMeeting m) {
+        int n = 0;
+        for (UmaJob j : pendingCapture(m)) {
+            if (UmaPipeline.FIREFLIES_JOIN.equals(j.getType())) continue;          // joining stays tied to the start time
+            queue.enqueueAt(m.getOrganizationId(), m.getId(), j.getType(), j.getRequestedBy(), Instant.now());
+            n++;
+        }
+        return n;
     }
 
     private void note(UmaMeeting m, String text) {

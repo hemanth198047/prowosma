@@ -14,7 +14,7 @@ const api = vi.hoisted(() => ({
   getUmaDashboard: vi.fn(), getUmaMeeting: vi.fn(), getUmaProviders: vi.fn(), uploadUmaRecording: vi.fn(),
   approveUmaAction: vi.fn(), editUmaAction: vi.fn(), askUma: vi.fn(), retryUmaMeeting: vi.fn(),
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
-  getUmaGoogle: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
+  getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
@@ -108,6 +108,23 @@ describe("AI Meeting Assistant (simulated API)", () => {
     await waitFor(() => expect(api.scheduleUmaMeeting).toHaveBeenCalled());
     expect(api.scheduleUmaMeeting.mock.calls[0][0]).toMatchObject({
       title: "Launch review", attendees: ["priya@acme.test", "ravi@acme.test"], autoFireflies: true, durationMinutes: 30 });
+  });
+
+  it("after the meeting, says it's waiting for the transcript and offers Check now", async () => {
+    api.getUmaMeeting.mockResolvedValue(meeting({
+      meeting: { id: "x1", title: "Test", status: "CREATED", source: "MEETING_LINK", meetingUrl: "https://meet.google.com/abc-defg-hij",
+        meetingAt: "2026-11-17T13:42:00Z", meetingEndAt: "2026-11-17T14:12:00Z", autoFireflies: true,
+        statusDetail: "Waiting for Fireflies' transcript - it usually arrives a few minutes after the meeting ends (checked 19:19)." },
+      statusLabel: "Waiting for transcript", insights: null, segments: [],
+      capture: { pending: ["FETCH_FIREFLIES"], lastCheckAt: "2026-11-17T13:49:00Z", nextCheckAt: "2099-01-01T00:00:00Z" },
+    }));
+    api.checkUmaMeeting.mockResolvedValue({ data: { checks: 1 } });
+    at("/ai-meeting-assistant/x1");
+    expect(await screen.findByText("Waiting for transcript")).toBeInTheDocument();
+    expect(screen.getByText(/Last checked/)).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Check now/ }));
+    await waitFor(() => expect(api.checkUmaMeeting).toHaveBeenCalledWith("x1"));
   });
 
   it("asks to connect Google before scheduling", async () => {

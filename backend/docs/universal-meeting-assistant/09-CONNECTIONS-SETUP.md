@@ -62,7 +62,13 @@ calendar *events* (`calendar.events`) — to create meetings and read upcoming o
 - Google Workspace. Meet **transcripts** need an edition that includes them (Business Standard or higher, Enterprise, Education Plus…), allowed
   in the Google Admin console (Apps → Google Workspace → Google Meet → Meet video settings → Transcripts). Scheduling and calendar import work on
   any edition.
-- Fireflies: for the notetaker to be let in, the Meet host may need to admit it (or allow guests from outside the organisation).
+- Fireflies: the notetaker is a guest from outside your company, so in Google Meet **the host (or someone from your company already in the
+  call) has to admit it** when it asks to join. If nobody who can admit it is in the meeting, it waits and then gives up.
+- Prowosma sends Fireflies **at the scheduled start time** (and keeps trying for 20 minutes until the meeting is running) - not when people
+  join. If you join early, it arrives at the start time; to bring it in earlier, press **Send Fireflies notetaker** on the meeting.
+- Very short meetings (under a minute or two) may not get a Fireflies transcript at all. For a test, talk for a few minutes.
+- After Fireflies is sent, Prowosma checks for its transcript 3 minutes later and then every few minutes, so a meeting that ends early is
+  picked up soon after - you don't have to wait for the planned end. **Check now** on the meeting checks immediately.
 
 ### 3.2 One-time Google Cloud setup, step by step (~10 minutes)
 

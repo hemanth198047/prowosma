@@ -95,7 +95,7 @@
 .uma-back:hover { color: var(--brand-600); }
 .uma-detail .pg-title-text p { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .uma-sub { color: var(--text-muted); font-size: 13px; }
-.uma-add-content { margin: -6px 0 16px; }
+.uma-add-content { margin: -6px 0 16px; display: flex; flex-wrap: wrap; gap: 8px; }
 .uma-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); overflow-x: auto; margin-bottom: 16px; }
 .uma-tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 9px 12px; font: inherit; font-size: 14px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
 .uma-tab:hover { color: var(--text-primary); }
@@ -204,3 +204,6 @@
 .uma-auto-facts { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 13.5px; }
 .uma-auto-facts a { color: var(--brand-600); }
 .uma-toggle-list { display: grid; gap: 8px; margin-top: 8px; }
+
+.uma-note > div { flex: 1; min-width: 0; }
+.uma-note-action { align-self: center; white-space: nowrap; }
