@@ -32,13 +32,14 @@ public class UmaGoogleMeet {
     static final Duration ENDED_PATIENCE = Duration.ofMinutes(10);
     static final Duration NO_TRANSCRIPT_GRACE = Duration.ofHours(2);
 
-    private final GoogleOAuthService oauth;
+    private final GoogleOAuthService oauth;          // the existing assistant's sign-in: used only as a fallback for reading transcripts
+    private final UmaGoogleAuth auth;                // this module's own sign-in (Meet + Calendar)
     private final GoogleMeetApi api;
     private final MongoTemplate mongo;
     private final UmaStore store;
 
-    public UmaGoogleMeet(GoogleOAuthService oauth, GoogleMeetApi api, MongoTemplate mongo, UmaStore store) {
-        this.oauth = oauth; this.api = api; this.mongo = mongo; this.store = store;
+    public UmaGoogleMeet(GoogleOAuthService oauth, UmaGoogleAuth auth, GoogleMeetApi api, MongoTemplate mongo, UmaStore store) {
+        this.oauth = oauth; this.auth = auth; this.api = api; this.mongo = mongo; this.store = store;
     }
 
     public static String meetingCode(String url) {
@@ -49,22 +50,37 @@ public class UmaGoogleMeet {
 
     public Map<String, Object> status(String org, String email) {
         Map<String, Object> r = new LinkedHashMap<>();
-        r.put("configured", oauth.isConfigured());
-        r.put("canStoreTokens", oauth.canStoreTokens());
-        Optional<MeetingUserConnection> c = oauth.connection(org, email);
-        r.put("connected", c.filter(x -> "ACTIVE".equals(x.getStatus())).isPresent());
-        r.put("status", c.map(MeetingUserConnection::getStatus).orElse("NOT_CONNECTED"));
-        r.put("account", c.map(MeetingUserConnection::getAccount).orElse(null));
+        r.put("configured", auth.configured());
+        r.put("canStoreTokens", auth.canStoreTokens());
+        r.put("redirectUri", auth.redirectUri());
+        Optional<com.prowosma.backend.uma.model.UmaGoogleConnection> c = auth.connection(org, email);
+        boolean legacy = c.isEmpty() && oauth.hasActiveConnection(org, email);
+        r.put("connected", c.filter(x -> "ACTIVE".equals(x.getStatus())).isPresent() || legacy);
+        r.put("status", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::getStatus).orElse(legacy ? "ACTIVE" : "NOT_CONNECTED"));
+        r.put("account", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::getAccount)
+                .orElse(legacy ? oauth.connection(org, email).map(MeetingUserConnection::getAccount).orElse(null) : null));
+        r.put("calendar", c.map(x -> x.getScopes().contains(UmaGoogleAuth.CALENDAR_SCOPE)).orElse(false));
+        r.put("legacyConnection", legacy);                    // connected only through the existing assistant: transcripts yes, scheduling no
+        r.put("autoImportCalendar", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::isAutoImportCalendar).orElse(false));
+        r.put("autoFireflies", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::isAutoFireflies).orElse(false));
+        r.put("lastCalendarSyncAt", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::getLastCalendarSyncAt).orElse(null));
+        r.put("lastCalendarSyncNote", c.map(com.prowosma.backend.uma.model.UmaGoogleConnection::getLastCalendarSyncNote).orElse(null));
         return r;
     }
 
-    public boolean connected(String org, String email) { return oauth.hasActiveConnection(org, email); }
+    public boolean connected(String org, String email) { return auth.active(org, email) || oauth.hasActiveConnection(org, email); }
 
-    public String authorizeUrl(String org, String email) {
-        try { return oauth.authorizeUrl(org, email); } catch (MeetingAssistantException e) { throw toUma(e); }
+    public String authorizeUrl(String org, String email) { return auth.authorizeUrl(org, email); }
+
+    public void complete(String org, String email, String code, String state) { auth.complete(org, email, code, state); }
+
+    public void disconnect(String org, String email) { auth.disconnect(org, email); }
+
+    /** This module's connection first; the existing assistant's connection (Meet read access only) as a fallback. */
+    private String token(String org, String who) {
+        if (auth.connection(org, who).isPresent()) return auth.accessToken(org, who);
+        try { return oauth.accessToken(org, who); } catch (MeetingAssistantException e) { throw toUma(e); }
     }
-
-    public void disconnect(String org, String email) { oauth.disconnect(org, email); }
 
     /** What one look at Google found. WAIT = look again later; DONE = transcript stored; FAIL = give up with a reason. */
     public record Check(String outcome, String note, Duration again, String code, String recovery) {
@@ -79,8 +95,7 @@ public class UmaGoogleMeet {
         if (code == null) return Check.fail("NOT_A_MEET_LINK", "This isn't a Google Meet link with a meeting code (like abc-defg-hij).",
                 "Use the meeting's meet.google.com link, or upload the recording.");
         String who = m.getGoogle() != null && m.getGoogle().getRequestedBy() != null ? m.getGoogle().getRequestedBy() : m.getCreatedBy();
-        String token;
-        try { token = oauth.accessToken(org, who); } catch (MeetingAssistantException e) { throw toUma(e); }
+        String token = token(org, who);
         Instant now = Instant.now();
         Instant anchor = m.getMeetingAt() == null ? m.getCreatedAt() : m.getMeetingAt();
         try {

@@ -30,6 +30,7 @@ public class UmaPipeline {
     public static final String ANALYZE = "ANALYZE";
     public static final String FETCH_FIREFLIES = "FETCH_FIREFLIES";
     public static final String FETCH_GOOGLE = "FETCH_GOOGLE";
+    public static final String FIREFLIES_JOIN = "FIREFLIES_JOIN";
     static final java.time.Duration FIREFLIES_GIVE_UP = java.time.Duration.ofHours(24);
 
     private final UmaJobQueue queue;
@@ -39,22 +40,28 @@ public class UmaPipeline {
     private final MongoTemplate mongo;
     private final com.prowosma.backend.uma.core.UmaFireflies fireflies;
     private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
+    private final UmaAutomation automation;
     private final String workerId = "uma-" + UUID.randomUUID();
     private volatile Instant lastSweep = Instant.EPOCH;
 
     @Value("${app.uma.jobs-enabled:true}") private boolean enabled = true;
 
     public UmaPipeline(UmaJobQueue queue, UmaStore store, UmaTranscriber transcriber, MeetingIntelligence intelligence, MongoTemplate mongo,
-                       com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet) {
+                       com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
+                       UmaAutomation automation) {
         this.queue = queue; this.store = store; this.transcriber = transcriber; this.intelligence = intelligence; this.mongo = mongo;
-        this.fireflies = fireflies; this.googleMeet = googleMeet;
+        this.fireflies = fireflies; this.googleMeet = googleMeet; this.automation = automation;
     }
 
     @Scheduled(fixedDelayString = "${app.uma.job-poll-ms:5000}", initialDelayString = "${app.uma.job-initial-delay-ms:20000}")
     public void tick() {
         if (!enabled) return;
         try {
-            if (Duration.between(lastSweep, Instant.now()).toMinutes() >= 1) { sweep(); lastSweep = Instant.now(); }
+            if (Duration.between(lastSweep, Instant.now()).toMinutes() >= 1) {
+                sweep();
+                try { automation.syncCalendars(); } catch (RuntimeException e) { log.warn("uma calendar sync: {}", e.getClass().getSimpleName()); }
+                lastSweep = Instant.now();
+            }
             for (int i = 0; i < 5; i++) if (!runOne()) break;
         } catch (Exception e) {
             log.warn("uma pipeline tick failed: {}", e.getClass().getSimpleName());
@@ -79,6 +86,7 @@ public class UmaPipeline {
                 case ANALYZE -> analyze(job, m);
                 case FETCH_FIREFLIES -> fetchFireflies(job, m);
                 case FETCH_GOOGLE -> fetchGoogle(job, m);
+                case FIREFLIES_JOIN -> automation.firefliesJoin(job, m);
                 default -> queue.dead(job, "UNKNOWN_TYPE");
             }
         } catch (UmaException e) {

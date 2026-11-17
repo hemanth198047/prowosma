@@ -79,3 +79,10 @@ export const getUmaGoogle        = ()      => client.get(`${BASE}/connections/go
 export const authorizeUmaGoogle  = ()      => client.post(`${BASE}/connections/google/authorize`);
 export const disconnectUmaGoogle = ()      => client.delete(`${BASE}/connections/google`);
 export const fetchUmaGoogle      = (id)    => client.post(`${BASE}/meetings/${id}/google/fetch`);
+
+// Google sign-in for this module (Meet + Calendar), scheduling and automation
+export const completeUmaGoogle     = (code, state) => client.post(`${BASE}/connections/google/complete`, { code, state });
+export const setUmaGooglePrefs     = (prefs)       => client.put(`${BASE}/connections/google/preferences`, prefs);
+export const syncUmaCalendar       = ()            => client.post(`${BASE}/connections/google/sync`);
+export const scheduleUmaMeeting    = (data)        => client.post(`${BASE}/meetings/schedule`, data);
+export const setUmaAutoFireflies   = (id, on)      => client.put(`${BASE}/meetings/${id}/automation`, { autoFireflies: on });

@@ -42,7 +42,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
         "app.uma.stt.model=fake-whisper",
         "app.meeting-assistant.jobs-enabled=false",
         "file.upload.dir=${java.io.tmpdir}/uma-test-uploads",
-        "security.field-encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="})
+        "security.field-encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+        "app.uma.google.client-id=test-client", "app.uma.google.client-secret=test-secret"})
 class UmaApiTest extends TwoWorkspaceTestBase {
 
     static final String BASE = "/api/v2/meeting-assistant";
@@ -58,6 +59,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         @Bean @Primary UmaAi umaTestAi(UmaFakes.Ai ai) { return new UmaAi(List.of(ai)); }
         @Bean @Primary com.prowosma.backend.integration.FirefliesHttp umaFirefliesFake() { return new UmaFirefliesFake(); }
         @Bean @Primary com.prowosma.backend.integration.GoogleHttp umaGoogleFake() { return new UmaGoogleFake(); }
+        @Bean @Primary com.prowosma.backend.uma.core.UmaGoogleHttp umaGoogleHttpFake() { return new UmaGoogleHttpFake(); }
     }
 
     @Autowired ObjectMapper om;
@@ -68,6 +70,8 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     @Autowired com.prowosma.backend.integration.GoogleHttp googleHttp;
     @Autowired com.prowosma.backend.service.FieldEncryptionService crypto;
     UmaGoogleFake gg() { return (UmaGoogleFake) googleHttp; }
+    @Autowired com.prowosma.backend.uma.core.UmaGoogleHttp umaGoogleHttp;
+    UmaGoogleHttpFake cal() { return (UmaGoogleHttpFake) umaGoogleHttp; }
     @Autowired UmaFakes.Ai ai;
 
     String raviId;
@@ -80,6 +84,8 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         stt.reset();
         ff().reset();
         gg().reset();
+        cal().reset();
+        for (String col : new String[]{"uma_google_connections", "uma_oauth_states"}) mongoTemplate.remove(new Query(), col);
         mongoTemplate.remove(new Query(), com.prowosma.backend.model.MeetingUserConnection.class);
         ai.reset();
         TeamMember ravi = new TeamMember();
@@ -479,7 +485,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Launch review\"}")).andReturn();
         String id = json(link).get("id").asText();
-        assertThat(json(link).get("statusDetail").asText()).contains("read automatically after the meeting");
+        assertThat(json(link).get("statusDetail").asText()).contains("transcript is read after it ends");
         gg().start = java.time.Instant.now().plusSeconds(30);
 
         dueNow(); pipeline.drain();                      // still running
@@ -506,6 +512,140 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         MvcResult f = mvc.perform(as(post(BASE + "/meetings/" + id + "/google/fetch"), ownerToken(), workspaceId)).andReturn();
         assertThat(f.getResponse().getStatus()).isEqualTo(409);
         assertThat(json(f).get("code").asText()).isEqualTo("GOOGLE_NOT_CONNECTED");
+    }
+
+    // ── own Google connection, scheduling and automation (scripted Google + Fireflies) ──
+
+    /** Goes through the real sign-in flow against the scripted Google: authorize → callback with code and state → connected. */
+    void signInGoogle() throws Exception {
+        MvcResult a = mvc.perform(as(post(BASE + "/connections/google/authorize"), ownerToken(), workspaceId)).andReturn();
+        assertThat(a.getResponse().getStatus()).as(a.getResponse().getContentAsString()).isEqualTo(200);
+        String url = json(a).get("url").asText();
+        assertThat(url).contains("calendar.events").contains("meetings.space.readonly").contains("code_challenge_method=S256")
+                .contains(java.net.URLEncoder.encode("/ai-meeting-assistant/google-callback", java.nio.charset.StandardCharsets.UTF_8));
+        String state = java.net.URLDecoder.decode(url.replaceAll(".*[?&]state=([^&]+).*", "$1"), java.nio.charset.StandardCharsets.UTF_8);
+        MvcResult c = mvc.perform(as(post(BASE + "/connections/google/complete"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("code", "auth-code", "state", state)))).andReturn();
+        assertThat(c.getResponse().getStatus()).as(c.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(c).get("connected").asBoolean()).isTrue();
+        assertThat(json(c).get("calendar").asBoolean()).isTrue();
+        assertThat(json(c).get("account").asText()).isEqualTo("owner@acme.test");
+        MvcResult again = mvc.perform(as(post(BASE + "/connections/google/complete"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("code", "auth-code", "state", state)))).andReturn();
+        assertThat(json(again).get("code").asText()).as("a sign-in link works once").isEqualTo("INVALID_STATE");
+        assertThat(mongoTemplate.getCollection("uma_google_connections").find().first().toJson()).doesNotContain("tok-123").doesNotContain("ref-1");
+    }
+
+    @Test
+    void scheduleAMeetMeeting_firefliesJoinsAtTheStart_andTheTranscriptArrivesByItself() throws Exception {
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        connectFireflies();
+        java.time.Instant start = java.time.Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        MvcResult bad = mvc.perform(as(post(BASE + "/meetings/schedule"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("title", "Launch review", "start", start.toString(), "attendees", List.of("not-an-email"))))).andReturn();
+        assertThat(json(bad).get("code").asText()).isEqualTo("BAD_EMAIL");
+
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/schedule"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("title", "Launch review", "start", start.toString(), "durationMinutes", 45,
+                        "timezone", "Asia/Kolkata", "attendees", List.of("Priya@acme.test", "ravi@acme.test"), "autoFireflies", true)))).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        JsonNode m = json(r);
+        String id = m.get("id").asText();
+        assertThat(m.get("meetingUrl").asText()).isEqualTo("https://meet.google.com/abc-defg-hij");
+        assertThat(m.get("calendarEventId").asText()).isEqualTo("ev-new");
+        assertThat(m.get("statusDetail").asText()).contains("Fireflies' notetaker will join when it starts").contains("Google Meet's transcript");
+        UmaGoogleHttpFake.Req created = cal().requests.stream().filter(q -> "POST".equals(q.method()) && q.url().contains("/events")).findFirst().orElseThrow();
+        assertThat(created.url()).contains("conferenceDataVersion=1").contains("sendUpdates=all");
+        assertThat(created.body()).contains("hangoutsMeet").contains("priya@acme.test").contains("Asia/Kolkata");
+
+        // nothing happens before the start time
+        pipeline.drain();
+        assertThat(ff().requests.stream().noneMatch(b -> b.contains("addToLiveMeeting"))).isTrue();
+
+        // start time: Fireflies joins (the scripted Fireflies accepts), and its transcript is fetched after the meeting
+        ff().date = java.time.Instant.now().toString();
+        dueNow(); pipeline.drain();
+        assertThat(ff().requests.stream().anyMatch(b -> b.contains("addToLiveMeeting") && b.contains("abc-defg-hij"))).isTrue();
+        assertThat(detail(id).at("/meeting/fireflies/notetakerSentBy").asText()).isEqualTo("automatic");
+        dueNow(); pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.get("segments")).hasSize(3);
+    }
+
+    @Test
+    void calendarImport_addsUpcomingMeetMeetingsOnce_andFollowsChanges() throws Exception {
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        connectFireflies();
+        java.time.Instant t = java.time.Instant.now().plusSeconds(7200).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        cal().calendarItems = "[" + UmaGoogleHttpFake.event("ev1", "Design review", t, t.plusSeconds(1800), "https://meet.google.com/aaa-bbbb-ccc", "confirmed")
+                + "," + UmaGoogleHttpFake.event("ev2", "Lunch", t, t.plusSeconds(3600), null, "confirmed") + "]";
+        MvcResult p = mvc.perform(as(put(BASE + "/connections/google/preferences"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"autoImportCalendar\":true,\"autoFireflies\":true}")).andReturn();
+        assertThat(json(p).get("autoImportCalendar").asBoolean()).isTrue();
+
+        assertThat(json(mvc.perform(as(post(BASE + "/connections/google/sync"), ownerToken(), workspaceId)).andReturn()).get("added").asInt()).isEqualTo(1);
+        assertThat(json(mvc.perform(as(post(BASE + "/connections/google/sync"), ownerToken(), workspaceId)).andReturn()).get("added").asInt()).as("only once").isZero();
+        JsonNode dash = json(mvc.perform(as(get(BASE + "/dashboard"), ownerToken(), workspaceId)).andReturn());
+        assertThat(dash.get("upcoming")).hasSize(1);
+        String id = dash.at("/upcoming/0/id").asText();
+        assertThat(detail(id).at("/meeting/autoFireflies").asBoolean()).isTrue();
+        assertThat(mongoTemplate.getCollection("uma_jobs").countDocuments(new org.bson.Document("type", "FIREFLIES_JOIN").append("status", "QUEUED"))).isEqualTo(1);
+
+        // moved by 30 minutes in Google Calendar → follows
+        java.time.Instant later = t.plusSeconds(1800);
+        cal().calendarItems = "[" + UmaGoogleHttpFake.event("ev1", "Design review", later, later.plusSeconds(1800), "https://meet.google.com/aaa-bbbb-ccc", "confirmed") + "]";
+        mvc.perform(as(post(BASE + "/connections/google/sync"), ownerToken(), workspaceId)).andReturn();
+        assertThat(detail(id).at("/meeting/meetingAt").asText()).isEqualTo(later.toString());
+
+        // cancelled in Google Calendar → cancelled here, nothing will join
+        cal().calendarItems = "[" + UmaGoogleHttpFake.event("ev1", "Design review", later, later.plusSeconds(1800), "https://meet.google.com/aaa-bbbb-ccc", "cancelled") + "]";
+        mvc.perform(as(post(BASE + "/connections/google/sync"), ownerToken(), workspaceId)).andReturn();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("CANCELLED");
+        assertThat(mongoTemplate.getCollection("uma_jobs").countDocuments(new org.bson.Document("status", "QUEUED"))).isZero();
+    }
+
+    @Test
+    void autoFireflies_waitsUntilTheMeetingHasReallyStarted() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        ff().refuseJoins = 2;
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://zoom.us/j/123456789", "meetingAt", java.time.Instant.now().toString(),
+                        "autoFireflies", true)))).andReturn();
+        String id = json(link).get("id").asText();
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).at("/meeting/statusDetail").asText()).contains("Waiting for the meeting to start");
+        dueNow(); pipeline.drain();
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).at("/meeting/fireflies/notetakerSentBy").asText()).isEqualTo("automatic");
+        assertThat(ff().requests.stream().filter(b -> b.contains("addToLiveMeeting")).count()).isEqualTo(3);
+    }
+
+    @Test
+    void autoFireflies_canBeSwitchedOffForAMeeting() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("url", "https://zoom.us/j/123456789", "meetingAt", java.time.Instant.now().plusSeconds(3600).toString(),
+                        "autoFireflies", true)))).andReturn();
+        String id = json(link).get("id").asText();
+        assertThat(mongoTemplate.getCollection("uma_jobs").countDocuments(new org.bson.Document("type", "FIREFLIES_JOIN").append("status", "QUEUED"))).isEqualTo(1);
+        mvc.perform(as(put(BASE + "/meetings/" + id + "/automation"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"autoFireflies\":false}")).andReturn();
+        assertThat(mongoTemplate.getCollection("uma_jobs").countDocuments(new org.bson.Document("type", "FIREFLIES_JOIN").append("status", "QUEUED"))).isZero();
+        assertThat(detail(id).at("/meeting/autoFireflies").asBoolean()).isFalse();
+    }
+
+    @Test
+    void scheduling_needsGoogleCalendar() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/schedule"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("title", "x", "start", java.time.Instant.now().plusSeconds(600).toString())))).andReturn();
+        assertThat(r.getResponse().getStatus()).isEqualTo(409);
+        assertThat(json(r).get("code").asText()).isEqualTo("GOOGLE_NOT_CONNECTED");
     }
 
     void dueNow() {

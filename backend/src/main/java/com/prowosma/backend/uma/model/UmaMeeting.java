@@ -40,6 +40,11 @@ public class UmaMeeting {
 
     private Recording recording;
     private FirefliesLink fireflies;
+    private Instant meetingEndAt;             // when it is planned to end (scheduled / calendar meetings)
+    private String calendarEventId;           // Google Calendar event this meeting came from or created
+    private String calendarLink;              // the event in Google Calendar
+    private List<String> attendees = new ArrayList<>();
+    private boolean autoFireflies;            // send the Fireflies notetaker automatically when it starts
     private GoogleLink google;
     private TranscriptInfo transcript;
     private int insightsVersion;

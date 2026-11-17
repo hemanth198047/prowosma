@@ -19,7 +19,10 @@ final class Providers {
                             "Each person connects their Google account (Connections). Needs Workspace with transcription turned on in the meeting, and the server's Google OAuth client."),
                     new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Recordings are saved to the organiser's Drive."),
                     ownBot("Google offers no general bot API (the Meet Media API is a limited preview). Use the Fireflies notetaker or browser recording."),
-                    new Capability("calendar", "Find meetings in Google Calendar", State.POSSIBLE, "Google Calendar API (OAuth)."));
+                    new Capability("schedule", "Schedule a Meet meeting from Prowosma (with invitations)", State.IMPLEMENTED,
+                            "Each person connects their Google account (Connections); needs the Calendar API in the company's Google Cloud project."),
+                    new Capability("calendar", "Add upcoming Meet meetings from Google Calendar automatically", State.IMPLEMENTED,
+                            "Switch on under Connections; optionally sends the Fireflies notetaker to each one."));
         }
     }
 

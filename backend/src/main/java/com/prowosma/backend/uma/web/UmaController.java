@@ -114,11 +114,29 @@ public class UmaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.importTranscript(ctx(auth), b.text(), null, b.title(), b.projectId(), instant(b.meetingAt()), b.timezone()));
     }
 
-    public record LinkBody(String url, String title, String projectId, String meetingAt, String timezone) {}
+    public record LinkBody(String url, String title, String projectId, String meetingAt, String timezone, Boolean autoFireflies, Integer durationMinutes) {}
 
     @PostMapping("/meetings/link")
     public ResponseEntity<UmaMeeting> link(@RequestBody LinkBody b, Authentication auth) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.registerLink(ctx(auth), b.url(), b.title(), b.projectId(), instant(b.meetingAt()), b.timezone()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.registerLink(ctx(auth), b.url(), b.title(), b.projectId(), instant(b.meetingAt()),
+                b.timezone(), Boolean.TRUE.equals(b.autoFireflies()), b.durationMinutes()));
+    }
+
+    public record ScheduleBody(String title, String start, Integer durationMinutes, String timezone, List<String> attendees, String description,
+                               String projectId, Boolean autoFireflies) {}
+
+    /** Creates a Google Meet meeting in your Google Calendar and invites the attendees. */
+    @PostMapping("/meetings/schedule")
+    public ResponseEntity<UmaMeeting> schedule(@RequestBody ScheduleBody b, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.scheduleMeeting(ctx(auth), b.title(), instant(b.start()), b.durationMinutes(),
+                b.timezone(), b.attendees(), b.description(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies())));
+    }
+
+    public record AutomationBody(Boolean autoFireflies) {}
+
+    @PutMapping("/meetings/{id}/automation")
+    public UmaMeeting automation(@PathVariable String id, @RequestBody AutomationBody b, Authentication auth) {
+        return service.setAutoFireflies(ctx(auth), id, Boolean.TRUE.equals(b.autoFireflies()));
     }
 
     @GetMapping("/meetings/{id}")
@@ -191,6 +209,21 @@ public class UmaController {
 
     @PostMapping("/connections/google/authorize")
     public Map<String, Object> googleAuthorize(Authentication auth) { return service.googleAuthorize(ctx(auth)); }
+
+    public record GoogleCompleteBody(String code, String state) {}
+
+    @PostMapping("/connections/google/complete")
+    public Map<String, Object> googleComplete(@RequestBody GoogleCompleteBody b, Authentication auth) { return service.googleComplete(ctx(auth), b.code(), b.state()); }
+
+    public record PreferencesBody(Boolean autoImportCalendar, Boolean autoFireflies) {}
+
+    @PutMapping("/connections/google/preferences")
+    public Map<String, Object> googlePreferences(@RequestBody PreferencesBody b, Authentication auth) {
+        return service.googlePreferences(ctx(auth), b.autoImportCalendar(), b.autoFireflies());
+    }
+
+    @PostMapping("/connections/google/sync")
+    public Map<String, Object> syncCalendar(Authentication auth) { return service.syncCalendarNow(ctx(auth)); }
 
     @DeleteMapping("/connections/google")
     public Map<String, Object> googleDisconnect(Authentication auth) { return service.googleDisconnect(ctx(auth)); }

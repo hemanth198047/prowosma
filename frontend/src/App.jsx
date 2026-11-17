@@ -60,6 +60,7 @@ const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
 const AiMeetingAssistant = lazy(() => import("./pages/AiMeetingAssistant"));
+const AiMeetingGoogleCallback = lazy(() => import("./pages/AiMeetingGoogleCallback"));
 const MeetingPlatforms = lazy(() => import("./pages/MeetingPlatforms"));
 const GoogleMeetCallback = lazy(() => import("./pages/GoogleMeetCallback"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
@@ -492,6 +493,7 @@ function AppShell() {
                   <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
                   <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant/google-callback" element={<ProtectedRoute><AiMeetingGoogleCallback /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms/google-callback" element={<ProtectedRoute><GoogleMeetCallback /></ProtectedRoute>} />

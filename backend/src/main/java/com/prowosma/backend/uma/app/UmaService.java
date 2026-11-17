@@ -42,6 +42,9 @@ public class UmaService {
     private final com.prowosma.backend.repository.UserRepository users;
     private final com.prowosma.backend.uma.core.UmaFireflies fireflies;
     private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
+    private final UmaAutomation automation;
+    private final com.prowosma.backend.uma.core.UmaCalendar calendar;
+    private final com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth;
 
     @Value("${app.uma.max-upload-mb:500}") private long maxUploadMb = 500;
     @Value("${app.uma.recording-retention-hours:24}") private int retentionHours = 24;
@@ -49,10 +52,12 @@ public class UmaService {
     public UmaService(UmaFeature feature, UmaAccess access, UmaStore store, UmaJobQueue queue, ProviderRegistry providers,
                       FileStorageService files, TaskService tasks, MeetingIntelligence intelligence, UmaTranscriber transcriber, MongoTemplate mongo,
                       com.prowosma.backend.repository.TeamMemberRepository members, com.prowosma.backend.repository.UserRepository users,
-                      com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet) {
+                      com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
+                      UmaAutomation automation, com.prowosma.backend.uma.core.UmaCalendar calendar, com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth) {
         this.feature = feature; this.access = access; this.store = store; this.queue = queue; this.providers = providers;
         this.files = files; this.tasks = tasks; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
         this.members = members; this.users = users; this.fireflies = fireflies; this.googleMeet = googleMeet;
+        this.automation = automation; this.calendar = calendar; this.googleAuth = googleAuth;
     }
 
     /** The person's name as the workspace knows it (team member, else account), or null. */
@@ -439,6 +444,88 @@ public class UmaService {
         return googleMeet.status(c.org(), c.caller().email());
     }
 
+    public Map<String, Object> googleComplete(Ctx c, String code, String state) {
+        access.requireCanCreate(c.caller());
+        googleMeet.complete(c.org(), c.caller().email(), code, state);
+        store.audit(c.org(), null, c.caller().email(), "GOOGLE_CONNECTED", null);
+        return googleMeet.status(c.org(), c.caller().email());
+    }
+
+    /** The person's automation choices: add upcoming Meet meetings from their calendar; send Fireflies to them. */
+    public Map<String, Object> googlePreferences(Ctx c, Boolean autoImportCalendar, Boolean autoFireflies) {
+        com.prowosma.backend.uma.model.UmaGoogleConnection conn = googleAuth.connection(c.org(), c.caller().email())
+                .orElseThrow(() -> new UmaException(HttpStatus.CONFLICT, "GOOGLE_NOT_CONNECTED", "Connect your Google account first."));
+        if (Boolean.TRUE.equals(autoImportCalendar) && !conn.getScopes().contains(com.prowosma.backend.uma.core.UmaGoogleAuth.CALENDAR_SCOPE))
+            throw new UmaException(HttpStatus.CONFLICT, "GOOGLE_NO_CALENDAR", "Calendar access wasn't granted.", "Disconnect and connect Google again, and allow Calendar.");
+        if (Boolean.TRUE.equals(autoFireflies) && fireflies.key(c.org()).isEmpty())
+            throw new UmaException(HttpStatus.CONFLICT, "NO_FIREFLIES", "Fireflies isn't connected for this workspace.", "An admin connects it under Connections.");
+        if (autoImportCalendar != null) conn.setAutoImportCalendar(autoImportCalendar);
+        if (autoFireflies != null) conn.setAutoFireflies(autoFireflies);
+        if (Boolean.TRUE.equals(autoImportCalendar)) conn.setLastCalendarSyncAt(null);          // look right away
+        googleAuth.save(conn);
+        store.audit(c.org(), null, c.caller().email(), "AUTOMATION_CHANGED", "calendar=" + conn.isAutoImportCalendar() + " fireflies=" + conn.isAutoFireflies());
+        return googleMeet.status(c.org(), c.caller().email());
+    }
+
+    /** "Check my calendar now". */
+    public Map<String, Object> syncCalendarNow(Ctx c) {
+        com.prowosma.backend.uma.model.UmaGoogleConnection conn = googleAuth.connection(c.org(), c.caller().email())
+                .orElseThrow(() -> new UmaException(HttpStatus.CONFLICT, "GOOGLE_NOT_CONNECTED", "Connect your Google account first."));
+        int added = automation.syncOne(conn);
+        conn.setLastCalendarSyncAt(Instant.now());
+        conn.setLastCalendarSyncNote(added == 0 ? "Up to date." : added + " meeting(s) added.");
+        googleAuth.save(conn);
+        return Map.of("added", added);
+    }
+
+    /** Creates a Google Meet meeting in the person's Google Calendar (Google sends the invitations) and sets up its automation. */
+    public UmaMeeting scheduleMeeting(Ctx c, String title, Instant start, Integer durationMinutes, String timezone, List<String> attendees,
+                                      String description, String projectId, boolean autoFireflies) {
+        access.requireCanCreate(c.caller());
+        String t = cleanTitle(title);
+        if (start == null) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_TIME", "Choose when the meeting starts.");
+        if (start.isBefore(Instant.now().minusSeconds(300))) throw new UmaException(HttpStatus.BAD_REQUEST, "IN_THE_PAST", "That time has already passed.");
+        int minutes = durationMinutes == null ? 30 : durationMinutes;
+        if (minutes < 5 || minutes > 720) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_DURATION", "A meeting can be 5 minutes to 12 hours long.");
+        List<String> people = new ArrayList<>();
+        for (String a : attendees == null ? List.<String>of() : attendees) {
+            String e = a == null ? "" : a.trim().toLowerCase(Locale.ROOT);
+            if (e.isEmpty()) continue;
+            if (!e.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_EMAIL", "“" + a.trim() + "” isn't an email address.");
+            if (!people.contains(e)) people.add(e);
+        }
+        if (people.size() > 100) throw new UmaException(HttpStatus.BAD_REQUEST, "TOO_MANY", "Invite at most 100 people.");
+        if (autoFireflies && fireflies.key(c.org()).isEmpty())
+            throw new UmaException(HttpStatus.CONFLICT, "NO_FIREFLIES", "Fireflies isn't connected for this workspace.", "An admin connects it under Connections, or untick Fireflies.");
+        Instant end = start.plusSeconds(minutes * 60L);
+        com.prowosma.backend.uma.core.UmaCalendar.Event ev = calendar.createMeeting(c.org(), c.caller().email(), t, start, end, timezone, people, description);
+        UmaMeeting m = newMeeting(c, t, "MEETING_LINK", projectId, start, timezone);
+        m.setProvider("GOOGLE_MEET");
+        m.setMeetingUrl(ev.meetUrl());
+        m.setMeetingEndAt(end);
+        m.setCalendarEventId(ev.id());
+        m.setCalendarLink(ev.htmlLink());
+        m.setAttendees(people);
+        m.setAutoFireflies(autoFireflies);
+        m = store.save(m);
+        store.audit(c.org(), m.getId(), c.caller().email(), "MEETING_SCHEDULED", people.size() + " invited");
+        automation.plan(m);
+        return store.meeting(c.org(), m.getId()).orElse(m);
+    }
+
+    /** Switches the automatic Fireflies join on or off for a meeting that hasn't happened yet. */
+    public UmaMeeting setAutoFireflies(Ctx c, String id, boolean on) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CREATED) throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content.");
+        if (on && fireflies.key(c.org()).isEmpty())
+            throw new UmaException(HttpStatus.CONFLICT, "NO_FIREFLIES", "Fireflies isn't connected for this workspace.", "An admin connects it under Connections.");
+        m.setAutoFireflies(on);
+        m = store.save(m);
+        if (!on) queue.cancelType(c.org(), id, UmaPipeline.FIREFLIES_JOIN);
+        automation.plan(m);
+        return store.meeting(c.org(), id).orElse(m);
+    }
+
     /** Read Google's transcript for this Meet meeting now (and keep checking until it is there). */
     public UmaMeeting fetchFromGoogle(Ctx c, String id) {
         UmaMeeting m = manageable(c, id);
@@ -462,24 +549,22 @@ public class UmaService {
     }
 
     public UmaMeeting registerLink(Ctx c, String url, String title, String projectId, Instant meetingAt, String timezone) {
+        return registerLink(c, url, title, projectId, meetingAt, timezone, false, null);
+    }
+
+    public UmaMeeting registerLink(Ctx c, String url, String title, String projectId, Instant meetingAt, String timezone,
+                                   boolean autoFireflies, Integer durationMinutes) {
         ProviderRegistry.Detected d = providers.detect(url);
         UmaMeeting m = newMeeting(c, title != null && !title.isBlank() ? title : d.provider().displayName() + " meeting", "MEETING_LINK", projectId, meetingAt, timezone);
         m.setProvider(d.provider().id());
         m.setMeetingUrl(d.url());
+        m.setAutoFireflies(autoFireflies);
+        if (durationMinutes != null && durationMinutes > 0) m.setMeetingEndAt(m.getMeetingAt().plusSeconds(Math.min(durationMinutes, 720) * 60L));
         m.setStatusDetail("After the meeting, add its recording or transcript here.");
         m = store.save(m);
         store.audit(c.org(), m.getId(), c.caller().email(), "MEETING_REGISTERED", d.provider().id());
-        if ("GOOGLE_MEET".equals(d.provider().id()) && com.prowosma.backend.uma.core.UmaGoogleMeet.meetingCode(d.url()) != null
-                && googleMeet.connected(c.org(), c.caller().email())) {
-            UmaMeeting.GoogleLink g = new UmaMeeting.GoogleLink();
-            g.setRequestedBy(c.caller().email());
-            m.setGoogle(g);
-            m.setStatusDetail("Google Meet's transcript is read automatically after the meeting.");
-            m = store.save(m);
-            Instant start = m.getMeetingAt() == null || m.getMeetingAt().isBefore(Instant.now()) ? Instant.now() : m.getMeetingAt();
-            queue.enqueueAt(c.org(), m.getId(), UmaPipeline.FETCH_GOOGLE, c.caller().email(), start.plus(java.time.Duration.ofMinutes(10)));
-        }
-        return m;
+        automation.plan(m);
+        return store.meeting(c.org(), m.getId()).orElse(m);
     }
 
     // ── lifecycle ────────────────────────────────────────────────────────

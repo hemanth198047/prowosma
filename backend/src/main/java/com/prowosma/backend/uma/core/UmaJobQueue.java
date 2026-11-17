@@ -85,6 +85,12 @@ public class UmaJobQueue {
                 new Update().set("status", "CANCELLED").set("updatedAt", Instant.now()), UmaJob.class);
     }
 
+    /** Cancels the waiting job of one type for a meeting (e.g. the automatic Fireflies join after it was switched off). */
+    public void cancelType(String org, String meetingId, String type) {
+        mongo.updateMulti(new Query(Criteria.where("organizationId").is(org).and("meetingId").is(meetingId).and("type").is(type).and("status").is("QUEUED")),
+                new Update().set("status", "CANCELLED").set("updatedAt", Instant.now()), UmaJob.class);
+    }
+
     /** Try again later with exponential backoff (30 s, 1 min, 2 min, …, capped at 15 min). */
     public void retryLater(UmaJob j, String code) {
         long delay = Math.min(900, 30L * (1L << Math.max(0, Math.min(5, j.getAttempts() - 1))));

@@ -14,9 +14,10 @@ const api = vi.hoisted(() => ({
   getUmaDashboard: vi.fn(), getUmaMeeting: vi.fn(), getUmaProviders: vi.fn(), uploadUmaRecording: vi.fn(),
   approveUmaAction: vi.fn(), editUmaAction: vi.fn(), askUma: vi.fn(), retryUmaMeeting: vi.fn(),
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
+  getUmaGoogle: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
-  ...Object.fromEntries(["detectUmaLink", "addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "registerUmaLink",
+  ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
     "regenerateUmaMeeting", "cancelUmaMeeting", "completeUmaMeeting", "deleteUmaMeeting", "shareUmaMeeting", "editUmaSegment",
     "rejectUmaAction", "approveUmaActions", "exportUma", "getUmaFirefliesRecent", "importUmaFireflies",
     "startUmaCapture", "uploadUmaPiece", "finishUmaCapture", "saveUmaFirefliesKey", "removeUmaFireflies", "getUmaGoogle",
@@ -67,6 +68,54 @@ describe("AI Meeting Assistant (simulated API)", () => {
     api.getUmaProviders.mockResolvedValue({ data: [] });
     api.getUmaDashboard.mockResolvedValue(dash());
     api.getUmaFireflies.mockResolvedValue({ data: { connected: false } });
+    api.getUmaGoogle.mockResolvedValue({ data: { connected: false, configured: true } });
+  });
+
+  it("explains honestly how a linked meeting gets captured, and offers Fireflies at the start time", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
+    api.getUmaGoogle.mockResolvedValue({ data: { connected: true, calendar: true, account: "me@acme.test" } });
+    api.detectUmaLink.mockResolvedValue({ data: { provider: "GOOGLE_MEET", name: "Google Meet", url: "https://meet.google.com/ftz-epuc-hxb" } });
+    api.registerUmaLink.mockResolvedValue({ data: { id: "x1" } });
+    api.getUmaMeeting.mockResolvedValue(meeting());
+    at("/ai-meeting-assistant");
+    fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Add meeting link" }));
+    const dialog = screen.getByRole("dialog", { name: "Add a meeting link" });
+    fireEvent.change(within(dialog).getByLabelText("Meeting link"), { target: { value: "https://meet.google.com/ftz-epuc-hxb" } });
+    expect(await within(dialog).findByText(/Fireflies' notetaker can join it automatically when it starts/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Google Meet's own transcript is read after it ends/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/can't join this meeting/)).not.toBeInTheDocument();
+    const when = within(dialog).getByLabelText("When it happened");
+    fireEvent.change(when, { target: { value: "2099-01-01T10:00" } });
+    expect(within(dialog).getByLabelText(/Send the Fireflies notetaker automatically/)).toBeChecked();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Add meeting/ }));
+    await waitFor(() => expect(api.registerUmaLink).toHaveBeenCalled());
+    expect(api.registerUmaLink.mock.calls[0][0]).toMatchObject({ autoFireflies: true, durationMinutes: 60 });
+  });
+
+  it("schedules a Google Meet with invitations and the Fireflies choice", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
+    api.getUmaGoogle.mockResolvedValue({ data: { connected: true, calendar: true, account: "me@acme.test" } });
+    api.scheduleUmaMeeting.mockResolvedValue({ data: { id: "x1" } });
+    api.getUmaMeeting.mockResolvedValue(meeting());
+    at("/ai-meeting-assistant");
+    fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a Google Meet" }));
+    const dialog = await screen.findByRole("dialog", { name: "Schedule a Google Meet" });
+    fireEvent.change(await within(dialog).findByLabelText("Title"), { target: { value: "Launch review" } });
+    fireEvent.change(within(dialog).getByLabelText(/Invite/), { target: { value: "priya@acme.test, ravi@acme.test" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: /Create meeting/ }));
+    await waitFor(() => expect(api.scheduleUmaMeeting).toHaveBeenCalled());
+    expect(api.scheduleUmaMeeting.mock.calls[0][0]).toMatchObject({
+      title: "Launch review", attendees: ["priya@acme.test", "ravi@acme.test"], autoFireflies: true, durationMinutes: 30 });
+  });
+
+  it("asks to connect Google before scheduling", async () => {
+    at("/ai-meeting-assistant");
+    fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a Google Meet" }));
+    expect(await screen.findByText(/Connect your Google account first/)).toBeInTheDocument();
+    expect(api.scheduleUmaMeeting).not.toHaveBeenCalled();
   });
 
   it("starts with a clear empty state and the three ways in", async () => {

@@ -26,6 +26,13 @@ public class UmaIndexConfig {
             mongo.indexOps("uma_jobs").createIndex(new Index().on("status", Sort.Direction.ASC).on("runAfter", Sort.Direction.ASC).named("claim"));
             mongo.indexOps("uma_audit").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("meetingId", Sort.Direction.ASC).on("at", Sort.Direction.DESC).named("org_meeting_at"));
             mongo.indexOps("uma_questions").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("meetingId", Sort.Direction.ASC).named("org_meeting"));
+            // One meeting per calendar event per workspace (several attendees' calendars hold the same event).
+            mongo.indexOps("uma_meetings").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("calendarEventId", Sort.Direction.ASC).unique()
+                    .partial(org.springframework.data.mongodb.core.index.PartialIndexFilter.of(
+                            org.springframework.data.mongodb.core.query.Criteria.where("calendarEventId").exists(true)))
+                    .named("uniq_calendar_event"));
+            mongo.indexOps("uma_google_connections").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("userEmail", Sort.Direction.ASC).unique().named("uniq_user"));
+            mongo.indexOps("uma_oauth_states").createIndex(new Index().on("stateHash", Sort.Direction.ASC).unique().named("uniq_state"));
             // One task per approved action item. The existing assistant creates this same index (same name and definition, so this is
             // a no-op while both exist); declaring it here keeps the guarantee if that feature is ever retired.
             mongo.indexOps("tasks").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("sourceActionKey", Sort.Direction.ASC).unique()
