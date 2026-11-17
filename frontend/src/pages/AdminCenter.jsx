@@ -625,6 +625,7 @@ function SecurityPolicyPanel() {
 const DEFAULT_FLAGS = [
   { key:"ai_assistant",      label:"AI Assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
   { key:"ai_prioritization", label:"AI Prioritization",   desc:"Daily AI-ranked task list",               group:"AI" },
+  { key:"universalMeetingAssistant", label:"AI Meeting Assistant (new)", desc:"Summaries, decisions and action items from uploaded recordings, transcripts and meeting links. Off until turned on.", group:"AI", offByDefault:true },
   { key:"burnout_detection", label:"Burnout Detection",   desc:"Workload pattern analysis alerts",        group:"AI" },
   { key:"collab_editing",    label:"Collaborative Docs",  desc:"Real-time multi-user document editing",   group:"Collaboration" },
   { key:"sprint_module",     label:"Sprint / Agile",      desc:"Sprint planning and burndown charts",     group:"Work" },
@@ -650,7 +651,9 @@ function FeatureFlags() {
   }, []);
 
   const toggle = async (key) => {
-    const next = { ...flags, [key]: !flags[key] };
+    const def = DEFAULT_FLAGS.find(f => f.key === key);
+    const isOn = def?.offByDefault ? flags[key] === true : flags[key] !== false;
+    const next = { ...flags, [key]: !isOn };
     setFlags(next);
     setSaving(true);
     try { await saveFeatureFlag({ key, enabled: next[key] }); toast(`Feature ${next[key] ? "enabled" : "disabled"}`, "success"); }
@@ -700,7 +703,7 @@ function FeatureFlags() {
               </div>
               <label className="admin-flag-switch" aria-label={f.label}>
                 <input type="checkbox"
-                  checked={flags[f.key] !== false}
+                  checked={f.offByDefault ? flags[f.key] === true : flags[f.key] !== false}
                   disabled={saving}
                   onChange={() => toggle(f.key)} />
                 <span className="admin-flag-slider" />

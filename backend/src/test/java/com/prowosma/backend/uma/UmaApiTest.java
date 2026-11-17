@@ -1,0 +1,418 @@
+package com.prowosma.backend.uma;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prowosma.backend.integration.LlmException;
+import com.prowosma.backend.integration.OpenAiCompatibleSttClient;
+import com.prowosma.backend.integration.SttHttp;
+import com.prowosma.backend.model.Task;
+import com.prowosma.backend.model.TeamMember;
+import com.prowosma.backend.model.User;
+import com.prowosma.backend.tenant.TwoWorkspaceTestBase;
+import com.prowosma.backend.uma.ai.UmaAi;
+import com.prowosma.backend.uma.app.UmaPipeline;
+import com.prowosma.backend.uma.core.OperatorHttp;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+
+/**
+ * Universal Meeting Assistant, end to end through the HTTP API with an embedded database.
+ * Speech-to-text and the language model are SCRIPTED stand-ins (UmaFakes): these tests prove our pipeline, evidence checks,
+ * permissions and task creation — not the quality of a real engine.
+ */
+@TestPropertySource(properties = {
+        "app.uma.jobs-enabled=false",
+        "app.uma.stt.base-url=http://stt.test",
+        "app.uma.stt.model=fake-whisper",
+        "app.meeting-assistant.jobs-enabled=false",
+        "file.upload.dir=${java.io.tmpdir}/uma-test-uploads"})
+class UmaApiTest extends TwoWorkspaceTestBase {
+
+    static final String BASE = "/api/v2/meeting-assistant";
+
+    @TestConfiguration
+    static class Fakes {
+        /** Not a bean: it is an SttHttp, and a second SttHttp bean would confuse the existing assistant's wiring. */
+        static final UmaFakes.Stt STT = new UmaFakes.Stt();
+        @Bean UmaFakes.Ai umaFakeAi() { return new UmaFakes.Ai(); }
+        @Bean @Primary OperatorHttp umaOperatorHttp() {
+            return new OperatorHttp() { @Override public SttHttp stt() { return STT; } };
+        }
+        @Bean @Primary UmaAi umaTestAi(UmaFakes.Ai ai) { return new UmaAi(List.of(ai)); }
+    }
+
+    @Autowired ObjectMapper om;
+    @Autowired UmaPipeline pipeline;
+    final UmaFakes.Stt stt = Fakes.STT;
+    @Autowired UmaFakes.Ai ai;
+
+    String raviId;
+
+    @BeforeEach
+    void reset() throws Exception {
+        for (String c : new String[]{"uma_meetings", "uma_segments", "uma_insights", "uma_jobs", "uma_audit", "uma_questions", "workspace_configs"})
+            mongoTemplate.remove(new Query(), c);
+        mongoTemplate.remove(new Query(Criteria.where("sourceActionKey").regex("^uma:")), Task.class);
+        stt.reset();
+        ai.reset();
+        TeamMember ravi = new TeamMember();
+        ravi.setOrganizationId(workspaceId); ravi.setEmail("ravi@test.com"); ravi.setName("Ravi Kumar"); ravi.setRole("MEMBER");
+        raviId = teamMemberRepository.save(ravi).getId();
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────
+
+    MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder b, String token, String ws) {
+        return b.header("Authorization", authHeader(token)).header("X-Workspace-Id", ws);
+    }
+
+    JsonNode json(MvcResult r) throws Exception { return om.readTree(r.getResponse().getContentAsString()); }
+
+    void enable(String token, String ws) throws Exception {
+        MvcResult r = mvc.perform(as(post("/api/admin/features"), token, ws).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"key\":\"universalMeetingAssistant\",\"enabled\":true}")).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+    }
+
+    MvcResult upload(String token, String ws, String fileName, byte[] bytes, boolean consent) throws Exception {
+        return mvc.perform(as(post(BASE + "/meetings/recording"), token, ws)
+                .param("fileName", fileName).param("title", "Weekly sync").param("consent", String.valueOf(consent))
+                .param("meetingAt", "2026-11-16T09:00:00Z").param("timezone", "UTC")
+                .contentType("audio/wav").content(bytes)).andReturn();
+    }
+
+    String uploadOk() throws Exception {
+        MvcResult r = upload(ownerToken(), workspaceId, "weekly-sync.wav", OpenAiCompatibleSttClient.silentWav(), true);
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        JsonNode m = json(r);
+        assertThat(m.get("status").asText()).isEqualTo("QUEUED");
+        return m.get("id").asText();
+    }
+
+    JsonNode detail(String id) throws Exception {
+        MvcResult r = mvc.perform(as(get(BASE + "/meetings/" + id), ownerToken(), workspaceId)).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+        return json(r);
+    }
+
+    JsonNode action(JsonNode detail, String title) {
+        for (JsonNode a : detail.at("/insights/actions")) if (a.get("title").asText().equals(title)) return a;
+        throw new AssertionError("no action " + title + " in " + detail.at("/insights/actions"));
+    }
+
+    // ── feature flag ─────────────────────────────────────────────────────
+
+    @Test
+    void offByDefault_everyEndpointSaysSoAndNothingIsStored() throws Exception {
+        MvcResult s = mvc.perform(as(get(BASE + "/status"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(s).get("enabled").asBoolean()).isFalse();
+
+        MvcResult d = mvc.perform(as(get(BASE + "/dashboard"), ownerToken(), workspaceId)).andReturn();
+        assertThat(d.getResponse().getStatus()).isEqualTo(404);
+        assertThat(json(d).get("code").asText()).isEqualTo("FEATURE_DISABLED");
+
+        MvcResult u = upload(ownerToken(), workspaceId, "a.wav", OpenAiCompatibleSttClient.silentWav(), true);
+        assertThat(u.getResponse().getStatus()).isEqualTo(404);
+        assertThat(mongoTemplate.getCollection("uma_meetings").countDocuments()).isZero();
+    }
+
+    // ── the vertical slice ───────────────────────────────────────────────
+
+    @Test
+    void recordingToApprovedTask_withoutAnyMeetingProvider() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+
+        assertThat(pipeline.drain()).isEqualTo(2);                // TRANSCRIBE, then ANALYZE
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.at("/meeting/statusDetail").asText()).startsWith("Your meeting summary is ready.");
+        assertThat(d.get("segments")).hasSize(6);
+        assertThat(d.at("/segments/1/text").asText()).isEqualTo(UmaFakes.LINES.get(1));
+        assertThat(d.at("/segments/1/speaker").isNull()).as("speaker is unknown, not guessed").isTrue();
+        assertThat(stt.calls.get()).isEqualTo(1);
+
+        JsonNode ins = d.get("insights");
+        assertThat(ins.get("decisions")).hasSize(1);
+        assertThat(ins.get("risks")).hasSize(1);
+        assertThat(ins.get("questions")).hasSize(1);
+        assertThat(ins.get("actions")).as("the item citing line 99 is dropped").hasSize(2);
+        assertThat(ins.get("droppedForMissingEvidence").asInt()).isGreaterThanOrEqualTo(1);
+
+        JsonNode api = action(d, "Complete the authentication API");
+        assertThat(api.get("ownerSpoken").asText()).isEqualTo("Ravi");
+        assertThat(api.get("ownerState").asText()).as("first name only is a suggestion, never an assignment").isEqualTo("SUGGESTED");
+        assertThat(api.get("ownerMemberId").isNull()).isTrue();
+        assertThat(api.get("dueDate").asText()).isEqualTo("2026-11-20");   // "by Friday" from Monday 16 Nov
+        assertThat(api.get("evidence").get(0).asInt()).isEqualTo(2);
+
+        JsonNode proc = action(d, "Follow up with procurement");
+        assertThat(proc.get("ownerSpoken").isNull()).as("'Priya' is not in the cited line, so no owner is invented").isTrue();
+        assertThat(proc.get("dueDate").isNull()).as("'next Monday' is not in the cited line").isTrue();
+
+        // approve → a real task in the existing task module, exactly once
+        String apiId = api.get("id").asText();
+        MvcResult a1 = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + apiId + "/approve"), ownerToken(), workspaceId)).andReturn();
+        assertThat(a1.getResponse().getStatus()).as(a1.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(a1).get("status").asText()).isEqualTo("CREATED");
+        String taskId = json(a1).get("createdTaskId").asText();
+        MvcResult a2 = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + apiId + "/approve"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(a2).get("createdTaskId").asText()).isEqualTo(taskId);
+        List<Task> created = mongoTemplate.find(new Query(Criteria.where("sourceActionKey").is("uma:" + id + ":" + apiId)), Task.class);
+        assertThat(created).hasSize(1);
+        Task t = created.get(0);
+        assertThat(t.getOrganizationId()).isEqualTo(workspaceId);
+        assertThat(t.getTitle()).isEqualTo("Complete the authentication API");
+        assertThat(t.getAssigneeIds() == null || t.getAssigneeIds().isEmpty()).as("not auto-assigned").isTrue();
+        assertThat(t.getDueDate().toLocalDate().toString()).isEqualTo("2026-11-20");
+        assertThat(t.getDescription()).contains("Owner named in the meeting: Ravi").contains("#2");
+
+        // a person picks the owner, then approves
+        String procId = proc.get("id").asText();
+        MvcResult e = mvc.perform(as(patch(BASE + "/meetings/" + id + "/actions/" + procId), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"ownerMemberId\":\"" + raviId + "\",\"title\":\"Follow up with procurement on the CDN contract\"}")).andReturn();
+        assertThat(e.getResponse().getStatus()).as(e.getResponse().getContentAsString()).isEqualTo(200);
+        MvcResult bulk = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/approve"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"actionIds\":[\"" + procId + "\"]}")).andReturn();
+        assertThat(json(bulk).get(0).get("status").asText()).isEqualTo("CREATED");
+        Task t2 = mongoTemplate.findOne(new Query(Criteria.where("sourceActionKey").is("uma:" + id + ":" + procId)), Task.class);
+        assertThat(t2.getAssigneeIds()).containsExactly(raviId);
+        assertThat(t2.getTitle()).isEqualTo("Follow up with procurement on the CDN contract");
+
+        assertThat(detail(id).at("/meeting/status").asText()).as("all actions decided").isEqualTo("COMPLETED");
+
+        // exports
+        MvcResult md = mvc.perform(as(get(BASE + "/meetings/" + id + "/export").param("format", "md"), ownerToken(), workspaceId)).andReturn();
+        assertThat(md.getResponse().getContentAsString()).contains("# Weekly sync").contains("Complete the authentication API").contains("[#2]");
+        assertThat(md.getResponse().getHeader("Content-Disposition")).contains("weekly-sync.md");
+        MvcResult docx = mvc.perform(as(get(BASE + "/meetings/" + id + "/export").param("format", "docx"), ownerToken(), workspaceId)).andReturn();
+        byte[] b = docx.getResponse().getContentAsByteArray();
+        assertThat(b.length).isGreaterThan(1000);
+        assertThat(new String(b, 0, 2)).isEqualTo("PK");
+        MvcResult js = mvc.perform(as(get(BASE + "/meetings/" + id + "/export").param("format", "json"), ownerToken(), workspaceId)).andReturn();
+        assertThat(om.readTree(js.getResponse().getContentAsByteArray()).get("transcript")).hasSize(6);
+
+        // Ask AI: grounded answer with a line reference
+        MvcResult q = mvc.perform(as(post(BASE + "/meetings/" + id + "/ask"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"Who owns the authentication API?\"}")).andReturn();
+        assertThat(q.getResponse().getStatus()).as(q.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(q).get("grounded").asBoolean()).isTrue();
+        assertThat(json(q).get("evidence").get(0).asInt()).isEqualTo(2);
+
+        // audit trail is content-free and complete
+        MvcResult au = mvc.perform(as(get(BASE + "/meetings/" + id + "/audit"), ownerToken(), workspaceId)).andReturn();
+        String trail = au.getResponse().getContentAsString();
+        assertThat(trail).contains("RECORDING_UPLOADED", "TRANSCRIBED", "ACTION_APPROVED", "EXPORTED", "ASKED_AI");
+        assertThat(trail).doesNotContain("authentication API by Friday");
+    }
+
+    @Test
+    void askAi_saysSoWhenTheTranscriptDoesNotAnswer() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        pipeline.drain();
+        ai.responder = c -> "{\"answer\": \"The budget is $40k.\", \"evidence\": [42], \"found\": true}";
+        MvcResult q = mvc.perform(as(post(BASE + "/meetings/" + id + "/ask"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"What is the budget?\"}")).andReturn();
+        assertThat(json(q).get("grounded").asBoolean()).isFalse();
+        assertThat(json(q).get("answer").asText()).doesNotContain("$40k");
+    }
+
+    @Test
+    void importedTranscript_isAnalysedWithSpeakers() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String text = "Alex: Let's review the launch.\nRavi: I will complete the authentication API by Friday.\nAlex: Great, thanks.\nRavi: No problem.";
+        ai.responder = c -> c.system().equals(com.prowosma.backend.uma.ai.InsightPrompts.EXTRACT_SYSTEM)
+                ? "{\"summary\":\"Launch review.\",\"actions\":[{\"title\":\"Complete the authentication API\",\"owner\":\"Ravi\",\"due\":\"by Friday\",\"evidence\":[2]}]}"
+                : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", text, "title", "Launch review")))).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        String id = json(r).get("id").asText();
+        assertThat(json(r).get("status").asText()).isEqualTo("ANALYZING");
+        assertThat(pipeline.drain()).isEqualTo(1);
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.at("/segments/1/speaker").asText()).isEqualTo("Ravi");    // a label used at least twice is a speaker
+        assertThat(stt.calls.get()).as("no transcription for an imported transcript").isZero();
+        assertThat(action(d, "Complete the authentication API").get("ownerSpoken").asText()).isEqualTo("Ravi");
+    }
+
+    // ── failures and recovery ────────────────────────────────────────────
+
+    @Test
+    void sttFailure_isExplainedAndRetryResumes() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        stt.failStatus = 401;
+        pipeline.drain();
+        JsonNode m = detail(id).get("meeting");
+        assertThat(m.get("status").asText()).isEqualTo("FAILED");
+        assertThat(m.get("errorCode").asText()).isEqualTo("STT_AUTH");
+        assertThat(m.get("failedStage").asText()).isEqualTo("TRANSCRIBING");
+        assertThat(m.get("recoveryHint").asText()).isNotBlank();
+
+        stt.failStatus = null;
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/" + id + "/retry"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(r).get("status").asText()).isEqualTo("QUEUED");
+        pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+    }
+
+    @Test
+    void aiFailure_retryOnlyRedoesTheAnalysis() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        ai.failWith = new LlmException(LlmException.Kind.AUTH, "The AI key was rejected.");
+        pipeline.drain();
+        JsonNode m = detail(id).get("meeting");
+        assertThat(m.get("status").asText()).isEqualTo("FAILED");
+        assertThat(m.get("failedStage").asText()).isEqualTo("ANALYZING");
+        assertThat(detail(id).get("segments")).as("transcript is kept").hasSize(6);
+
+        ai.failWith = null;
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/retry"), ownerToken(), workspaceId)).andReturn();
+        pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(stt.calls.get()).as("not transcribed twice").isEqualTo(1);
+    }
+
+    @Test
+    void unparseableAiOutput_isRepairedOnceThenReported() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        ai.responder = c -> "Sure! Here are the notes you asked for.";
+        pipeline.drain();
+        JsonNode m = detail(id).get("meeting");
+        assertThat(m.get("status").asText()).isEqualTo("FAILED");
+        assertThat(m.get("errorCode").asText()).isEqualTo("AI_BAD_OUTPUT");
+        assertThat(ai.calls).hasSize(2);
+    }
+
+    // ── input rules ──────────────────────────────────────────────────────
+
+    @Test
+    void uploadRules() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult noConsent = upload(ownerToken(), workspaceId, "a.wav", OpenAiCompatibleSttClient.silentWav(), false);
+        assertThat(noConsent.getResponse().getStatus()).isEqualTo(400);
+        assertThat(json(noConsent).get("code").asText()).isEqualTo("CONSENT_REQUIRED");
+
+        MvcResult exe = upload(ownerToken(), workspaceId, "a.exe", new byte[]{1, 2, 3}, true);
+        assertThat(exe.getResponse().getStatus()).isEqualTo(415);
+
+        MvcResult empty = upload(ownerToken(), workspaceId, "a.mp3", new byte[0], true);
+        assertThat(empty.getResponse().getStatus()).isEqualTo(400);
+
+        assertThat(mongoTemplate.getCollection("uma_meetings").countDocuments()).as("nothing half-created").isZero();
+    }
+
+    @Test
+    void damagedAudio_failsWithAPlainReason() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult r = upload(ownerToken(), workspaceId, "broken.mp3", "this is not audio at all".getBytes(), true);
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+        JsonNode m = detail(id).get("meeting");
+        assertThat(m.get("status").asText()).isEqualTo("FAILED");
+        // with ffmpeg installed the file is checked before sending; without it the engine rejects it
+        assertThat(m.get("errorCode").asText()).isIn("UNREADABLE_AUDIO", "NO_SPEECH", "STT_BAD_INPUT");
+    }
+
+    @Test
+    void meetingLink_detectsProviderHonestly() throws Exception {
+        enable(ownerToken(), workspaceId);
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://us02web.zoom.us/j/123456789\"}")).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(json(r).get("provider").asText()).isEqualTo("ZOOM");
+        assertThat(json(r).get("status").asText()).isEqualTo("CREATED");
+
+        MvcResult bad = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"javascript:alert(1)\"}")).andReturn();
+        assertThat(bad.getResponse().getStatus()).isEqualTo(400);
+
+        MvcResult p = mvc.perform(as(get(BASE + "/providers"), ownerToken(), workspaceId)).andReturn();
+        String body = p.getResponse().getContentAsString();
+        assertThat(body).contains("UNAVAILABLE").doesNotContain("\"liveJoin\",\"state\":\"VERIFIED\"");
+    }
+
+    // ── access ───────────────────────────────────────────────────────────
+
+    @Test
+    void otherWorkspaceCannotSeeOrTouchIt() throws Exception {
+        enable(ownerToken(), workspaceId);
+        enable(otherOwnerToken(), otherWorkspaceId);
+        String id = uploadOk();
+        MvcResult r = mvc.perform(as(get(BASE + "/meetings/" + id), otherOwnerToken(), otherWorkspaceId)).andReturn();
+        assertThat(r.getResponse().getStatus()).isEqualTo(404);
+        MvcResult del = mvc.perform(as(delete(BASE + "/meetings/" + id), otherOwnerToken(), otherWorkspaceId)).andReturn();
+        assertThat(del.getResponse().getStatus()).isEqualTo(404);
+        MvcResult dash = mvc.perform(as(get(BASE + "/dashboard"), otherOwnerToken(), otherWorkspaceId)).andReturn();
+        assertThat(json(dash).get("recent")).isEmpty();
+    }
+
+    @Test
+    void privateUntilShared_andOnlyTheAdderOrAnAdminCanApprove() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        pipeline.drain();
+
+        MvcResult hidden = mvc.perform(as(get(BASE + "/meetings/" + id), memberToken(), workspaceId)).andReturn();
+        assertThat(hidden.getResponse().getStatus()).as("private by default").isEqualTo(404);
+
+        mvc.perform(as(put(BASE + "/meetings/" + id + "/sharing"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"visibility\":\"WORKSPACE\"}")).andReturn();
+        MvcResult seen = mvc.perform(as(get(BASE + "/meetings/" + id), memberToken(), workspaceId)).andReturn();
+        assertThat(seen.getResponse().getStatus()).isEqualTo(200);
+        assertThat(json(seen).get("canManage").asBoolean()).isFalse();
+
+        String actionId = json(seen).at("/insights/actions/0/id").asText();
+        MvcResult approve = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + actionId + "/approve"), memberToken(), workspaceId)).andReturn();
+        assertThat(approve.getResponse().getStatus()).isEqualTo(403);
+        assertThat(mongoTemplate.count(new Query(Criteria.where("sourceActionKey").regex("^uma:")), Task.class)).isZero();
+    }
+
+    @Test
+    void viewerCannotAddMeetings() throws Exception {
+        enable(ownerToken(), workspaceId);
+        User u = new User();
+        u.setEmail("viewer@test.com"); u.setName("Viewer"); u.setPassword(passwordEncoder.encode("pass")); u.setRole("USER");
+        userRepository.save(u);
+        TeamMember m = new TeamMember();
+        m.setOrganizationId(workspaceId); m.setEmail("viewer@test.com"); m.setName("Viewer"); m.setRole("VIEWER");
+        teamMemberRepository.save(m);
+        MvcResult r = upload(jwtUtil.generateToken("viewer@test.com"), workspaceId, "a.wav", OpenAiCompatibleSttClient.silentWav(), true);
+        assertThat(r.getResponse().getStatus()).isIn(403);
+    }
+
+    @Test
+    void deleteRemovesTranscriptAndInsightsButKeepsCreatedTasks() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = uploadOk();
+        pipeline.drain();
+        String actionId = detail(id).at("/insights/actions/0/id").asText();
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + actionId + "/approve"), ownerToken(), workspaceId)).andReturn();
+        MvcResult del = mvc.perform(as(delete(BASE + "/meetings/" + id), ownerToken(), workspaceId)).andReturn();
+        assertThat(del.getResponse().getStatus()).isEqualTo(204);
+        assertThat(mongoTemplate.getCollection("uma_segments").countDocuments()).isZero();
+        assertThat(mongoTemplate.getCollection("uma_insights").countDocuments()).isZero();
+        assertThat(mongoTemplate.count(new Query(Criteria.where("sourceActionKey").regex("^uma:")), Task.class)).isEqualTo(1);
+    }
+}

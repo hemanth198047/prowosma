@@ -15,6 +15,8 @@ import {
 export const NAV_TOP = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/meeting-assistant", label: "Meeting Assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
+  // Universal AI Meeting Assistant: only listed when the workspace's "universalMeetingAssistant" flag is on.
+  { to: "/ai-meeting-assistant", label: "AI Meeting Assistant", icon: Sparkles, gate: { flag: "aiMeetingAssistant" } },
 ];
 
 export const NAV_GROUPS = [

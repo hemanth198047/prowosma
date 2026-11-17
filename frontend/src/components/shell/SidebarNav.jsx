@@ -5,10 +5,12 @@ import WorkspaceSwitcher from "../WorkspaceSwitcher";
 import SidebarBadge from "../SidebarBadge";
 import CanDo from "../CanDo";
 import { useAccess } from "../../hooks/useAccess";
+import { useAiMeetingAssistantEnabled } from "../../hooks/useAiMeetingAssistantEnabled";
 import { NAV_TOP, NAV_GROUPS, NAV_BOTTOM, NAV_RESTRICTED, matchesPath } from "./navConfig";
 
-function NavItem({ item, onNav, badges, can }) {
+function NavItem({ item, onNav, badges, can, flags }) {
   if (item.gate?.can && !can(item.gate.can)) return null;
+  if (item.gate?.flag && !flags?.[item.gate.flag]) return null;
   const Icon = item.icon;
   const link = (
     <NavLink to={item.to} end={item.end} onClick={onNav} className="sb-link">
@@ -52,6 +54,7 @@ function NavGroup({ group, onNav, badges, can, pathname }) {
 export default function SidebarNav({ onNav, badges }) {
   const { restricted, can } = useAccess();
   const { pathname } = useLocation();
+  const flags = { aiMeetingAssistant: useAiMeetingAssistantEnabled() };
 
   if (restricted) {
     // Department / assigned-work access: only the areas scoped to them. The API refuses the rest.
@@ -78,7 +81,7 @@ export default function SidebarNav({ onNav, badges }) {
       <div className="sb-scroll">
         <div className="sb-list">
           {NAV_TOP.map(item => (
-            <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} />
+            <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} flags={flags} />
           ))}
         </div>
         {NAV_GROUPS.map(group => (

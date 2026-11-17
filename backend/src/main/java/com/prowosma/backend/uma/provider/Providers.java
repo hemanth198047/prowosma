@@ -1,0 +1,74 @@
+package com.prowosma.backend.uma.provider;
+
+import java.util.List;
+
+import static com.prowosma.backend.uma.provider.MeetingProviderAdapter.*;
+
+/** The platforms. Capability states are kept honest: nothing is VERIFIED until it has run against the real service. */
+final class Providers {
+    private Providers() {}
+
+    static final class GoogleMeet implements MeetingProviderAdapter {
+        public String id() { return "GOOGLE_MEET"; }
+        public String displayName() { return "Google Meet"; }
+        public List<String> hosts() { return List.of("meet.google.com"); }
+        public List<String> permissionsRequired() { return List.of("Read your Meet conference records and transcripts (meetings.space.readonly)", "Read your calendar events (calendar.events.readonly)"); }
+        public List<Capability> capabilities() {
+            return List.of(upload(), importTranscript(),
+                    new Capability("postMeetingTranscript", "Fetch Google's transcript after the meeting", State.POSSIBLE, "Meet REST API; needs a Workspace edition with transcription turned on."),
+                    new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Recordings are saved to the organiser's Drive."),
+                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Google offers no general bot API (the Meet Media API is a limited preview)."),
+                    new Capability("calendar", "Find meetings in Google Calendar", State.POSSIBLE, "Google Calendar API (OAuth)."));
+        }
+    }
+
+    static final class Teams implements MeetingProviderAdapter {
+        public String id() { return "MS_TEAMS"; }
+        public String displayName() { return "Microsoft Teams"; }
+        public List<String> hosts() { return List.of("teams.microsoft.com", "teams.live.com"); }
+        public List<String> permissionsRequired() { return List.of("OnlineMeetingTranscript.Read.All (admin consent + application access policy)", "Calendars.Read"); }
+        public List<Capability> capabilities() {
+            return List.of(upload(), importTranscript(),
+                    new Capability("postMeetingTranscript", "Fetch the Teams transcript after the meeting", State.POSSIBLE, "Microsoft Graph; needs an admin to approve the app for the organisation."),
+                    new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Microsoft Graph, same approval."),
+                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Needs a separate Windows-hosted media bot service."),
+                    new Capability("calendar", "Find meetings in Outlook / Microsoft 365", State.POSSIBLE, "Microsoft Graph calendar (OAuth)."));
+        }
+    }
+
+    static final class Zoom implements MeetingProviderAdapter {
+        public String id() { return "ZOOM"; }
+        public String displayName() { return "Zoom"; }
+        public List<String> hosts() { return List.of("zoom.us", "zoom.com", "zoomgov.com"); }
+        public List<String> permissionsRequired() { return List.of("cloud_recording:read (recordings and audio transcripts)", "meeting:read"); }
+        public List<Capability> capabilities() {
+            return List.of(upload(), importTranscript(),
+                    new Capability("postMeetingTranscript", "Fetch Zoom's transcript after the meeting", State.POSSIBLE, "Cloud Recording API; paid plan with audio transcripts on."),
+                    new Capability("postMeetingRecording", "Fetch the cloud recording", State.POSSIBLE, "Cloud Recording API + 'recording completed' webhook."),
+                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "Meeting SDK bots need Zoom's app review before joining other organisations' meetings."),
+                    new Capability("calendar", "Find meetings", State.POSSIBLE, "Through your Google or Microsoft calendar."));
+        }
+    }
+
+    static final class Webex implements MeetingProviderAdapter {
+        public String id() { return "WEBEX"; }
+        public String displayName() { return "Webex"; }
+        public List<String> hosts() { return List.of("webex.com"); }
+        public List<String> permissionsRequired() { return List.of("meeting:transcripts_read", "meeting:recordings_read"); }
+        public List<Capability> capabilities() {
+            return List.of(upload(), importTranscript(),
+                    new Capability("postMeetingTranscript", "Fetch the Webex transcript after the meeting", State.POSSIBLE, "Meetings API; transcription must be on."),
+                    new Capability("postMeetingRecording", "Fetch the recording", State.POSSIBLE, "Recordings API."),
+                    new Capability("liveJoin", "Join live as a notetaker", State.UNAVAILABLE, "No general bot API for this."),
+                    new Capability("calendar", "Find meetings", State.POSSIBLE, "Through your Google or Microsoft calendar."));
+        }
+    }
+
+    static final class Other implements MeetingProviderAdapter {
+        public String id() { return "OTHER"; }
+        public String displayName() { return "Any other platform"; }
+        public List<String> hosts() { return List.of(); }
+        public List<String> permissionsRequired() { return List.of(); }
+        public List<Capability> capabilities() { return List.of(upload(), importTranscript()); }
+    }
+}

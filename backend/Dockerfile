@@ -30,7 +30,9 @@ WORKDIR /app
 # `docker build` in the sandbox this was written in (no registry network
 # access there), so installing it explicitly is the safe choice rather
 # than gambling wget/curl already exists.
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# ffmpeg: the Universal Meeting Assistant splits long recordings into chunks before transcription
+# (optional at run time - without it a recording is sent to speech-to-text in one piece).
+RUN apt-get update && apt-get install -y --no-install-recommends curl ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Run as a non-root user — the default "run as root inside the container"

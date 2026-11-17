@@ -39,7 +39,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         // Skip static assets and actuator noise
         String uri = request.getRequestURI();
-        if (uri.contains("/actuator") || uri.contains(".js") || uri.contains(".css")) {
+        // The AI Meeting Assistant's requests and responses carry meeting transcripts, summaries and recordings: never print them.
+        if (uri.contains("/actuator") || uri.contains(".js") || uri.contains(".css") || uri.startsWith("/api/v2/meeting-assistant")) {
             filterChain.doFilter(request, response);
             return;
         }

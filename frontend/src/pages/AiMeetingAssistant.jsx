@@ -1,0 +1,972 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  AlertTriangle, ArrowLeft, Check, CheckCircle2, Download, FileText, Link2, Loader2, MessageSquare,
+  RefreshCw, Send, Sparkles, Upload, X,
+} from "lucide-react";
+import ActionMenu from "../components/ui/ActionMenu";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../hooks/useConfirm";
+import { apiErrorMessage } from "../utils/apiError";
+import { getTeamMembers } from "../api/team";
+import { getProjects } from "../api/projects";
+import {
+  getUmaDashboard, getUmaMeeting, getUmaProviders, detectUmaLink, uploadUmaRecording, addUmaRecording,
+  importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
+  cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
+  approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
+} from "../api/aiMeetingAssistant";
+import "../styles/pages/ai-meeting-assistant.css";
+
+/* ── small helpers ─────────────────────────────────────────────────────── */
+
+const list = (r) => (Array.isArray(r?.data) ? r.data : r?.data?.content || r?.data?.items || []);
+const when = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "");
+const day = (d) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) : "");
+const clock = (ms) => {
+  if (ms == null) return "";
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
+};
+const minutes = (ms) => (ms ? `${Math.max(1, Math.round(ms / 60000))} min` : "");
+const WORKING = new Set(["QUEUED", "TRANSCRIBING", "ANALYZING"]);
+const TONE = {
+  CREATED: "neutral", CAPTURING: "info", QUEUED: "info", TRANSCRIBING: "info", ANALYZING: "info",
+  REVIEW_READY: "attention", COMPLETED: "success", FAILED: "danger", CANCELLED: "neutral",
+};
+const SOURCE = { RECORDING_UPLOAD: "Recording", TRANSCRIPT_IMPORT: "Transcript", MEETING_LINK: "Meeting link", BROWSER_CAPTURE: "Browser capture" };
+const STATE_TEXT = {
+  VERIFIED: "Works — tested", IMPLEMENTED: "Works — built in", POSSIBLE: "Possible later (needs setup)", UNAVAILABLE: "Not available",
+};
+const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,.mkv,.mpeg,.mpga,audio/*,video/*";
+const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
+
+function Pill({ status, label }) {
+  return <span className={`uma-pill uma-pill--${TONE[status] || "neutral"}`}><span className="uma-dot" aria-hidden="true" />{label || status}</span>;
+}
+
+function Refs({ evidence, onOpen }) {
+  if (!evidence?.length) return null;
+  return (
+    <span className="uma-refs">
+      {evidence.map((n) => (
+        <button key={n} type="button" className="uma-ref" onClick={() => onOpen?.(n)} title={`Show transcript line ${n}`}
+          aria-label={`Show transcript line ${n}`}>#{n}</button>
+      ))}
+    </span>
+  );
+}
+
+const fileBase = (title) => (title || "meeting").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "meeting";
+
+async function saveBlob(res, fallbackName) {
+  // The server's filename header isn't readable from another origin, so the page names the file itself.
+  const cd = res.headers?.["content-disposition"] || "";
+  const name = /filename="?([^";]+)"?/i.exec(cd)?.[1] || fallbackName;
+  const url = URL.createObjectURL(res.data);
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ── dialogs ───────────────────────────────────────────────────────────── */
+
+function Dialog({ title, onClose, children, wide }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const prev = document.activeElement;
+    ref.current?.querySelector("input, textarea, select, button")?.focus();
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); prev?.focus?.(); };
+  }, [onClose]);
+  return (
+    <div className="uma-overlay" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={ref} className={`uma-dialog${wide ? " uma-dialog--wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="uma-dialog-head">
+          <h2>{title}</h2>
+          <button type="button" className="uma-icon-btn" onClick={onClose} aria-label="Close"><X size={16} /></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const nowLocal = () => {
+  const d = new Date(); d.setSeconds(0, 0);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};
+const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function CommonFields({ title, setTitle, at, setAt, projectId, setProjectId, projects, titlePlaceholder }) {
+  return (
+    <>
+      <label className="uma-field"><span>Title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={titlePlaceholder} maxLength={200} />
+      </label>
+      <div className="uma-row2">
+        <label className="uma-field"><span>When it happened</span>
+          <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
+        </label>
+        <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
+          <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">Choose later</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+      </div>
+    </>
+  );
+}
+
+function UploadDialog({ onClose, onDone, projects, readiness, existingId }) {
+  const { show: toast } = useToast();
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState("");
+  const [at, setAt] = useState(nowLocal());
+  const [projectId, setProjectId] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const [error, setError] = useState("");
+  const busy = progress !== null;
+  const maxMb = readiness?.maxUploadMb || 500;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!file) return setError("Choose a recording.");
+    if (file.size > maxMb * 1024 * 1024) return setError(`That recording is larger than ${maxMb} MB. Export only the audio, or split it.`);
+    if (!consent) return setError("Please confirm that everyone knew the meeting was recorded.");
+    setProgress(0);
+    try {
+      const r = existingId
+        ? await addUmaRecording(existingId, file, true, setProgress)
+        : await uploadUmaRecording(file, {
+          title: title.trim() || undefined, projectId: projectId || undefined,
+          meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz(), consent: true,
+        }, setProgress);
+      toast("Uploaded. We'll let you know when the summary is ready.", "success");
+      onDone(r.data);
+    } catch (err) {
+      setError(apiErrorMessage(err, "The upload didn't finish. Check your connection and try again."));
+      setProgress(null);
+    }
+  };
+
+  return (
+    <Dialog title={existingId ? "Add the recording" : "Upload a recording"} onClose={busy ? () => {} : onClose}>
+      <form onSubmit={submit} className="uma-form">
+        {readiness && !readiness.transcriptionReady && (
+          <p className="uma-note uma-note--warn" role="status"><AlertTriangle size={14} aria-hidden="true" /> {readiness.transcriptionReason} You can still upload; it will be transcribed once that is set up.</p>
+        )}
+        <label className="uma-drop">
+          <input type="file" accept={AUDIO_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} disabled={busy} />
+          <Upload size={18} aria-hidden="true" />
+          <span>{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "Choose an audio or video file"}</span>
+          <small>MP3, M4A, WAV, MP4, WebM, OGG, FLAC or MOV, up to {maxMb} MB. Audio only is enough.</small>
+        </label>
+        {!existingId && (
+          <CommonFields title={title} setTitle={setTitle} at={at} setAt={setAt} projectId={projectId} setProjectId={setProjectId}
+            projects={projects} titlePlaceholder={file ? file.name.replace(/\.[^.]+$/, "") : "e.g. Weekly launch sync"} />
+        )}
+        <label className="uma-check">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy} />
+          <span>Everyone in this meeting knew it was being recorded and transcribed.</span>
+        </label>
+        <p className="uma-fine">The recording is sent to your workspace's speech-to-text server, and the transcript to your AI model.
+          The recording file is deleted after it has been transcribed.</p>
+        {error && <p className="uma-error" role="alert">{error}</p>}
+        {busy && (
+          <div className="uma-progress" role="progressbar" aria-valuenow={progress ?? 0} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress">
+            <span style={{ width: `${progress ?? 5}%` }} />
+          </div>
+        )}
+        <div className="uma-dialog-actions">
+          <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="submit" className="btn-primary pg-btn" disabled={busy}>
+            {busy ? <><Loader2 size={14} className="uma-spin" aria-hidden="true" />Uploading {progress != null ? `${progress}%` : ""}</> : <><Upload size={14} aria-hidden="true" />Upload</>}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+function ImportDialog({ onClose, onDone, projects }) {
+  const { show: toast } = useToast();
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState("");
+  const [at, setAt] = useState(nowLocal());
+  const [projectId, setProjectId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!file && !text.trim()) return setError("Paste the transcript or choose a file.");
+    if (file && file.size > 1024 * 1024) return setError("Transcript files up to 1 MB can be imported here. Paste the text instead.");
+    setBusy(true);
+    const meta = { title: title.trim() || undefined, projectId: projectId || undefined, meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz() };
+    try {
+      const r = file ? await importUmaTranscriptFile(file, meta) : await importUmaTranscriptText({ ...meta, text });
+      toast("Imported. Writing the summary now.", "success");
+      onDone(r.data);
+    } catch (err) {
+      setError(apiErrorMessage(err, "The transcript couldn't be imported."));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog title="Import a transcript" onClose={onClose} wide>
+      <form onSubmit={submit} className="uma-form">
+        <p className="uma-hint">From Zoom, Teams, Google Meet, Webex or any notetaker: a .vtt, .srt, .txt or .docx file, or pasted text.
+          Speaker names are kept when the file has them.</p>
+        <label className="uma-field"><span>Transcript file</span>
+          <input type="file" accept={TRANSCRIPT_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        </label>
+        {!file && (
+          <label className="uma-field"><span>…or paste it</span>
+            <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder={"Alex: Let's start with the launch.\nRavi: I'll finish the API by Friday."} />
+          </label>
+        )}
+        <CommonFields title={title} setTitle={setTitle} at={at} setAt={setAt} projectId={projectId} setProjectId={setProjectId}
+          projects={projects} titlePlaceholder="e.g. Weekly launch sync" />
+        {error && <p className="uma-error" role="alert">{error}</p>}
+        <div className="uma-dialog-actions">
+          <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="submit" className="btn-primary pg-btn" disabled={busy}>
+            {busy ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : <FileText size={14} aria-hidden="true" />}Import
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+function LinkDialog({ onClose, onDone, projects }) {
+  const { show: toast } = useToast();
+  const [url, setUrl] = useState("");
+  const [detected, setDetected] = useState(null);
+  const [title, setTitle] = useState("");
+  const [at, setAt] = useState(nowLocal());
+  const [projectId, setProjectId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const u = url.trim();
+    if (!/^https:\/\/\S+\.\S+/.test(u)) return undefined;
+    const t = setTimeout(() => detectUmaLink(u).then((r) => setDetected(r.data)).catch(() => setDetected(null)), 350);
+    return () => clearTimeout(t);
+  }, [url]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(""); setBusy(true);
+    try {
+      const r = await registerUmaLink({ url: url.trim(), title: title.trim() || undefined, projectId: projectId || undefined,
+        meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz() });
+      toast("Meeting added. After it ends, add its recording or transcript.", "success");
+      onDone(r.data);
+    } catch (err) {
+      setError(apiErrorMessage(err, "That link couldn't be added."));
+      setBusy(false);
+    }
+  };
+
+  const live = detected?.capabilities?.find((c) => c.key === "liveJoin");
+  return (
+    <Dialog title="Add a meeting link" onClose={onClose}>
+      <form onSubmit={submit} className="uma-form">
+        <label className="uma-field"><span>Meeting link</span>
+          <input value={url} onChange={(e) => { setUrl(e.target.value); setDetected(null); }} placeholder="https://zoom.us/j/… or a Meet, Teams or Webex link" inputMode="url" required />
+        </label>
+        {detected && (
+          <div className="uma-note" role="status">
+            <strong>{detected.name}</strong> link.{" "}
+            {live && live.state !== "VERIFIED" && live.state !== "IMPLEMENTED"
+              ? "The assistant can't join this meeting by itself yet. After the meeting, upload its recording or transcript here and you'll get the summary and action items."
+              : ""}
+          </div>
+        )}
+        <CommonFields title={title} setTitle={setTitle} at={at} setAt={setAt} projectId={projectId} setProjectId={setProjectId}
+          projects={projects} titlePlaceholder={detected ? `${detected.name} meeting` : "e.g. Weekly launch sync"} />
+        {error && <p className="uma-error" role="alert">{error}</p>}
+        <div className="uma-dialog-actions">
+          <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="submit" className="btn-primary pg-btn" disabled={busy || !url.trim()}><Link2 size={14} aria-hidden="true" />Add meeting</button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+/* ── dashboard ─────────────────────────────────────────────────────────── */
+
+function MeetingRow({ m }) {
+  return (
+    <li className="uma-mrow">
+      <Link to={`/ai-meeting-assistant/${m.id}`} className="uma-mrow-title">{m.title}</Link>
+      <span className="uma-mrow-meta">
+        {SOURCE[m.source] || m.source}{m.meetingAt ? ` · ${when(m.meetingAt)}` : ""}{m.durationMs ? ` · ${minutes(m.durationMs)}` : ""}
+      </span>
+      <span className="uma-mrow-status">
+        <Pill status={m.status} label={m.statusLabel} />
+        {WORKING.has(m.status) && m.progressPercent != null && <span className="uma-mrow-pct">{m.progressPercent}%</span>}
+      </span>
+    </li>
+  );
+}
+
+function Section({ title, items, empty }) {
+  if (!items?.length && !empty) return null;
+  return (
+    <section className="uma-section" aria-label={title}>
+      <h2 className="pg-section-title">{title} {items?.length ? <span className="uma-count">{items.length}</span> : null}</h2>
+      {items?.length ? <ul className="uma-mlist">{items.map((m) => <MeetingRow key={m.id} m={m} />)}</ul> : <p className="uma-hint">{empty}</p>}
+    </section>
+  );
+}
+
+function ProviderCards() {
+  const [providers, setProviders] = useState(null);
+  useEffect(() => { getUmaProviders().then((r) => setProviders(r.data)).catch(() => setProviders([])); }, []);
+  if (!providers?.length) return null;
+  return (
+    <details className="uma-providers">
+      <summary>What works with each meeting app</summary>
+      <p className="uma-hint">Shown as it really is today. "Possible later" needs an admin connection and the meeting app's permission.</p>
+      <div className="uma-pgrid">
+        {providers.filter((p) => p.id !== "OTHER").map((p) => (
+          <div key={p.id} className="uma-pcard">
+            <h3>{p.name}</h3>
+            <ul>
+              {p.capabilities.map((c) => {
+                const ok = c.state === "VERIFIED" || c.state === "IMPLEMENTED";
+                return (
+                  <li key={c.key} className={ok ? "ok" : c.state === "UNAVAILABLE" ? "no" : "later"} title={c.note || ""}>
+                    {ok ? <Check size={13} aria-hidden="true" /> : <X size={13} aria-hidden="true" />}
+                    <span>{c.label}</span><em>{STATE_TEXT[c.state] || c.state}</em>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function Dashboard({ openDialog }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const load = useCallback(() => getUmaDashboard().then((r) => { setData(r.data); setError(""); })
+    .catch((e) => setError(apiErrorMessage(e, "The meeting list couldn't be loaded."))), []);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!data?.inProgress?.length) return undefined;
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
+  }, [data, load]);
+  useEffect(() => {
+    window.addEventListener("uma:changed", load);
+    return () => window.removeEventListener("uma:changed", load);
+  }, [load]);
+
+  if (error) return <div className="pg-empty"><h2>Not available</h2><p>{error}</p></div>;
+  if (!data) return <p className="uma-hint" role="status"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Loading…</p>;
+  const r = data.readiness || {};
+  const nothing = !data.recent?.length && !data.upcoming?.length;
+  return (
+    <>
+      {(!r.transcriptionReady || !r.aiReady) && (
+        <div className="uma-note uma-note--warn" role="status">
+          <AlertTriangle size={15} aria-hidden="true" />
+          <div>
+            <strong>Setup needed before meetings can be processed.</strong>
+            {!r.transcriptionReady && <p>{r.transcriptionReason}</p>}
+            {!r.aiReady && <p>{r.aiReason}</p>}
+            {r.aiReady && !r.transcriptionReady && <p>Imported transcripts work already.</p>}
+          </div>
+        </div>
+      )}
+
+      <div className="uma-stats">
+        <div className="pg-stat"><span className="pg-stat-num">{data.inProgress.length}</span><span className="pg-stat-label">Processing</span></div>
+        <div className="pg-stat"><span className="pg-stat-num">{data.awaitingReview.length}</span><span className="pg-stat-label">Ready for review</span></div>
+        <div className="pg-stat"><span className="pg-stat-num">{data.pendingActions.length}</span><span className="pg-stat-label">Action items to review</span></div>
+        <div className={`pg-stat${data.failed.length ? " pg-stat--late" : ""}`}><span className="pg-stat-num">{data.failed.length}</span><span className="pg-stat-label">Need attention</span></div>
+      </div>
+
+      {nothing ? (
+        <div className="pg-empty uma-empty">
+          <Sparkles size={28} aria-hidden="true" />
+          <h2>Turn a meeting into notes and tasks</h2>
+          <p>Upload a recording or import a transcript. You'll get a summary, the decisions, and action items to approve as tasks.</p>
+          {data.canCreate && (
+            <div className="uma-empty-actions">
+              <button type="button" className="btn-primary pg-btn" onClick={() => openDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("import")}><FileText size={15} aria-hidden="true" />Import transcript</button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="uma-columns">
+          <div>
+            <Section title="Needs attention" items={data.failed} />
+            <Section title="Ready for review" items={data.awaitingReview} />
+            <Section title="Processing" items={data.inProgress} />
+            <Section title="Upcoming" items={data.upcoming} />
+            <Section title="Recent meetings" empty="No other meetings."
+              items={data.recent.filter((m) => !["REVIEW_READY", "FAILED", "QUEUED", "TRANSCRIBING", "ANALYZING"].includes(m.status)
+                && !data.upcoming.some((u) => u.id === m.id))} />
+          </div>
+          <aside className="uma-side" aria-label="Action items waiting for review">
+            <h2 className="pg-section-title">Action items to review</h2>
+            {data.pendingActions.length === 0 ? <p className="uma-hint">Nothing waiting.</p> : (
+              <ul className="uma-plist">
+                {data.pendingActions.map(({ meetingId, meetingTitle, action }) => (
+                  <li key={`${meetingId}:${action.id}`}>
+                    <Link to={`/ai-meeting-assistant/${meetingId}?tab=actions`}>{action.title}</Link>
+                    <span>{meetingTitle}{action.ownerSpoken ? ` · ${action.ownerSpoken}` : ""}{action.dueDate ? ` · ${day(action.dueDate)}` : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        </div>
+      )}
+      <ProviderCards />
+    </>
+  );
+}
+
+/* ── meeting detail ────────────────────────────────────────────────────── */
+
+const TABS = [
+  ["overview", "Overview"], ["summary", "Summary"], ["transcript", "Transcript"],
+  ["decisions", "Decisions"], ["actions", "Action items"], ["ask", "Ask AI"],
+];
+
+function Overview({ d, openLine, setTab }) {
+  const ins = d.insights;
+  const m = d.meeting;
+  const pending = ins?.actions?.filter((a) => a.status === "PENDING").length || 0;
+  return (
+    <div className="uma-overview">
+      {ins?.summary && <p className="uma-summary">{ins.summary}</p>}
+      <dl className="uma-facts">
+        <div><dt>Decisions</dt><dd><button type="button" className="uma-link" onClick={() => setTab("decisions")}>{ins?.decisions?.length || 0}</button></dd></div>
+        <div><dt>Action items</dt><dd><button type="button" className="uma-link" onClick={() => setTab("actions")}>{ins?.actions?.length || 0}{pending ? ` (${pending} to review)` : ""}</button></dd></div>
+        <div><dt>Risks</dt><dd>{ins?.risks?.length || 0}</dd></div>
+        <div><dt>Open questions</dt><dd>{ins?.questions?.length || 0}</dd></div>
+        <div><dt>Transcript</dt><dd>{m.transcript?.segmentCount || 0} lines{m.transcript?.engine ? ` · ${m.transcript.engine}` : ""}</dd></div>
+        {m.recording?.durationMs ? <div><dt>Length</dt><dd>{minutes(m.recording.durationMs)}</dd></div> : null}
+        {ins?.model ? <div><dt>Written by</dt><dd>{ins.model}{ins.version > 1 ? ` · version ${ins.version}` : ""}</dd></div> : null}
+      </dl>
+      {ins?.decisions?.length > 0 && (
+        <>
+          <h3 className="uma-h3">Decisions</h3>
+          <ul className="uma-items">{ins.decisions.map((x) => <li key={x.id}>{x.text} <Refs evidence={x.evidence} onOpen={openLine} /></li>)}</ul>
+        </>
+      )}
+      {ins?.warnings?.length > 0 && <p className="uma-fine">{ins.warnings.join(" ")}</p>}
+      {ins?.droppedForMissingEvidence > 0 && (
+        <p className="uma-fine">{ins.droppedForMissingEvidence} statement(s) from the AI were left out because they weren't backed by the transcript.</p>
+      )}
+    </div>
+  );
+}
+
+function SummaryTab({ ins, openLine }) {
+  if (!ins) return <p className="uma-hint">Not written yet.</p>;
+  return (
+    <div>
+      <p className="uma-summary">{ins.summary}</p>
+      {ins.notes?.map((t, i) => (
+        <section key={i} className="uma-topic">
+          <h3 className="uma-h3">{t.title}</h3>
+          <ul className="uma-items">{t.points.map((p, j) => <li key={j}>{p.text} <Refs evidence={p.evidence} onOpen={openLine} /></li>)}</ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function FindingList({ title, items, openLine, empty }) {
+  return (
+    <section className="uma-topic">
+      <h3 className="uma-h3">{title}</h3>
+      {items?.length ? (
+        <ul className="uma-items">{items.map((x) => (
+          <li key={x.id}>{x.text}{x.decidedBy ? <em> — {x.decidedBy}</em> : null}{x.kind && x.kind !== "RISK" ? <em> ({x.kind.toLowerCase().replace("_", " ")})</em> : null} <Refs evidence={x.evidence} onOpen={openLine} /></li>
+        ))}</ul>
+      ) : <p className="uma-hint">{empty}</p>}
+    </section>
+  );
+}
+
+function TranscriptTab({ d, focusLine, canManage, onSaved }) {
+  const { show: toast } = useToast();
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [q, setQ] = useState("");
+  const refs = useRef({});
+  useEffect(() => {
+    if (focusLine && refs.current[focusLine]) refs.current[focusLine].scrollIntoView?.({ block: "center", behavior: "smooth" });
+  }, [focusLine]);
+  const segs = d.segments || [];
+  const shown = q.trim() ? segs.filter((s) => s.text.toLowerCase().includes(q.trim().toLowerCase())) : segs;
+  const save = async (seq) => {
+    try {
+      await editUmaSegment(d.meeting.id, seq, { text: draft });
+      setEditing(null); onSaved();
+      toast("Line saved. Regenerate the summary to use the correction.", "success");
+    } catch (e) { toast(apiErrorMessage(e, "The line couldn't be saved."), "error"); }
+  };
+  if (!segs.length) return <p className="uma-hint">No transcript yet.</p>;
+  return (
+    <div>
+      <div className="uma-tbar">
+        <label className="pg-find"><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find in transcript" aria-label="Find in transcript" /></label>
+        <span className="uma-fine">{d.meeting.transcript?.speakersKnown ? "Speakers as named in the transcript." : "Speakers aren't identified in recordings; lines show as Unknown speaker."}</span>
+      </div>
+      <ol className="uma-transcript">
+        {shown.map((s) => (
+          <li key={s.seq} ref={(el) => { refs.current[s.seq] = el; }} className={focusLine === s.seq ? "focus" : ""} id={`line-${s.seq}`}>
+            <span className="uma-ln">#{s.seq}</span>
+            <span className="uma-ts">{clock(s.startMs)}</span>
+            <span className="uma-who">{s.speaker || "Unknown speaker"}</span>
+            {editing === s.seq ? (
+              <span className="uma-edit">
+                <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} aria-label={`Edit line ${s.seq}`} />
+                <button type="button" className="btn-primary pg-btn" onClick={() => save(s.seq)}>Save</button>
+                <button type="button" className="btn-secondary pg-btn" onClick={() => setEditing(null)}>Cancel</button>
+              </span>
+            ) : (
+              <span className="uma-text">{s.text}{s.edited && <em className="uma-edited"> (edited)</em>}
+                {canManage && <button type="button" className="uma-edit-btn" onClick={() => { setEditing(s.seq); setDraft(s.text); }} aria-label={`Correct line ${s.seq}`}>Correct</button>}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+const OWNER_TEXT = {
+  MATCHED: null,
+  SUGGESTED: "Probably — please confirm",
+  AMBIGUOUS: "More than one person has this name",
+  NOT_A_MEMBER: "Not a member of this workspace",
+  UNASSIGNED: "Nobody was named",
+};
+
+function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelect, openLine, onChanged }) {
+  const { show: toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const [title, setTitle] = useState(a.title);   // the parent re-keys this card when the saved title changes
+  const done = a.status === "CREATED" || a.status === "REJECTED";
+  const patch = async (p) => {
+    setBusy(true);
+    try { await editUmaAction(meetingId, a.id, p); onChanged(); }
+    catch (e) { toast(apiErrorMessage(e, "That change couldn't be saved."), "error"); }
+    finally { setBusy(false); }
+  };
+  const approve = async () => {
+    setBusy(true);
+    try {
+      const r = await approveUmaAction(meetingId, a.id);
+      if (r.data.status === "CREATED") toast("Task created.", "success");
+      else toast(r.data.failureReason || "The task couldn't be created.", "error");
+      onChanged();
+    } catch (e) { toast(apiErrorMessage(e, "The task couldn't be created."), "error"); }
+    finally { setBusy(false); }
+  };
+  const reject = async () => {
+    setBusy(true);
+    try { await rejectUmaAction(meetingId, a.id); onChanged(); }
+    catch (e) { toast(apiErrorMessage(e, "Couldn't dismiss it."), "error"); }
+    finally { setBusy(false); }
+  };
+  const ownerHint = OWNER_TEXT[a.ownerState];
+  const owners = [...(a.ownerCandidates || [])];
+  team.forEach((t) => { if (!owners.some((o) => o.memberId === t.id)) owners.push({ memberId: t.id, name: t.name }); });
+  return (
+    <li className={`uma-action uma-action--${a.status.toLowerCase()}`}>
+      <div className="uma-action-head">
+        {canManage && !done && (
+          <input type="checkbox" checked={selected} onChange={() => onSelect(a.id)} aria-label={`Select ${a.title}`} />
+        )}
+        {canManage && !done ? (
+          <input className="uma-action-title" value={title} onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => title.trim() && title !== a.title && patch({ title })} aria-label="Action item title" />
+        ) : <span className="uma-action-title uma-action-title--ro">{a.title}</span>}
+        {a.status === "CREATED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />Task created</span>}
+        {a.status === "REJECTED" && <span className="uma-pill uma-pill--neutral">Dismissed</span>}
+        {a.status === "FAILED" && <span className="uma-pill uma-pill--danger" title={a.failureReason || ""}>Not created</span>}
+        {a.confidence === "LOW" && a.status === "PENDING" && <span className="uma-pill uma-pill--neutral" title="It was suggested rather than clearly agreed">Tentative</span>}
+      </div>
+      {a.description && a.description !== a.title && <p className="uma-action-desc">{a.description}</p>}
+      <div className="uma-action-grid">
+        <label><span>Owner {a.ownerSpoken ? <em>— said: “{a.ownerSpoken}”</em> : null}</span>
+          <select value={a.ownerMemberId || ""} disabled={!canManage || done || busy}
+            onChange={(e) => patch({ ownerMemberId: e.target.value || null })}>
+            <option value="">{a.ownerMemberId ? "Nobody" : "Choose…"}</option>
+            {owners.map((o) => <option key={o.memberId} value={o.memberId}>{o.name}</option>)}
+          </select>
+          {!a.ownerMemberId && ownerHint && <small className={a.ownerState === "UNASSIGNED" ? "" : "warn"}>{a.ownerNote || ownerHint}</small>}
+        </label>
+        <label><span>Due {a.dueSpoken ? <em>— said: “{a.dueSpoken}”</em> : null}</span>
+          <input type="date" value={a.dueDate || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ dueDate: e.target.value || null })} />
+          {!a.dueDate && <small>{a.dueSpoken ? "Couldn't work out the date — please pick it" : "No deadline was said"}</small>}
+        </label>
+        <label><span>Priority</span>
+          <select value={a.priority || "MEDIUM"} disabled={!canManage || done || busy} onChange={(e) => patch({ priority: e.target.value })}>
+            <option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option>
+          </select>
+        </label>
+        <label><span>Project</span>
+          <select value={a.projectId || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ projectId: e.target.value || null })}>
+            <option value="">No project</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="uma-action-foot">
+        <span className="uma-fine">From the transcript <Refs evidence={a.evidence} onOpen={openLine} /></span>
+        {a.status === "CREATED" && a.createdTaskId && <Link to={`/tasks?highlight=${a.createdTaskId}`} className="uma-link">Open task</Link>}
+        {canManage && !done && (
+          <span className="uma-action-buttons">
+            <button type="button" className="btn-secondary pg-btn" onClick={reject} disabled={busy}>Dismiss</button>
+            <button type="button" className="btn-primary pg-btn" onClick={approve} disabled={busy}><Check size={14} aria-hidden="true" />Create task</button>
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ActionsTab({ d, team, projects, openLine, onChanged }) {
+  const { show: toast } = useToast();
+  const [selected, setSelected] = useState(new Set());
+  const [busy, setBusy] = useState(false);
+  const actions = d.insights?.actions || [];
+  const open = actions.filter((a) => a.status === "PENDING" || a.status === "FAILED");
+  const toggle = (id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const bulk = async () => {
+    setBusy(true);
+    try {
+      const r = await approveUmaActions(d.meeting.id, [...selected]);
+      const ok = r.data.filter((a) => a.status === "CREATED").length;
+      toast(`${ok} task${ok === 1 ? "" : "s"} created.`, ok ? "success" : "error");
+      setSelected(new Set()); onChanged();
+    } catch (e) { toast(apiErrorMessage(e, "The tasks couldn't be created."), "error"); }
+    finally { setBusy(false); }
+  };
+  if (!actions.length) return <p className="uma-hint">No action items were found in this meeting.</p>;
+  return (
+    <div>
+      <p className="uma-hint">Nothing is created until you approve it. Owners and dates are only filled in when they were said in the meeting.</p>
+      {d.canManage && open.length > 1 && (
+        <div className="uma-bulk">
+          <label className="uma-check"><input type="checkbox" checked={selected.size === open.length}
+            onChange={(e) => setSelected(e.target.checked ? new Set(open.map((a) => a.id)) : new Set())} />
+            <span>{selected.size ? `${selected.size} selected` : "Select all"}</span></label>
+          {selected.size > 0 && <button type="button" className="btn-primary pg-btn" onClick={bulk} disabled={busy}><Check size={14} aria-hidden="true" />Create {selected.size} task{selected.size === 1 ? "" : "s"}</button>}
+        </div>
+      )}
+      <ul className="uma-actions">
+        {actions.map((a) => (
+          <ActionCard key={`${a.id}:${a.title}`} a={a} meetingId={d.meeting.id} canManage={d.canManage} team={team} projects={projects}
+            selected={selected.has(a.id)} onSelect={toggle} openLine={openLine} onChanged={onChanged} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function AskTab({ d, openLine, onAsked }) {
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const history = [...(d.questions || [])].reverse();
+  const ask = async (e) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setBusy(true); setError("");
+    try { await askUma(d.meeting.id, q.trim()); setQ(""); onAsked(); }
+    catch (err) { setError(apiErrorMessage(err, "The question couldn't be answered right now.")); }
+    finally { setBusy(false); }
+  };
+  const examples = ["What did we decide?", "Who owns what, and by when?", "What risks were raised?"];
+  return (
+    <div className="uma-ask">
+      <form onSubmit={ask} className="uma-ask-form">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about this meeting" aria-label="Your question" maxLength={500} disabled={busy} />
+        <button type="submit" className="btn-primary pg-btn" disabled={busy || !q.trim()}>
+          {busy ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : <Send size={14} aria-hidden="true" />}Ask
+        </button>
+      </form>
+      {!history.length && (
+        <div className="uma-examples">{examples.map((x) => <button key={x} type="button" className="uma-chip" onClick={() => setQ(x)}>{x}</button>)}</div>
+      )}
+      <p className="uma-fine">Answers come only from this meeting's transcript, with the lines they're based on.</p>
+      {error && <p className="uma-error" role="alert">{error}</p>}
+      <ul className="uma-qa">
+        {history.map((x) => (
+          <li key={x.id}>
+            <p className="uma-q"><MessageSquare size={13} aria-hidden="true" />{x.question}</p>
+            <p className={`uma-a${x.grounded ? "" : " uma-a--none"}`}>{x.answer} <Refs evidence={x.evidence} onOpen={openLine} /></p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+async function exportPdf(d) {
+  const { default: jsPDF } = await import("jspdf");
+  const res = await exportUma(d.meeting.id, "txt");
+  const text = await res.data.text();
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 48, width = doc.internal.pageSize.getWidth() - margin * 2, bottom = doc.internal.pageSize.getHeight() - margin;
+  let y = margin;
+  doc.setFont("helvetica", "normal");
+  for (const raw of text.split("\n")) {
+    const heading = raw && raw === raw.toUpperCase() && /[A-Z]/.test(raw) && !raw.startsWith("  ");
+    doc.setFont("helvetica", heading ? "bold" : "normal");
+    doc.setFontSize(heading ? 12 : 10);
+    const lines = raw ? doc.splitTextToSize(raw, width) : [""];
+    for (const l of lines) {
+      if (y > bottom) { doc.addPage(); y = margin; }
+      doc.text(l, margin, y);
+      y += heading ? 18 : 14;
+    }
+  }
+  doc.save(`${fileBase(d.meeting.title)}.pdf`);
+}
+
+function Detail({ id, team, projects }) {
+  const navigate = useNavigate();
+  const { show: toast } = useToast();
+  const confirm = useConfirm();
+  const params = new URLSearchParams(window.location.search);
+  const [d, setD] = useState(null);
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState(params.get("tab") || "overview");
+  const [focusLine, setFocusLine] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [addRecording, setAddRecording] = useState(false);
+  const wasWorking = useRef(false);
+
+  const [tick, setTick] = useState(0);
+  const load = () => setTick((t) => t + 1);
+  useEffect(() => {
+    let live = true;
+    getUmaMeeting(id)
+      .then((r) => { if (live) { setD(r.data); setError(""); } })
+      .catch((e) => { if (live) setError(apiErrorMessage(e, "This meeting couldn't be loaded.")); });
+    return () => { live = false; };
+  }, [id, tick]);
+  const working = d && WORKING.has(d.meeting.status);
+  useEffect(() => {
+    if (!working) {
+      if (wasWorking.current && d?.meeting.status === "REVIEW_READY") toast(d.meeting.statusDetail || "Your meeting summary is ready.", "success");
+      wasWorking.current = false;
+      return undefined;
+    }
+    wasWorking.current = true;
+    const t = setInterval(() => setTick((n) => n + 1), 4000);
+    return () => clearInterval(t);
+  }, [working, d, toast]);
+
+  const openLine = (n) => { setTab("transcript"); setFocusLine(n); };
+  const run = async (fn, ok) => {
+    setBusy(true);
+    try { await fn(); if (ok) toast(ok, "success"); load(); window.dispatchEvent(new Event("uma:changed")); }
+    catch (e) { toast(apiErrorMessage(e, "That didn't work. Please try again."), "error"); }
+    finally { setBusy(false); }
+  };
+  const doExport = async (format) => {
+    try {
+      if (format === "pdf") await exportPdf(d);
+      else await saveBlob(await exportUma(id, format), `${fileBase(d.meeting.title)}.${format}`);
+    } catch (e) { toast(apiErrorMessage(e, "The export couldn't be created."), "error"); }
+  };
+
+  if (error) return (
+    <div className="pg-empty"><h2>Meeting not found</h2><p>{error}</p>
+      <Link to="/ai-meeting-assistant" className="btn-secondary pg-btn"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link></div>
+  );
+  if (!d) return <p className="uma-hint" role="status"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Loading…</p>;
+  const m = d.meeting;
+  const hasInsights = !!d.insights;
+  const canAddContent = d.canManage && (m.status === "CREATED" || (m.status === "FAILED" && !d.segments?.length));
+
+  return (
+    <div className="uma-detail">
+      <Link to="/ai-meeting-assistant" className="uma-back"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link>
+      <header className="pg-title-row">
+        <div className="pg-title-text">
+          <h1>{m.title}</h1>
+          <p>
+            <Pill status={m.status} label={d.statusLabel} />
+            <span className="uma-sub">{SOURCE[m.source] || m.source}{m.provider && m.provider !== "OTHER" && d.provider ? ` · ${d.provider.name}` : ""}{m.meetingAt ? ` · ${when(m.meetingAt)}` : ""}</span>
+          </p>
+        </div>
+        <div className="pg-title-actions">
+          {hasInsights && (
+            <ActionMenu label="Export" className="btn-secondary pg-btn" items={[
+              { label: "Word document", icon: FileText, onSelect: () => doExport("docx") },
+              { label: "PDF", icon: FileText, onSelect: () => doExport("pdf") },
+              { label: "Markdown", icon: FileText, onSelect: () => doExport("md") },
+              { label: "Plain text", icon: FileText, onSelect: () => doExport("txt") },
+              { label: "JSON (data)", icon: FileText, onSelect: () => doExport("json") },
+            ]}><Download size={14} aria-hidden="true" />Export</ActionMenu>
+          )}
+          {d.canManage && (
+            <ActionMenu label="More actions for this meeting" items={[
+              { label: "Write the summary again", icon: RefreshCw, hidden: !(m.status === "REVIEW_READY" || m.status === "COMPLETED"),
+                onSelect: () => run(() => regenerateUmaMeeting(id), "Writing a new version…") },
+              { label: m.visibility === "WORKSPACE" ? "Make private" : "Share with the workspace",
+                onSelect: () => run(() => shareUmaMeeting(id, { visibility: m.visibility === "WORKSPACE" ? "PRIVATE" : "WORKSPACE" }),
+                  m.visibility === "WORKSPACE" ? "Only you and admins can see it now." : "Everyone in the workspace can see it now.") },
+              { label: "Mark as done", hidden: m.status !== "REVIEW_READY", onSelect: () => run(() => completeUmaMeeting(id), "Marked as done.") },
+              { label: "Stop processing", hidden: !WORKING.has(m.status), onSelect: () => run(() => cancelUmaMeeting(id), "Stopped.") },
+              "divider",
+              { label: "Delete meeting", danger: true, onSelect: async () => {
+                const ok = await confirm({ title: "Delete this meeting?", message: "Its transcript, summary and recording are deleted. Tasks already created stay.", confirmText: "Delete", danger: true });
+                if (ok) { await run(() => deleteUmaMeeting(id), "Meeting deleted."); navigate("/ai-meeting-assistant"); }
+              } },
+            ]} />
+          )}
+        </div>
+      </header>
+
+      {working && (
+        <div className="uma-working" role="status" aria-live="polite">
+          <Loader2 size={16} className="uma-spin" aria-hidden="true" />
+          <div>
+            <strong>{m.statusDetail || d.statusLabel}</strong>
+            <div className="uma-progress"><span style={{ width: `${Math.max(5, m.progressPercent || 0)}%` }} /></div>
+            <small>You can leave this page; it keeps going.</small>
+          </div>
+        </div>
+      )}
+      {m.status === "FAILED" && (
+        <div className="uma-failed" role="alert">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <div>
+            <strong>{m.statusDetail || "Something went wrong."}</strong>
+            {m.recoveryHint && <p>{m.recoveryHint}</p>}
+          </div>
+          {d.canManage && (m.recording?.fileKey || d.segments?.length > 0) && (
+            <button type="button" className="btn-primary pg-btn" onClick={() => run(() => retryUmaMeeting(id), "Trying again…")} disabled={busy}>
+              <RefreshCw size={14} aria-hidden="true" />Retry</button>
+          )}
+        </div>
+      )}
+      {m.status === "CREATED" && (
+        <div className="uma-note" role="status">
+          <Link2 size={15} aria-hidden="true" />
+          <div>
+            <strong>{m.statusDetail || "Waiting for the meeting's content."}</strong>
+            {m.meetingUrl && <p><a href={m.meetingUrl} target="_blank" rel="noreferrer noopener">Open the meeting link</a></p>}
+          </div>
+        </div>
+      )}
+      {canAddContent && (
+        <div className="uma-add-content">
+          <button type="button" className="btn-primary pg-btn" onClick={() => setAddRecording(true)}><Upload size={14} aria-hidden="true" />Add the recording</button>
+        </div>
+      )}
+      {m.status === "REVIEW_READY" && d.insights && (
+        <p className="uma-ready"><CheckCircle2 size={15} aria-hidden="true" />{m.statusDetail}</p>
+      )}
+
+      {(hasInsights || d.segments?.length > 0) && (
+        <>
+          <div className="uma-tabs" role="tablist" aria-label="Meeting results">
+            {TABS.map(([k, label]) => {
+              const n = k === "actions" ? d.insights?.actions?.filter((a) => a.status === "PENDING").length : 0;
+              return (
+                <button key={k} type="button" role="tab" aria-selected={tab === k} className="uma-tab" onClick={() => setTab(k)}>
+                  {label}{n ? <span className="uma-count">{n}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+          <div className="uma-panel" role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]}>
+            {tab === "overview" && <Overview d={d} openLine={openLine} setTab={setTab} />}
+            {tab === "summary" && <SummaryTab ins={d.insights} openLine={openLine} />}
+            {tab === "transcript" && <TranscriptTab d={d} focusLine={focusLine} canManage={d.canManage} onSaved={load} />}
+            {tab === "decisions" && (
+              <>
+                <FindingList title="Decisions" items={d.insights?.decisions} openLine={openLine} empty="No decisions were recorded." />
+                <FindingList title="Risks and blockers" items={d.insights?.risks} openLine={openLine} empty="None raised." />
+                <FindingList title="Open questions" items={d.insights?.questions} openLine={openLine} empty="None left open." />
+                <FindingList title="Follow-ups" items={d.insights?.followUps} openLine={openLine} empty="None." />
+              </>
+            )}
+            {tab === "actions" && <ActionsTab d={d} team={team} projects={projects} openLine={openLine} onChanged={load} />}
+            {tab === "ask" && <AskTab d={d} openLine={openLine} onAsked={load} />}
+          </div>
+        </>
+      )}
+      {addRecording && <UploadDialog existingId={id} projects={projects} onClose={() => setAddRecording(false)}
+        onDone={() => { setAddRecording(false); load(); }} />}
+    </div>
+  );
+}
+
+/* ── page ──────────────────────────────────────────────────────────────── */
+
+export default function AiMeetingAssistant() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [dialog, setDialog] = useState(null);
+  const [team, setTeam] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [readiness, setReadiness] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+
+  useEffect(() => {
+    getTeamMembers().then((r) => setTeam(list(r).filter((t) => t.role !== "VIEWER"))).catch(() => {});
+    getProjects().then((r) => setProjects(list(r))).catch(() => {});
+    getUmaDashboard().then((r) => { setReadiness(r.data.readiness); setCanCreate(!!r.data.canCreate); }).catch(() => {});
+  }, []);
+
+  const done = useMemo(() => (m) => { setDialog(null); window.dispatchEvent(new Event("uma:changed")); if (m?.id) navigate(`/ai-meeting-assistant/${m.id}`); }, [navigate]);
+
+  return (
+    <div className="uma-page">
+      {!id && (
+        <header className="pg-title-row">
+          <div className="pg-title-text">
+            <h1>AI Meeting Assistant</h1>
+            <p>Summaries, decisions and action items from your meeting recordings and transcripts.</p>
+          </div>
+          {canCreate && (
+            <div className="pg-title-actions">
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("link")}><Link2 size={15} aria-hidden="true" />Add meeting link</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("import")}><FileText size={15} aria-hidden="true" />Import transcript</button>
+              <button type="button" className="btn-primary pg-btn" onClick={() => setDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
+            </div>
+          )}
+        </header>
+      )}
+      {id ? <Detail key={id} id={id} team={team} projects={projects} /> : <Dashboard openDialog={setDialog} />}
+      {dialog === "upload" && <UploadDialog projects={projects} readiness={readiness} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "import" && <ImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "link" && <LinkDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+    </div>
+  );
+}

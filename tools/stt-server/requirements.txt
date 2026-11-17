@@ -1,0 +1,6 @@
+faster-whisper==1.2.1
+# faster-whisper 1.2.1 passes an argument that av 16+ removed ("metadata_errors"); keep av below 16.
+av>=11,<16
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9

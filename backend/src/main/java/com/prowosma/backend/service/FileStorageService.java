@@ -156,6 +156,19 @@ public class FileStorageService {
         return fileName;
     }
 
+    /**
+     * Reads a stored file back (local disk or S3). Added for the Universal Meeting Assistant, which transcribes uploaded
+     * recordings in a background job; nothing else changes. The caller closes the stream.
+     */
+    public java.io.InputStream openStream(String fileName) throws IOException {
+        if (fileName == null || fileName.contains("/") || fileName.contains("\\") || fileName.contains(".."))
+            throw new IOException("Invalid file name");
+        if ("s3".equalsIgnoreCase(provider)) {
+            return s3Client().getObject(GetObjectRequest.builder().bucket(s3Bucket).key(s3KeyPrefix + fileName).build());
+        }
+        return Files.newInputStream(Paths.get(uploadDir).resolve(fileName));
+    }
+
     public void delete(String fileName) throws IOException {
         if ("s3".equalsIgnoreCase(provider)) {
             s3Client().deleteObject(DeleteObjectRequest.builder()

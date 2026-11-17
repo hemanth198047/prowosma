@@ -21,8 +21,16 @@ const full = [...NAV_TOP, ...NAV_GROUPS.flatMap(g => g.items), ...NAV_BOTTOM];
 
 describe("navigation config", () => {
   it("keeps every link of the old full menu, once each", () => {
-    const routes = full.map(i => i.to);
+    // The only addition: the new AI Meeting Assistant, shown only when its feature flag is on.
+    const routes = full.map(i => i.to).filter(r => r !== "/ai-meeting-assistant");
     expect([...routes].sort()).toEqual([...OLD_FULL_MENU].sort());
+  });
+
+  it("lists the AI Meeting Assistant once, behind its feature flag", () => {
+    const items = full.filter(i => i.to === "/ai-meeting-assistant");
+    expect(items).toHaveLength(1);
+    expect(items[0].gate).toEqual({ flag: "aiMeetingAssistant" });
+    expect(NAV_RESTRICTED.some(i => i.to === "/ai-meeting-assistant")).toBe(false);
   });
 
   it("keeps every link of the old restricted menu", () => {
