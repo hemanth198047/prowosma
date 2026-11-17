@@ -18,7 +18,7 @@ What the first run does:
   empty - values you already have are never changed. Keep `ENCRYPTION_KEY` once you have data: it encrypts saved keys and sign-ins;
 - starts MongoDB locally (Windows service, an installed `mongod`, or Docker) unless `MONGODB_URI` in `backend/.env` points to a cloud database;
 - sets up `tools/stt-server` in its own Python environment (the speech model, ~500 MB, downloads the first time a recording is transcribed);
-- opens http://localhost:5173.
+- prints the address to open, http://localhost:5173 (add `-OpenBrowser` on Windows to have it opened for you).
 
 Windows opens a window per service; macOS/Linux writes logs to `.prowosma-run/logs/`. The older `start.bat` / `stop.bat` still work and
 start only the backend and frontend.

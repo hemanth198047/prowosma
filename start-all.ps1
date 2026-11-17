@@ -6,7 +6,7 @@
     2. Speech-to-text     (tools\stt-server, for the AI Meeting Assistant's recordings; port 8765)
     3. Local AI model     (only with -LocalAI: Ollama + qwen2.5:7b; otherwise the AI Settings provider is used)
     4. Backend            (Spring Boot, port 9090)
-    5. Frontend           (Vite, port 5173) - then opens the browser
+    5. Frontend           (Vite, port 5173) - then prints the address to open (add -OpenBrowser to open it automatically)
 
   First run installs what is missing (asks before using winget), creates backend\.env from .env.example, and adds
   JWT_SECRET / ENCRYPTION_KEY to it if they are empty. Existing values in backend\.env are never changed.
@@ -19,7 +19,7 @@
 param(
     [switch]$LocalAI,
     [switch]$NoSpeech,
-    [switch]$NoBrowser,
+    [switch]$OpenBrowser,              # also open the app in the browser at the end (off by default: no surprise extra window)
     [switch]$Yes,                      # answer "yes" to install questions
     [string]$SpeechModel = "small"     # tiny | base | small | medium | large-v3
 )
@@ -341,12 +341,13 @@ if (Port-Open 5173) {
 
 Say ""
 Say "  Prowosma is running" "Green"
-Say "    App:             http://localhost:5173"
+Say "    App:             http://localhost:5173   <- open this in your browser" "White"
 Say "    Backend:         http://localhost:9090"
 if (-not $NoSpeech) { Say "    Speech-to-text:  http://127.0.0.1:8765/health" }
 Say ""
 Say "  AI Meeting Assistant: an admin turns it on once in Admin Centre -> Feature flags -> 'AI Meeting Assistant (new)'." "DarkGray"
 Say "  Fireflies / Google Meet: AI Meeting Assistant -> Connections (setup: backend\docs\universal-meeting-assistant\09-CONNECTIONS-SETUP.md)." "DarkGray"
 Say "  Stop everything with stop-all.bat." "DarkGray"
-if (-not $NoBrowser) { Start-Process "http://localhost:5173" }
+# Only when asked: opening it automatically gave a second window to people who had already opened the app while it started.
+if ($OpenBrowser) { Start-Process "http://localhost:5173" }
 Say ""
