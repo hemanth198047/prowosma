@@ -43,14 +43,7 @@ The existing Meeting Assistant is unaffected by either.
 
 Jobs are claimed with a lease (`findAndModify`), so any number of instances can run the worker safely. Set `UMA_JOBS_ENABLED=false` on instances that should not do heavy work. Transcription temp files live in the instance's temp directory and are removed after each piece.
 
-## Local run (what was used for validation)
+## Local run
 
-```bash
-# MongoDB on 27017, then:
-cd tools/stt-server && pip install -r requirements.txt && STT_MODEL=small uvicorn server:app --port 8765
-cd backend && ./gradlew bootJar && \
-  JWT_SECRET=<64+ random chars> UMA_STT_BASE_URL=http://127.0.0.1:8765 UMA_STT_MODEL=small \
-  java -jar build/libs/prowosma-backend-0.0.1-SNAPSHOT.jar
-```
-
-On Windows (PowerShell) set the variables with `$env:UMA_STT_BASE_URL="http://127.0.0.1:8765"` before `java -jar`. Install ffmpeg (e.g. `winget install Gyan.FFmpeg`) so long recordings are split.
+Use the launcher in the project folder: `start-all.bat` (Windows) or `./start-all.sh` (macOS/Linux) - it starts MongoDB, the
+speech-to-text server, the backend and the frontend, and prepares `backend/.env` (see the project README). `stop-all` stops them.
