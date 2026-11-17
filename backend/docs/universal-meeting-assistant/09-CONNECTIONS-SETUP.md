@@ -64,26 +64,65 @@ calendar *events* (`calendar.events`) — to create meetings and read upcoming o
   any edition.
 - Fireflies: for the notetaker to be let in, the Meet host may need to admit it (or allow guests from outside the organisation).
 
-### 3.2 One-time Google Cloud setup (Workspace admin, ~15 minutes)
-1. **console.cloud.google.com** → create a project, e.g. "Prowosma Meeting Assistant".
-2. **APIs & Services → Library** → enable **Google Calendar API** and **Google Meet REST API**.
-3. **OAuth consent screen**: User type **Internal** (only your company's accounts; no Google review). App name "Prowosma", support email,
-   your domain. Scopes: `openid`, `email`, `https://www.googleapis.com/auth/meetings.space.readonly`, `https://www.googleapis.com/auth/calendar.events`.
-4. **Credentials → Create credentials → OAuth client ID → Web application**. **Authorised redirect URIs** — add both:
-   - `https://<your Prowosma address>/ai-meeting-assistant/google-callback` (the AI Meeting Assistant)
-   - `https://<your Prowosma address>/integrations/meeting-platforms/google-callback` (the existing Meeting Assistant, if you use it)
-   - for local testing also `http://localhost:5173/ai-meeting-assistant/google-callback`
-   Connections shows the exact address the server expects if you're unsure.
-5. Copy the **Client ID** and **Client secret** and give them to whoever runs the server through your secret channel (not chat or email).
+### 3.2 One-time Google Cloud setup, step by step (~10 minutes)
 
-### 3.3 Server settings
-```
-GOOGLE_MEET_OAUTH_CLIENT_ID=<client id>
-GOOGLE_MEET_OAUTH_CLIENT_SECRET=<client secret>
-FRONTEND_URL=https://<your Prowosma address>     # redirect = FRONTEND_URL + /ai-meeting-assistant/google-callback
-ENCRYPTION_KEY=<openssl rand -base64 32>          # start-all creates one locally
-```
-Locally, put these in `backend\.env` and run `start-all.bat`.
+First, in **console.cloud.google.com** → **APIs & Services → Library**, switch on **Google Calendar API** and **Google Meet REST API** in your project.
+
+**Part A - tell Google about the app**
+1. console.cloud.google.com → click the project name at the top → pick the project where the two APIs are on.
+2. ☰ menu → **APIs & Services → OAuth consent screen** (newer consoles call it **Google Auth Platform**; click **Get started** if shown).
+3. App information: App name `Prowosma`, User support email = yours → **Next**.
+4. Audience: **Internal** → **Next**. (Only your company's Google accounts can use it; no Google review.)
+   If *Internal* is greyed out, the project isn't inside your company's Google Workspace: choose **External** and add yourself under
+   **Audience → Test users** (in that mode Google signs you out of Prowosma every 7 days).
+5. Contact information: your email → **Next** → tick the agreement → **Create**.
+
+**Part B - say what Prowosma may look at**
+6. Left: **Data Access** (older: *Edit app → Scopes*) → **Add or remove scopes**.
+7. At the bottom, in **Manually add scopes**, paste:
+   ```
+   openid
+   email
+   https://www.googleapis.com/auth/meetings.space.readonly
+   https://www.googleapis.com/auth/calendar.events
+   ```
+   → **Add to table** → **Update** → **Save**.
+
+**Part C - make the key**
+8. Left: **Clients** → **+ Create client** (older: *APIs & Services → Credentials → + Create credentials → OAuth client ID*).
+9. Application type **Web application**, name `Prowosma`. Leave *Authorised JavaScript origins* empty.
+10. **Authorised redirect URIs → + Add URI**, exactly (http, port 5173, no `/` at the end):
+    `http://localhost:5173/ai-meeting-assistant/google-callback`
+    (optional, for the existing Meeting Platforms page: `http://localhost:5173/integrations/meeting-platforms/google-callback`;
+    once Prowosma is online, also `https://<your address>/ai-meeting-assistant/google-callback`)
+11. **Create** → copy the **Client ID** and **Client secret** (or **Download JSON** - newer consoles show the secret only once).
+
+### 3.3 Give the key to Prowosma
+
+**On your computer:**
+1. Open `backend\.env` in Notepad (run `start-all.bat` once if it doesn't exist yet).
+2. Add at the bottom - no spaces, no quotes:
+   ```
+   GOOGLE_MEET_OAUTH_CLIENT_ID=paste-the-client-id-here
+   GOOGLE_MEET_OAUTH_CLIENT_SECRET=paste-the-client-secret-here
+   ```
+3. Check `ENCRYPTION_KEY=` has a long value (start-all fills it in). Leave `FRONTEND_URL` as `http://localhost:5173`.
+4. Save, then `stop-all.bat` and `start-all.bat` (settings are read at start-up only).
+
+**On a server:** the same two values, plus `FRONTEND_URL=https://<your address>` and an `ENCRYPTION_KEY` (`openssl rand -base64 32`),
+and the matching https redirect URI added in step 10.
+
+**Try it:** AI Meeting Assistant → **Connections → Connect Google account** → choose the company account → **Allow** (tick Calendar if
+it's a tick box) → "Connected as …". Then **Add → Schedule a Google Meet** for 5 minutes from now with the Fireflies box ticked, join it,
+and wait for "Your meeting summary is ready."
+
+| What you see | Fix |
+|---|---|
+| `Error 400: redirect_uri_mismatch` | The address in step 10 isn't exactly the same (http / 5173 / no trailing `/`) |
+| "Access blocked … only within its organisation" | Sign in with the company Google account |
+| "Google hasn't verified this app" | You chose External: click Continue; your account must be a Test user |
+| Connections: "Google sign-in isn't set up on the server yet" | Check the two lines in `backend\.env`, then stop-all + start-all |
+| Connections: "Calendar access wasn't allowed" | Disconnect, connect again, and tick Calendar |
 
 ### 3.4 What we could and couldn't verify
 Built and tested against a scripted Google (sign-in with PKCE and single-use links; creating the event with a Meet link and invitations;
