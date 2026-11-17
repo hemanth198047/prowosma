@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle, ArrowLeft, CalendarPlus, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
-  Plug, Plus, RefreshCw, Send, Sparkles, Upload, X,
+  Plug, Plus, RefreshCw, Send, Sparkles, Upload, Video, X,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 import { useToast } from "../components/ToastContext";
@@ -16,7 +16,7 @@ import {
   cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
-  getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting,
+  getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
 } from "../api/aiMeetingAssistant";
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
@@ -431,6 +431,106 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
             <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
             <button type="submit" className="btn-primary pg-btn" disabled={busy}>
               {busy ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : <CalendarPlus size={14} aria-hidden="true" />}Create meeting
+            </button>
+          </div>
+        </form>
+      )}
+    </Dialog>
+  );
+}
+
+function InstantDialog({ onClose, onDone, projects, openConnections }) {
+  const { show: toast } = useToast();
+  const [google, setGoogle] = useState(null);
+  const [ff, setFf] = useState(null);
+  const [title, setTitle] = useState("");
+  const [minutes, setMinutes] = useState(30);
+  const [people, setPeople] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [autoFf, setAutoFf] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [created, setCreated] = useState(null);       // shown when the browser blocked the new tab
+  useEffect(() => {
+    getUmaGoogle().then((r) => setGoogle(r.data)).catch(() => setGoogle({ connected: false }));
+    getUmaFireflies().then((r) => setFf(r.data)).catch(() => setFf({ connected: false }));
+  }, []);
+  const ready = google?.connected && google?.calendar;
+  const start = async (e) => {
+    e.preventDefault();
+    setError("");
+    // Open the tab now, while the click still counts as the person's action - browsers block tabs opened later.
+    const tab = window.open("", "_blank");
+    if (tab) tab.document.write("<p style='font-family:sans-serif;padding:24px'>Creating your Google Meet…</p>");
+    setBusy(true);
+    try {
+      const attendees = people.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+      const r = await startUmaInstantMeeting({ title: title.trim() || undefined, durationMinutes: Number(minutes), timezone: tz(),
+        attendees, projectId: projectId || undefined, autoFireflies: !!ff?.connected && autoFf });
+      const url = r.data.meetingUrl;
+      if (tab && !tab.closed) { tab.location.href = url; toast("Your meeting is open in a new tab.", "success"); onDone(r.data); }
+      else { setCreated(r.data); setBusy(false); }
+    } catch (err) {
+      if (tab && !tab.closed) tab.close();
+      setError(apiErrorMessage(err, "The meeting couldn't be started."));
+      setBusy(false);
+    }
+  };
+  if (created) return (
+    <Dialog title="Your meeting is ready" onClose={() => onDone(created)}>
+      <div className="uma-form">
+        <p className="uma-hint">The browser didn't let us open a new tab. Join from here:</p>
+        <a className="btn-primary pg-btn" href={created.meetingUrl} target="_blank" rel="noreferrer noopener" onClick={() => onDone(created)}>
+          <Video size={15} aria-hidden="true" />Join the meeting</a>
+      </div>
+    </Dialog>
+  );
+  return (
+    <Dialog title="Start a meeting now" onClose={busy ? () => {} : onClose}>
+      {google === null ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Checking your Google connection…</p> : !ready ? (
+        <div className="uma-form">
+          <p className="uma-note uma-note--warn">
+            {google?.connected && !google?.calendar ? "Your Google account is connected without Calendar access. Connect it again from Connections and allow Calendar."
+              : "Connect your Google account first. The meeting is created in your Google Calendar with a Meet link."}
+          </p>
+          <div className="uma-dialog-actions">
+            <button type="button" className="btn-secondary pg-btn" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn-primary pg-btn" onClick={openConnections}><Plug size={14} aria-hidden="true" />Open Connections</button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={start} className="uma-form">
+          <p className="uma-hint">A Google Meet starting now, in {google.account}'s calendar. It opens in a new tab.</p>
+          <label className="uma-field"><span>Title <em>(optional)</em></span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Instant meeting" maxLength={200} />
+          </label>
+          <div className="uma-row2">
+            <label className="uma-field"><span>Invite <em>(optional)</em></span>
+              <input value={people} onChange={(e) => setPeople(e.target.value)} placeholder="priya@company.com, ravi@company.com" />
+            </label>
+            <label className="uma-field"><span>About how long</span>
+              <select value={minutes} onChange={(e) => setMinutes(e.target.value)}>
+                {[15, 30, 45, 60, 90].map((m) => <option key={m} value={m}>{m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? "s" : ""}`}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              <option value="">Choose later</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          {ff?.connected ? (
+            <label className="uma-check">
+              <input type="checkbox" checked={autoFf} onChange={(e) => setAutoFf(e.target.checked)} />
+              <span>Bring the Fireflies notetaker (it asks to join about a minute after you start - admit it)</span>
+            </label>
+          ) : <p className="uma-fine">Connect Fireflies (Connections) to have its notetaker join, or use Record meeting to record this tab.</p>}
+          {error && <p className="uma-error" role="alert">{error}</p>}
+          <div className="uma-dialog-actions">
+            <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
+            <button type="submit" className="btn-primary pg-btn" disabled={busy}>
+              {busy ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : <Video size={14} aria-hidden="true" />}Start meeting
             </button>
           </div>
         </form>
@@ -945,6 +1045,8 @@ function Detail({ id, team, projects }) {
   const [busy, setBusy] = useState(false);
   const [addRecording, setAddRecording] = useState(false);
   const [recordNow, setRecordNow] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNowTick(Date.now()), 30000); return () => clearInterval(t); }, []);
   const [ffConnected, setFfConnected] = useState(false);
   useEffect(() => { getUmaFireflies().then((r) => setFfConnected(!!r.data?.connected)).catch(() => {}); }, []);
   const wasWorking = useRef(false);
@@ -1096,6 +1198,10 @@ function Detail({ id, team, projects }) {
       )}
       {canAddContent && (
         <div className="uma-add-content">
+          {m.status === "CREATED" && m.meetingUrl && m.meetingAt && new Date(m.meetingAt) <= new Date(nowTick)
+            && (!m.meetingEndAt || new Date(m.meetingEndAt) > new Date(nowTick)) && (
+            <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"><Video size={14} aria-hidden="true" />Join meeting</a>
+          )}
           {m.status === "CREATED" && (
             <button type="button" className="btn-primary pg-btn" onClick={() => setRecordNow(true)}><Circle size={12} fill="currentColor" aria-hidden="true" />Record it now</button>
           )}
@@ -1195,7 +1301,8 @@ export default function AiMeetingAssistant() {
                 { label: "Import from Fireflies", icon: Download, onSelect: () => setDialog("fireflies") },
               ]}><Plus size={15} aria-hidden="true" />Add</ActionMenu>
               <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
-              <button type="button" className="btn-primary pg-btn" onClick={() => setDialog("record")}><Circle size={13} fill="currentColor" aria-hidden="true" />Record meeting</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("record")}><Circle size={13} fill="currentColor" aria-hidden="true" />Record meeting</button>
+              <button type="button" className="btn-primary pg-btn" onClick={() => setDialog("instant")}><Video size={15} aria-hidden="true" />Meet now</button>
             </div>
           )}
         </header>
@@ -1203,6 +1310,8 @@ export default function AiMeetingAssistant() {
       {id ? <Detail key={id} id={id} team={team} projects={projects} /> : <Dashboard openDialog={setDialog} />}
       {dialog === "upload" && <UploadDialog projects={projects} readiness={readiness} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === "import" && <ImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "instant" && <InstantDialog projects={projects} onClose={() => setDialog(null)} onDone={done}
+        openConnections={() => setDialog("connections")} />}
       {dialog === "schedule" && <ScheduleDialog projects={projects} onClose={() => setDialog(null)} onDone={done}
         openConnections={() => setDialog("connections")} />}
       {dialog === "fireflies" && <FirefliesImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}

@@ -114,7 +114,7 @@ public class UmaCalendar {
         catch (IOException e) { throw new UmaException(HttpStatus.BAD_GATEWAY, "GOOGLE_BAD_RESPONSE", "Google's reply couldn't be read.", "Try again."); }
     }
 
-    static String validZone(String tz) {
+    public static String validZone(String tz) {
         try { return tz == null || tz.isBlank() ? "UTC" : ZoneId.of(tz).getId(); } catch (Exception e) { return "UTC"; }
     }
 

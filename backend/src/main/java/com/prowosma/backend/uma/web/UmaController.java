@@ -132,6 +132,15 @@ public class UmaController {
                 b.timezone(), b.attendees(), b.description(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies())));
     }
 
+    public record InstantBody(String title, Integer durationMinutes, String timezone, List<String> attendees, String projectId, Boolean autoFireflies) {}
+
+    /** "Meet now": a Google Meet starting right away, with invitations and the same automation as a scheduled meeting. */
+    @PostMapping("/meetings/instant")
+    public ResponseEntity<UmaMeeting> instant(@RequestBody InstantBody b, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.instantMeeting(ctx(auth), b.title(), b.durationMinutes(), b.timezone(),
+                b.attendees(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies())));
+    }
+
     public record AutomationBody(Boolean autoFireflies) {}
 
     @PutMapping("/meetings/{id}/automation")

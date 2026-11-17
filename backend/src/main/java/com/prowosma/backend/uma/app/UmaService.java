@@ -547,6 +547,31 @@ public class UmaService {
         return store.meeting(c.org(), m.getId()).orElse(m);
     }
 
+    /**
+     * "Meet now": a Google Meet that starts right away, in the person's Google Calendar (so invitations go out and it is on record), with the
+     * same automation as a scheduled meeting - Fireflies is sent immediately and keeps trying until the meeting is running, then the
+     * transcript is fetched and summarised.
+     */
+    public static final java.time.Duration INSTANT_JOIN_DELAY = java.time.Duration.ofMinutes(1);
+
+    public UmaMeeting instantMeeting(Ctx c, String title, Integer durationMinutes, String timezone, List<String> attendees,
+                                     String projectId, boolean autoFireflies) {
+        String zone = com.prowosma.backend.uma.core.UmaCalendar.validZone(timezone);
+        String t = title != null && !title.isBlank() ? title
+                : "Instant meeting - " + java.time.format.DateTimeFormatter.ofPattern("d MMM, HH:mm").withZone(java.time.ZoneId.of(zone)).format(Instant.now());
+        Instant start = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        UmaMeeting m = scheduleMeeting(c, t, start, durationMinutes == null ? 30 : durationMinutes, zone, attendees, null, projectId, autoFireflies);
+        if (m.isAutoFireflies() && m.getStatus() == UmaStatus.CREATED) {
+            // Give the person a minute to open Meet, so someone is there to admit the notetaker when it asks to join.
+            queue.enqueueAt(c.org(), m.getId(), UmaPipeline.FIREFLIES_JOIN, c.caller().email(), Instant.now().plus(INSTANT_JOIN_DELAY));
+            m.setStatusDetail("Open the meeting now. Fireflies' notetaker asks to join in about a minute - admit it. "
+                    + "The summary is ready a few minutes after the meeting ends.");
+            m = store.save(m);
+        }
+        store.audit(c.org(), m.getId(), c.caller().email(), "INSTANT_MEETING", null);
+        return m;
+    }
+
     /** Switches the automatic Fireflies join on or off for a meeting that hasn't happened yet. */
     public UmaMeeting setAutoFireflies(Ctx c, String id, boolean on) {
         UmaMeeting m = manageable(c, id);

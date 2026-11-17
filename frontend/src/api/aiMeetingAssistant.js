@@ -87,3 +87,4 @@ export const syncUmaCalendar       = ()            => client.post(`${BASE}/conne
 export const scheduleUmaMeeting    = (data)        => client.post(`${BASE}/meetings/schedule`, data);
 export const setUmaAutoFireflies   = (id, on)      => client.put(`${BASE}/meetings/${id}/automation`, { autoFireflies: on });
 export const checkUmaMeeting       = (id)          => client.post(`${BASE}/meetings/${id}/check`);
+export const startUmaInstantMeeting = (data)        => client.post(`${BASE}/meetings/instant`, data);

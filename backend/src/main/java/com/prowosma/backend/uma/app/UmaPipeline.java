@@ -178,7 +178,10 @@ public class UmaPipeline {
             case "FAIL" -> fail(job, m, c.code(), c.note(), c.recovery(), false);
             default -> {
                 UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
-                fresh.setStatusDetail(c.note());
+                // Fireflies' note ("asks to join, admit it", "in the meeting") is more useful; Google's waits quietly beside it.
+                boolean firefliesBusy = automation.pendingCapture(fresh).stream()
+                        .anyMatch(j -> FIREFLIES_JOIN.equals(j.getType()) || FETCH_FIREFLIES.equals(j.getType()));
+                if (!firefliesBusy) fresh.setStatusDetail(c.note());
                 if (fresh.getGoogle() != null) fresh.getGoogle().setLastNote(c.note());
                 store.save(fresh);
                 queue.pollAgain(job, c.again());

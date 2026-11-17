@@ -14,7 +14,7 @@ const api = vi.hoisted(() => ({
   getUmaDashboard: vi.fn(), getUmaMeeting: vi.fn(), getUmaProviders: vi.fn(), uploadUmaRecording: vi.fn(),
   approveUmaAction: vi.fn(), editUmaAction: vi.fn(), askUma: vi.fn(), retryUmaMeeting: vi.fn(),
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
-  getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
+  getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), startUmaInstantMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
@@ -125,6 +125,62 @@ describe("AI Meeting Assistant (simulated API)", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Check now/ }));
     await waitFor(() => expect(api.checkUmaMeeting).toHaveBeenCalledWith("x1"));
+  });
+
+  describe("Meet now", () => {
+    const connected = () => {
+      api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
+      api.getUmaGoogle.mockResolvedValue({ data: { connected: true, calendar: true, account: "me@acme.test" } });
+      api.getUmaMeeting.mockResolvedValue(meeting());
+    };
+    const openDialog = async () => {
+      at("/ai-meeting-assistant");
+      fireEvent.click(await screen.findByRole("button", { name: /Meet now/ }));
+      return screen.findByRole("dialog", { name: "Start a meeting now" });
+    };
+
+    it("opens a tab at the click, then points it at the new Meet", async () => {
+      connected();
+      const tab = { closed: false, close: vi.fn(), location: { href: "" }, document: { write: vi.fn() } };
+      const open = vi.spyOn(window, "open").mockReturnValue(tab);
+      api.startUmaInstantMeeting.mockResolvedValue({ data: { id: "x1", meetingUrl: "https://meet.google.com/abc-defg-hij" } });
+      const dialog = await openDialog();
+      fireEvent.change(await within(dialog).findByLabelText(/Invite/), { target: { value: "priya@acme.test" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /Start meeting/ }));
+      expect(open).toHaveBeenCalledTimes(1);                       // synchronously, inside the click
+      await waitFor(() => expect(tab.location.href).toBe("https://meet.google.com/abc-defg-hij"));
+      expect(api.startUmaInstantMeeting.mock.calls[0][0]).toMatchObject({ attendees: ["priya@acme.test"], autoFireflies: true, durationMinutes: 30 });
+      open.mockRestore();
+    });
+
+    it("shows a Join button when the browser blocks the new tab", async () => {
+      connected();
+      const open = vi.spyOn(window, "open").mockReturnValue(null);
+      api.startUmaInstantMeeting.mockResolvedValue({ data: { id: "x1", meetingUrl: "https://meet.google.com/abc-defg-hij" } });
+      const dialog = await openDialog();
+      fireEvent.click(await within(dialog).findByRole("button", { name: /Start meeting/ }));
+      const join = await screen.findByRole("link", { name: /Join the meeting/ });
+      expect(join).toHaveAttribute("href", "https://meet.google.com/abc-defg-hij");
+      open.mockRestore();
+    });
+
+    it("closes the empty tab and explains when the meeting can't be created", async () => {
+      connected();
+      const tab = { closed: false, close: vi.fn(), location: { href: "" }, document: { write: vi.fn() } };
+      const open = vi.spyOn(window, "open").mockReturnValue(tab);
+      api.startUmaInstantMeeting.mockRejectedValue({ response: { data: { message: "Google Calendar is busy." } } });
+      const dialog = await openDialog();
+      fireEvent.click(await within(dialog).findByRole("button", { name: /Start meeting/ }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent("Google Calendar is busy.");
+      expect(tab.close).toHaveBeenCalled();
+      open.mockRestore();
+    });
+
+    it("asks to connect Google first", async () => {
+      await openDialog();
+      expect(await screen.findByText(/Connect your Google account first/)).toBeInTheDocument();
+      expect(api.startUmaInstantMeeting).not.toHaveBeenCalled();
+    });
   });
 
   it("asks to connect Google before scheduling", async () => {
