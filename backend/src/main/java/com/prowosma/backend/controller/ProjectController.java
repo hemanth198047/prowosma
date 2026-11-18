@@ -114,6 +114,18 @@ public class ProjectController {
         return visibility.redact(projectService.update(id, project));
     }
 
+    @PostMapping("/{id}/archive")
+    @Operation(summary = "Archive a project", description = "Moves it out of the active lists; nothing is deleted. Undo with /unarchive.")
+    public Project archive(@PathVariable String id, Authentication auth) {
+        return visibility.redact(projectService.setArchived(id, true, auth != null ? auth.getName() : null));
+    }
+
+    @PostMapping("/{id}/unarchive")
+    @Operation(summary = "Unarchive a project", description = "Restores the status it had before it was archived.")
+    public Project unarchive(@PathVariable String id, Authentication auth) {
+        return visibility.redact(projectService.setArchived(id, false, auth != null ? auth.getName() : null));
+    }
+
     /**
      * Who can see this project and who is named on it. Body (all optional, omitted = unchanged):
      * visibility, departmentIds, memberEmails, roleAssignments (slot key to email), approverEmails.

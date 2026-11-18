@@ -117,6 +117,38 @@ public class ProjectService {
         return saved;
     }
 
+    /**
+     * Archives or restores a project. Archiving keeps everything (tasks, sub-projects, history): the project moves out of
+     * the active lists and its status becomes ARCHIVED; unarchiving puts back the status it had before.
+     */
+    public Project setArchived(String id, boolean archive, String byEmail) {
+        Project existing = getById(id);
+        visibility.requireCanEditProject(existing);
+        if (existing.isArchived() == archive) return existing;                 // already so: nothing to do
+        if (archive) {
+            existing.setStatusBeforeArchive(existing.getStatus());
+            existing.setStatus("ARCHIVED");
+            existing.setArchived(true);
+            existing.setArchivedAt(LocalDateTime.now());
+            existing.setArchivedBy(byEmail);
+        } else {
+            String back = existing.getStatusBeforeArchive();
+            existing.setStatus(back == null || back.isBlank() || "ARCHIVED".equalsIgnoreCase(back) ? "ACTIVE" : back);
+            existing.setStatusBeforeArchive(null);
+            existing.setArchived(false);
+            existing.setArchivedAt(null);
+            existing.setArchivedBy(null);
+        }
+        existing.setUpdatedAt(LocalDateTime.now());
+        Project saved = projectRepository.save(existing);
+        activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
+                archive ? "PROJECT_ARCHIVED" : "PROJECT_UNARCHIVED", null, null, null, saved.getId(), null, null);
+        realtimeService.broadcast(workspaceContext.getWorkspaceId(), "PROJECT_UPDATED",
+                "PROJECT", saved.getId(), saved.getName(), null,
+                (archive ? "Project archived: " : "Project restored: ") + saved.getName());
+        return saved;
+    }
+
     /** Changes who can see the project and who is named on it. Separate from update(), which never touches these fields. */
     public Project updateAccess(String id, String visibilityValue, List<String> departmentIds,
                                 List<String> memberEmails, java.util.Map<String, String> roles, List<String> approvers) {

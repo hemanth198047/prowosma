@@ -13,6 +13,8 @@ import {
   createProject,
   updateProject,
   deleteProject,
+  archiveProject,
+  unarchiveProject,
   getProjectProgress,
 } from "../api/projects";
 import { getCategories, createCategory } from "../api/categories";
@@ -696,7 +698,7 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
 // ── Everything you can do to one project ─────────────────────
 // Shared by the card and the list row so both offer exactly the same
 // actions (the old card's icon buttons, now named, in one ⋯ menu).
-function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub }) {
+function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive }) {
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
@@ -723,11 +725,7 @@ function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub }) {
       await import("../api/client").then(m => m.default.post(`/projects/${p.id}/clone`, { name }));
       window.location.reload();
     } },
-    { label: p.archived ? "Unarchive" : "Archive", icon: p.archived ? ArchiveRestore : Archive, onSelect: async () => {
-      await import("../api/client").then(m => m.default.patch(`/projects/${p.id}`,
-        { archived: !p.archived, status: !p.archived ? "PAUSED" : p.status }));
-      window.location.reload();
-    } },
+    { label: p.archived ? "Unarchive" : "Archive", icon: p.archived ? ArchiveRestore : Archive, onSelect: () => onArchive(p) },
     { label: "Delete", icon: Trash2, danger: true, onSelect: () => onDelete(p.id) },
   ];
 
@@ -852,21 +850,23 @@ function SubProjects({ subProjects, subProgress, navigate, onEditSub, onDeleteSu
 }
 
 function ProjectMeta({ p, cat }) {
-  if (!cat && !p.linkedGoalId && !p.archived) return null;
+  // The status label already says "Archived" when the status is ARCHIVED; the tag is only for older data.
+  const archivedTag = p.archived && String(p.status || "").toUpperCase() !== "ARCHIVED";
+  if (!cat && !p.linkedGoalId && !archivedTag) return null;
   return (
     <div className="pj-meta">
       {cat && <span className="pj-chip"><span className="pj-chip-dot" style={{ background: cat.color }} aria-hidden="true" />{cat.name}</span>}
       {p.linkedGoalId && <span className="pj-chip"><Target size={12} aria-hidden="true" />Linked to goal</span>}
-      {p.archived && <span className="pj-chip"><Archive size={12} aria-hidden="true" />Archived</span>}
+      {archivedTag && <span className="pj-chip"><Archive size={12} aria-hidden="true" />Archived</span>}
     </div>
   );
 }
 
 function ProjectCard({
   p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
-  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive,
 }) {
-  const { items, modals, panels, team, openTeam } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub });
+  const { items, modals, panels, team, openTeam } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive });
   const color = p.color || "var(--brand-500)";
   return (
     <article
@@ -899,9 +899,9 @@ function ProjectCard({
 
 function ProjectRow({
   p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
-  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive,
 }) {
-  const { items, modals, panels, team, openTeam, hasPanel } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub });
+  const { items, modals, panels, team, openTeam, hasPanel } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive });
   const color = p.color || "var(--brand-500)";
   const emails = team.memberEmails || [];
   return (
@@ -1091,6 +1091,29 @@ export default function Projects() {
     }
   };
 
+  // Archive keeps everything (tasks, sub-projects, history) and moves the project to the "Archived" section.
+  const handleArchive = async (p) => {
+    const archiving = !p.archived;
+    if (archiving) {
+      const ok = await confirm({
+        title: `Archive "${p.name}"?`,
+        message: "It moves to the Archived section at the bottom of this page and out of active lists. Nothing is deleted - its tasks and history stay, and you can unarchive it any time.",
+        confirmText: "Archive project",
+      });
+      if (!ok) return;
+    }
+    try {
+      const res = archiving ? await archiveProject(p.id) : await unarchiveProject(p.id);
+      const saved = res.data || {};
+      const apply = (x) => (x.id === p.id ? { ...x, archived: saved.archived ?? archiving, status: saved.status ?? x.status } : x);
+      setProjects((prev) => prev.map(apply));
+      setSubProjectsMap((prev) => Object.fromEntries(Object.entries(prev).map(([k, list]) => [k, list.map(apply)])));
+      showToast(archiving ? `"${p.name}" archived. You'll find it under Archived at the bottom.` : `"${p.name}" is back in your active projects.`, "success");
+    } catch (err) {
+      showToast(apiErrorMessage(err, archiving ? "Couldn't archive the project. Please try again." : "Couldn't unarchive the project. Please try again."), "error");
+    }
+  };
+
   const handleExportCSV = () => {
     const data = filtered.map((p) => ({
       Name: p.name,
@@ -1165,6 +1188,7 @@ export default function Projects() {
     highlightColor,
     onEdit: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
     onDelete: handleDelete,
+    onArchive: handleArchive,
     onAddSub: openAddSub,
     // Only called from the explicit edit button inside SubProjectCard
     onEditSub: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
@@ -1178,6 +1202,7 @@ export default function Projects() {
     { key: "notstarted", label: "not started", value: summary.notstarted },
     { key: "paused", label: "paused", value: summary.paused },
     { key: "done", label: "done", value: summary.done },
+    { key: "archived", label: "archived", value: summary.archived },
   ].filter(s => s.value > 0 || s.key === "motion");
 
   return (
