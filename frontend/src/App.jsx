@@ -500,6 +500,7 @@ function AppShell() {
                   <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/google-callback" element={<ProtectedRoute><AiMeetingGoogleCallback /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant/microsoft-callback" element={<ProtectedRoute><AiMeetingGoogleCallback provider="microsoft" /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms/google-callback" element={<ProtectedRoute><GoogleMeetCallback /></ProtectedRoute>} />

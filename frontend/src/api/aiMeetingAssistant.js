@@ -78,6 +78,16 @@ export const sendUmaNotetaker    = (id)    => client.post(`${BASE}/meetings/${id
 export const getUmaGoogle        = ()      => client.get(`${BASE}/connections/google`, fresh);
 export const authorizeUmaGoogle  = ()      => client.post(`${BASE}/connections/google/authorize`);
 export const disconnectUmaGoogle = ()      => client.delete(`${BASE}/connections/google`);
+export const getUmaMicrosoft        = ()      => client.get(`${BASE}/connections/microsoft`, fresh);
+export const authorizeUmaMicrosoft  = ()      => client.post(`${BASE}/connections/microsoft/authorize`);
+export const completeUmaMicrosoft   = (code, state) => client.post(`${BASE}/connections/microsoft/complete`, { code, state });
+export const disconnectUmaMicrosoft = ()      => client.delete(`${BASE}/connections/microsoft`);
+// What the assistant does on its own after a meeting (workspace, admins) and each person's preferences
+export const getUmaAutomationSettings = ()    => client.get(`${BASE}/settings/automation`, fresh);
+export const saveUmaWorkspaceAutomation = (data) => client.put(`${BASE}/settings/automation`, data);
+export const saveUmaMyPreferences = (data)    => client.put(`${BASE}/settings/me`, data);
+// Projects a meeting asked for: op = create | link | dismiss
+export const decideUmaProject = (id, itemId, op, projectId) => client.post(`${BASE}/meetings/${id}/projects/${itemId}/${op}`, projectId ? { projectId } : {});
 export const fetchUmaGoogle      = (id)    => client.post(`${BASE}/meetings/${id}/google/fetch`);
 
 // Google sign-in for this module (Meet + Calendar), scheduling and automation

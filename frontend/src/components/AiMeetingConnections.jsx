@@ -9,13 +9,14 @@ import { useToast } from "./ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import {
   getUmaFireflies, saveUmaFirefliesKey, removeUmaFireflies, getUmaGoogle, authorizeUmaGoogle, disconnectUmaGoogle,
-  setUmaGooglePrefs, syncUmaCalendar,
+  setUmaGooglePrefs, syncUmaCalendar, getUmaMicrosoft, authorizeUmaMicrosoft, disconnectUmaMicrosoft,
 } from "../api/aiMeetingAssistant";
 
 export default function AiMeetingConnections({ isAdmin, onClose, onChanged }) {
   const { show: toast } = useToast();
   const [ff, setFf] = useState(null);
   const [google, setGoogle] = useState(null);
+  const [ms, setMs] = useState(null);
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -23,6 +24,7 @@ export default function AiMeetingConnections({ isAdmin, onClose, onChanged }) {
   useEffect(() => {
     getUmaFireflies().then((r) => setFf(r.data)).catch(() => setFf({ connected: false }));
     getUmaGoogle().then((r) => setGoogle(r.data)).catch(() => setGoogle({ configured: false }));
+    getUmaMicrosoft().then((r) => setMs(r.data)).catch(() => setMs({ configured: false }));
   }, []);
 
   const saveKey = async () => {
@@ -109,6 +111,34 @@ export default function AiMeetingConnections({ isAdmin, onClose, onChanged }) {
                 {google.status === "NEEDS_REAUTH" && <span className="uma-fine">Google asked for a new sign-in.</span>}
                 <button type="button" className="btn-primary pg-btn" onClick={connectGoogle} disabled={busy === "g" || google.canStoreTokens === false}>Connect Google account</button>
                 {google.canStoreTokens === false && <span className="uma-fine">The server needs ENCRYPTION_KEY before sign-ins can be saved.</span>}
+              </div>
+            )}
+          </section>
+
+          <section className="uma-conn">
+            <h3>Microsoft 365 <span className="uma-fine">- your own work account, for Teams</span></h3>
+            <p className="uma-hint">Start and schedule Teams meetings from Prowosma (Microsoft sends the invitations), and read Teams' transcript after meetings you organised.</p>
+            {!ms ? <Loader2 size={14} className="uma-spin" aria-label="Loading" /> : !ms.configured ? (
+              <p className="uma-fine">Not set up on the server yet. An admin registers an app in Microsoft Entra and adds its client ID and secret (setup guide: 09-CONNECTIONS-SETUP).</p>
+            ) : ms.connected ? (
+              <div className="uma-conn-row">
+                <span className="uma-ok"><CheckCircle2 size={14} aria-hidden="true" />Connected as {ms.account}</span>
+                {!ms.canReadTranscripts && <span className="uma-fine">Reading Teams transcripts wasn't allowed - your Microsoft admin approves it once for the organisation.</span>}
+                <button type="button" className="btn-secondary pg-btn" disabled={busy === "ms"} onClick={async () => {
+                  setBusy("ms");
+                  try { const r = await disconnectUmaMicrosoft(); setMs(r.data); toast("Microsoft account disconnected.", "success"); onChanged?.(); }
+                  catch (e) { setError(apiErrorMessage(e, "Couldn't disconnect.")); }
+                  finally { setBusy(""); }
+                }}>Disconnect</button>
+              </div>
+            ) : (
+              <div className="uma-conn-row">
+                {ms.status === "NEEDS_REAUTH" && <span className="uma-fine">Microsoft asked for a new sign-in.</span>}
+                <button type="button" className="btn-primary pg-btn" disabled={busy === "ms"} onClick={async () => {
+                  setBusy("ms"); setError("");
+                  try { const r = await authorizeUmaMicrosoft(); window.location.assign(r.data.url); }
+                  catch (e) { setError(apiErrorMessage(e, "Couldn't start the Microsoft sign-in.")); setBusy(""); }
+                }}>Connect Microsoft account</button>
               </div>
             )}
           </section>

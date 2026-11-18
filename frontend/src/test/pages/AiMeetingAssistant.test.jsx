@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   approveUmaAction: vi.fn(), editUmaAction: vi.fn(), askUma: vi.fn(), retryUmaMeeting: vi.fn(),
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
   getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), startUmaInstantMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
+  getUmaMicrosoft: vi.fn(), getUmaAutomationSettings: vi.fn(), saveUmaMyPreferences: vi.fn(), saveUmaWorkspaceAutomation: vi.fn(), decideUmaProject: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
@@ -69,6 +70,9 @@ describe("AI Meeting Assistant (simulated API)", () => {
     api.getUmaDashboard.mockResolvedValue(dash());
     api.getUmaFireflies.mockResolvedValue({ data: { connected: false } });
     api.getUmaGoogle.mockResolvedValue({ data: { connected: false, configured: true } });
+    api.getUmaMicrosoft.mockResolvedValue({ data: { connected: false, configured: true } });
+    api.getUmaAutomationSettings.mockResolvedValue({ data: { mine: { defaultPlatform: "GOOGLE_MEET", autoTasks: true },
+      workspace: { autoCreateTasks: true, autoAssign: true, autoCreateProjects: true, maxAutoTasksPerMeeting: 25 }, canChangeWorkspace: true } });
   });
 
   it("explains honestly how a linked meeting gets captured, and offers Fireflies at the start time", async () => {
@@ -100,8 +104,8 @@ describe("AI Meeting Assistant (simulated API)", () => {
     api.getUmaMeeting.mockResolvedValue(meeting());
     at("/ai-meeting-assistant");
     fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a Google Meet" }));
-    const dialog = await screen.findByRole("dialog", { name: "Schedule a Google Meet" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a meeting" }));
+    const dialog = await screen.findByRole("dialog", { name: "Schedule a meeting" });
     fireEvent.change(await within(dialog).findByLabelText("Title"), { target: { value: "Launch review" } });
     fireEvent.change(within(dialog).getByLabelText(/Invite/), { target: { value: "priya@acme.test, ravi@acme.test" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /Create meeting/ }));
@@ -186,7 +190,7 @@ describe("AI Meeting Assistant (simulated API)", () => {
   it("asks to connect Google before scheduling", async () => {
     at("/ai-meeting-assistant");
     fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a Google Meet" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a meeting" }));
     expect(await screen.findByText(/Connect your Google account first/)).toBeInTheDocument();
     expect(api.scheduleUmaMeeting).not.toHaveBeenCalled();
   });
@@ -318,5 +322,71 @@ describe("AI Meeting Assistant (simulated API)", () => {
     at("/ai-meeting-assistant/x1");
     fireEvent.click(await screen.findByRole("tab", { name: "Ask AI" }));
     expect(screen.getByText("This meeting's transcript doesn't clearly answer that.")).toHaveClass("uma-a--none");
+  });
+
+  it("schedules a Teams meeting when Teams is chosen, and asks to connect Microsoft when it isn't", async () => {
+    api.getUmaGoogle.mockResolvedValue({ data: { connected: true, calendar: true, account: "me@acme.test" } });
+    api.getUmaMicrosoft.mockResolvedValue({ data: { connected: false, configured: true } });
+    at("/ai-meeting-assistant");
+    fireEvent.click(await screen.findByRole("button", { name: /Add/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a meeting" }));
+    const dialog = await screen.findByRole("dialog", { name: "Schedule a meeting" });
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Microsoft Teams" }));
+    expect(within(dialog).getByText(/Connect your Microsoft 365 account first/)).toBeInTheDocument();
+
+    // connected: the request says Teams
+    api.getUmaMicrosoft.mockResolvedValue({ data: { connected: true, canSchedule: true, account: "me@contoso.test" } });
+    api.getUmaAutomationSettings.mockResolvedValue({ data: { mine: { defaultPlatform: "MS_TEAMS", autoTasks: true }, workspace: {}, canChangeWorkspace: false } });
+    api.scheduleUmaMeeting.mockResolvedValue({ data: { id: "x1" } });
+    api.getUmaMeeting.mockResolvedValue(meeting());
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: /Add/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Schedule a meeting" }));
+    const again = await screen.findByRole("dialog", { name: "Schedule a meeting" });
+    expect(await within(again).findByRole("button", { name: "Microsoft Teams" })).toHaveAttribute("aria-pressed", "true");   // the person's default
+    expect(within(again).getByText(/me@contoso.test's Outlook/)).toBeInTheDocument();
+    fireEvent.change(within(again).getByLabelText("Title"), { target: { value: "Kickoff" } });
+    fireEvent.click(within(again).getByRole("button", { name: /Create meeting/ }));
+    await waitFor(() => expect(api.scheduleUmaMeeting).toHaveBeenCalled());
+    expect(api.scheduleUmaMeeting.mock.calls[0][0]).toMatchObject({ title: "Kickoff", platform: "MS_TEAMS" });
+    expect(toastShow).toHaveBeenCalledWith("Meeting created in Outlook.", "success");
+  });
+
+  it("shows what was done automatically, why the rest waits, and lets a suggested project be created", async () => {
+    const base = meeting().data;
+    api.getUmaMeeting.mockResolvedValue({ data: { ...base, insights: { ...base.insights,
+      automation: { tasksCreated: 3, tasksAssigned: 3, projectsCreated: 1, projectsLinked: 0, needsReview: 1, failed: 0, tasksEnabled: true,
+        notes: ["\"Develop the React frontend\" was created without a deadline: \"next Friday\" is ambiguous (probably 2026-11-27). Set it on the task."] },
+      projects: [{ id: "p1", name: "Customer Portal Development", intent: "PROPOSAL", status: "PROPOSED", evidence: [2],
+        reviewReason: "Suggested in the meeting, not clearly asked for. Create it if you want it." }],
+      actions: [{ ...base.insights.actions[0], reviewReason: "\"Ravi\" isn't one of the people invited to this meeting. Confirm the owner.", dependsOn: "after the API specifications are finalized" }],
+    } } });
+    api.decideUmaProject.mockResolvedValue({ data: {} });
+    at("/ai-meeting-assistant/x1");
+    const report = await screen.findByRole("region", { name: "What was done automatically" });
+    expect(within(report).getByText(/task.*created/)).toBeInTheDocument();
+    expect(within(report).getByText(/next Friday/)).toBeInTheDocument();
+    expect(within(report).getByRole("button", { name: /needs your review/ })).toBeInTheDocument();
+    expect(screen.getByText(/Suggested in the meeting/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create project" }));
+    await waitFor(() => expect(api.decideUmaProject).toHaveBeenCalledWith("x1", "p1", "create", undefined));
+
+    fireEvent.click(screen.getByRole("tab", { name: /Action items/ }));
+    expect(await screen.findByText(/isn't one of the people invited/)).toBeInTheDocument();
+    expect(screen.getByText("Depends on: after the API specifications are finalized")).toBeInTheDocument();
+  });
+
+  it("settings: people choose their meeting app and automatic tasks; workspace rules are read-only for non-admins", async () => {
+    api.getUmaAutomationSettings.mockResolvedValue({ data: { mine: { defaultPlatform: "GOOGLE_MEET", autoTasks: true },
+      workspace: { autoCreateTasks: true, autoAssign: true, autoCreateProjects: true, maxAutoTasksPerMeeting: 25 }, canChangeWorkspace: false } });
+    api.saveUmaMyPreferences.mockResolvedValue({ data: { mine: { defaultPlatform: "MS_TEAMS", autoTasks: true },
+      workspace: { autoCreateTasks: true, autoAssign: true, autoCreateProjects: true, maxAutoTasksPerMeeting: 25 }, canChangeWorkspace: false } });
+    at("/ai-meeting-assistant");
+    fireEvent.click(await screen.findByRole("button", { name: /Settings/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Microsoft Teams" }));
+    await waitFor(() => expect(api.saveUmaMyPreferences).toHaveBeenCalledWith({ defaultPlatform: "MS_TEAMS" }));
+    expect(within(dialog).getByRole("checkbox", { name: /Create a project when someone clearly asks/ })).toBeDisabled();
+    expect(within(dialog).getByRole("checkbox", { name: /Create clearly agreed tasks from my meetings/ })).toBeEnabled();
   });
 });

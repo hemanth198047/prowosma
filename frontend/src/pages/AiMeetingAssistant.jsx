@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle, ArrowLeft, CalendarPlus, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
-  Plug, Plus, RefreshCw, Send, Sparkles, Upload, Video, X,
+  Plug, Plus, RefreshCw, Send, Settings, Sparkles, Upload, Video, X,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 import { useToast } from "../components/ToastContext";
@@ -17,6 +17,7 @@ import {
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
   getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
+  getUmaMicrosoft, getUmaAutomationSettings, saveUmaWorkspaceAutomation, saveUmaMyPreferences, decideUmaProject,
 } from "../api/aiMeetingAssistant";
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
@@ -340,10 +341,54 @@ function LinkDialog({ onClose, onDone, projects }) {
   );
 }
 
+const PLATFORM_NAME = { GOOGLE_MEET: "Google Meet", MS_TEAMS: "Microsoft Teams" };
+const CALENDAR_NAME = { GOOGLE_MEET: "Google Calendar", MS_TEAMS: "Outlook" };
+
+/** Google and Microsoft connections, Fireflies, and the person's default platform - what the meeting dialogs need. */
+function usePlatforms() {
+  const [s, setS] = useState({ loaded: false, google: null, microsoft: null, ff: null, platform: "GOOGLE_MEET" });
+  useEffect(() => {
+    let live = true;
+    Promise.all([
+      getUmaGoogle().then((r) => r.data).catch(() => ({ connected: false })),
+      getUmaMicrosoft().then((r) => r.data).catch(() => ({ connected: false, configured: false })),
+      getUmaFireflies().then((r) => r.data).catch(() => ({ connected: false })),
+      getUmaAutomationSettings().then((r) => r.data?.mine?.defaultPlatform).catch(() => null),
+    ]).then(([google, microsoft, ff, preferred]) => {
+      if (!live) return;
+      // The person's default, unless only the other one is connected.
+      let platform = preferred || "GOOGLE_MEET";
+      const ok = (p) => (p === "MS_TEAMS" ? microsoft?.connected && microsoft?.canSchedule : google?.connected && google?.calendar);
+      if (!ok(platform) && ok(platform === "MS_TEAMS" ? "GOOGLE_MEET" : "MS_TEAMS")) platform = platform === "MS_TEAMS" ? "GOOGLE_MEET" : "MS_TEAMS";
+      setS({ loaded: true, google, microsoft, ff, platform });
+    });
+    return () => { live = false; };
+  }, []);
+  const setPlatform = (platform) => setS((x) => ({ ...x, platform }));
+  const ready = s.platform === "MS_TEAMS" ? !!(s.microsoft?.connected && s.microsoft?.canSchedule) : !!(s.google?.connected && s.google?.calendar);
+  const account = s.platform === "MS_TEAMS" ? s.microsoft?.account : s.google?.account;
+  const whyNot = s.platform === "MS_TEAMS"
+    ? (s.microsoft?.configured === false ? "Microsoft Teams isn't set up on the server yet. An admin adds the Microsoft app (see the setup guide)."
+      : "Connect your Microsoft 365 account first (Connections). The meeting is created in your Outlook calendar with a Teams link, and Microsoft sends the invitations.")
+    : (s.google?.connected && !s.google?.calendar ? "Your Google account is connected without Calendar access. Connect it again from Connections and allow Calendar."
+      : "Connect your Google account first (Connections). The meeting is created in your Google Calendar with a Meet link, and Google sends the invitations.");
+  return { ...s, setPlatform, ready, account, whyNot };
+}
+
+function PlatformPicker({ value, onChange, disabled }) {
+  return (
+    <div className="pg-seg uma-platforms" role="group" aria-label="Meeting app">
+      {["GOOGLE_MEET", "MS_TEAMS"].map((p) => (
+        <button key={p} type="button" aria-pressed={value === p} disabled={disabled} onClick={() => onChange(p)}>{PLATFORM_NAME[p]}</button>
+      ))}
+    </div>
+  );
+}
+
 function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
   const { show: toast } = useToast();
-  const [google, setGoogle] = useState(null);
-  const [ff, setFf] = useState(null);
+  const pf = usePlatforms();
+  const ff = pf.ff;
   const [title, setTitle] = useState("");
   const [at, setAt] = useState(() => {
     const d = new Date(Date.now() + 60 * 60000); d.setMinutes(d.getMinutes() < 30 ? 30 : 60, 0, 0);
@@ -356,11 +401,6 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
   const [autoFf, setAutoFf] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    getUmaGoogle().then((r) => setGoogle(r.data)).catch(() => setGoogle({ connected: false }));
-    getUmaFireflies().then((r) => setFf(r.data)).catch(() => setFf({ connected: false }));
-  }, []);
-  const canSchedule = google?.connected && google?.calendar;
   const submit = async (e) => {
     e.preventDefault();
     setError("");
@@ -369,8 +409,9 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
     try {
       const attendees = people.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
       const r = await scheduleUmaMeeting({ title: title.trim(), start: new Date(at).toISOString(), durationMinutes: Number(minutes), timezone: tz(),
-        attendees, description: description.trim() || undefined, projectId: projectId || undefined, autoFireflies: !!ff?.connected && autoFf });
-      toast(attendees.length ? `Meeting created in Google Calendar and ${attendees.length} invitation${attendees.length === 1 ? "" : "s"} sent.` : "Meeting created in Google Calendar.", "success");
+        attendees, description: description.trim() || undefined, projectId: projectId || undefined, autoFireflies: !!ff?.connected && autoFf, platform: pf.platform });
+      const cal = CALENDAR_NAME[pf.platform];
+      toast(attendees.length ? `Meeting created in ${cal} and ${attendees.length} invitation${attendees.length === 1 ? "" : "s"} sent.` : `Meeting created in ${cal}.`, "success");
       onDone(r.data);
     } catch (err) {
       setError(apiErrorMessage(err, "The meeting couldn't be created."));
@@ -378,14 +419,11 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
     }
   };
   return (
-    <Dialog title="Schedule a Google Meet" onClose={busy ? () => {} : onClose} wide>
-      {google === null ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Checking your Google connection…</p> : !canSchedule ? (
+    <Dialog title="Schedule a meeting" onClose={busy ? () => {} : onClose} wide>
+      {pf.loaded && <PlatformPicker value={pf.platform} onChange={pf.setPlatform} disabled={busy} />}
+      {!pf.loaded ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Checking your connections…</p> : !pf.ready ? (
         <div className="uma-form">
-          <p className="uma-note uma-note--warn">
-            {google?.connected && !google?.calendar
-              ? "Your Google account is connected without Calendar access. Connect it again from Connections and allow Calendar."
-              : "Connect your Google account first. The meeting is created in your Google Calendar, with a Meet link, and Google sends the invitations."}
-          </p>
+          <p className="uma-note uma-note--warn">{pf.whyNot}</p>
           <div className="uma-dialog-actions">
             <button type="button" className="btn-secondary pg-btn" onClick={onClose}>Cancel</button>
             <button type="button" className="btn-primary pg-btn" onClick={openConnections}><Plug size={14} aria-hidden="true" />Open Connections</button>
@@ -393,7 +431,7 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
         </div>
       ) : (
         <form onSubmit={submit} className="uma-form">
-          <p className="uma-hint">Created in {google.account}'s Google Calendar with a Meet link. Google emails the invitations.</p>
+          <p className="uma-hint">Created in {pf.account}'s {CALENDAR_NAME[pf.platform]} with a {PLATFORM_NAME[pf.platform]} link. {pf.platform === "MS_TEAMS" ? "Microsoft" : "Google"} emails the invitations.</p>
           <label className="uma-field"><span>Title</span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Website relaunch – weekly sync" maxLength={200} required />
           </label>
@@ -425,7 +463,7 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
               <span>Send the Fireflies notetaker when it starts (someone in the meeting may need to admit it)</span>
             </label>
           ) : <p className="uma-fine">Connect Fireflies (Connections) to have its notetaker join automatically.</p>}
-          <p className="uma-fine">After the meeting the transcript is fetched by itself, and you'll see "Your meeting summary is ready."</p>
+          <p className="uma-fine">After the meeting the transcript is fetched by itself ({PLATFORM_NAME[pf.platform]} transcription must be on), the notes are written and clearly agreed tasks are created.</p>
           {error && <p className="uma-error" role="alert">{error}</p>}
           <div className="uma-dialog-actions">
             <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
@@ -441,8 +479,8 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
 
 function InstantDialog({ onClose, onDone, projects, openConnections }) {
   const { show: toast } = useToast();
-  const [google, setGoogle] = useState(null);
-  const [ff, setFf] = useState(null);
+  const pf = usePlatforms();
+  const ff = pf.ff;
   const [title, setTitle] = useState("");
   const [minutes, setMinutes] = useState(30);
   const [people, setPeople] = useState("");
@@ -451,22 +489,17 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);       // shown when the browser blocked the new tab
-  useEffect(() => {
-    getUmaGoogle().then((r) => setGoogle(r.data)).catch(() => setGoogle({ connected: false }));
-    getUmaFireflies().then((r) => setFf(r.data)).catch(() => setFf({ connected: false }));
-  }, []);
-  const ready = google?.connected && google?.calendar;
   const start = async (e) => {
     e.preventDefault();
     setError("");
     // Open the tab now, while the click still counts as the person's action - browsers block tabs opened later.
     const tab = window.open("", "_blank");
-    if (tab) tab.document.write("<p style='font-family:sans-serif;padding:24px'>Creating your Google Meet…</p>");
+    if (tab) tab.document.write("<p style='font-family:sans-serif;padding:24px'>Creating your meeting…</p>");
     setBusy(true);
     try {
       const attendees = people.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
       const r = await startUmaInstantMeeting({ title: title.trim() || undefined, durationMinutes: Number(minutes), timezone: tz(),
-        attendees, projectId: projectId || undefined, autoFireflies: !!ff?.connected && autoFf });
+        attendees, projectId: projectId || undefined, autoFireflies: !!ff?.connected && autoFf, platform: pf.platform });
       const url = r.data.meetingUrl;
       if (tab && !tab.closed) { tab.location.href = url; toast("Your meeting is open in a new tab.", "success"); onDone(r.data); }
       else { setCreated(r.data); setBusy(false); }
@@ -487,12 +520,10 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
   );
   return (
     <Dialog title="Start a meeting now" onClose={busy ? () => {} : onClose}>
-      {google === null ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Checking your Google connection…</p> : !ready ? (
+      {pf.loaded && <PlatformPicker value={pf.platform} onChange={pf.setPlatform} disabled={busy} />}
+      {!pf.loaded ? <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Checking your connections…</p> : !pf.ready ? (
         <div className="uma-form">
-          <p className="uma-note uma-note--warn">
-            {google?.connected && !google?.calendar ? "Your Google account is connected without Calendar access. Connect it again from Connections and allow Calendar."
-              : "Connect your Google account first. The meeting is created in your Google Calendar with a Meet link."}
-          </p>
+          <p className="uma-note uma-note--warn">{pf.whyNot}</p>
           <div className="uma-dialog-actions">
             <button type="button" className="btn-secondary pg-btn" onClick={onClose}>Cancel</button>
             <button type="button" className="btn-primary pg-btn" onClick={openConnections}><Plug size={14} aria-hidden="true" />Open Connections</button>
@@ -500,7 +531,7 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
         </div>
       ) : (
         <form onSubmit={start} className="uma-form">
-          <p className="uma-hint">A Google Meet starting now, in {google.account}'s calendar. It opens in a new tab.</p>
+          <p className="uma-hint">A {PLATFORM_NAME[pf.platform]} meeting starting now, in {pf.account}'s calendar. It opens in a new tab.</p>
           <label className="uma-field"><span>Title <em>(optional)</em></span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Instant meeting" maxLength={200} />
           </label>
@@ -534,6 +565,54 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
             </button>
           </div>
         </form>
+      )}
+    </Dialog>
+  );
+}
+
+/** Kept short on purpose: people choose their meeting app and whether tasks are created for them; admins set the workspace's rules. */
+function SettingsDialog({ onClose }) {
+  const { show: toast } = useToast();
+  const [s, setS] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { getUmaAutomationSettings().then((r) => setS(r.data)).catch((e) => setError(apiErrorMessage(e, "Settings couldn't be loaded."))); }, []);
+  const save = async (fn, ok) => {
+    setBusy(true); setError("");
+    try { const r = await fn(); setS(r.data); toast(ok, "success"); }
+    catch (e) { setError(apiErrorMessage(e, "That couldn't be saved.")); }
+    finally { setBusy(false); }
+  };
+  const mine = s?.mine, ws = s?.workspace;
+  return (
+    <Dialog title="Settings" onClose={busy ? () => {} : onClose}>
+      {!s ? (error ? <p className="uma-error" role="alert">{error}</p> : <p className="uma-hint"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Loading…</p>) : (
+        <div className="uma-form">
+          <h3 className="uma-h3">For you</h3>
+          <div className="uma-field"><span>Meeting app for new meetings</span>
+            <PlatformPicker value={mine.defaultPlatform} disabled={busy} onChange={(p) => save(() => saveUmaMyPreferences({ defaultPlatform: p }), `New meetings use ${PLATFORM_NAME[p]}.`)} />
+          </div>
+          <label className="uma-check">
+            <input type="checkbox" checked={mine.autoTasks} disabled={busy} onChange={(e) => save(() => saveUmaMyPreferences({ autoTasks: e.target.checked }), e.target.checked ? "Tasks will be created automatically from your meetings." : "Your meetings' tasks will wait for you to create them.")} />
+            <span>Create clearly agreed tasks from my meetings automatically</span>
+          </label>
+          <p className="uma-fine">Notes are always written automatically when the transcript arrives. Anything unclear - an owner who wasn't invited, a suggestion rather than an agreement - waits for you on the meeting page.</p>
+          <h3 className="uma-h3">For the whole workspace{s.canChangeWorkspace ? "" : " (set by an admin)"}</h3>
+          {[
+            ["autoCreateTasks", "Create clearly agreed tasks automatically"],
+            ["autoAssign", "Assign them when the owner was invited to the meeting"],
+            ["autoCreateProjects", "Create a project when someone clearly asks for one by name"],
+          ].map(([k, label]) => (
+            <label key={k} className="uma-check">
+              <input type="checkbox" checked={!!ws[k]} disabled={busy || !s.canChangeWorkspace}
+                onChange={(e) => save(() => saveUmaWorkspaceAutomation({ [k]: e.target.checked }), "Saved for the workspace.")} />
+              <span>{label}</span>
+            </label>
+          ))}
+          <p className="uma-fine">At most {ws.maxAutoTasksPerMeeting} tasks are created automatically per meeting. Nothing is ever changed or deleted automatically - only created.</p>
+          {error && <p className="uma-error" role="alert">{error}</p>}
+          <div className="uma-dialog-actions"><button type="button" className="btn-primary pg-btn" onClick={onClose} disabled={busy}>Done</button></div>
+        </div>
       )}
     </Dialog>
   );
@@ -652,12 +731,14 @@ function HowItWorks() {
     <details className="uma-how" open={open} onToggle={toggle}>
       <summary>How it works</summary>
       <ol className="uma-how-steps">
-        <li><strong>Start or plan the meeting.</strong> Click <em>Meet now</em> for a meeting right away, or <em>Add → Schedule a Google Meet</em> for later.
-          (Meetings already in your Google Calendar can be added for you: <em>Connections</em>.)</li>
-        <li><strong>Join it from Prowosma</strong> with <em>Join meeting</em>. Fireflies' notetaker joins by itself. In Google Meet, click <em>Admit</em> when it asks to join.</li>
-        <li><strong>Talk as usual.</strong> When you're done, the host chooses <em>End call for everyone</em> (or everyone leaves). Prowosma notices within about a minute.</li>
-        <li><strong>Wait a few minutes.</strong> The transcript usually takes 2-10 minutes, then you'll see <em>Your meeting summary is ready</em>.</li>
-        <li><strong>Review and create tasks.</strong> Check the decisions and action items, then click <em>Create task</em> on the ones you want.</li>
+        <li><strong>Start or plan the meeting.</strong> Click <em>Meet now</em> for a meeting right away, or <em>Add → Schedule a meeting</em> for later -
+          in Google Meet or Microsoft Teams (choose your usual one in <em>Settings</em>). Invite the people who'll be there.</li>
+        <li><strong>Join it from Prowosma</strong> with <em>Join meeting</em>, and turn on the meeting's transcription (or let Fireflies' notetaker join - admit it when it asks).</li>
+        <li><strong>Talk as usual.</strong> Say clearly who does what and by when ("Priya, can you do the frontend by Thursday?" - "Yes").</li>
+        <li><strong>That's it.</strong> A few minutes after the meeting the notes are written and clearly agreed tasks are created and assigned to the
+          people who were invited. You'll see <em>Meeting processed: 3 tasks created…</em></li>
+        <li><strong>Check anything that needs you.</strong> Items that weren't clear (an owner who wasn't invited, a suggestion rather than an agreement)
+          wait on the meeting page with the reason - create, change or dismiss them.</li>
       </ol>
       <p className="uma-fine">No Fireflies? Click <em>Record meeting</em> before you start and share the meeting tab (Chrome or Edge).
         Already have a recording or a transcript? Use <em>Upload recording</em> or <em>Add → Import transcript</em>.</p>
@@ -759,12 +840,87 @@ const TABS = [
   ["decisions", "Decisions"], ["actions", "Action items"], ["ask", "Ask AI"],
 ];
 
-function Overview({ d, openLine, setTab }) {
+/** What was done on its own after the meeting. The numbers come from saved records, not from what the AI said. */
+function AutomationReport({ ins, setTab }) {
+  const r = ins?.automation;
+  if (!r) return null;
+  const projectUpdates = (r.projectsCreated || 0) + (r.projectsLinked || 0);
+  return (
+    <section className="uma-report" aria-label="What was done automatically">
+      <strong>Meeting processed</strong>
+      <ul>
+        <li><b>{r.tasksCreated}</b> task{r.tasksCreated === 1 ? "" : "s"} created</li>
+        <li><b>{r.tasksAssigned}</b> assigned</li>
+        <li><b>{projectUpdates}</b> project update{projectUpdates === 1 ? "" : "s"}</li>
+        <li className={r.needsReview ? "uma-report-warn" : ""}>
+          {r.needsReview ? <button type="button" className="uma-link" onClick={() => setTab("actions")}><b>{r.needsReview}</b> need{r.needsReview === 1 ? "s" : ""} your review</button>
+            : <><b>0</b> to review</>}
+        </li>
+        {r.failed > 0 && <li className="uma-report-warn"><b>{r.failed}</b> couldn't be created</li>}
+      </ul>
+      {!r.tasksEnabled && <p className="uma-fine">Automatic task creation is off for this meeting (Settings).</p>}
+      {(r.notes || []).map((n) => <p key={n} className="uma-fine">{n}</p>)}
+    </section>
+  );
+}
+
+const PROJECT_INTENT = { CREATE: "Asked for in the meeting", PROPOSAL: "Suggested", EXISTING: "Mentioned" };
+
+function MeetingProjects({ d, projects, onChanged, openLine }) {
+  const { show: toast } = useToast();
+  const [busy, setBusy] = useState(null);
+  const [linkTo, setLinkTo] = useState({});
+  const items = d.insights?.projects || [];
+  if (!items.length) return null;
+  const act = async (p, op) => {
+    setBusy(p.id);
+    try {
+      await decideUmaProject(d.meeting.id, p.id, op, op === "link" ? linkTo[p.id] : undefined);
+      toast(op === "create" ? `Project "${p.name}" created.` : op === "link" ? "Linked to the project." : "Dismissed.", "success");
+      onChanged();
+    } catch (e) { toast(apiErrorMessage(e, "That didn't work."), "error"); }
+    finally { setBusy(null); }
+  };
+  return (
+    <>
+      <h3 className="uma-h3">Projects</h3>
+      <ul className="uma-projects">
+        {items.map((p) => (
+          <li key={p.id}>
+            <div>
+              <strong>{p.name}</strong> <span className="uma-fine">· {PROJECT_INTENT[p.intent] || ""} <Refs evidence={p.evidence} onOpen={openLine} /></span>
+              {p.description && <div className="uma-fine">{p.description}</div>}
+              {p.status === "PROPOSED" && p.reviewReason && <div className="uma-review-why"><AlertTriangle size={13} aria-hidden="true" />{p.reviewReason}</div>}
+            </div>
+            {p.status === "CREATED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />{p.automatic ? "Created automatically" : "Created"}</span>}
+            {p.status === "LINKED" && <span className="uma-pill uma-pill--info">Linked</span>}
+            {p.status === "DISMISSED" && <span className="uma-pill uma-pill--neutral">Dismissed</span>}
+            {(p.status === "CREATED" || p.status === "LINKED") && p.projectId && <Link className="uma-link" to={`/projects?highlight=${p.projectId}`}>Open project</Link>}
+            {d.canManage && p.status === "PROPOSED" && (
+              <span className="uma-project-actions">
+                <button type="button" className="btn-primary pg-btn" disabled={busy === p.id} onClick={() => act(p, "create")}>Create project</button>
+                <select aria-label={`Link "${p.name}" to an existing project`} value={linkTo[p.id] || ""} onChange={(e) => setLinkTo({ ...linkTo, [p.id]: e.target.value })}>
+                  <option value="">Or link to…</option>
+                  {projects.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </select>
+                {linkTo[p.id] && <button type="button" className="btn-secondary pg-btn" disabled={busy === p.id} onClick={() => act(p, "link")}>Link</button>}
+                <button type="button" className="btn-secondary pg-btn" disabled={busy === p.id} onClick={() => act(p, "dismiss")}>Dismiss</button>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function Overview({ d, openLine, setTab, projects = [], onChanged = () => {} }) {
   const ins = d.insights;
   const m = d.meeting;
   const pending = ins?.actions?.filter((a) => a.status === "PENDING").length || 0;
   return (
     <div className="uma-overview">
+      <AutomationReport ins={ins} setTab={setTab} />
       {ins?.summary && <p className="uma-summary">{ins.summary}</p>}
       <dl className="uma-facts">
         <div><dt>Decisions</dt><dd><button type="button" className="uma-link" onClick={() => setTab("decisions")}>{ins?.decisions?.length || 0}</button></dd></div>
@@ -781,6 +937,7 @@ function Overview({ d, openLine, setTab }) {
           <ul className="uma-items">{ins.decisions.map((x) => <li key={x.id}>{x.text} <Refs evidence={x.evidence} onOpen={openLine} /></li>)}</ul>
         </>
       )}
+      <MeetingProjects d={d} projects={projects} onChanged={onChanged} openLine={openLine} />
       {ins?.warnings?.length > 0 && <p className="uma-fine">{ins.warnings.join(" ")}</p>}
       {ins?.droppedForMissingEvidence > 0 && (
         <p className="uma-fine">{ins.droppedForMissingEvidence} statement(s) from the AI were left out because they weren't backed by the transcript.</p>
@@ -914,12 +1071,15 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
           <input className="uma-action-title" value={title} onChange={(e) => setTitle(e.target.value)}
             onBlur={() => title.trim() && title !== a.title && patch({ title })} aria-label="Action item title" />
         ) : <span className="uma-action-title uma-action-title--ro">{a.title}</span>}
-        {a.status === "CREATED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />Task created</span>}
+        {a.status === "CREATED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />{a.automatic ? "Created automatically" : "Task created"}</span>}
         {a.status === "REJECTED" && <span className="uma-pill uma-pill--neutral">Dismissed</span>}
         {a.status === "FAILED" && <span className="uma-pill uma-pill--danger" title={a.failureReason || ""}>Not created</span>}
         {a.confidence === "LOW" && a.status === "PENDING" && <span className="uma-pill uma-pill--neutral" title="It was suggested rather than clearly agreed">Tentative</span>}
       </div>
       {a.description && a.description !== a.title && <p className="uma-action-desc">{a.description}</p>}
+      {a.status === "PENDING" && a.reviewReason && <p className="uma-review-why"><AlertTriangle size={13} aria-hidden="true" />{a.reviewReason}</p>}
+      {a.dependsOn && <p className="uma-fine">Depends on: {a.dependsOn}</p>}
+      {a.ownerVerified && a.ownerBasis && <p className="uma-fine">Owner confirmed: {a.ownerBasis}</p>}
       <div className="uma-action-grid">
         <label><span>Owner {a.ownerSpoken ? <em>— said: “{a.ownerSpoken}”</em> : null}</span>
           <select value={a.ownerMemberId || ""} disabled={!canManage || done || busy}
@@ -931,7 +1091,7 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
         </label>
         <label><span>Due {a.dueSpoken ? <em>— said: “{a.dueSpoken}”</em> : null}</span>
           <input type="date" value={a.dueDate || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ dueDate: e.target.value || null })} />
-          {!a.dueDate && <small>{a.dueSpoken ? "Couldn't work out the date — please pick it" : "No deadline was said"}</small>}
+          {!a.dueDate && <small>{a.dueSpoken ? (a.dueSuggested ? `Probably ${a.dueSuggested} — please confirm` : "Couldn't work out the date — please pick it") : "No deadline was said"}</small>}
         </label>
         <label><span>Priority</span>
           <select value={a.priority || "MEDIUM"} disabled={!canManage || done || busy} onChange={(e) => patch({ priority: e.target.value })}>
@@ -1217,7 +1377,7 @@ function Detail({ id, team, projects }) {
             })}
           </div>
           <div className="uma-panel" role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]}>
-            {tab === "overview" && <Overview d={d} openLine={openLine} setTab={setTab} />}
+            {tab === "overview" && <Overview d={d} openLine={openLine} setTab={setTab} projects={projects} onChanged={load} />}
             {tab === "summary" && <SummaryTab ins={d.insights} openLine={openLine} />}
             {tab === "transcript" && <TranscriptTab d={d} focusLine={focusLine} canManage={d.canManage} onSaved={load} />}
             {tab === "decisions" && (
@@ -1366,8 +1526,9 @@ export default function AiMeetingAssistant() {
           {canCreate && (
             <div className="pg-title-actions">
               <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("connections")}><Plug size={15} aria-hidden="true" />Connections</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("settings")}><Settings size={15} aria-hidden="true" />Settings</button>
               <ActionMenu label="More ways to add a meeting" className="btn-secondary pg-btn" items={[
-                { label: "Schedule a Google Meet", icon: CalendarPlus, onSelect: () => setDialog("schedule") },
+                { label: "Schedule a meeting", icon: CalendarPlus, onSelect: () => setDialog("schedule") },
                 { label: "Add meeting link", icon: Link2, onSelect: () => setDialog("link") },
                 { label: "Import transcript", icon: FileText, onSelect: () => setDialog("import") },
                 { label: "Import from Fireflies", icon: Download, onSelect: () => setDialog("fireflies") },
@@ -1388,6 +1549,7 @@ export default function AiMeetingAssistant() {
         openConnections={() => setDialog("connections")} />}
       {dialog === "fireflies" && <FirefliesImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === "connections" && <AiMeetingConnections isAdmin={isAdmin} onClose={() => setDialog(null)} onChanged={() => window.dispatchEvent(new Event("uma:changed"))} />}
+      {dialog === "settings" && <SettingsDialog onClose={() => setDialog(null)} />}
       {dialog === "record" && <AiMeetingRecorder onClose={() => setDialog(null)} onFinished={(mid) => done({ id: mid })} />}
       {dialog === "link" && <LinkDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
     </div>

@@ -231,3 +231,20 @@
 .uma-how-steps strong { color: var(--text-primary); }
 .uma-how em { font-style: normal; font-weight: 600; color: var(--text-primary); }
 .uma-page a.pg-btn, .uma-dialog a.pg-btn { text-decoration: none; }
+
+/* platform choice, automation report, meeting projects, why an item waits */
+.uma-platforms { margin: 0 0 12px; }
+.uma-report { border: 1px solid var(--border); border-left: 3px solid var(--success-text); border-radius: var(--radius-lg); background: var(--bg-card); padding: 12px 14px; margin: 0 0 16px; }
+.uma-report > strong { font-size: 14px; }
+.uma-report ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--text-secondary); }
+.uma-report b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.uma-report-warn, .uma-report-warn b { color: var(--warning-text); }
+.uma-report .uma-fine { margin: 6px 0 0; }
+.uma-review-why { display: flex; align-items: flex-start; gap: 6px; margin: 4px 0 6px; padding: 6px 9px; border-radius: var(--radius-md); background: var(--warning-soft); color: var(--warning-text); font-size: 12.5px; }
+.uma-review-why svg { flex: none; margin-top: 2px; }
+.uma-projects { list-style: none; margin: 0 0 16px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card); }
+.uma-projects li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.uma-projects li:last-child { border-bottom: 0; }
+.uma-projects li > div:first-child { flex: 1 1 260px; min-width: 0; }
+.uma-project-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.uma-project-actions select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); min-height: 34px; }
