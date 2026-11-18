@@ -1,0 +1,22 @@
+/* Clone project dialog. Theme tokens only, so light and dark both follow the app. */
+.cpd-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, .45); display: flex; align-items: flex-start; justify-content: center; padding: 10vh 16px 16px; overflow-y: auto; }
+.cpd { width: 100%; max-width: 480px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-xl, 0 20px 40px rgba(0,0,0,.2)); padding: 18px 20px; display: grid; gap: 8px; }
+.cpd-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.cpd-icon { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-50); color: var(--brand-600); }
+.cpd-titles { flex: 1; min-width: 0; }
+.cpd-titles h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.cpd-titles p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.cpd-x { background: none; border: 0; padding: 4px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; display: inline-flex; }
+.cpd-x:hover { background: var(--gray-100); }
+.cpd-field { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.cpd-input { font: inherit; font-size: 14px; color: var(--text-primary); background: var(--input-bg, var(--bg-input, var(--bg-card))); border: 1px solid var(--input-border, var(--border)); border-radius: 8px; padding: 9px 11px; min-height: 40px; }
+.cpd-input:focus { outline: 2px solid var(--brand-500); outline-offset: 1px; border-color: transparent; }
+.cpd-input[aria-invalid="true"] { border-color: var(--danger-text, #b91c1c); }
+.cpd-error { margin: 0; font-size: 13px; color: var(--danger-text, #b91c1c); }
+.cpd-what { display: grid; gap: 6px; margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: var(--gray-50, var(--bg-hover)); font-size: 12.5px; color: var(--text-secondary); }
+.cpd-what > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.cpd-yes, .cpd-no { font-weight: 600; }
+.cpd-yes { color: var(--success-text, #047857); }
+.cpd-no { color: var(--text-muted); }
+.cpd-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+@media (max-width: 640px) { .cpd-overlay { padding-top: 6vh; } .cpd-foot .btn { flex: 1; } }

@@ -67,4 +67,15 @@ class ProjectArchiveTest extends TwoWorkspaceTestBase {
         assertThat(status).isBetween(400, 499);
         assertThat(mongoTemplate.findById(projectId, Project.class).isArchived()).isFalse();
     }
+
+    @Test
+    void cloneUsesTheGivenName_andNeverABlankOne() throws Exception {
+        MvcResult r = mvc.perform(post("/api/projects/" + projectId + "/clone").header("Authorization", authHeader(ownerToken())).header("X-Workspace-Id", workspaceId)
+                .contentType("application/json").content("{\"name\":\"  Holi ad shoot  \"}")).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(om.readTree(r.getResponse().getContentAsString()).get("name").asText()).isEqualTo("Holi ad shoot");
+        MvcResult blank = mvc.perform(post("/api/projects/" + projectId + "/clone").header("Authorization", authHeader(ownerToken())).header("X-Workspace-Id", workspaceId)
+                .contentType("application/json").content("{\"name\":\"   \"}")).andReturn();
+        assertThat(om.readTree(blank.getResponse().getContentAsString()).get("name").asText()).isEqualTo("Diwali ad shoot (Copy)");
+    }
 }

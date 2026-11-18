@@ -37,6 +37,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
 import ProjectTeamModal from "../components/ProjectTeamModal";
+import CloneProjectDialog from "../components/CloneProjectDialog";
 import PersonAvatar from "../components/people/PersonAvatar";
 
 const COLORS = [
@@ -698,7 +699,7 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
 // ── Everything you can do to one project ─────────────────────
 // Shared by the card and the list row so both offer exactly the same
 // actions (the old card's icon buttons, now named, in one ⋯ menu).
-function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive }) {
+function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive, onClone }) {
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
@@ -719,12 +720,7 @@ function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive 
       onSelect: () => navigate(`/meeting-assistant?project=${encodeURIComponent(p.id)}`) },
     { label: "Who can see this", icon: Lock, hidden: !accessEnabled, onSelect: () => setShowAccess(true) },
     "divider",
-    { label: "Clone", icon: Copy, onSelect: async () => {
-      const name = prompt("Name for the cloned project:", p.name + " (Copy)");
-      if (!name) return;
-      await import("../api/client").then(m => m.default.post(`/projects/${p.id}/clone`, { name }));
-      window.location.reload();
-    } },
+    { label: "Clone", icon: Copy, onSelect: () => onClone(p) },
     { label: p.archived ? "Unarchive" : "Archive", icon: p.archived ? ArchiveRestore : Archive, onSelect: () => onArchive(p) },
     { label: "Delete", icon: Trash2, danger: true, onSelect: () => onDelete(p.id) },
   ];
@@ -864,9 +860,9 @@ function ProjectMeta({ p, cat }) {
 
 function ProjectCard({
   p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
-  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive, onClone,
 }) {
-  const { items, modals, panels, team, openTeam } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive });
+  const { items, modals, panels, team, openTeam } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive, onClone });
   const color = p.color || "var(--brand-500)";
   return (
     <article
@@ -899,9 +895,9 @@ function ProjectCard({
 
 function ProjectRow({
   p, cat, progress, subProjects, subProgress, navigate, highlightId, highlightColor,
-  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive,
+  onEdit, onDelete, onAddSub, onEditSub, onDeleteSub, onAddSubTask, onArchive, onClone,
 }) {
-  const { items, modals, panels, team, openTeam, hasPanel } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive });
+  const { items, modals, panels, team, openTeam, hasPanel } = useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive, onClone });
   const color = p.color || "var(--brand-500)";
   const emails = team.memberEmails || [];
   return (
@@ -959,6 +955,7 @@ export default function Projects() {
   const [categories, setCategories] = useState([]);
   const [progress, setProgress] = useState({});
   const [subProjectsMap, setSubProjectsMap] = useState({});
+  const [cloning, setCloning] = useState(null);   // the project being cloned (dialog open)
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [parentForNew, setParentForNew] = useState(null);
@@ -1189,6 +1186,7 @@ export default function Projects() {
     onEdit: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
     onDelete: handleDelete,
     onArchive: handleArchive,
+    onClone: setCloning,
     onAddSub: openAddSub,
     // Only called from the explicit edit button inside SubProjectCard
     onEditSub: (proj) => { setEditing(proj); setParentForNew(null); setShowForm(true); },
@@ -1320,6 +1318,20 @@ export default function Projects() {
             setShowForm(false);
             setEditing(null);
             setParentForNew(null);
+          }}
+        />
+      )}
+      {cloning && (
+        <CloneProjectDialog
+          project={cloning}
+          onClose={() => setCloning(null)}
+          onCloned={(copy) => {
+            setCloning(null);
+            if (copy?.id) {
+              setProjects((prev) => [copy, ...prev.filter((x) => x.id !== copy.id)]);
+              navigate(`/projects?highlight=${encodeURIComponent(copy.id)}`, { replace: true });   // scrolls to and highlights the copy
+            }
+            showToast(`"${copy?.name || "The copy"}" created from "${cloning.name}".`, "success");
           }}
         />
       )}
