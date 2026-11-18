@@ -30,6 +30,7 @@ public class UmaPipeline {
     public static final String ANALYZE = "ANALYZE";
     public static final String FETCH_FIREFLIES = "FETCH_FIREFLIES";
     public static final String FETCH_GOOGLE = "FETCH_GOOGLE";
+    public static final String FETCH_TEAMS = "FETCH_TEAMS";
     public static final String FIREFLIES_JOIN = "FIREFLIES_JOIN";
     static final java.time.Duration FIREFLIES_GIVE_UP = java.time.Duration.ofHours(24);
 
@@ -42,6 +43,7 @@ public class UmaPipeline {
     private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
     private final UmaAutomation automation;
     private final UmaPostMeeting postMeeting;
+    private final com.prowosma.backend.uma.core.UmaTeams teams;
     private final String workerId = "uma-" + UUID.randomUUID();
     private volatile Instant lastSweep = Instant.EPOCH;
 
@@ -49,9 +51,9 @@ public class UmaPipeline {
 
     public UmaPipeline(UmaJobQueue queue, UmaStore store, UmaTranscriber transcriber, MeetingIntelligence intelligence, MongoTemplate mongo,
                        com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
-                       UmaAutomation automation, UmaPostMeeting postMeeting) {
+                       UmaAutomation automation, UmaPostMeeting postMeeting, com.prowosma.backend.uma.core.UmaTeams teams) {
         this.queue = queue; this.store = store; this.transcriber = transcriber; this.intelligence = intelligence; this.mongo = mongo;
-        this.fireflies = fireflies; this.googleMeet = googleMeet; this.automation = automation; this.postMeeting = postMeeting;
+        this.fireflies = fireflies; this.googleMeet = googleMeet; this.automation = automation; this.postMeeting = postMeeting; this.teams = teams;
     }
 
     @Scheduled(fixedDelayString = "${app.uma.job-poll-ms:5000}", initialDelayString = "${app.uma.job-initial-delay-ms:20000}")
@@ -87,6 +89,7 @@ public class UmaPipeline {
                 case ANALYZE -> analyze(job, m);
                 case FETCH_FIREFLIES -> fetchFireflies(job, m);
                 case FETCH_GOOGLE -> fetchGoogle(job, m);
+                case FETCH_TEAMS -> fetchTeams(job, m);
                 case FIREFLIES_JOIN -> automation.firefliesJoin(job, m);
                 default -> queue.dead(job, "UNKNOWN_TYPE");
             }
@@ -206,6 +209,21 @@ public class UmaPipeline {
         }
     }
 
+    private void fetchTeams(UmaJob job, UmaMeeting m) {
+        String org = m.getOrganizationId();
+        if (m.getStatus() != UmaStatus.CREATED) { queue.succeed(job); return; }      // content came another way
+        com.prowosma.backend.uma.core.UmaTeams.Check c = teams.fetch(m);
+        switch (c.outcome()) {
+            case "DONE" -> { queue.succeed(job); queue.enqueue(org, m.getId(), ANALYZE, job.getRequestedBy()); }
+            case "FAIL" -> fail(job, m, c.code(), c.note(), c.recovery(), false);
+            default -> {
+                UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
+                if (!fresh.isAutoFireflies()) { fresh.setStatusDetail(c.note()); store.save(fresh); }      // Fireflies keeps its own note
+                queue.pollAgain(job, c.again());
+            }
+        }
+    }
+
     private void analyze(UmaJob job, UmaMeeting m) {
         String org = m.getOrganizationId();
         if (m.getStatus() != UmaStatus.ANALYZING)
@@ -231,7 +249,7 @@ public class UmaPipeline {
 
     private void fail(UmaJob job, UmaMeeting m, String code, String message, String recovery, boolean retryable) {
         String org = m.getOrganizationId();
-        boolean captureStep = FETCH_GOOGLE.equals(job.getType()) || FETCH_FIREFLIES.equals(job.getType()) || FIREFLIES_JOIN.equals(job.getType());
+        boolean captureStep = FETCH_GOOGLE.equals(job.getType()) || FETCH_TEAMS.equals(job.getType()) || FETCH_FIREFLIES.equals(job.getType()) || FIREFLIES_JOIN.equals(job.getType());
         if (captureStep && !retryable && automation.otherCapturePending(m, job)) {
             queue.dead(job, code);
             UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
@@ -251,7 +269,7 @@ public class UmaPipeline {
         UmaMeeting fresh = store.meeting(org, m.getId()).orElse(m);
         if (fresh.getStatus() == UmaStatus.CANCELLED || !fresh.getStatus().canMoveTo(UmaStatus.FAILED)) return;
         UmaStatus stage = TRANSCRIBE.equals(job.getType()) ? UmaStatus.TRANSCRIBING
-                : FETCH_FIREFLIES.equals(job.getType()) || FETCH_GOOGLE.equals(job.getType()) ? UmaStatus.CREATED : UmaStatus.ANALYZING;
+                : FETCH_FIREFLIES.equals(job.getType()) || FETCH_GOOGLE.equals(job.getType()) || FETCH_TEAMS.equals(job.getType()) ? UmaStatus.CREATED : UmaStatus.ANALYZING;
         fresh = store.transition(org, fresh.getId(), UmaStatus.FAILED, "system", message, code);
         fresh.setErrorCode(code);
         fresh.setRecoveryHint(recovery);

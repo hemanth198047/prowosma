@@ -40,7 +40,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
         "app.meeting-assistant.jobs-enabled=false",
         "file.upload.dir=${java.io.tmpdir}/uma-test-uploads",
         "security.field-encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
-        "app.uma.google.client-id=test-client", "app.uma.google.client-secret=test-secret"})
+        "app.uma.google.client-id=test-client", "app.uma.google.client-secret=test-secret",
+        "app.uma.microsoft.client-id=ms-client", "app.uma.microsoft.client-secret=ms-secret"})
 @Import(UmaApiTest.Fakes.class)
 class UmaAutomationTest extends TwoWorkspaceTestBase {
     static final String BASE = "/api/v2/meeting-assistant";

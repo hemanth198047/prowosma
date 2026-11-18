@@ -43,7 +43,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
         "app.meeting-assistant.jobs-enabled=false",
         "file.upload.dir=${java.io.tmpdir}/uma-test-uploads",
         "security.field-encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
-        "app.uma.google.client-id=test-client", "app.uma.google.client-secret=test-secret"})
+        "app.uma.google.client-id=test-client", "app.uma.google.client-secret=test-secret",
+        "app.uma.microsoft.client-id=ms-client", "app.uma.microsoft.client-secret=ms-secret"})
 class UmaApiTest extends TwoWorkspaceTestBase {
 
     static final String BASE = "/api/v2/meeting-assistant";
@@ -60,6 +61,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         @Bean @Primary com.prowosma.backend.integration.FirefliesHttp umaFirefliesFake() { return new UmaFirefliesFake(); }
         @Bean @Primary com.prowosma.backend.integration.GoogleHttp umaGoogleFake() { return new UmaGoogleFake(); }
         @Bean @Primary com.prowosma.backend.uma.core.UmaGoogleHttp umaGoogleHttpFake() { return new UmaGoogleHttpFake(); }
+        @Bean @Primary com.prowosma.backend.integration.GraphHttp umaGraphFake() { return new UmaGraphFake(); }
     }
 
     @Autowired ObjectMapper om;

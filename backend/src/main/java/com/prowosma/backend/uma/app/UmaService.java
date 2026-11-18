@@ -47,6 +47,8 @@ public class UmaService {
     private final com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth;
     private final com.prowosma.backend.service.ProjectService projectService;
     private final UmaPostMeeting postMeeting;
+    private final com.prowosma.backend.uma.core.UmaTeams teams;
+    private final com.prowosma.backend.uma.core.UmaMicrosoftAuth microsoft;
 
     @Value("${app.uma.max-upload-mb:500}") private long maxUploadMb = 500;
     @Value("${app.uma.recording-retention-hours:24}") private int retentionHours = 24;
@@ -56,12 +58,13 @@ public class UmaService {
                       com.prowosma.backend.repository.TeamMemberRepository members, com.prowosma.backend.repository.UserRepository users,
                       com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
                       UmaAutomation automation, com.prowosma.backend.uma.core.UmaCalendar calendar, com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth,
-                      com.prowosma.backend.service.ProjectService projectService, UmaPostMeeting postMeeting) {
+                      com.prowosma.backend.service.ProjectService projectService, UmaPostMeeting postMeeting,
+                      com.prowosma.backend.uma.core.UmaTeams teams, com.prowosma.backend.uma.core.UmaMicrosoftAuth microsoft) {
         this.feature = feature; this.access = access; this.store = store; this.queue = queue; this.providers = providers;
         this.files = files; this.taskWriter = taskWriter; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
         this.members = members; this.users = users; this.fireflies = fireflies; this.googleMeet = googleMeet;
         this.automation = automation; this.calendar = calendar; this.googleAuth = googleAuth;
-        this.projectService = projectService; this.postMeeting = postMeeting;
+        this.projectService = projectService; this.postMeeting = postMeeting; this.teams = teams; this.microsoft = microsoft;
     }
 
     /** The person's name as the workspace knows it (team member, else account), or null. */
@@ -194,6 +197,7 @@ public class UmaService {
         r.put("firefliesSent", m.getFireflies() != null && m.getFireflies().getNotetakerSentAt() != null);
         r.put("firefliesInMeeting", m.getFireflies() != null && m.getFireflies().isInMeeting());
         r.put("googleWatching", types.contains(UmaPipeline.FETCH_GOOGLE));
+        r.put("teamsWatching", types.contains(UmaPipeline.FETCH_TEAMS));
         jobs.stream().filter(j -> !UmaPipeline.FIREFLIES_JOIN.equals(j.getType())).map(com.prowosma.backend.uma.model.UmaJob::getRunAfter)
                 .filter(Objects::nonNull).min(Comparator.naturalOrder()).ifPresent(t -> r.put("nextCheckAt", t));
         Instant last = null;
@@ -495,6 +499,26 @@ public class UmaService {
 
     public Map<String, Object> googleStatus(Ctx c) { return googleMeet.status(c.org(), c.caller().email()); }
 
+    // ── Microsoft 365 / Teams ──
+    public Map<String, Object> microsoftStatus(Ctx c) { return teams.status(c.org(), c.caller().email()); }
+
+    public Map<String, Object> microsoftAuthorize(Ctx c) {
+        access.requireCanCreate(c.caller());
+        return Map.of("url", microsoft.authorizeUrl(c.org(), c.caller().email()));
+    }
+
+    public Map<String, Object> microsoftComplete(Ctx c, String code, String state) {
+        microsoft.complete(c.org(), c.caller().email(), code, state);
+        store.audit(c.org(), "connections", c.caller().email(), "MICROSOFT_CONNECTED", null);
+        return microsoftStatus(c);
+    }
+
+    public Map<String, Object> microsoftDisconnect(Ctx c) {
+        microsoft.disconnect(c.org(), c.caller().email());
+        store.audit(c.org(), "connections", c.caller().email(), "MICROSOFT_DISCONNECTED", null);
+        return microsoftStatus(c);
+    }
+
     public Map<String, Object> googleAuthorize(Ctx c) {
         access.requireCanCreate(c.caller());
         return Map.of("url", googleMeet.authorizeUrl(c.org(), c.caller().email()));
@@ -540,8 +564,21 @@ public class UmaService {
     }
 
     /** Creates a Google Meet meeting in the person's Google Calendar (Google sends the invitations) and sets up its automation. */
+    /** GOOGLE_MEET or MS_TEAMS; when not given, the person's default (Settings), else Google Meet. */
+    public String platformFor(Ctx c, String requested) {
+        String p = requested == null || requested.isBlank() ? postMeeting.prefs(c.org(), c.caller().email()).getDefaultPlatform() : requested.trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("GOOGLE_MEET", "MS_TEAMS").contains(p)) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_PLATFORM", "Choose Google Meet or Microsoft Teams.");
+        return p;
+    }
+
     public UmaMeeting scheduleMeeting(Ctx c, String title, Instant start, Integer durationMinutes, String timezone, List<String> attendees,
                                       String description, String projectId, boolean autoFireflies) {
+        return scheduleMeeting(c, title, start, durationMinutes, timezone, attendees, description, projectId, autoFireflies, null);
+    }
+
+    public UmaMeeting scheduleMeeting(Ctx c, String title, Instant start, Integer durationMinutes, String timezone, List<String> attendees,
+                                      String description, String projectId, boolean autoFireflies, String platform) {
+        String provider = platformFor(c, platform);
         access.requireCanCreate(c.caller());
         String t = cleanTitle(title);
         if (start == null) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_TIME", "Choose when the meeting starts.");
@@ -559,13 +596,21 @@ public class UmaService {
         if (autoFireflies && fireflies.key(c.org()).isEmpty())
             throw new UmaException(HttpStatus.CONFLICT, "NO_FIREFLIES", "Fireflies isn't connected for this workspace.", "An admin connects it under Connections, or untick Fireflies.");
         Instant end = start.plusSeconds(minutes * 60L);
-        com.prowosma.backend.uma.core.UmaCalendar.Event ev = calendar.createMeeting(c.org(), c.caller().email(), t, start, end, timezone, people, description);
         UmaMeeting m = newMeeting(c, t, "MEETING_LINK", projectId, start, timezone);
-        m.setProvider("GOOGLE_MEET");
-        m.setMeetingUrl(ev.meetUrl());
+        if ("MS_TEAMS".equals(provider)) {
+            com.prowosma.backend.uma.core.UmaTeams.Created ev = teams.createMeeting(c.org(), c.caller().email(), t, start, end, timezone, people, description);
+            m.setProvider("MS_TEAMS");
+            m.setMeetingUrl(ev.joinUrl());
+            m.setCalendarEventId("ms:" + ev.eventId());
+            m.setCalendarLink(ev.webLink());
+        } else {
+            com.prowosma.backend.uma.core.UmaCalendar.Event ev = calendar.createMeeting(c.org(), c.caller().email(), t, start, end, timezone, people, description);
+            m.setProvider("GOOGLE_MEET");
+            m.setMeetingUrl(ev.meetUrl());
+            m.setCalendarEventId(ev.id());
+            m.setCalendarLink(ev.htmlLink());
+        }
         m.setMeetingEndAt(end);
-        m.setCalendarEventId(ev.id());
-        m.setCalendarLink(ev.htmlLink());
         m.setAttendees(people);
         m.setAutoFireflies(autoFireflies);
         m = store.save(m);
@@ -583,15 +628,20 @@ public class UmaService {
 
     public UmaMeeting instantMeeting(Ctx c, String title, Integer durationMinutes, String timezone, List<String> attendees,
                                      String projectId, boolean autoFireflies) {
+        return instantMeeting(c, title, durationMinutes, timezone, attendees, projectId, autoFireflies, null);
+    }
+
+    public UmaMeeting instantMeeting(Ctx c, String title, Integer durationMinutes, String timezone, List<String> attendees,
+                                     String projectId, boolean autoFireflies, String platform) {
         String zone = com.prowosma.backend.uma.core.UmaCalendar.validZone(timezone);
         String t = title != null && !title.isBlank() ? title
                 : "Instant meeting - " + java.time.format.DateTimeFormatter.ofPattern("d MMM, HH:mm").withZone(java.time.ZoneId.of(zone)).format(Instant.now());
         Instant start = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
-        UmaMeeting m = scheduleMeeting(c, t, start, durationMinutes == null ? 30 : durationMinutes, zone, attendees, null, projectId, autoFireflies);
+        UmaMeeting m = scheduleMeeting(c, t, start, durationMinutes == null ? 30 : durationMinutes, zone, attendees, null, projectId, autoFireflies, platform);
         if (m.isAutoFireflies() && m.getStatus() == UmaStatus.CREATED) {
             // Give the person a minute to open Meet, so someone is there to admit the notetaker when it asks to join.
             queue.enqueueAt(c.org(), m.getId(), UmaPipeline.FIREFLIES_JOIN, c.caller().email(), Instant.now().plus(INSTANT_JOIN_DELAY));
-            m.setStatusDetail("Open the meeting now. Fireflies' notetaker asks to join in about a minute - admit it. "
+            m.setStatusDetail("Open the meeting now. Fireflies' notetaker asks to join in about a minute - admit it" + ("MS_TEAMS".equals(m.getProvider()) ? " from the lobby. " : ". ")
                     + "The summary is ready a few minutes after the meeting ends.");
             m = store.save(m);
         }

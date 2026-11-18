@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-/** A pending Google sign-in (collection {@code uma_oauth_states}): single use, 10 minutes. Only a hash of the state value is stored. */
+/** A pending Google or Microsoft sign-in (collection {@code uma_oauth_states}): single use, 10 minutes. Only a hash of the state value is stored. */
 @Data
 @Document(collection = "uma_oauth_states")
 public class UmaOAuthState {
@@ -16,4 +16,5 @@ public class UmaOAuthState {
     private String stateHash;
     private String codeVerifierEnc;
     private Instant expiresAt;
+    private String provider;                  // null/GOOGLE or MICROSOFT: a state is only accepted by the sign-in that issued it
 }

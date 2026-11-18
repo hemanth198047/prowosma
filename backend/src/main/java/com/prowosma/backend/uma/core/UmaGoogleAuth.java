@@ -72,7 +72,7 @@ public class UmaGoogleAuth {
         requireReady();
         String user = email.toLowerCase(Locale.ROOT);
         String state = randomUrlSafe(32), verifier = randomUrlSafe(48);
-        mongo.remove(new Query(Criteria.where("organizationId").is(org).and("userEmail").is(user)), UmaOAuthState.class);
+        mongo.remove(new Query(Criteria.where("organizationId").is(org).and("userEmail").is(user).and("provider").ne("MICROSOFT")), UmaOAuthState.class);
         UmaOAuthState st = new UmaOAuthState();
         st.setOrganizationId(org); st.setUserEmail(user); st.setStateHash(sha256Hex(state));
         st.setCodeVerifierEnc(crypto.encrypt(verifier)); st.setExpiresAt(Instant.now().plusSeconds(600));
@@ -89,7 +89,8 @@ public class UmaGoogleAuth {
         if (code == null || code.isBlank() || state == null || state.isBlank()) throw invalidState();
         String user = email.toLowerCase(Locale.ROOT);
         UmaOAuthState st = mongo.findAndRemove(new Query(Criteria.where("stateHash").is(sha256Hex(state))), UmaOAuthState.class);   // single use
-        if (st == null || !org.equals(st.getOrganizationId()) || !user.equals(st.getUserEmail()) || st.getExpiresAt().isBefore(Instant.now()))
+        if (st == null || !org.equals(st.getOrganizationId()) || !user.equals(st.getUserEmail()) || st.getExpiresAt().isBefore(Instant.now())
+                || "MICROSOFT".equals(st.getProvider()))
             throw invalidState();
         Map<String, String> body = new LinkedHashMap<>();
         body.put("code", code); body.put("client_id", clientId); body.put("client_secret", clientSecret);

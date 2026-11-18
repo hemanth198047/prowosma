@@ -123,22 +123,22 @@ public class UmaController {
     }
 
     public record ScheduleBody(String title, String start, Integer durationMinutes, String timezone, List<String> attendees, String description,
-                               String projectId, Boolean autoFireflies) {}
+                               String projectId, Boolean autoFireflies, String platform) {}
 
-    /** Creates a Google Meet meeting in your Google Calendar and invites the attendees. */
+    /** Creates a Google Meet (Google Calendar) or Teams (Outlook) meeting and invites the attendees. */
     @PostMapping("/meetings/schedule")
     public ResponseEntity<UmaMeeting> schedule(@RequestBody ScheduleBody b, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.scheduleMeeting(ctx(auth), b.title(), instant(b.start()), b.durationMinutes(),
-                b.timezone(), b.attendees(), b.description(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies())));
+                b.timezone(), b.attendees(), b.description(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies()), b.platform()));
     }
 
-    public record InstantBody(String title, Integer durationMinutes, String timezone, List<String> attendees, String projectId, Boolean autoFireflies) {}
+    public record InstantBody(String title, Integer durationMinutes, String timezone, List<String> attendees, String projectId, Boolean autoFireflies, String platform) {}
 
     /** "Meet now": a Google Meet starting right away, with invitations and the same automation as a scheduled meeting. */
     @PostMapping("/meetings/instant")
     public ResponseEntity<UmaMeeting> instant(@RequestBody InstantBody b, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.instantMeeting(ctx(auth), b.title(), b.durationMinutes(), b.timezone(),
-                b.attendees(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies())));
+                b.attendees(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies()), b.platform()));
     }
 
     public record AutomationBody(Boolean autoFireflies) {}
@@ -236,6 +236,19 @@ public class UmaController {
 
     @DeleteMapping("/connections/google")
     public Map<String, Object> googleDisconnect(Authentication auth) { return service.googleDisconnect(ctx(auth)); }
+
+    // ── Microsoft 365 / Teams ──
+    @GetMapping("/connections/microsoft")
+    public Map<String, Object> microsoftStatus(Authentication auth) { return service.microsoftStatus(ctx(auth)); }
+
+    @PostMapping("/connections/microsoft/authorize")
+    public Map<String, Object> microsoftAuthorize(Authentication auth) { return service.microsoftAuthorize(ctx(auth)); }
+
+    @PostMapping("/connections/microsoft/complete")
+    public Map<String, Object> microsoftComplete(@RequestBody GoogleCompleteBody b, Authentication auth) { return service.microsoftComplete(ctx(auth), b.code(), b.state()); }
+
+    @DeleteMapping("/connections/microsoft")
+    public Map<String, Object> microsoftDisconnect(Authentication auth) { return service.microsoftDisconnect(ctx(auth)); }
 
     @PostMapping("/meetings/{id}/google/fetch")
     public UmaMeeting fetchGoogle(@PathVariable String id, Authentication auth) { return service.fetchFromGoogle(ctx(auth), id); }

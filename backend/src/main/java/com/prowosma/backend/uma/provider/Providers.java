@@ -30,13 +30,18 @@ final class Providers {
         public String id() { return "MS_TEAMS"; }
         public String displayName() { return "Microsoft Teams"; }
         public List<String> hosts() { return List.of("teams.microsoft.com", "teams.live.com"); }
-        public List<String> permissionsRequired() { return List.of("OnlineMeetingTranscript.Read.All (admin consent + application access policy)", "Calendars.Read"); }
+        public List<String> permissionsRequired() { return List.of("Create Teams meetings in your calendar (Calendars.ReadWrite, OnlineMeetings.ReadWrite)",
+                "Read transcripts of meetings you organised (OnlineMeetingTranscript.Read.All - your Microsoft 365 admin approves it once for the organisation)"); }
         public List<Capability> capabilities() {
             return List.of(upload(), importTranscript(), browserRecording(), firefliesNotetaker(), firefliesImport(),
-                    new Capability("postMeetingTranscript", "Fetch the Teams transcript after the meeting", State.POSSIBLE, "Microsoft Graph; needs an admin to approve the app for the organisation."),
+                    new Capability("schedule", "Start or schedule a Teams meeting from Prowosma (with invitations)", State.IMPLEMENTED,
+                            "Each person connects their Microsoft 365 account (Connections); needs the company's Microsoft Entra app registration. Built and tested with simulated Microsoft replies, not yet against a real tenant."),
+                    new Capability("postMeetingTranscript", "Read Teams' transcript after the meeting", State.IMPLEMENTED,
+                            "For meetings the connected person organised, with transcription turned on in the meeting. Needs admin consent for OnlineMeetingTranscript.Read.All. Tested with simulated replies only."),
+                    new Capability("liveStatus", "Know when the call starts and ends", State.UNAVAILABLE,
+                            "Microsoft only tells apps with organisation-wide call permissions. Prowosma looks for the transcript after the planned end instead."),
                     new Capability("postMeetingRecording", "Fetch the recording after the meeting", State.POSSIBLE, "Microsoft Graph, same approval."),
-                    ownBot("Needs a separate Windows-hosted media bot service. Use the Fireflies notetaker or browser recording."),
-                    new Capability("calendar", "Find meetings in Outlook / Microsoft 365", State.POSSIBLE, "Microsoft Graph calendar (OAuth)."));
+                    ownBot("Needs a separate Windows-hosted media bot service. Use the Fireflies notetaker or browser recording."));
         }
     }
 

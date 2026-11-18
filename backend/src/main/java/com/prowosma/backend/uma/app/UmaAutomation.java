@@ -39,11 +39,12 @@ public class UmaAutomation {
     private final UmaGoogleAuth googleAuth;
     private final UmaCalendar calendar;
     private final MongoTemplate mongo;
+    private final UmaMicrosoftAuth microsoft;
 
     public UmaAutomation(UmaStore store, UmaJobQueue queue, UmaFireflies fireflies, UmaGoogleMeet googleMeet, UmaGoogleAuth googleAuth,
-                         UmaCalendar calendar, MongoTemplate mongo) {
+                         UmaCalendar calendar, MongoTemplate mongo, UmaMicrosoftAuth microsoft) {
         this.store = store; this.queue = queue; this.fireflies = fireflies; this.googleMeet = googleMeet; this.googleAuth = googleAuth;
-        this.calendar = calendar; this.mongo = mongo;
+        this.calendar = calendar; this.mongo = mongo; this.microsoft = microsoft;
     }
 
     /** (Re)plans the automatic steps for a meeting from its time, link and choices. Safe to call again after a change. */
@@ -64,6 +65,12 @@ public class UmaAutomation {
             Instant check = start.plus(Duration.ofMinutes(1));
             queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_GOOGLE, by, check.isBefore(Instant.now()) ? Instant.now() : check);
             note.append("Google Meet's transcript is read when it ends. ");
+        }
+        if (UmaTeams.isTeamsLink(m.getMeetingUrl()) && microsoft.active(org, by)) {
+            // Teams doesn't say when a meeting ends: look for its transcript from a few minutes after the start.
+            Instant check = start.plus(UmaTeams.FIRST_LOOK);
+            queue.enqueueAt(org, m.getId(), UmaPipeline.FETCH_TEAMS, by, check.isBefore(Instant.now()) ? Instant.now() : check);
+            note.append("Teams' transcript is read after the meeting (transcription must be on in the meeting). ");
         }
         String text = note.length() == 0 ? "After the meeting, add its recording or transcript here." : note.toString().trim();
         m.setStatusDetail(text);
@@ -106,7 +113,7 @@ public class UmaAutomation {
         store.audit(org, m.getId(), "system", "FIREFLIES_NOTETAKER_SENT", "automatic");
     }
 
-    static final java.util.Set<String> CAPTURE_JOBS = java.util.Set.of(UmaPipeline.FIREFLIES_JOIN, UmaPipeline.FETCH_FIREFLIES, UmaPipeline.FETCH_GOOGLE);
+    static final java.util.Set<String> CAPTURE_JOBS = java.util.Set.of(UmaPipeline.FIREFLIES_JOIN, UmaPipeline.FETCH_FIREFLIES, UmaPipeline.FETCH_GOOGLE, UmaPipeline.FETCH_TEAMS);
 
     /** Capture steps still waiting for this meeting (automatic Fireflies join, Fireflies or Google transcript checks). */
     public List<UmaJob> pendingCapture(UmaMeeting m) {
