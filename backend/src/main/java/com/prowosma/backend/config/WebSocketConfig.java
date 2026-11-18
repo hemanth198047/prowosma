@@ -76,6 +76,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
     private String allowedOriginsRaw;
 
+    @Value("${app.cors.allow-any-localhost:true}")
+    private boolean allowAnyLocalhost = true;
+
     @Value("${app.websocket.relay-host:localhost}")
     private String relayHost;
 
@@ -130,9 +133,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        String[] origins = allowedOriginsRaw.split(",");
+        // Same origins as CorsConfig (patterns, so the app works from any localhost port).
+        String[] origins = CorsConfig.originPatterns(allowedOriginsRaw, allowAnyLocalhost).toArray(new String[0]);
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(origins)
+                .setAllowedOriginPatterns(origins)
                 .withSockJS();
     }
 }

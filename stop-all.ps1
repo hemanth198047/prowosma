@@ -22,6 +22,12 @@ function Stop-Port([int]$port, [string]$label) {
 Write-Host ""
 Write-Host "  Stopping Prowosma" -ForegroundColor White
 Stop-Port 5173 "Frontend"
+$fePortFile = Join-Path $Run "frontend-port"
+if (Test-Path $fePortFile) {
+    $fp = [int](Get-Content $fePortFile)
+    if ($fp -ne 5173) { Stop-Port $fp "Frontend" }
+    Remove-Item $fePortFile -ErrorAction SilentlyContinue
+}
 Stop-Port 9090 "Backend"
 Stop-Port 8765 "Speech-to-text"
 

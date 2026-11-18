@@ -6,7 +6,7 @@
     2. Speech-to-text     (tools\stt-server, for the AI Meeting Assistant's recordings; port 8765)
     3. Local AI model     (only with -LocalAI: Ollama + qwen2.5:7b; otherwise the AI Settings provider is used)
     4. Backend            (Spring Boot, port 9090)
-    5. Frontend           (Vite, port 5173) - then prints the address to open (add -OpenBrowser to open it automatically)
+    5. Frontend           (Vite, port 5173, or a free port if Windows reserved it) - then prints the address to open (add -OpenBrowser to open it automatically)
 
   First run installs what is missing (asks before using winget), creates backend\.env from .env.example, and adds
   JWT_SECRET / ENCRYPTION_KEY to it if they are empty. Existing values in backend\.env are never changed.
@@ -21,7 +21,8 @@ param(
     [switch]$NoSpeech,
     [switch]$OpenBrowser,              # also open the app in the browser at the end (off by default: no surprise extra window)
     [switch]$Yes,                      # answer "yes" to install questions
-    [string]$SpeechModel = "small"     # tiny | base | small | medium | large-v3
+    [string]$SpeechModel = "small",    # tiny | base | small | medium | large-v3
+    [int]$FrontendPort = 0             # 0 = 5173, or the next free port if Windows has reserved 5173
 )
 
 # "Continue", not "Stop": in Windows PowerShell 5.1, "Stop" turns any warning a program prints (py, pip, npm, git) into a crash.
@@ -63,6 +64,21 @@ function Install-WithWinget([string]$id, [string]$what) {
     if (-not (Ask "Install $what now with winget?")) { return $false }
     winget install --id $id -e --accept-source-agreements --accept-package-agreements | Out-Host
     Refresh-Path
+    return $true
+}
+
+# Can a program start listening on this port? False when it's taken OR when Windows has reserved it
+# (Hyper-V / WSL / Docker "excluded port ranges": netstat shows nothing, yet nothing can use the port).
+function Port-Usable([int]$port) {
+    foreach ($addr in @([System.Net.IPAddress]::Loopback, [System.Net.IPAddress]::IPv6Loopback)) {
+        $l = $null
+        try { $l = New-Object System.Net.Sockets.TcpListener($addr, $port); $l.Start() }
+        catch [System.Net.Sockets.SocketException] {
+            if ($_.Exception.ErrorCode -eq 10013 -or $_.Exception.ErrorCode -eq 10048) { return $false }   # reserved / in use
+            # any other error: that address family isn't available here (e.g. IPv6 off) - ignore it
+        }
+        finally { if ($l) { try { $l.Stop() } catch { } } }
+    }
     return $true
 }
 
@@ -306,6 +322,26 @@ if ($LocalAI) {
     }
 }
 
+# -- frontend port (decided before the backend starts, so the backend knows the app's address) ------
+
+$FePortFile = Join-Path $Run "frontend-port"
+$FePort = 5173
+$feRunning = $false
+if ($FrontendPort -gt 0) { $FePort = $FrontendPort }
+elseif ((Test-Path $FePortFile) -and (Port-Open ([int](Get-Content $FePortFile)))) { $FePort = [int](Get-Content $FePortFile) }
+if (Port-Open $FePort) {
+    $feRunning = $true
+} elseif (-not (Port-Usable $FePort)) {
+    $wanted = $FePort
+    $FePort = 0
+    foreach ($p in @(5180, 5190, 5200, 4300, 3100, 8100, 8200, 8300)) { if ((-not (Port-Open $p)) -and (Port-Usable $p)) { $FePort = $p; break } }
+    if ($FePort -eq 0) { Fail "Port $wanted can't be used and no spare port was found. Run start-all.bat -FrontendPort <a free port>." }
+    Warn "Port $wanted is reserved by Windows (Hyper-V / WSL / Docker) or in use, so the app will use port $FePort instead."
+    Say  "        To get $wanted back: open PowerShell as Administrator and run:  net stop winnat ; net start winnat" "DarkGray"
+}
+$AppUrl = "http://localhost:$FePort"
+$backendVars["FRONTEND_URL"] = $AppUrl
+
 # -- 6. backend --------------------------------------------------------------------------------------
 
 Step "Backend (port 9090)"
@@ -320,8 +356,8 @@ if (Port-Open 9090) {
 
 # -- 7. frontend -------------------------------------------------------------------------------------
 
-Step "Frontend (port 5173)"
-if (Port-Open 5173) {
+Step "Frontend (port $FePort)"
+if ($feRunning) {
     Ok "Already running"
 } else {
     $lock = Join-Path $Frontend "package-lock.json"
@@ -334,16 +370,19 @@ if (Port-Open 5173) {
         Pop-Location
         if ($code -ne 0) { Fail "npm install failed (see above)." }
     }
-    $null = Start-Window "Prowosma Frontend" $Frontend "npm run dev" @{}
+    # --strictPort: start on exactly this port or stop with an error - never move silently to another port.
+    $null = Start-Window "Prowosma Frontend" $Frontend "npm run dev -- --port $FePort --strictPort" @{}
+    Set-Content -Path $FePortFile -Value $FePort
     Write-Host "   waiting for the frontend" -NoNewline
-    if (Wait-Port 5173 120 "frontend") { Ok "Frontend is up" } else { Warn "The frontend didn't start - check the 'Prowosma Frontend' window." }
+    if (Wait-Port $FePort 120 "frontend") { Ok "Frontend is up" } else { Warn "The frontend didn't start - check the 'Prowosma Frontend' window." }
 }
 
 # -- done --------------------------------------------------------------------------------------------
 
 Say ""
 Say "  Prowosma is running" "Green"
-Say "    App:             http://localhost:5173   <- open this in your browser" "White"
+Say "    App:             $AppUrl   <- open this in your browser" "White"
+if ($FePort -ne 5173) { Say "    (Google sign-in for the AI Meeting Assistant needs $AppUrl/ai-meeting-assistant/google-callback added to your Google OAuth client.)" "DarkGray" }
 Say "    Backend:         http://localhost:9090"
 if (-not $NoSpeech) { Say "    Speech-to-text:  http://127.0.0.1:8765/health" }
 Say ""
@@ -351,5 +390,5 @@ Say "  AI Meeting Assistant: an admin turns it on once in Admin Centre -> Featur
 Say "  Fireflies / Google Meet: AI Meeting Assistant -> Connections (setup: backend\docs\universal-meeting-assistant\09-CONNECTIONS-SETUP.md)." "DarkGray"
 Say "  Stop everything with stop-all.bat." "DarkGray"
 # Only when asked: opening it automatically gave a second window to people who had already opened the app while it started.
-if ($OpenBrowser) { Start-Process "http://localhost:5173" }
+if ($OpenBrowser) { Start-Process $AppUrl }
 Say ""

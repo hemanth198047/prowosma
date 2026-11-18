@@ -20,6 +20,11 @@ What the first run does:
 - sets up `tools/stt-server` in its own Python environment (the speech model, ~500 MB, downloads the first time a recording is transcribed);
 - prints the address to open, http://localhost:5173 (add `-OpenBrowser` on Windows to have it opened for you).
 
+**"Port 5173 is already in use" but nothing is using it (Windows):** Windows (Hyper-V, WSL or Docker Desktop) reserves blocks of ports;
+`netsh interface ipv4 show excludedportrange protocol=tcp` lists them. `start-all.bat` notices this and uses a free port instead
+(it prints the address to open), or choose one with `start-all.bat -FrontendPort 5180`. To get 5173 back, run PowerShell as Administrator:
+`net stop winnat` then `net start winnat`. The backend accepts the app on any `localhost` port, so sign-in works whichever port it's on.
+
 Windows opens a window per service; macOS/Linux writes logs to `.prowosma-run/logs/`. The older `start.bat` / `stop.bat` still work and
 start only the backend and frontend.
 
