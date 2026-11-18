@@ -113,6 +113,10 @@ public final class InsightValidator {
                 if (nearby == null) { owner = null; ownersRemoved++; }
                 else { ev = sortedWith(ev, nearby); item.setEvidence(ev); }
             }
+            String committer = selfCommitted(ev, lines);
+            if (owner == null) owner = committer;                  // "I'll prepare the test cases" - said by a named speaker: they own it
+            // A plain "I'll ..." from that speaker is an agreed commitment, however cautiously the model rated it ("I'll try", "if I can": not).
+            if (committer != null && committer.equals(owner) && !hedged(ev, lines)) item.setConfidence("HIGH");
             item.setOwnerSpoken(owner);
             resolveOwner(item, owner, directory);
             if (nearby != null) {
@@ -331,6 +335,30 @@ public final class InsightValidator {
             if (word.matcher(norm(l.text())).find()) return true;
         }
         return false;
+    }
+
+    private static final Pattern SELF_COMMIT = Pattern.compile("^\\W*(i'll|i will|i'm going to|i am going to|i shall|i'll take|i can take|leave it with me|i'll handle)\\b",
+            Pattern.CASE_INSENSITIVE);
+
+    /**
+     * When the model named no owner but the first cited line is its speaker committing themselves ("I'll ..."), the owner is that speaker -
+     * only if the transcript names them (a neutral "Speaker 2" or an unknown speaker is no owner).
+     */
+    static String selfCommitted(List<Integer> evidence, Map<Integer, Line> lines) {
+        if (evidence.isEmpty()) return null;
+        Line l = lines.get(evidence.get(0));
+        if (l == null || l.speaker() == null || l.speaker().isBlank()) return null;
+        String who = l.speaker().strip();
+        if (who.matches("(?i)(unknown( speaker)?|speaker( [0-9]+)?( \\(part [0-9]+\\))?|you|me)")) return null;
+        return SELF_COMMIT.matcher(l.text().replace('’', '\'')).find() ? who : null;
+    }
+
+    private static final Pattern HEDGE = Pattern.compile("\\b(if i can|if possible|if i get time|maybe|might|try to|i'll try|hopefully|probably|not sure|i think|perhaps)\\b",
+            Pattern.CASE_INSENSITIVE);
+
+    static boolean hedged(List<Integer> evidence, Map<Integer, Line> lines) {
+        Line l = evidence.isEmpty() ? null : lines.get(evidence.get(0));
+        return l == null || HEDGE.matcher(l.text().replace('’', '\'')).find();
     }
 
     /** The project's name was actually said in the cited lines (all its meaningful words, in any case). */

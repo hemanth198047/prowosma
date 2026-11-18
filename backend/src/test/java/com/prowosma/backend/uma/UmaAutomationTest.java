@@ -302,4 +302,27 @@ class UmaAutomationTest extends TwoWorkspaceTestBase {
         assertThat(report.get("notes").toString()).contains("organiser is no longer in this workspace");
         assertThat(tasksOf(id)).isEmpty();
     }
+
+    @Test
+    void whenTheModelMissesASelfCommitment_theNamedSpeakerStillOwnsIt() throws Exception {
+        enable();
+        // What the real local model did: no owner for Anjali's "I'll prepare test cases ..."
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM)
+                ? MODEL_REPLY.replace("\"owner\": \"Anjali Mehta\"", "\"owner\": null") : "{}";
+        String id = meeting(EVERYONE);
+        Task tests = tasksOf(id).stream().filter(t -> t.getTitle().startsWith("Prepare")).findFirst().orElseThrow();
+        assertThat(tests.getAssigneeIds()).containsExactly(anjali);
+        assertThat(action(detail(id), "Prepare test cases").get("ownerSpoken").asText()).isEqualTo("Anjali Mehta");
+    }
+
+    @Test
+    void aPlainIllFromTheSpeakerIsACommitment_evenIfTheModelWasCautious() throws Exception {
+        enable();
+        // What the real model did on one run: Anjali's conditional "I'll prepare test cases after ..." rated MEDIUM
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM)
+                ? MODEL_REPLY.replace("\"priority\": \"MEDIUM\", \"confidence\": \"HIGH\", \"dependsOn\": \"after", "\"priority\": \"MEDIUM\", \"confidence\": \"MEDIUM\", \"dependsOn\": \"after")
+                : "{}";
+        String id = meeting(EVERYONE);
+        assertThat(tasksOf(id)).extracting(Task::getTitle).contains("Prepare test cases");
+    }
 }

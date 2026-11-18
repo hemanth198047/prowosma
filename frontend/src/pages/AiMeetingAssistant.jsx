@@ -1521,7 +1521,7 @@ export default function AiMeetingAssistant() {
         <header className="pg-title-row">
           <div className="pg-title-text">
             <h1>AI Meeting Assistant</h1>
-            <p>Summaries, decisions and action items from your meeting recordings and transcripts.</p>
+            <p>Start or schedule a Google Meet or Teams meeting; afterwards the notes are written and agreed tasks are created for you.</p>
           </div>
           {canCreate && (
             <div className="pg-title-actions">
