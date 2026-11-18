@@ -505,6 +505,49 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     }
 
     @Test
+    void googleMeet_whenThePeopleLeaveButTheNotetakerStays_theMeetingIsOver() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectGoogle();
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Meet now\"}")).andReturn();
+        String id = json(link).get("id").asText();
+        java.time.Instant t0 = java.time.Instant.now().minusSeconds(1200);
+        gg().start = t0;                                                     // Google: the call is still open (end = null)
+
+        // still talking, with Fireflies in the call
+        gg().participants = "[" + UmaGoogleFake.person("p1", "Java Developer", t0, null) + "," + UmaGoogleFake.bot("p2", "Fireflies.ai Notetaker Java", t0) + "]";
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).get("statusLabel").asText()).isEqualTo("In progress");
+
+        // the only person left 30 seconds ago: give them a moment to rejoin
+        gg().participants = "[" + UmaGoogleFake.person("p1", "Java Developer", t0, java.time.Instant.now().minusSeconds(30)) + ","
+                + UmaGoogleFake.bot("p2", "Fireflies.ai Notetaker Java", t0) + "]";
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).get("statusLabel").asText()).isEqualTo("In progress");
+
+        // they left 5 minutes ago; Fireflies is still connected -> the meeting is over
+        java.time.Instant left = java.time.Instant.now().minusSeconds(300);
+        gg().participants = "[" + UmaGoogleFake.person("p1", "Java Developer", t0, left) + "," + UmaGoogleFake.bot("p2", "Fireflies.ai Notetaker Java", t0) + "]";
+        dueNow(); pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.get("statusLabel").asText()).isNotEqualTo("In progress");
+        assertThat(d.at("/capture/phase").asText()).isEqualTo("ENDED");
+        assertThat(java.time.Instant.parse(d.at("/meeting/endedAt").asText())).isEqualTo(left.truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
+        assertThat(d.at("/meeting/statusDetail").asText()).contains("Everyone has left").contains("Fireflies.ai Notetaker Java");
+
+        // someone comes back: in progress again
+        gg().participants = "[" + UmaGoogleFake.person("p1", "Java Developer", t0, null) + "," + UmaGoogleFake.bot("p2", "Fireflies.ai Notetaker Java", t0) + "]";
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).get("statusLabel").asText()).isEqualTo("In progress");
+
+        // and once the call really closes, the transcript is read and summarised as usual
+        gg().participants = null;
+        gg().end = java.time.Instant.now().minusSeconds(60);
+        dueNow(); pipeline.drain();
+        assertThat(detail(id).at("/meeting/status").asText()).isIn("REVIEW_READY", "COMPLETED");
+    }
+
+    @Test
     void googleMeet_needsAConnectedAccount() throws Exception {
         enable(ownerToken(), workspaceId);
         MvcResult link = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)

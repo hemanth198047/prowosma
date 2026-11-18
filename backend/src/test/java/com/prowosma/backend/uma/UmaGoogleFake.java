@@ -13,8 +13,18 @@ class UmaGoogleFake implements GoogleHttp {
     volatile Instant start = Instant.now();
     volatile Instant end = null;                 // null = meeting still running
     volatile String transcriptState = "FILE_GENERATED";
+    volatile String participants = null;         // JSON "participants" array; null = two signed-in people, no times
 
-    void reset() { urls.clear(); start = Instant.now(); end = null; transcriptState = "FILE_GENERATED"; }
+    void reset() { urls.clear(); start = Instant.now(); end = null; transcriptState = "FILE_GENERATED"; participants = null; }
+
+    static String person(String id, String name, Instant joined, Instant left) {
+        return "{\"name\":\"conferenceRecords/c1/participants/" + id + "\",\"signedinUser\":{\"displayName\":\"" + name + "\"},\"earliestStartTime\":\"" + joined + "\""
+                + (left == null ? "" : ",\"latestEndTime\":\"" + left + "\"") + "}";
+    }
+
+    static String bot(String id, String name, Instant joined) {
+        return "{\"name\":\"conferenceRecords/c1/participants/" + id + "\",\"anonymousUser\":{\"displayName\":\"" + name + "\"},\"earliestStartTime\":\"" + joined + "\"}";
+    }
 
     @Override
     public Result send(String method, String url, Map<String, String> headers, String body) {
@@ -26,6 +36,7 @@ class UmaGoogleFake implements GoogleHttp {
                  {"participant":"conferenceRecords/c1/participants/p2","text":"I will complete the authentication API by Friday.","startTime":"%s"},
                  {"participant":"conferenceRecords/c1/participants/p1","text":"Thanks Ravi.","startTime":"%s"}]}"""
                 .formatted(start.plusSeconds(5), start.plusSeconds(10), start.plusSeconds(20)));
+        if (url.contains("/participants") && participants != null) return new Result(200, "{\"participants\":" + participants + "}");
         if (url.contains("/participants")) return new Result(200, """
                 {"participants":[{"name":"conferenceRecords/c1/participants/p1","signedinUser":{"displayName":"Priya Sharma"}},
                                  {"name":"conferenceRecords/c1/participants/p2","signedinUser":{"displayName":"Ravi Kumar"}}]}""");

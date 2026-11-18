@@ -163,6 +163,17 @@ public class UmaPipeline {
             m.setLiveState("ENDED"); m.setLiveSource("Fireflies");
             if (m.getEndedAt() == null) m.setEndedAt(Instant.now());
         }
+        boolean peopleGone = live && "ENDED".equals(m.getLiveState()) && "Google Meet".equals(m.getLiveSource());
+        if (peopleGone) {
+            Duration after = m.getEndedAt() == null ? Duration.ZERO : Duration.between(m.getEndedAt(), Instant.now());
+            m.setStatusDetail(after.compareTo(Duration.ofMinutes(20)) < 0
+                    ? "Everyone has left. Fireflies is still connected; its transcript arrives once it leaves (it normally leaves by itself within a few minutes)."
+                    : "Everyone left " + after.toMinutes() + " minutes ago but Fireflies is still connected. In Google Meet, the organiser can remove it "
+                      + "(People → Fireflies → Remove from call); its transcript then arrives within a few minutes.");
+            store.save(m);
+            queue.pollAgain(job, Duration.ofMinutes(1));
+            return;
+        }
         m.setStatusDetail(live ? "Fireflies is in the meeting."
                 : preparing || "ENDED".equals(m.getLiveState()) ? "Fireflies is preparing the transcript."
                 : since.compareTo(Duration.ofHours(1)) < 0 ? "Waiting to hear from Fireflies."
@@ -196,9 +207,11 @@ public class UmaPipeline {
                 // Google is the authority on whether the call itself is running.
                 if ("IN_PROGRESS".equals(c.live())) {
                     fresh.setLiveState("IN_PROGRESS"); fresh.setLiveSource("Google Meet");
+                    fresh.setEndedAt(null);                                  // someone came back after everyone had left
                     if (c.startedAt() != null) fresh.setStartedAt(c.startedAt());
                 } else if ("ENDED".equals(c.live())) {
                     fresh.setLiveState("ENDED"); fresh.setLiveSource("Google Meet");
+                    if (c.note() != null && c.note().startsWith("Everyone has left")) fresh.setStatusDetail(c.note());   // say why it counts as over
                     if (c.startedAt() != null) fresh.setStartedAt(c.startedAt());
                     if (c.endedAt() != null) fresh.setEndedAt(c.endedAt());
                 }

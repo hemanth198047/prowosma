@@ -30,6 +30,8 @@ public class GoogleMeetApi {
 
     public record TranscriptInfo(String name, String state, Instant start, Instant end) {}
     public record Entry(String participant, String text, String languageCode, Instant start, Instant end) {}
+    /** One person (or bot) in a conference: kind SIGNED_IN | ANONYMOUS | PHONE; {@code lastLeft} is null while they are still in the call. */
+    public record Attendee(String name, String displayName, String kind, Instant firstJoined, Instant lastLeft) {}
 
     private final GoogleHttp http;
     private final ObjectMapper om = new ObjectMapper();
@@ -84,6 +86,22 @@ public class GoogleMeetApi {
                         n.path("anonymousUser").path("displayName").asText(null),
                         n.path("phoneUser").path("displayName").asText(null));
                 if (name != null && display != null) out.put(name, display);
+            }
+        }
+        return out;
+    }
+
+    /** Who was in the conference, with when they first joined and last left (null = still connected). */
+    public List<Attendee> listAttendance(String token, String conferenceRecord) {
+        requireResource(conferenceRecord);
+        List<Attendee> out = new ArrayList<>();
+        for (JsonNode page : pages(token, BASE + conferenceRecord + "/participants?pageSize=100")) {
+            for (JsonNode n : page.path("participants")) {
+                String kind = n.has("signedinUser") ? "SIGNED_IN" : n.has("phoneUser") ? "PHONE" : "ANONYMOUS";
+                String display = firstNonBlank(n.path("signedinUser").path("displayName").asText(null),
+                        n.path("anonymousUser").path("displayName").asText(null),
+                        n.path("phoneUser").path("displayName").asText(null));
+                out.add(new Attendee(n.path("name").asText(null), display, kind, instant(n, "earliestStartTime"), instant(n, "latestEndTime")));
             }
         }
         return out;

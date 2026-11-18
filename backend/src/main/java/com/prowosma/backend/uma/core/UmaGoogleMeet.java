@@ -31,6 +31,13 @@ public class UmaGoogleMeet {
     private static final Pattern CODE = Pattern.compile("meet\\.google\\.com/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)");
     static final Duration ENDED_PATIENCE = Duration.ofMinutes(10);
     static final Duration NO_TRANSCRIPT_GRACE = Duration.ofHours(2);
+    /** After the last person leaves, wait this long before calling the meeting over, in case they rejoin (a dropped connection). */
+    static final Duration REJOIN_GRACE = Duration.ofMinutes(2);
+    /** Notetaker bots: they keep Google's call open but are not people, so they never keep a meeting "in progress". */
+    static final Pattern NOTETAKER = Pattern.compile("(?i)(fireflies|notetaker|note[- ]?taker|otter\\.?ai|\\botter\\b|read\\.ai|fathom|tl;?dv|meetgeek|avoma|"
+            + "fellow\\.app|grain|krisp|circleback|bluedot|jamie|tactiq|recorder|\\bbot\\b)");
+
+    static boolean isNotetaker(GoogleMeetApi.Attendee a) { return a.displayName() != null && NOTETAKER.matcher(a.displayName()).find(); }
 
     private final GoogleOAuthService oauth;          // the existing assistant's sign-in: used only as a fallback for reading transcripts
     private final UmaGoogleAuth auth;                // this module's own sign-in (Meet + Calendar)
@@ -114,8 +121,22 @@ public class UmaGoogleMeet {
                 return Check.waitLive("Nobody has joined the meeting yet.", Duration.ofMinutes(nearStart ? 1 : 10), "NOT_STARTED", null, null);
             }
             ConferenceSelector.Conference conf = pick.get();
-            // Google keeps the call "in progress" until the last person leaves (a notetaker counts) or the host ends it for everyone.
-            if (conf.end() == null) return Check.waitLive("The meeting is in progress.", Duration.ofMinutes(1), "IN_PROGRESS", conf.start(), null);
+            // Google keeps the call "in progress" until everyone leaves or the host ends it for everyone - and a notetaker bot counts as someone.
+            // So look at the people: when every real person has left, the meeting is over even if a notetaker is still connected.
+            if (conf.end() == null) {
+                List<GoogleMeetApi.Attendee> everyone = api.listAttendance(token, conf.name());
+                List<GoogleMeetApi.Attendee> people = everyone.stream().filter(a -> !isNotetaker(a)).toList();
+                boolean allLeft = !people.isEmpty() && people.stream().allMatch(a -> a.lastLeft() != null);
+                if (!allLeft) return Check.waitLive("The meeting is in progress.", Duration.ofMinutes(1), "IN_PROGRESS", conf.start(), null);
+                Instant lastLeft = people.stream().map(GoogleMeetApi.Attendee::lastLeft).max(Instant::compareTo).orElse(now);
+                if (now.isBefore(lastLeft.plus(REJOIN_GRACE)))
+                    return Check.waitLive("Everyone has left - checking for a minute in case someone rejoins.", Duration.ofMinutes(1), "IN_PROGRESS", conf.start(), null);
+                List<String> bots = everyone.stream().filter(a -> isNotetaker(a) && a.lastLeft() == null).map(GoogleMeetApi.Attendee::displayName).toList();
+                String note = bots.isEmpty() ? "Everyone has left the meeting. Waiting for the transcript."
+                        : "Everyone has left the meeting (only " + String.join(", ", bots) + " is still connected). Its transcript arrives once it leaves - "
+                          + "notetakers normally leave by themselves a few minutes after everyone else.";
+                return Check.waitLive(note, Duration.ofMinutes(2), "ENDED", conf.start(), lastLeft);
+            }
             List<GoogleMeetApi.TranscriptInfo> all = api.listTranscripts(token, conf.name());
             List<GoogleMeetApi.TranscriptInfo> ready = all.stream()
                     .filter(t -> "FILE_GENERATED".equals(t.state()) || ("ENDED".equals(t.state()) && t.end() != null && t.end().isBefore(now.minus(ENDED_PATIENCE))))

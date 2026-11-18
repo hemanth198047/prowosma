@@ -41,10 +41,14 @@ Already have a recording or transcript? Use **Upload recording** or **Add → Im
 
 ### Questions people ask
 
-**How does Prowosma know the meeting has ended?** It asks Google Meet every minute (through your connected Google account) and Fireflies every
-minute while the meeting runs. A Google Meet call has ended when **everyone has left** - the Fireflies notetaker counts as someone - or when
-the host chooses **End call for everyone**. If you only click the red button to leave, the call keeps going while others (or Fireflies) are
-still in it, so Prowosma still shows *In progress*.
+**How does Prowosma know the meeting has ended?** For Google Meet it asks Google every minute who is still in the call. The meeting counts
+as **over when the last real person has left** - notetaker bots (Fireflies and similar) don't count, even though Google keeps the call open
+while they're connected. Prowosma waits 2 minutes after the last person leaves in case someone rejoins (if they do, it's *In progress* again).
+You don't need *End call for everyone*: just leave.
+
+**Fireflies is still in the call after everyone left - what happens?** The meeting is already shown as ended. Fireflies writes its transcript
+once its notetaker leaves, which it normally does by itself a few minutes after everyone else. If it's still there after about 20 minutes,
+the page tells you; the organiser can remove it in Meet (**People → Fireflies → Remove from call**) and the transcript follows.
 
 **Why "Getting transcript" for a few minutes after the end?** Google and Fireflies need a few minutes to write the transcript. Prowosma picks
 it up as soon as it exists. *Check now* asks again immediately.
