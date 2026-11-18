@@ -136,10 +136,68 @@ calendar import, reschedule, cancel; Fireflies joining at the start time and ret
 afterwards). **Not yet run against your real Google Workspace** — that needs the OAuth client above. Then: connect, schedule a 5-minute test
 meeting with the Fireflies box ticked, join it, and check the summary arrives.
 
-## 4. Still not available (and why)
+## 4. Microsoft Teams (your company's Microsoft 365): start and schedule Teams meetings, read Teams transcripts
+
+Same experience as Google Meet: each person connects their own Microsoft 365 work account once (**Connections → Connect Microsoft account**),
+then chooses **Microsoft Teams** in *Meet now* or *Schedule* (or makes it their default in **Settings**).
+
+### 4.1 Requirements on your side
+- Microsoft 365 with Teams, and work accounts (not personal Microsoft accounts).
+- For transcripts: Teams **transcription turned on in the meeting**, and the meeting **organised by the person who connected** (Microsoft only
+  lets an organiser's own sign-in read the transcript this way).
+- A Microsoft 365 / Entra **admin** for the one-time steps below (admin consent is required for reading transcripts).
+
+### 4.2 One-time Microsoft Entra setup, step by step (~10 minutes, an admin)
+1. Go to **https://entra.microsoft.com** and sign in as an admin.
+2. In the left menu: **Applications → App registrations → New registration**.
+3. **Name**: `Prowosma Meetings`. **Supported account types**: *Accounts in this organizational directory only* (or *any organisational
+   directory* if several companies use the same Prowosma server).
+4. **Redirect URI**: choose **Web** and type your Prowosma address followed by `/ai-meeting-assistant/microsoft-callback`
+   (for example `https://app.yourcompany.com/ai-meeting-assistant/microsoft-callback`, or `http://localhost:5173/ai-meeting-assistant/microsoft-callback`
+   for a local test). Click **Register**.
+5. On the app's page, copy the **Application (client) ID** and the **Directory (tenant) ID** - you'll need them in 4.3.
+6. **Certificates & secrets → New client secret** → description `Prowosma`, expiry 24 months → **Add**. Copy the **Value** right away
+   (it is shown once). Put a reminder in your calendar to renew it before it expires.
+7. **API permissions → Add a permission → Microsoft Graph → Delegated permissions**, tick:
+   `Calendars.ReadWrite`, `OnlineMeetings.ReadWrite`, `OnlineMeetingTranscript.Read.All`, `User.Read`, `offline_access`, `openid`, `email`
+   → **Add permissions**.
+8. Click **Grant admin consent for <your company>** → **Yes**. All rows should show a green tick.
+
+### 4.3 Give the IDs to Prowosma
+On the server (or in `backend\.env` locally), add - **never paste the secret into chat or email**:
+```
+UMA_MS_CLIENT_ID=<Application (client) ID>
+UMA_MS_CLIENT_SECRET=<the secret Value>
+UMA_MS_TENANT=<Directory (tenant) ID>
+```
+`UMA_MS_TENANT` limits sign-in to your company; leave it out to allow any work account. Restart the backend. Then each person:
+**AI Meeting Assistant → Connections → Connect Microsoft account**.
+
+### 4.4 What we could and couldn't verify
+Built and tested against a scripted Microsoft (sign-in with PKCE, single-use links that only the Microsoft sign-in accepts, admin-consent
+errors, creating the Teams meeting with invitations in the right time zone, finding the meeting and reading its transcript with Teams'
+speaker names, waiting while there is no transcript yet, a meeting the account didn't organise). **Not yet run against a real Microsoft 365
+tenant** - no tenant was available. Acceptance: connect, *Meet now* with Teams, turn on transcription, talk for 3 minutes, end it, and check
+the summary arrives (it is looked for from 5 minutes after the start; *Check now* looks immediately).
+
+Not available for Teams: knowing exactly when the call starts and ends (Microsoft only tells apps with organisation-wide call permissions -
+Prowosma looks for the transcript after the planned end instead), and Prowosma's own bot joining the call (needs a separate Windows media bot).
+
+## 5. Speaker labels for uploaded and browser recordings (optional)
+
+Google Meet and Teams transcripts already name the signed-in speakers. For recordings, our speech-to-text server can separate speakers into
+neutral labels ("Speaker 1", "Speaker 2") - it never guesses names:
+1. Create a free Hugging Face account, open https://hf.co/pyannote/speaker-diarization-3.1 and https://hf.co/pyannote/segmentation-3.0 and accept
+   the conditions on both pages.
+2. Create a read token (Hugging Face → Settings → Access Tokens).
+3. In the speech-to-text server's environment: `pip install pyannote.audio`, then set `STT_DIARIZE=1` and `HF_TOKEN=<token>`; restart it.
+   `http://127.0.0.1:8765/health` shows `"diarization": "ready"`.
+A GPU is recommended for long recordings. Not validated here (needs the gated model); only the matching step is unit-tested.
+
+## 6. Still not available (and why)
 
 | | Why | Alternative |
 |---|---|---|
 | Prowosma's own bot joining live | Each platform needs its own bot infrastructure and approval (Zoom app review, a Windows media bot for Teams, Google's Meet Media API is a limited preview, Webex has none) | Fireflies notetaker or browser recording |
-| Teams / Zoom / Webex transcripts after the meeting | Need an app registered with each vendor and admin approval (see the earlier list) | Fireflies import, browser recording, upload the recording |
+| Zoom / Webex transcripts after the meeting | Need an app registered with each vendor and admin approval | Fireflies import, browser recording, upload the recording |
 | Meet *recordings* (Drive) | Needs Drive access, which Google reviews separately | Meet transcripts, Fireflies, browser recording |

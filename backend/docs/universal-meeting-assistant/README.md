@@ -1,6 +1,8 @@
 # Universal AI Meeting Assistant
 
-A new, independent AI Meeting Assistant that turns a **recording, a transcript or a meeting link** into a summary, decisions, risks, open questions and **action items that become tasks after approval** — with no dependency on Fireflies or any meeting platform. It runs alongside the existing Meeting Assistant, which is unchanged.
+A new, independent AI Meeting Assistant: start or schedule a **Google Meet or Microsoft Teams** meeting from Prowosma, and afterwards it writes
+the notes and **creates the clearly agreed tasks (and explicitly requested projects) by itself**, assigned to the invited people - the rest
+waits for review. Recordings, transcripts and Fireflies work too; nothing depends on Fireflies. It runs alongside the existing Meeting Assistant, which is unchanged.
 
 Behind the workspace feature flag **`universalMeetingAssistant`** (off by default).
 
@@ -16,6 +18,7 @@ Behind the workspace feature flag **`universalMeetingAssistant`** (off by defaul
 | [08-READINESS](08-READINESS.md) | Phase status, limitations, production checklist, proposal for the legacy assistant |
 | [09-CONNECTIONS-SETUP](09-CONNECTIONS-SETUP.md) | **Google Meet, Fireflies and browser recording: what to set up and how** |
 | [10-TESTING-STRATEGY](10-TESTING-STRATEGY.md) | **How it is tested: automated levels, Meet now test cases, real-account acceptance script, release gate** |
+| [11-NATIVE-MEETING-INTELLIGENCE](11-NATIVE-MEETING-INTELLIGENCE.md) | **Capability assessment, gap report, automatic tasks/projects, Teams, provider matrix, acceptance scenario** |
 
 ## Files changed outside the new module
 

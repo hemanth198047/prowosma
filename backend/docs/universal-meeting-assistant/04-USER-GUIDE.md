@@ -9,12 +9,22 @@ Turn a meeting into a summary, the decisions, and action items you can approve a
 
 ## The quick version
 
-1. **Start or plan the meeting.** Click **Meet now** for a meeting right away, or **Add → Schedule a Google Meet** for later.
-   (Meetings already in your Google Calendar can be added for you: **Connections → Add my upcoming Google Meet meetings**.)
-2. **Join it from Prowosma** with **Join meeting**. Fireflies' notetaker joins by itself. In Google Meet, click **Admit** when it asks to join.
-3. **Talk as usual.** When you're done, the host chooses **End call for everyone** (or everyone leaves). Prowosma notices within about a minute.
-4. **Wait a few minutes.** The transcript usually takes 2-10 minutes, then you'll see **Your meeting summary is ready**.
-5. **Review and create tasks.** Check the decisions and action items, then click **Create task** on the ones you want.
+1. **Start or plan the meeting.** Click **Meet now**, or **Add → Schedule a meeting**, and pick **Google Meet** or **Microsoft Teams**
+   (your usual one is pre-selected - change it in **Settings**). Add the people who'll be there: they get the invitation.
+2. **Join it from Prowosma** with **Join meeting**, and turn on the meeting's **transcription** (or let Fireflies join - click **Admit**).
+3. **Talk as usual.** Say clearly who does what and by when: "Suresh, can you do the APIs by Thursday?" - "Yes, I'll do it."
+4. **That's it.** A few minutes after the meeting you'll see **Meeting processed: 3 tasks created (3 assigned)…** The tasks are in
+   **Tasks**, assigned to the people who were invited, in the project the meeting asked for.
+5. **Check what waits for you.** Anything unclear waits on the meeting page with the reason - for example an owner who wasn't invited,
+   something suggested rather than agreed, or a project only suggested. **Create task**, change it, or **Dismiss**.
+
+What is created on its own:
+- **Tasks** that were clearly agreed, with the cited transcript lines. Assigned only when the person was **invited to the meeting** (a first
+  name counts only if just one invited person has it). Deadlines are turned into dates only when clear: "Thursday" yes, "next Friday" no
+  (the task is created without a date and you're told the likely one).
+- **Projects** when someone clearly asks for one by name ("Let's create a project called Customer Portal Development"). A project that
+  already exists with that name is linked instead.
+- Never: changes to existing tasks or projects, reassignments or deletions - whatever is said in the meeting.
 
 No Fireflies? Click **Record meeting** before you start and share the meeting tab (Chrome or Edge).
 Already have a recording or transcript? Use **Upload recording** or **Add → Import transcript**.
@@ -26,7 +36,8 @@ Already have a recording or transcript? Use **Upload recording** or **Add → Im
 | **Scheduled** - "Starts 10:30" | Not started yet. Fireflies will join by itself at the start time. | Nothing. Click **Join meeting** when it's time. |
 | **In progress** | Google Meet (or Fireflies) says the call is running. | Talk. In Meet, admit Fireflies if it's waiting. |
 | **Getting transcript** - "Ended at 10:52" | The call has ended; the transcript is being prepared (2-10 min). | Nothing. You can leave the page. |
-| **Ready for review** | The summary, decisions and action items are ready. | Review and create tasks. |
+| **Meeting processed: …** | The notes are written and the clearly agreed tasks were created. | Check anything listed as *needs your review*. |
+| **Completed** | Everything was created; nothing waits for you. | Nothing. |
 
 ### Questions people ask
 
