@@ -1,6 +1,6 @@
 /**
  * Projects grouped by where they are in their life, for the Projects page:
- * "In motion", "Not started", "Paused", "Done". Display-only — the stored
+ * "In motion", "Not started", "Paused", "Done", and "Archived" last. Display-only — the stored
  * status values are never changed.
  */
 export const PROJECT_STATES = [
@@ -8,6 +8,7 @@ export const PROJECT_STATES = [
   { key: "notstarted", label: "Not started" },
   { key: "paused", label: "Paused" },
   { key: "done", label: "Done" },
+  { key: "archived", label: "Archived" },
 ];
 
 const DONE = new Set(["COMPLETED", "COMPLETE", "DONE", "CLOSED", "CANCELLED", "CANCELED", "ARCHIVED"]);
@@ -18,8 +19,9 @@ const norm = (s) => String(s ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_")
 
 export function projectState(p) {
   const s = norm(p?.status);
+  if (p?.archived) return "archived";
   if (DONE.has(s)) return "done";
-  if (p?.archived || PAUSED.has(s)) return "paused";
+  if (PAUSED.has(s)) return "paused";
   if (NOT_STARTED.has(s)) return "notstarted";
   return "motion";
 }
@@ -28,7 +30,7 @@ const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); retur
 
 /** Past its due date and not finished. */
 export function isOverdue(p, now = new Date()) {
-  if (!p?.dueDate || projectState(p) === "done") return false;
+  if (!p?.dueDate || ["done", "archived"].includes(projectState(p))) return false;
   const due = new Date(p.dueDate);
   if (Number.isNaN(due.getTime())) return false;
   return startOfDay(due) < startOfDay(now);
@@ -61,7 +63,7 @@ export function groupProjects(projects) {
 
 /** Counts for the summary strip. */
 export function projectSummary(projects, now = new Date()) {
-  const out = { motion: 0, notstarted: 0, paused: 0, done: 0, overdue: 0, total: 0 };
+  const out = { motion: 0, notstarted: 0, paused: 0, done: 0, archived: 0, overdue: 0, total: 0 };
   (projects || []).forEach(p => {
     out[projectState(p)] += 1;
     out.total += 1;

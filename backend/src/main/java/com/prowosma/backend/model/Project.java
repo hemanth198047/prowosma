@@ -58,6 +58,8 @@ public class Project {
     private boolean archived      = false;
     private java.time.LocalDateTime archivedAt;
     private String  archivedBy;
+    /** The status the project had when it was archived; restored on unarchive. */
+    private String  statusBeforeArchive;
 
     // ── Capacity planning ─────────────────────────────────────
     private Integer teamCapacityPoints;          // planned story points per sprint
