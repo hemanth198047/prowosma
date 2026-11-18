@@ -25,7 +25,9 @@ import "../styles/pages/ai-meeting-assistant.css";
 
 /* ── small helpers ─────────────────────────────────────────────────────── */
 
-const list = (r) => (Array.isArray(r?.data) ? r.data : r?.data?.content || r?.data?.items || []);
+// Lists come back as an array, a page ({ content }) or wrapped ({ data }) depending on the endpoint.
+const list = (r) => (Array.isArray(r?.data) ? r.data : r?.data?.data || r?.data?.content || r?.data?.items || []);
+const OPEN_PROJECT = (p) => !p.archived && !["DONE", "COMPLETED", "CANCELLED", "CLOSED", "ARCHIVED"].includes(String(p.status || "").toUpperCase());
 const when = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "");
 const day = (d) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) : "");
 const clock = (ms) => {
@@ -106,6 +108,28 @@ const nowLocal = () => {
 };
 const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+/**
+ * Where this meeting's agreed tasks go. Chosen: every task goes into that project. Left on "Decide from the meeting": the project the
+ * meeting names (an existing one is linked) or explicitly asks to create; if neither, the tasks are created without a project.
+ */
+function ProjectPicker({ projectId, setProjectId, projects }) {
+  const open = projects.filter(OPEN_PROJECT).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const chosen = open.find((p) => p.id === projectId);
+  return (
+    <label className="uma-field"><span>Project for the tasks</span>
+      <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <option value="">Decide from the meeting</option>
+        {open.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <small className="uma-fine">
+        {chosen ? `Tasks agreed in this meeting go into "${chosen.name}".`
+          : open.length ? "Tasks go into the project the meeting names or asks to create; otherwise they're created without a project. Pick one to put them all there."
+            : "No open projects yet. Tasks go into a project the meeting asks to create, or are created without one."}
+      </small>
+    </label>
+  );
+}
+
 function CommonFields({ title, setTitle, at, setAt, projectId, setProjectId, projects, titlePlaceholder }) {
   return (
     <>
@@ -116,12 +140,7 @@ function CommonFields({ title, setTitle, at, setAt, projectId, setProjectId, pro
         <label className="uma-field"><span>When it happened</span>
           <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
         </label>
-        <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">Choose later</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
+        <ProjectPicker projectId={projectId} setProjectId={setProjectId} projects={projects} />
       </div>
     </>
   );
@@ -451,12 +470,7 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
           <label className="uma-field"><span>Agenda <em>(optional, goes into the invitation)</em></span>
             <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
-          <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">Choose later</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
+          <ProjectPicker projectId={projectId} setProjectId={setProjectId} projects={projects} />
           {ff?.connected ? (
             <label className="uma-check">
               <input type="checkbox" checked={autoFf} onChange={(e) => setAutoFf(e.target.checked)} />
@@ -545,12 +559,7 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
               </select>
             </label>
           </div>
-          <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">Choose later</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
+          <ProjectPicker projectId={projectId} setProjectId={setProjectId} projects={projects} />
           {ff?.connected ? (
             <label className="uma-check">
               <input type="checkbox" checked={autoFf} onChange={(e) => setAutoFf(e.target.checked)} />
@@ -651,12 +660,7 @@ function FirefliesImportDialog({ onClose, onDone, projects }) {
               ))}
             </ul>
           )}
-        <label className="uma-field"><span>Project for new tasks <em>(optional)</em></span>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">Choose later</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
+        <ProjectPicker projectId={projectId} setProjectId={setProjectId} projects={projects} />
         {error && <p className="uma-error" role="alert">{error}</p>}
       </div>
     </Dialog>
@@ -901,7 +905,7 @@ function MeetingProjects({ d, projects, onChanged, openLine }) {
                 <button type="button" className="btn-primary pg-btn" disabled={busy === p.id} onClick={() => act(p, "create")}>Create project</button>
                 <select aria-label={`Link "${p.name}" to an existing project`} value={linkTo[p.id] || ""} onChange={(e) => setLinkTo({ ...linkTo, [p.id]: e.target.value })}>
                   <option value="">Or link to…</option>
-                  {projects.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {projects.filter(OPEN_PROJECT).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </select>
                 {linkTo[p.id] && <button type="button" className="btn-secondary pg-btn" disabled={busy === p.id} onClick={() => act(p, "link")}>Link</button>}
                 <button type="button" className="btn-secondary pg-btn" disabled={busy === p.id} onClick={() => act(p, "dismiss")}>Dismiss</button>
@@ -1101,7 +1105,7 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
         <label><span>Project</span>
           <select value={a.projectId || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ projectId: e.target.value || null })}>
             <option value="">No project</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.filter((p) => OPEN_PROJECT(p) || p.id === a.projectId).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
       </div>

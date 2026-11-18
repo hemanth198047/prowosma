@@ -8,7 +8,13 @@ const toastShow = vi.fn();
 vi.mock("../../components/ToastContext", () => ({ useToast: () => ({ show: toastShow }) }));
 vi.mock("../../hooks/useConfirm", () => ({ useConfirm: () => () => Promise.resolve(true) }));
 vi.mock("../../api/team", () => ({ getTeamMembers: () => Promise.resolve({ data: [{ id: "m1", name: "Ravi Kumar", role: "MEMBER" }, { id: "m2", name: "Jordan Lee", role: "MEMBER" }] }) }));
-vi.mock("../../api/projects", () => ({ getProjects: () => Promise.resolve({ data: [{ id: "p1", name: "Website relaunch" }] }) }));
+// The real endpoint wraps its list ({ data: [...] }): the page must unwrap it (it didn't, and the picker was always empty).
+vi.mock("../../api/projects", () => ({ getProjects: () => Promise.resolve({ data: { data: [
+  { id: "p1", name: "Website relaunch", status: "ACTIVE" },
+  { id: "p2", name: "Old brochure", status: "COMPLETED" },
+  { id: "p3", name: "Archived thing", status: "ACTIVE", archived: true },
+  { id: "p4", name: "Customer Portal Development", status: "ACTIVE" },
+], total: 4 } }) }));
 
 const api = vi.hoisted(() => ({
   getUmaDashboard: vi.fn(), getUmaMeeting: vi.fn(), getUmaProviders: vi.fn(), uploadUmaRecording: vi.fn(),
@@ -142,6 +148,23 @@ describe("AI Meeting Assistant (simulated API)", () => {
       fireEvent.click(await screen.findByRole("button", { name: /Meet now/ }));
       return screen.findByRole("dialog", { name: "Start a meeting now" });
     };
+
+    it("lists the open projects to put the tasks in, says what the choice does, and sends it", async () => {
+      connected();
+      api.startUmaInstantMeeting.mockResolvedValue({ data: { id: "x1", meetingUrl: "https://meet.google.com/abc-defg-hij" } });
+      const opened = vi.spyOn(window, "open").mockReturnValue({ closed: false, document: { write: () => {} }, location: {} });
+      const dialog = await openDialog();
+      const picker = await within(dialog).findByLabelText(/Project for the tasks/);
+      const names = within(picker).getAllByRole("option").map((o) => o.textContent);
+      expect(names).toEqual(["Decide from the meeting", "Customer Portal Development", "Website relaunch"]);   // open ones, by name
+      expect(within(dialog).getByText(/the project the meeting names or asks to create/)).toBeInTheDocument();
+      fireEvent.change(picker, { target: { value: "p4" } });
+      expect(within(dialog).getByText('Tasks agreed in this meeting go into "Customer Portal Development".')).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole("button", { name: /Start meeting/ }));
+      await waitFor(() => expect(api.startUmaInstantMeeting).toHaveBeenCalled());
+      expect(api.startUmaInstantMeeting.mock.calls[0][0]).toMatchObject({ projectId: "p4" });
+      opened.mockRestore();
+    });
 
     it("opens a tab at the click, then points it at the new Meet", async () => {
       connected();

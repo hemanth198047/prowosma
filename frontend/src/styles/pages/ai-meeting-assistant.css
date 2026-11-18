@@ -81,7 +81,7 @@
 .uma-field em { font-style: normal; color: var(--text-muted); }
 .uma-field input, .uma-field select, .uma-field textarea { font: inherit; font-size: 14px; color: var(--text-primary); background: var(--input-bg, var(--bg-input)); border: 1px solid var(--input-border, var(--border)); border-radius: var(--radius-md); padding: 8px 10px; min-height: 36px; }
 .uma-field textarea { resize: vertical; font-family: var(--font-sans); }
-.uma-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.uma-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
 .uma-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
 .uma-check input { margin-top: 3px; }
 .uma-drop { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; padding: 20px 14px; border: 1.5px dashed var(--border-strong, var(--border)); border-radius: var(--radius-lg); color: var(--text-secondary); cursor: pointer; }
