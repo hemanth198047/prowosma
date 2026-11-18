@@ -16,9 +16,14 @@ describe("projectState", () => {
     expect(projectState({ status: "NOT_STARTED" })).toBe("notstarted");
     expect(projectState({ status: "Planning" })).toBe("notstarted");
   });
-  it("treats an archived project as paused unless it's finished", () => {
-    expect(projectState({ status: "ACTIVE", archived: true })).toBe("paused");
-    expect(projectState({ status: "DONE", archived: true })).toBe("done");
+  it("puts archived projects in their own Archived section, whatever their status", () => {
+    expect(projectState({ status: "ARCHIVED", archived: true })).toBe("archived");
+    expect(projectState({ status: "ACTIVE", archived: true })).toBe("archived");
+    expect(projectState({ status: "DONE", archived: true })).toBe("archived");
+    expect(projectState({ status: "PAUSED" })).toBe("paused");
+  });
+  it("never calls an archived project overdue", () => {
+    expect(isOverdue({ archived: true, status: "ARCHIVED", dueDate: "2000-01-01" })).toBe(false);
   });
   it("puts unknown or missing statuses in motion rather than hiding them", () => {
     expect(projectState({ status: "SOMETHING_NEW" })).toBe("motion");
@@ -58,7 +63,7 @@ describe("groupProjects / projectSummary", () => {
     expect(g[0].projects.map(p => p.id)).toEqual(["b", "a", "c"]);
   });
   it("counts each state and the overdue ones", () => {
-    expect(projectSummary(list, NOW)).toEqual({ motion: 3, notstarted: 0, paused: 1, done: 1, overdue: 1, total: 5 });
+    expect(projectSummary(list, NOW)).toEqual({ motion: 3, notstarted: 0, paused: 1, done: 1, archived: 0, overdue: 1, total: 5 });
   });
   it("breaks due-date ties by name", () => {
     const x = { name: "b", dueDate: day(1) }, y = { name: "a", dueDate: day(1) };
