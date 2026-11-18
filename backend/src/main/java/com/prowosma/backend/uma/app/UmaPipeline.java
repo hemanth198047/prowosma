@@ -41,6 +41,7 @@ public class UmaPipeline {
     private final com.prowosma.backend.uma.core.UmaFireflies fireflies;
     private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
     private final UmaAutomation automation;
+    private final UmaPostMeeting postMeeting;
     private final String workerId = "uma-" + UUID.randomUUID();
     private volatile Instant lastSweep = Instant.EPOCH;
 
@@ -48,9 +49,9 @@ public class UmaPipeline {
 
     public UmaPipeline(UmaJobQueue queue, UmaStore store, UmaTranscriber transcriber, MeetingIntelligence intelligence, MongoTemplate mongo,
                        com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
-                       UmaAutomation automation) {
+                       UmaAutomation automation, UmaPostMeeting postMeeting) {
         this.queue = queue; this.store = store; this.transcriber = transcriber; this.intelligence = intelligence; this.mongo = mongo;
-        this.fireflies = fireflies; this.googleMeet = googleMeet; this.automation = automation;
+        this.fireflies = fireflies; this.googleMeet = googleMeet; this.automation = automation; this.postMeeting = postMeeting;
     }
 
     @Scheduled(fixedDelayString = "${app.uma.job-poll-ms:5000}", initialDelayString = "${app.uma.job-initial-delay-ms:20000}")
@@ -214,9 +215,12 @@ public class UmaPipeline {
         m.setInsightsVersion(ins.getVersion());
         m.setProgressPercent(100);
         store.save(m);
-        long pending = ins.getActions().stream().filter(a -> "PENDING".equals(a.getStatus())).count();
-        String detail = "Your meeting summary is ready." + (pending > 0 ? " " + pending + " action item" + (pending == 1 ? "" : "s") + " to review." : "");
+        // Create what was clearly agreed (tasks, explicitly requested projects) as the meeting's organiser; the rest waits for review.
+        UmaInsights.Automation report = postMeeting.run(m);
+        String detail = report != null ? UmaPostMeeting.headline(report) : "Your meeting summary is ready.";
         store.transition(org, m.getId(), UmaStatus.REVIEW_READY, "system", detail, "insights v" + ins.getVersion());
+        if (report != null && report.getNeedsReview() == 0 && report.getFailed() == 0)
+            store.transition(org, m.getId(), UmaStatus.COMPLETED, "automatic", detail, "nothing left to review");
         queue.succeed(job);
         store.audit(org, m.getId(), "system", "ANALYZED", "v" + ins.getVersion() + ", " + ins.getActions().size() + " actions");
     }

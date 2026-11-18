@@ -39,6 +39,12 @@ public class UmaIndexConfig {
                     .partial(org.springframework.data.mongodb.core.index.PartialIndexFilter.of(
                             org.springframework.data.mongodb.core.query.Criteria.where("sourceActionKey").exists(true)))
                     .named("uniq_task_meeting_source"));
+            // One project per meeting request (same index as the existing assistant's, same reason).
+            mongo.indexOps("projects").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("sourceProposalKey", Sort.Direction.ASC).unique()
+                    .partial(org.springframework.data.mongodb.core.index.PartialIndexFilter.of(
+                            org.springframework.data.mongodb.core.query.Criteria.where("sourceProposalKey").exists(true)))
+                    .named("uniq_project_meeting_source"));
+            mongo.indexOps("uma_user_prefs").createIndex(new Index().on("organizationId", Sort.Direction.ASC).on("userEmail", Sort.Direction.ASC).unique().named("uniq_org_user"));
         } catch (Exception e) {
             log.warn("Universal Meeting Assistant indexes could not be ensured: {}", e.getClass().getSimpleName());
         }

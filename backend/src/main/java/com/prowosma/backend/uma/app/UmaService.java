@@ -34,7 +34,7 @@ public class UmaService {
     private final UmaJobQueue queue;
     private final ProviderRegistry providers;
     private final FileStorageService files;
-    private final TaskService tasks;
+    private final UmaTaskWriter taskWriter;
     private final MeetingIntelligence intelligence;
     private final UmaTranscriber transcriber;
     private final MongoTemplate mongo;
@@ -45,19 +45,23 @@ public class UmaService {
     private final UmaAutomation automation;
     private final com.prowosma.backend.uma.core.UmaCalendar calendar;
     private final com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth;
+    private final com.prowosma.backend.service.ProjectService projectService;
+    private final UmaPostMeeting postMeeting;
 
     @Value("${app.uma.max-upload-mb:500}") private long maxUploadMb = 500;
     @Value("${app.uma.recording-retention-hours:24}") private int retentionHours = 24;
 
     public UmaService(UmaFeature feature, UmaAccess access, UmaStore store, UmaJobQueue queue, ProviderRegistry providers,
-                      FileStorageService files, TaskService tasks, MeetingIntelligence intelligence, UmaTranscriber transcriber, MongoTemplate mongo,
+                      FileStorageService files, UmaTaskWriter taskWriter, MeetingIntelligence intelligence, UmaTranscriber transcriber, MongoTemplate mongo,
                       com.prowosma.backend.repository.TeamMemberRepository members, com.prowosma.backend.repository.UserRepository users,
                       com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
-                      UmaAutomation automation, com.prowosma.backend.uma.core.UmaCalendar calendar, com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth) {
+                      UmaAutomation automation, com.prowosma.backend.uma.core.UmaCalendar calendar, com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth,
+                      com.prowosma.backend.service.ProjectService projectService, UmaPostMeeting postMeeting) {
         this.feature = feature; this.access = access; this.store = store; this.queue = queue; this.providers = providers;
-        this.files = files; this.tasks = tasks; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
+        this.files = files; this.taskWriter = taskWriter; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
         this.members = members; this.users = users; this.fireflies = fireflies; this.googleMeet = googleMeet;
         this.automation = automation; this.calendar = calendar; this.googleAuth = googleAuth;
+        this.projectService = projectService; this.postMeeting = postMeeting;
     }
 
     /** The person's name as the workspace knows it (team member, else account), or null. */
@@ -799,7 +803,7 @@ public class UmaService {
         return a;
     }
 
-    public static String sourceKey(String meetingId, String actionId) { return "uma:" + meetingId + ":" + actionId; }
+    public static String sourceKey(String meetingId, String actionId) { return UmaTaskWriter.sourceKey(meetingId, actionId); }
 
     /** Approving creates the task in the existing task module. Safe to repeat: the same item never creates a second task. */
     public List<UmaInsights.ActionItem> approve(Ctx c, String id, List<String> actionIds) {
@@ -809,29 +813,8 @@ public class UmaService {
         for (String actionId : actionIds) {
             UmaInsights.ActionItem a = action(ins, actionId);
             if ("CREATED".equals(a.getStatus())) { out.add(a); continue; }
-            String key = sourceKey(id, actionId);
             try {
-                Task existing = mongo.findOne(new Query(Criteria.where("organizationId").is(c.org()).and("sourceActionKey").is(key)), Task.class);
-                if (existing == null) {
-                    Task t = new Task();
-                    t.setTitle(a.getTitle());
-                    t.setDescription(taskDescription(m, a));
-                    t.setProjectId(a.getProjectId());
-                    t.setPriority(a.getPriority());
-                    if (a.getDueDate() != null) t.setDueDate(a.getDueDate().atStartOfDay());
-                    if (a.getOwnerMemberId() != null) t.setAssigneeIds(new ArrayList<>(List.of(a.getOwnerMemberId())));
-                    t.setTags(new ArrayList<>(List.of("meeting")));
-                    t.setCreatedBy(c.caller().email());
-                    t.setSourceMeetingId(id);
-                    t.setSourceMeetingTitle(m.getTitle());
-                    t.setSourceActionKey(key);
-                    t.setSourceEvidence(new ArrayList<>(a.getEvidence()));
-                    try { existing = tasks.create(t); }
-                    catch (DuplicateKeyException race) {
-                        existing = mongo.findOne(new Query(Criteria.where("organizationId").is(c.org()).and("sourceActionKey").is(key)), Task.class);
-                        if (existing == null) throw race;
-                    }
-                }
+                Task existing = taskWriter.createOrFind(c.org(), m, a, c.caller().email(), true);
                 a.setStatus("CREATED"); a.setCreatedTaskId(existing.getId()); a.setFailureReason(null);
                 a.setDecidedBy(c.caller().email()); a.setDecidedAt(Instant.now());
                 store.audit(c.org(), id, c.caller().email(), "ACTION_APPROVED", actionId + " -> task " + existing.getId());
@@ -848,21 +831,100 @@ public class UmaService {
         return out;
     }
 
+    // ── projects the meeting asked for ───────────────────────────────────
+
+    /** create: make the project (as the person, with their permissions) · link: use an existing project · dismiss: not wanted. */
+    public UmaInsights.ProjectItem projectDecision(Ctx c, String id, String projectItemId, String op, String existingProjectId) {
+        UmaMeeting m = manageable(c, id);
+        UmaInsights ins = insightsFor(c, id);
+        UmaInsights.ProjectItem p = ins.getProjects().stream().filter(x -> x.getId().equals(projectItemId)).findFirst()
+                .orElseThrow(() -> new UmaException(HttpStatus.NOT_FOUND, "NOT_FOUND", "That project suggestion isn't in this meeting."));
+        if ("CREATED".equals(p.getStatus()) && !"dismiss".equals(op))
+            throw new UmaException(HttpStatus.CONFLICT, "ALREADY_CREATED", "This project was already created.");
+        switch (op) {
+            case "create" -> {
+                String key = UmaTaskWriter.sourceKey(id, p.getId());
+                com.prowosma.backend.model.Project found = mongo.findOne(new Query(Criteria.where("organizationId").is(c.org()).and("sourceProposalKey").is(key)),
+                        com.prowosma.backend.model.Project.class);
+                if (found == null) {
+                    com.prowosma.backend.model.Project pr = new com.prowosma.backend.model.Project();
+                    pr.setName(p.getName());
+                    pr.setDescription(((p.getDescription() == null || p.getDescription().isBlank()) ? "" : p.getDescription() + "\n\n")
+                            + "Created from the meeting \"" + m.getTitle() + "\" (AI Meeting Assistant).");
+                    pr.setStatus("ACTIVE");
+                    pr.setSourceMeetingId(id); pr.setSourceMeetingTitle(m.getTitle()); pr.setSourceProposalKey(key);
+                    try { found = projectService.create(pr); }
+                    catch (org.springframework.dao.DuplicateKeyException race) {
+                        found = mongo.findOne(new Query(Criteria.where("organizationId").is(c.org()).and("sourceProposalKey").is(key)), com.prowosma.backend.model.Project.class);
+                        if (found == null) throw race;
+                    }
+                }
+                p.setStatus("CREATED"); p.setProjectId(found.getId()); p.setAutomatic(false);
+            }
+            case "link" -> {
+                com.prowosma.backend.model.Project target = existingProjectId == null ? null : mongo.findById(existingProjectId, com.prowosma.backend.model.Project.class);
+                if (target == null || !c.org().equals(target.getOrganizationId())) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_SUCH_PROJECT", "Choose a project in this workspace.");
+                projectService.getById(target.getId());                                         // the person must be able to see it
+                p.setStatus("LINKED"); p.setProjectId(target.getId()); p.setAutomatic(false);
+            }
+            case "dismiss" -> { if (!"CREATED".equals(p.getStatus())) p.setStatus("DISMISSED"); }
+            default -> throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_OPERATION", "Unknown operation.");
+        }
+        p.setReviewReason(null); p.setDecidedBy(c.caller().email()); p.setDecidedAt(Instant.now());
+        // Pending actions with no project yet follow the project the person just chose.
+        if (!"dismiss".equals(op) && m.getProjectId() == null)
+            for (UmaInsights.ActionItem a : ins.getActions())
+                if ("PENDING".equals(a.getStatus()) && a.getProjectId() == null) a.setProjectId(p.getProjectId());
+        store.saveInsights(ins);
+        store.audit(c.org(), id, c.caller().email(), "PROJECT_" + op.toUpperCase(Locale.ROOT), p.getId() + (p.getProjectId() == null ? "" : " -> " + p.getProjectId()));
+        completeIfAllDecided(c, id, ins);
+        return p;
+    }
+
+    // ── automation settings ──────────────────────────────────────────────
+
+    public Map<String, Object> automationSettings(Ctx c) {
+        UmaSettings s = mongo.findById(c.org(), UmaSettings.class);
+        if (s == null) s = new UmaSettings();
+        UmaUserPrefs mine = postMeeting.prefs(c.org(), c.caller().email());
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("workspace", Map.of("autoCreateTasks", s.tasksOn(), "autoAssign", s.assignOn(), "autoCreateProjects", s.projectsOn(), "maxAutoTasksPerMeeting", s.maxTasks()));
+        out.put("mine", Map.of("defaultPlatform", mine.getDefaultPlatform(), "autoTasks", mine.isAutoTasks()));
+        out.put("canChangeWorkspace", c.caller().admin());
+        return out;
+    }
+
+    public Map<String, Object> saveWorkspaceAutomation(Ctx c, Map<String, Object> body) {
+        if (!c.caller().admin()) throw new UmaException(HttpStatus.FORBIDDEN, "ADMIN_ONLY", "Only a workspace admin can change what the assistant does on its own.");
+        UmaSettings s = mongo.findById(c.org(), UmaSettings.class);
+        if (s == null) { s = new UmaSettings(); s.setId(c.org()); }
+        if (body.get("autoCreateTasks") instanceof Boolean b) s.setAutoCreateTasks(b);
+        if (body.get("autoAssign") instanceof Boolean b) s.setAutoAssign(b);
+        if (body.get("autoCreateProjects") instanceof Boolean b) s.setAutoCreateProjects(b);
+        if (body.get("maxAutoTasksPerMeeting") instanceof Number n) s.setMaxAutoTasksPerMeeting(Math.max(0, Math.min(100, n.intValue())));
+        mongo.save(s);
+        store.audit(c.org(), "settings", c.caller().email(), "AUTOMATION_SETTINGS_CHANGED", s.tasksOn() + "/" + s.assignOn() + "/" + s.projectsOn() + "/" + s.maxTasks());
+        return automationSettings(c);
+    }
+
+    public Map<String, Object> saveMyPreferences(Ctx c, Map<String, Object> body) {
+        UmaUserPrefs p = postMeeting.prefs(c.org(), c.caller().email());
+        if (body.get("defaultPlatform") instanceof String d) {
+            if (!Set.of("GOOGLE_MEET", "MS_TEAMS").contains(d)) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_PLATFORM", "Choose Google Meet or Microsoft Teams.");
+            p.setDefaultPlatform(d);
+        }
+        if (body.get("autoTasks") instanceof Boolean b) p.setAutoTasks(b);
+        p.setUpdatedAt(Instant.now());
+        mongo.save(p);
+        return automationSettings(c);
+    }
+
     private void completeIfAllDecided(Ctx c, String id, UmaInsights ins) {
-        boolean open = ins.getActions().stream().anyMatch(a -> "PENDING".equals(a.getStatus()) || "FAILED".equals(a.getStatus()));
+        boolean open = ins.getActions().stream().anyMatch(a -> "PENDING".equals(a.getStatus()) || "FAILED".equals(a.getStatus()))
+                || ins.getProjects().stream().anyMatch(p -> "PROPOSED".equals(p.getStatus()));
         UmaMeeting m = store.meeting(c.org(), id).orElse(null);
         if (!open && m != null && m.getStatus() == UmaStatus.REVIEW_READY)
             store.transition(c.org(), id, UmaStatus.COMPLETED, c.caller().email(), "All action items have been reviewed.", "all actions decided");
-    }
-
-    private static String taskDescription(UmaMeeting m, UmaInsights.ActionItem a) {
-        StringBuilder sb = new StringBuilder();
-        if (a.getDescription() != null && !a.getDescription().isBlank()) sb.append(a.getDescription()).append("\n\n");
-        if (a.getOwnerSpoken() != null && a.getOwnerMemberId() == null) sb.append("Owner named in the meeting: ").append(a.getOwnerSpoken()).append("\n");
-        if (a.getDueSpoken() != null && a.getDueDate() == null) sb.append("Deadline as said: ").append(a.getDueSpoken()).append("\n");
-        sb.append("From the meeting \"").append(m.getTitle()).append("\" (AI Meeting Assistant), transcript line")
-          .append(a.getEvidence().size() == 1 ? " " : "s ").append(String.join(", ", a.getEvidence().stream().map(i -> "#" + i).toList())).append('.');
-        return sb.toString();
     }
 
     // ── ask / export / audit ─────────────────────────────────────────────

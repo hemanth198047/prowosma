@@ -159,7 +159,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(pipeline.drain()).isEqualTo(2);                // TRANSCRIBE, then ANALYZE
         JsonNode d = detail(id);
         assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
-        assertThat(d.at("/meeting/statusDetail").asText()).startsWith("Your meeting summary is ready.");
+        assertThat(d.at("/meeting/statusDetail").asText()).startsWith("Meeting processed");
         assertThat(d.get("segments")).hasSize(6);
         assertThat(d.at("/segments/1/text").asText()).isEqualTo(UmaFakes.LINES.get(1));
         assertThat(d.at("/segments/1/speaker").isNull()).as("speaker is unknown, not guessed").isTrue();

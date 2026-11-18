@@ -16,4 +16,15 @@ public class UmaSettings {
     private String firefliesAccountEmail;
     private String firefliesSavedBy;
     private Instant firefliesSavedAt;
+
+    // What the assistant may do on its own after a meeting (admins). People can switch tasks off for their own meetings.
+    private Boolean autoCreateTasks;           // null = on: create tasks that were clearly agreed
+    private Boolean autoAssign;                // null = on: assign them when the owner's identity is verified
+    private Boolean autoCreateProjects;        // null = on: create a project when someone clearly asked for one by name
+    private Integer maxAutoTasksPerMeeting;    // null = 25
+
+    public boolean tasksOn() { return autoCreateTasks == null || autoCreateTasks; }
+    public boolean assignOn() { return autoAssign == null || autoAssign; }
+    public boolean projectsOn() { return autoCreateProjects == null || autoCreateProjects; }
+    public int maxTasks() { return maxAutoTasksPerMeeting == null ? 25 : Math.max(0, Math.min(100, maxAutoTasksPerMeeting)); }
 }

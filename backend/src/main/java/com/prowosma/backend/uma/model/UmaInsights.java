@@ -32,6 +32,8 @@ public class UmaInsights {
     private List<Finding> risks = new ArrayList<>();
     private List<Finding> questions = new ArrayList<>();
     private List<Finding> followUps = new ArrayList<>();
+    private List<ProjectItem> projects = new ArrayList<>();   // projects the meeting asked for, suggested or referred to
+    private Automation automation;                 // what was done automatically after the analysis (from saved records)
     private int droppedForMissingEvidence;         // statements the model made without valid line references
     private List<String> warnings = new ArrayList<>();
 
@@ -92,5 +94,46 @@ public class UmaInsights {
         private String decidedBy;
         private Instant decidedAt;
         private String failureReason;
+        private String dependsOn;                  // what it waits for, as said ("after the API specifications are finalised"); null = none said
+        private boolean ownerVerified;             // owner identity confirmed (invited by email / organiser), not only a name match
+        private String ownerBasis;                 // why the owner is (or isn't) treated as verified
+        private boolean automatic;                 // the task was created automatically (not by a person approving it)
+        private String reviewReason;               // why it waits for a person, when it does
+        private java.time.LocalDate dueSuggested;  // the likely date when the spoken deadline is ambiguous ("next Friday"); never used without a person
+        private String dueNote;                    // why the deadline needs confirming
+    }
+
+    /** A project the meeting asked for (CREATE), suggested (PROPOSAL) or referred to by name (EXISTING). */
+    @Data
+    public static class ProjectItem {
+        private String id;                         // "p" + hash of the name; source key = "uma:" + meetingId + ":" + id
+        private String name;
+        private String description;
+        private String intent;                     // CREATE | PROPOSAL | EXISTING
+        private String requestedBy;                // only as said
+        private List<Integer> evidence = new ArrayList<>();
+        private String status = "PROPOSED";        // PROPOSED | CREATED | LINKED | DISMISSED | FAILED
+        private String projectId;                  // the created or matched project
+        private boolean automatic;
+        private String decidedBy;
+        private Instant decidedAt;
+        private String failureReason;
+        private String reviewReason;
+    }
+
+    /** The automation report. Every number is counted from saved records after the run, never from what the model said. */
+    @Data
+    public static class Automation {
+        private Instant ranAt;
+        private String ranAs;                      // the meeting's owner: their permissions applied
+        private boolean tasksEnabled;
+        private boolean projectsEnabled;
+        private int tasksCreated;
+        private int tasksAssigned;
+        private int projectsCreated;
+        private int projectsLinked;
+        private int needsReview;
+        private int failed;
+        private List<String> notes = new ArrayList<>();
     }
 }

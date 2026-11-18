@@ -161,7 +161,7 @@ public class MeetingIntelligence {
     JsonNode merge(List<JsonNode> parts) {
         ObjectNode out = om.createObjectNode();
         out.put("summary", parts.isEmpty() ? "" : String.join(" ", parts.stream().map(p -> p.path("summary").asText("")).filter(s -> !s.isBlank()).toList()));
-        for (String key : List.of("notes", "decisions", "actions", "risks", "questions", "followUps")) {
+        for (String key : List.of("notes", "decisions", "actions", "projects", "risks", "questions", "followUps")) {
             ArrayNode arr = out.putArray(key);
             for (JsonNode p : parts) if (p.path(key).isArray()) p.path(key).forEach(arr::add);
         }

@@ -294,6 +294,23 @@ public class UmaController {
 
     public record AskBody(String question) {}
 
+    public record ProjectDecision(String projectId) {}
+
+    @PostMapping("/meetings/{id}/projects/{itemId}/{op}")
+    public UmaInsights.ProjectItem projectDecision(@PathVariable String id, @PathVariable String itemId, @PathVariable String op,
+                                                   @RequestBody(required = false) ProjectDecision body, Authentication auth) {
+        return service.projectDecision(ctx(auth), id, itemId, op, body == null ? null : body.projectId());
+    }
+
+    @GetMapping("/settings/automation")
+    public Map<String, Object> automationSettings(Authentication auth) { return service.automationSettings(ctx(auth)); }
+
+    @PutMapping("/settings/automation")
+    public Map<String, Object> saveAutomation(@RequestBody Map<String, Object> body, Authentication auth) { return service.saveWorkspaceAutomation(ctx(auth), body); }
+
+    @PutMapping("/settings/me")
+    public Map<String, Object> saveMine(@RequestBody Map<String, Object> body, Authentication auth) { return service.saveMyPreferences(ctx(auth), body); }
+
     @PostMapping("/meetings/{id}/ask")
     public UmaQuestion ask(@PathVariable String id, @RequestBody AskBody b, Authentication auth) {
         return service.ask(ctx(auth), id, b.question());

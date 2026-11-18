@@ -103,6 +103,8 @@ public final class InsightValidator {
             item.setPriority(oneOf(a.path("priority").asText(""), "MEDIUM", "LOW", "MEDIUM", "HIGH"));
             item.setConfidence(oneOf(a.path("confidence").asText(""), "MEDIUM", "LOW", "MEDIUM", "HIGH"));
             item.setProjectId(defaultProjectId);
+            String dep = nullIfBlank(clean(a.path("dependsOn").asText(""), 300));
+            item.setDependsOn(dep);
 
             String owner = nullIfBlank(clean(a.path("owner").asText(""), 120));
             Integer nearby = null;
@@ -131,7 +133,7 @@ public final class InsightValidator {
             else {
                 DeadlineResolver.Result r = DeadlineResolver.resolve(due, meetingDate);
                 if (r.reliable()) { item.setDueDate(r.date()); item.setDueState(r.status()); }
-                else item.setDueState("UNCLEAR");
+                else { item.setDueState("UNCLEAR"); item.setDueSuggested(r.date()); item.setDueNote(r.note()); }
             }
             actions.put(id, item);
         }
@@ -146,6 +148,32 @@ public final class InsightValidator {
                 actions.put(before.getId(), before);                       // never lose the link to a task that exists
         }
         out.setActions(new ArrayList<>(actions.values()));
+
+        // Projects the meeting asked for or referred to. Same rules: cited lines must exist and support the name; a person's decision survives a re-run.
+        Map<String, UmaInsights.ProjectItem> priorProjects = new LinkedHashMap<>();
+        if (previous != null && previous.getProjects() != null) for (UmaInsights.ProjectItem p : previous.getProjects()) priorProjects.put(p.getId(), p);
+        Map<String, UmaInsights.ProjectItem> projects = new LinkedHashMap<>();
+        for (JsonNode p : iter(root.path("projects"))) {
+            String name = clean(p.path("name").asText(""), 120);
+            if (name.length() < 2) continue;
+            List<Integer> ev = ground(name + " " + p.path("description").asText(""), evidence(p.path("evidence"), lines), lines);
+            if (ev.isEmpty()) { dropped[0]++; continue; }
+            String intent = oneOf(p.path("intent").asText(""), "PROPOSAL", "CREATE", "PROPOSAL", "EXISTING");
+            if ("CREATE".equals(intent) && !nameSaid(name, ev, lines)) intent = "PROPOSAL";   // the name itself must have been said
+            String id = "p" + hash(norm(name));
+            if (projects.containsKey(id)) continue;
+            UmaInsights.ProjectItem item = new UmaInsights.ProjectItem();
+            item.setId(id); item.setName(name); item.setIntent(intent); item.setEvidence(ev);
+            item.setDescription(clean(p.path("description").asText(""), 1000));
+            String by = nullIfBlank(clean(p.path("requestedBy").asText(""), 120));
+            item.setRequestedBy(by != null && mentioned(by, ev, lines) ? by : null);
+            UmaInsights.ProjectItem before = priorProjects.get(id);
+            projects.put(id, before != null && !"PROPOSED".equals(before.getStatus()) ? before : item);
+        }
+        for (UmaInsights.ProjectItem before : priorProjects.values())
+            if (!projects.containsKey(before.getId()) && ("CREATED".equals(before.getStatus()) || "LINKED".equals(before.getStatus())))
+                projects.put(before.getId(), before);
+        out.setProjects(new ArrayList<>(projects.values()));
 
         out.setDroppedForMissingEvidence(dropped[0]);
         if (dropped[0] > 0) out.getWarnings().add(dropped[0] + " statement(s) were left out because they didn't point to the transcript.");
@@ -303,6 +331,18 @@ public final class InsightValidator {
             if (word.matcher(norm(l.text())).find()) return true;
         }
         return false;
+    }
+
+    /** The project's name was actually said in the cited lines (all its meaningful words, in any case). */
+    static boolean nameSaid(String name, List<Integer> evidence, Map<Integer, Line> lines) {
+        StringBuilder said = new StringBuilder();
+        for (int seq : evidence) { Line l = lines.get(seq); if (l != null) said.append(' ').append(norm(l.text())); }
+        String text = said.toString();
+        for (String w : norm(name).split(" ")) {
+            if (w.length() < 3) continue;
+            if (!Pattern.compile("\\b" + Pattern.quote(w) + "\\b").matcher(text).find()) return false;
+        }
+        return true;
     }
 
     /** Every meaningful word of the spoken deadline appears in the cited lines. */
