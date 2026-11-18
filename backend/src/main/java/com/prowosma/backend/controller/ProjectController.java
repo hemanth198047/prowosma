@@ -281,11 +281,13 @@ public class ProjectController {
     @PostMapping("/{id}/clone")
     public Project clone(
             @PathVariable String id,
-            @RequestBody Map<String, String> body,
+            @RequestBody(required = false) Map<String, String> body,
             Authentication auth) {
         Project source = projectService.getById(id);
         Project copy = new Project();
-        copy.setName(body.getOrDefault("name", source.getName() + " (Copy)"));
+        String name = body == null ? null : body.get("name");
+        name = name == null || name.isBlank() ? source.getName() + " (Copy)" : name.trim();      // never a blank name
+        copy.setName(name.length() > 200 ? name.substring(0, 200) : name);
         copy.setDescription(source.getDescription());
         copy.setColor(source.getColor());
         copy.setOrganizationId(ws.getWorkspaceId());
