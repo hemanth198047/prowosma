@@ -101,23 +101,24 @@ describe("top-bar clock", () => {
   });
 
   it("asks 'still working?' after the workspace's idle minutes without activity", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });   // the test library's own waiting keeps real timeouts
     api.getMyAttendance.mockResolvedValue({ data: working({ rules: { ...rules, idleMinutes: 1 } }) });
     show();
     await screen.findByRole("button", { name: /Clocked in/ });
-    await act(async () => { vi.advanceTimersByTime(80000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(80000); });
     expect(await screen.findByRole("alertdialog", { name: "Are you still working?" })).toBeInTheDocument();
     expect(api.reportIdle).not.toHaveBeenCalled();
   });
 
   it("with 'pause' rules, reports the idle time back-dated to the last activity", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });   // the test library's own waiting keeps real timeouts
     api.getMyAttendance.mockResolvedValue({ data: working({ rules: { ...rules, idleMinutes: 1, idleAction: "PAUSE" } }) });
     api.reportIdle.mockResolvedValue({ data: working() });
     show();
     await screen.findByRole("button", { name: /Clocked in/ });
     const before = Date.now();
-    await act(async () => { vi.advanceTimersByTime(80000); });
+    // Keep the clock moving until the check fires (under a busy test run the first tick can land late).
+    await act(async () => { await vi.advanceTimersByTimeAsync(80000); });
     await waitFor(() => expect(api.reportIdle).toHaveBeenCalledTimes(1));
     const since = Date.parse(api.reportIdle.mock.calls[0][0]);
     expect(since).toBeLessThanOrEqual(before + 1000);
