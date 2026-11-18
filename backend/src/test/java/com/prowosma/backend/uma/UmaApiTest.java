@@ -922,4 +922,19 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(mongoTemplate.getCollection("uma_insights").countDocuments()).isZero();
         assertThat(mongoTemplate.count(new Query(Criteria.where("sourceActionKey").regex("^uma:")), Task.class)).isEqualTo(1);
     }
+
+    @Test
+    void separatedSpeakersKeepNeutralLabels_andANameFromTheSpeechServerIsNeverTrusted() throws Exception {
+        enable(ownerToken(), workspaceId);
+        stt.body = "{\"language\":\"en\",\"segments\":["
+                + "{\"start\":0,\"end\":3,\"text\":\"I will send the deck today.\",\"speaker\":\"Speaker 1\"},"
+                + "{\"start\":3,\"end\":6,\"text\":\"Thanks, I will review it.\",\"speaker\":\"Ravi Kumar\"},"
+                + "{\"start\":6,\"end\":9,\"text\":\"Great, see you Friday.\",\"speaker\":\"Speaker 2\"}]}";
+        String id = uploadOk();
+        pipeline.drain();
+        JsonNode d = detail(id);
+        assertThat(d.at("/segments/0/speaker").asText()).isEqualTo("Speaker 1");
+        assertThat(d.at("/segments/1/speaker").isNull()).as("a name from the speech server is a guess: dropped").isTrue();
+        assertThat(d.at("/segments/2/speaker").asText()).isEqualTo("Speaker 2");
+    }
 }

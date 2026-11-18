@@ -33,7 +33,8 @@ import java.util.stream.Stream;
  *   <li>the operator's server from {@code app.uma.stt.base-url} (may be on a private address — it is set by whoever runs the server), else</li>
  *   <li>the workspace's speech-to-text setting that an admin saved for the existing assistant (read only).</li>
  * </ol>
- * Speakers are not separated (no diarization): every line is "unknown speaker" rather than a guessed name.
+ * Speakers: when the speech server separates them (our own server can, with pyannote), lines get neutral labels ("Speaker 1"); otherwise
+ * every line is "unknown speaker". A label is never turned into a person's name here.
  */
 @Component
 @Slf4j
@@ -152,6 +153,8 @@ public class UmaTranscriber {
                     seg.setOrganizationId(org); seg.setMeetingId(m.getId()); seg.setSeq(++seq);
                     seg.setStartMs(starts.get(i) + s.startMs()); seg.setEndMs(starts.get(i) + s.endMs());
                     seg.setText(text);
+                    // Separated speakers (if the speech server does it) are numbered per piece of audio, so a long recording's pieces say which part.
+                    if (s.speaker() != null) seg.setSpeaker(starts.size() == 1 ? s.speaker() : s.speaker() + " (part " + (i + 1) + ")");
                     batch.add(seg);
                 }
                 store.appendSegments(batch);

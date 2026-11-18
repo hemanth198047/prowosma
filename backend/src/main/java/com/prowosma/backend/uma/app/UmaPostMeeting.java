@@ -211,6 +211,10 @@ public class UmaPostMeeting {
             if (a.isEdited()) continue;                                         // a person chose the owner: leave it alone
             a.setOwnerVerified(false);
             if (a.getOwnerSpoken() == null) { a.setOwnerBasis(null); continue; }
+            if (a.getOwnerSpoken().matches("(?i)(unknown )?speaker( [0-9]+)?( \\(part [0-9]+\\))?")) {
+                a.setOwnerBasis("Said by \"" + a.getOwnerSpoken() + "\": the recording doesn't say who that is. Choose the owner.");
+                continue;
+            }
             TeamMember matched = a.getOwnerMemberId() == null ? null : byId.get(a.getOwnerMemberId());
             if (matched != null && matched.getEmail() != null && invited.contains(matched.getEmail().toLowerCase(Locale.ROOT))) {
                 a.setOwnerVerified(true);

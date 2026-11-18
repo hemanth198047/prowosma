@@ -98,7 +98,10 @@ public class OpenAiCompatibleSttClient implements SpeechToTextClient {
                 String text = s.path("text").asText("").strip();
                 if (text.isEmpty()) continue;
                 Double nsp = s.has("no_speech_prob") && s.get("no_speech_prob").isNumber() ? s.get("no_speech_prob").asDouble() : null;
-                out.add(new Segment(Math.round(s.path("start").asDouble(0) * 1000), Math.round(s.path("end").asDouble(0) * 1000), text, nsp));
+                // Only a neutral label is accepted from the server (our own one separates speakers when set up): a name would be a guess.
+                String spk = s.path("speaker").asText("").strip();
+                String speaker = spk.matches("Speaker [1-9][0-9]?") ? spk : null;
+                out.add(new Segment(Math.round(s.path("start").asDouble(0) * 1000), Math.round(s.path("end").asDouble(0) * 1000), text, nsp, speaker));
             }
             if (out.isEmpty()) {                                                         // plain-json models: one block of text, no timing
                 String text = n.path("text").asText("").strip();

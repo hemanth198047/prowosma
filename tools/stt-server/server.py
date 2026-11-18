@@ -5,8 +5,10 @@ Speaks the OpenAI "audio transcriptions" API (POST /v1/audio/transcriptions, mul
 backend's OpenAiCompatibleSttClient calls - so Prowosma can use this $0 server, or OpenAI / Groq / any compatible service,
 by changing one setting. Runs faster-whisper (CTranslate2) on CPU or GPU.
 
-Speaker diarization is NOT done here: every segment is returned without a speaker. The app shows "Unknown speaker"
-rather than guessing names.
+Speaker separation (diarization) is OFF unless set up: then every segment is returned without a speaker and the app
+shows "Unknown speaker". With STT_DIARIZE=1 and a Hugging Face token that has accepted the pyannote model's licence, each
+segment gets a NEUTRAL label ("Speaker 1", "Speaker 2", numbered by first appearance) - never a person's name. Telling
+who "Speaker 2" is stays with people (or with transcripts from Meet/Teams, which name signed-in speakers).
 
 Environment:
   STT_MODEL        whisper model size or path (default "small"; "medium"/"large-v3" are more accurate, slower)
@@ -14,6 +16,8 @@ Environment:
   STT_COMPUTE      "int8" (default on CPU), "float16" on GPU
   STT_API_KEY      optional; when set, requests must send "Authorization: Bearer <key>"
   STT_MAX_MB       largest upload accepted (default 500)
+  STT_DIARIZE      "1" to separate speakers (needs: pip install pyannote.audio, and HF_TOKEN)
+  HF_TOKEN         Hugging Face token that accepted https://hf.co/pyannote/speaker-diarization-3.1 (only with STT_DIARIZE=1)
 """
 import os
 import tempfile
@@ -29,8 +33,52 @@ COMPUTE = os.environ.get("STT_COMPUTE", "int8" if DEVICE == "cpu" else "float16"
 API_KEY = os.environ.get("STT_API_KEY", "").strip()
 MAX_BYTES = int(os.environ.get("STT_MAX_MB", "500")) * 1024 * 1024
 
-app = FastAPI(title="Prowosma speech-to-text", version="1.0")
+DIARIZE = os.environ.get("STT_DIARIZE", "").strip() in ("1", "true", "yes")
+HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
+
+app = FastAPI(title="Prowosma speech-to-text", version="1.1")
 _model = None
+_diarizer = None
+_diarizer_error = None
+
+
+def diarizer():
+    """The pyannote pipeline, loaded once; None (with a reason) when it isn't set up or can't load."""
+    global _diarizer, _diarizer_error
+    if not DIARIZE or _diarizer is not None or _diarizer_error is not None:
+        return _diarizer
+    try:
+        from pyannote.audio import Pipeline   # optional dependency
+        if not HF_TOKEN:
+            raise RuntimeError("HF_TOKEN is not set")
+        _diarizer = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token=HF_TOKEN)
+        if DEVICE == "cuda":
+            import torch
+            _diarizer.to(torch.device("cuda"))
+    except Exception as e:                    # not installed, no access to the gated model, no network...
+        _diarizer_error = f"{type(e).__name__}: {e}"
+    return _diarizer
+
+
+def assign_speakers(segs, turns):
+    """Gives each transcript segment the speaker who talks most during it, as "Speaker N" numbered by first appearance.
+
+    segs:  [{"start": s, "end": e, ...}]   turns: [(start, end, raw_label)] from the diarizer
+    A segment that overlaps no turn gets no speaker (it stays unknown rather than guessed).
+    """
+    order = {}
+    for seg in segs:
+        best, best_overlap = None, 0.0
+        for (ts, te, label) in turns:
+            overlap = min(seg["end"], te) - max(seg["start"], ts)
+            if overlap > best_overlap:
+                best, best_overlap = label, overlap
+        if best is None:
+            continue
+        if best not in order:
+            order[best] = f"Speaker {len(order) + 1}"
+        seg["speaker"] = order[best]
+    return segs
 
 
 def model():
@@ -42,7 +90,9 @@ def model():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": MODEL_NAME, "device": DEVICE, "loaded": _model is not None}
+    return {"status": "ok", "model": MODEL_NAME, "device": DEVICE, "loaded": _model is not None,
+            "diarization": ("ready" if _diarizer is not None else "unavailable: " + _diarizer_error if _diarizer_error else "not loaded yet")
+            if DIARIZE else "off"}
 
 
 @app.get("/v1/models")
@@ -88,6 +138,15 @@ async def transcribe(
                 })
         except Exception as e:                   # corrupt / unsupported audio
             raise HTTPException(status_code=400, detail={"error": {"message": f"Could not read that audio: {type(e).__name__}"}})
+        diarized = False
+        if segs and diarizer() is not None:
+            try:
+                result = diarizer()(tmp.name)
+                turns = [(t.start, t.end, label) for t, _, label in result.itertracks(yield_label=True)]
+                assign_speakers(segs, turns)
+                diarized = True
+            except Exception:                    # separation failing never loses the transcript
+                diarized = False
 
     text = " ".join(s["text"] for s in segs).strip()
     if response_format in ("text",):
@@ -96,4 +155,5 @@ async def transcribe(
     if response_format == "verbose_json":
         body["segments"] = segs
         body["processing_seconds"] = round(time.time() - started, 2)
+        body["speakers_separated"] = diarized
     return body
