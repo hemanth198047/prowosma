@@ -237,6 +237,8 @@ if (-not $localMongo) {
             Set-Content -Path (Join-Path $Run "mongod.pid") -Value $p.Id
             $started = $true; Ok "Started mongod (data in .prowosma-run\mongo-data)"
         } elseif (Has "docker") {
+            & docker info *> $null
+            if ($LASTEXITCODE -ne 0) { Fail "MongoDB isn't running, and Docker is installed but not running. Start Docker Desktop (or install MongoDB Community Server), then run this again." }
             $exists = (& docker ps -a --filter "name=^prowosma-mongo$" --format "{{.Names}}") -eq "prowosma-mongo"
             if ($exists) { & docker start prowosma-mongo | Out-Null } else { & docker run -d --name prowosma-mongo -p 27017:27017 -v prowosma-mongo:/data/db mongo:7 | Out-Null }
             Set-Content -Path (Join-Path $Run "mongo-docker") -Value "prowosma-mongo"

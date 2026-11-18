@@ -48,6 +48,7 @@ const ActivityLog = lazy(() => import("./pages/ActivityLog"));
 const Reports = lazy(() => import("./pages/Reports"));
 import NotificationBell from "./components/NotificationBell";
 import LiveClock from "./components/LiveClock";
+import ClockWidget from "./components/ClockWidget";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import ConnectionStatus from "./components/ConnectionStatus";
 import AIStatus from "./components/AIStatus";
@@ -61,6 +62,7 @@ const Integrations = lazy(() => import("./pages/Integrations"));
 const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
 const AiMeetingAssistant = lazy(() => import("./pages/AiMeetingAssistant"));
 const AiMeetingGoogleCallback = lazy(() => import("./pages/AiMeetingGoogleCallback"));
+const Attendance = lazy(() => import("./pages/Attendance"));
 const MeetingPlatforms = lazy(() => import("./pages/MeetingPlatforms"));
 const GoogleMeetCallback = lazy(() => import("./pages/GoogleMeetCallback"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
@@ -355,6 +357,7 @@ function AppShell() {
       "/meetings":          "Meeting Notes",
       "/meeting-assistant": "Meeting Assistant",
       "/ai-meeting-assistant": "AI Meeting Assistant",
+      "/attendance": "Attendance",
       "/integrations/meeting-platforms": "Meeting Platforms",
       "/sops":              "SOPs",
       "/":                  "Dashboard",
@@ -433,6 +436,7 @@ function AppShell() {
                   <img src="/logo-icon.png" alt="" className="logo-icon" />
                   <span>Prowosma</span>
                 </div>
+                <div className="mobile-clock"><ClockWidget mobile /></div>
               </div>}
               {!isLoginPage && <div className="topbar">
                 {/* Left: menu button (narrow screens) + where you are */}
@@ -451,6 +455,7 @@ function AppShell() {
                 {/* Right cluster */}
                 <div className="topbar-right-cluster">
                   <LiveClock />
+                  <ClockWidget />
                   <ConnectionStatus />
                   {!restricted && <AIStatus />}
                   <NotificationBell />
@@ -492,6 +497,7 @@ function AppShell() {
                   <Route path="/docs" element={<ProtectedRoute><Docs /></ProtectedRoute>} />
                   <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
                   <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/google-callback" element={<ProtectedRoute><AiMeetingGoogleCallback /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />

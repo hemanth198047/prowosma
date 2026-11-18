@@ -104,6 +104,8 @@ else
     mkdir -p "$RUN/mongo-data"
     start_bg mongod "$ROOT" mongod --dbpath "$RUN/mongo-data" --port 27017 --bind_ip 127.0.0.1
     ok "Started mongod (data in .prowosma-run/mongo-data)"
+  elif has docker && ! docker info >/dev/null 2>&1; then
+    fail "MongoDB isn't running, and Docker is installed but not running. Start Docker Desktop (or install MongoDB), then run this again."
   elif has docker; then
     if docker ps -a --format '{{.Names}}' | grep -qx prowosma-mongo; then docker start prowosma-mongo >/dev/null
     else docker run -d --name prowosma-mongo -p 27017:27017 -v prowosma-mongo:/data/db mongo:7 >/dev/null; fi

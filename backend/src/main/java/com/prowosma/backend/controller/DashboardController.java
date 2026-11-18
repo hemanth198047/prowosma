@@ -31,6 +31,8 @@ public class DashboardController {
     private final com.prowosma.backend.service.MeetingActionItemService meetingActionItemService;
     private final WorkspaceContext  workspaceContext;
     private final com.prowosma.backend.service.VisibilityService visibility;
+    private final com.prowosma.backend.attendance.app.AttendanceFeature attendanceFeature;
+    private final com.prowosma.backend.attendance.app.AttendanceService attendanceService;
 
     /**
      * Phase 1 — critical KPIs only.
@@ -107,6 +109,8 @@ public class DashboardController {
         result.put("activeGoals",      activeGoals);
         result.put("totalGoals",       goals.size());
         result.put("activeProjectList",   activeProjectList);
+        // With Attendance on, the "online" number on the dashboard is the people clocked in right now.
+        if (attendanceFeature.isOn(orgId)) result.put("onlineCount", attendanceService.clockedInCount(orgId));
         // projectsWithProgress = same as activeProjectList with progress field
         // The frontend reads either key, so provide both for compatibility
         var projectsWithProgress = projects.stream()

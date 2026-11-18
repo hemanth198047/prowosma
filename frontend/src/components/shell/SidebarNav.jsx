@@ -6,6 +6,7 @@ import SidebarBadge from "../SidebarBadge";
 import CanDo from "../CanDo";
 import { useAccess } from "../../hooks/useAccess";
 import { useAiMeetingAssistantEnabled } from "../../hooks/useAiMeetingAssistantEnabled";
+import { useAttendanceEnabled } from "../../hooks/useAttendance";
 import { NAV_TOP, NAV_GROUPS, NAV_BOTTOM, NAV_RESTRICTED, matchesPath } from "./navConfig";
 
 function NavItem({ item, onNav, badges, can, flags }) {
@@ -22,7 +23,7 @@ function NavItem({ item, onNav, badges, can, flags }) {
   return item.gate?.cando ? <CanDo action={item.gate.cando}>{link}</CanDo> : link;
 }
 
-function NavGroup({ group, onNav, badges, can, pathname }) {
+function NavGroup({ group, onNav, badges, can, pathname, flags }) {
   // null = follow the route (open while you're inside the group); a click pins it.
   const [toggled, setToggled] = useState(null);
   const holdsCurrent = group.items.some(i => matchesPath(i, pathname));
@@ -43,7 +44,7 @@ function NavGroup({ group, onNav, badges, can, pathname }) {
       {open && (
         <div className="sb-group-items" id={id}>
           {group.items.map(item => (
-            <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} />
+            <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} flags={flags} />
           ))}
         </div>
       )}
@@ -54,7 +55,7 @@ function NavGroup({ group, onNav, badges, can, pathname }) {
 export default function SidebarNav({ onNav, badges }) {
   const { restricted, can } = useAccess();
   const { pathname } = useLocation();
-  const flags = { aiMeetingAssistant: useAiMeetingAssistantEnabled() };
+  const flags = { aiMeetingAssistant: useAiMeetingAssistantEnabled(), attendance: useAttendanceEnabled() };
 
   if (restricted) {
     // Department / assigned-work access: only the areas scoped to them. The API refuses the rest.
@@ -64,7 +65,7 @@ export default function SidebarNav({ onNav, badges }) {
         <div className="sb-scroll">
           <div className="sb-list">
             {NAV_RESTRICTED.map(item => (
-              <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} />
+              <NavItem key={item.to} item={item} onNav={onNav} badges={badges} can={can} flags={flags} />
             ))}
           </div>
         </div>
@@ -85,7 +86,7 @@ export default function SidebarNav({ onNav, badges }) {
           ))}
         </div>
         {NAV_GROUPS.map(group => (
-          <NavGroup key={group.id} group={group} onNav={onNav} badges={badges} can={can} pathname={pathname} />
+          <NavGroup key={group.id} group={group} onNav={onNav} badges={badges} can={can} pathname={pathname} flags={flags} />
         ))}
       </div>
       <div className="sb-bottom">

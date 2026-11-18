@@ -8,7 +8,7 @@ import {
   FileStack, Gauge, Presentation, PiggyBank, Shuffle, Clock, Users, Building2,
   MessageSquare, History, Workflow, Zap, ArrowLeftRight, Plug, Download,
   Sparkles, Brain, Wand2, Tag, SlidersHorizontal, Building, ShieldCheck,
-  KeyRound, Palette, Wrench, Code2, UserCircle, Settings,
+  KeyRound, Palette, Wrench, Code2, UserCircle, Settings, AlarmClock,
 } from "lucide-react";
 
 // gate: { can: "<capability>" } (access context) or { cando: "<action>" } (role)
@@ -56,6 +56,8 @@ export const NAV_GROUPS = [
   ] },
   { id: "people", label: "People", icon: Users, items: [
     { to: "/team", label: "Members", icon: Users },
+    // Attendance: only listed when the workspace's "attendance" flag is on.
+    { to: "/attendance", label: "Attendance", icon: AlarmClock, gate: { flag: "attendance" } },
     { to: "/org-chart", label: "Org chart", icon: Building2 },
     { to: "/channels", label: "Channels", icon: MessageSquare },
     { to: "/activity", label: "Activity Log", icon: History },
@@ -112,6 +114,7 @@ export const NAV_RESTRICTED = [
   { to: "/ai", label: "AI Assistant", icon: Sparkles, end: true },
   { to: "/team", label: "Members", icon: Users },
   { to: "/org-chart", label: "Org chart", icon: Building2 },
+  { to: "/attendance", label: "Attendance", icon: AlarmClock, gate: { flag: "attendance" } },
 ];
 
 /** Does a nav item's route cover this pathname? (`end` items match exactly.) */

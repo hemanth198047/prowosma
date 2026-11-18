@@ -46,7 +46,9 @@ public final class AccessGatePolicy {
             "/api/users/me",
             "/api/health",
             "/api/invitations/accept",
-            "/api/team/presence");
+            "/api/team/presence",
+            // everyone clocks in; the attendance service shows a restricted person only their own records
+            "/api/attendance");
 
     /** Read-only reference data the project and task screens need. */
     private static final List<String> GET_ONLY = List.of(

@@ -21,8 +21,8 @@ const full = [...NAV_TOP, ...NAV_GROUPS.flatMap(g => g.items), ...NAV_BOTTOM];
 
 describe("navigation config", () => {
   it("keeps every link of the old full menu, once each", () => {
-    // The only addition: the new AI Meeting Assistant, shown only when its feature flag is on.
-    const routes = full.map(i => i.to).filter(r => r !== "/ai-meeting-assistant");
+    // The only additions: the AI Meeting Assistant and Attendance, each shown only when its feature flag is on.
+    const routes = full.map(i => i.to).filter(r => r !== "/ai-meeting-assistant" && r !== "/attendance");
     expect([...routes].sort()).toEqual([...OLD_FULL_MENU].sort());
   });
 
@@ -33,8 +33,16 @@ describe("navigation config", () => {
     expect(NAV_RESTRICTED.some(i => i.to === "/ai-meeting-assistant")).toBe(false);
   });
 
+  it("lists Attendance under People and in the restricted menu, behind its feature flag", () => {
+    const items = full.filter(i => i.to === "/attendance");
+    expect(items).toHaveLength(1);
+    expect(items[0].gate).toEqual({ flag: "attendance" });
+    expect(NAV_GROUPS.find(g => g.id === "people").items.some(i => i.to === "/attendance")).toBe(true);
+    expect(NAV_RESTRICTED.find(i => i.to === "/attendance").gate).toEqual({ flag: "attendance" });
+  });
+
   it("keeps every link of the old restricted menu", () => {
-    const routes = [...NAV_RESTRICTED, ...NAV_BOTTOM].map(i => i.to);
+    const routes = [...NAV_RESTRICTED, ...NAV_BOTTOM].map(i => i.to).filter(r => r !== "/attendance");
     expect([...routes].sort()).toEqual([...OLD_RESTRICTED_MENU].sort());
   });
 

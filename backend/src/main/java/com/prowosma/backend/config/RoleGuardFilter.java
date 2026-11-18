@@ -156,6 +156,12 @@ public class RoleGuardFilter extends OncePerRequestFilter {
             return;
         }
 
+        // ── Attendance self-service (clock in/out, breaks, own leave and corrections) is for every member, viewers included:
+        // it changes only the person's own records, which the attendance service enforces. ──────────────────────────────
+        if (path.startsWith("/api/attendance/me/")) {
+            chain.doFilter(request, response); return;
+        }
+
         // ── VIEWER cannot mutate anything ─────────────────────────────────
         if ("VIEWER".equals(role)) {
             sendForbidden(response,
