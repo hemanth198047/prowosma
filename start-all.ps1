@@ -371,7 +371,9 @@ if ($feRunning) {
         if ($code -ne 0) { Fail "npm install failed (see above)." }
     }
     # --strictPort: start on exactly this port or stop with an error - never move silently to another port.
-    $null = Start-Window "Prowosma Frontend" $Frontend "npm run dev -- --port $FePort --strictPort" @{}
+    # Vite is started directly (same as "npm run dev", whose script is just "vite"): through npm, PowerShell drops the "--"
+    # and npm then rejects --port as one of its own options.
+    $null = Start-Window "Prowosma Frontend" $Frontend "node .\node_modules\vite\bin\vite.js --port $FePort --strictPort" @{}
     Set-Content -Path $FePortFile -Value $FePort
     Write-Host "   waiting for the frontend" -NoNewline
     if (Wait-Port $FePort 120 "frontend") { Ok "Frontend is up" } else { Warn "The frontend didn't start - check the 'Prowosma Frontend' window." }
