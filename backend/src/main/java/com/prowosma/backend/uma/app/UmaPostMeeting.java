@@ -212,7 +212,7 @@ public class UmaPostMeeting {
         // (e.g. a solo "Meet now" test, where the recording carries the organiser's display name, not their email).
         TeamMember organiser = null;
         String soloSpeaker = null, soloName = null;
-        boolean nobodyElseInvited = m.getCreatedBy() != null && invited.size() == 1;
+        boolean nobodyElseInvited = m.getCreatedBy() != null && organiserAddresses(org, m.getCreatedBy()).containsAll(invited);
         if (nobodyElseInvited) {
             organiser = members.findByOrganizationId(org).stream()
                     .filter(t -> t.getEmail() != null && t.getEmail().equalsIgnoreCase(m.getCreatedBy())).findFirst().orElse(null);
@@ -261,6 +261,15 @@ public class UmaPostMeeting {
             else if (invited.size() <= 1) a.setOwnerBasis("\"" + a.getOwnerSpoken() + "\" couldn't be checked against the invitation list (the meeting has no invited people). Confirm the owner.");
             else a.setOwnerBasis("\"" + a.getOwnerSpoken() + "\" isn't one of the people invited to this meeting. Confirm the owner.");
         }
+    }
+
+    /** The organiser's own addresses: their Prowosma login and the Google / Microsoft accounts they connected (a calendar invite lists those). */
+    private Set<String> organiserAddresses(String org, String createdBy) {
+        Set<String> own = new HashSet<>(Set.of(createdBy.toLowerCase(Locale.ROOT)));
+        Query q = new Query(Criteria.where("organizationId").is(org).and("userEmail").is(createdBy.toLowerCase(Locale.ROOT)));
+        for (UmaGoogleConnection g : mongo.find(q, UmaGoogleConnection.class)) if (g.getAccount() != null) own.add(g.getAccount().toLowerCase(Locale.ROOT));
+        for (UmaMicrosoftConnection x : mongo.find(q, UmaMicrosoftConnection.class)) if (x.getAccount() != null) own.add(x.getAccount().toLowerCase(Locale.ROOT));
+        return own;
     }
 
     /** "priya", "priya sharma" or "sharma" against "Priya Sharma": every spoken word must be one of the member's name words. */

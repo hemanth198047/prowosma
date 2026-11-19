@@ -8,6 +8,7 @@ import com.prowosma.backend.model.TeamMember;
 import com.prowosma.backend.tenant.TwoWorkspaceTestBase;
 import com.prowosma.backend.uma.ai.InsightPrompts;
 import com.prowosma.backend.uma.app.UmaPipeline;
+import com.prowosma.backend.uma.model.UmaGoogleConnection;
 import com.prowosma.backend.uma.model.UmaMeeting;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -397,6 +398,28 @@ class UmaAutomationTest extends TwoWorkspaceTestBase {
             assertThat(t.getTitle()).isEqualTo("Explain the feature");
             assertThat(t.getAssigneeIds()).containsExactly(me);
         });
+    }
+
+    @Test
+    void aSoloMeetingFromTheCalendar_theOrganisersOwnGoogleAccountOnTheInviteIsntSomeoneElse() throws Exception {
+        enable();
+        String me = member(ownerEmail, "Test Owner");
+        UmaGoogleConnection g = new UmaGoogleConnection();
+        g.setOrganizationId(workspaceId); g.setUserEmail(ownerEmail.toLowerCase()); g.setAccount("Me.Personal@gmail.com");
+        mongoTemplate.save(g);
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM) ? SOLO_REPLY : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", SOLO, "title", "Instant meeting", "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
+        String id = json(r).get("id").asText();
+        UmaMeeting m = mongoTemplate.findById(id, UmaMeeting.class);
+        m.setAttendees(new ArrayList<>(List.of("me.personal@gmail.com", ownerEmail)));
+        mongoTemplate.save(m);
+        pipeline.drain();
+        assertThat(tasksOf(id)).singleElement().satisfies(t -> assertThat(t.getAssigneeIds()).containsExactly(me));
+
+        // someone else invited: the speaker could be either of them, so it waits for review
+        String id2 = meeting(List.of(ownerEmail, "ravi@client.test"), SOLO);
+        assertThat(tasksOf(id2)).isEmpty();
     }
 
     @Test
