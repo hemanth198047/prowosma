@@ -54,123 +54,16 @@ function fmtDate(d) {
   });
 }
 
-/* ── Contextual workspace status strip ─────────────────────────
-   Replaces the random quote bar with real workspace intelligence.
-   Reads from the dashboard summary already loaded in Phase 1.     */
-/* ── Status Strip — Tailwind version ─────────────────────────────
-   First component migrated to Tailwind as a migration reference.   */
-function StatusStrip({ summary }) {
-  const [idx, setIdx] = useState(0);
-
-  const alerts = [];
-  if (summary) {
-    const overdue = summary.overdueCount || 0;
-    const active  = summary.activeProjects || 0;
-    const done    = summary.doneTasks || 0;
-    const total   = summary.totalTasks || 0;
-    const goals   = summary.activeGoals || 0;
-    const inProg  = summary.inProgressTasks || 0;
-    const pct     = total > 0 ? Math.round(done / total * 100) : 0;
-
-    if (overdue > 0) alerts.push({
-      Icon: AlertTriangle, text:`${overdue} task${overdue>1?"s are":" is"} overdue`,
-      cta:"Review", href:"/tasks?filter=overdue",
-      cls:"bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700",
-      ctaCls:"text-amber-700 bg-amber-100 hover:bg-amber-200 dark:text-amber-300",
-    });
-    if (inProg > 0) alerts.push({
-      // No CTA here — Kanban/Jira Board are already one click away in
-      // WORK HUB just below, so a duplicate link here was pure repetition.
-      Icon: Zap, text:`${inProg} task${inProg>1?"s":""} in progress across ${active} project${active!==1?"s":""}`,
-      cta:null, href:null,
-      cls:"bg-brand-50 border-brand-200 dark:bg-brand-900/20 dark:border-brand-700",
-      ctaCls:"text-brand-700 bg-brand-100 hover:bg-brand-200 dark:text-brand-300",
-    });
-    if (goals > 0 && pct > 0) alerts.push({
-      Icon: Target, text:`${goals} active goal${goals>1?"s":""} · ${pct}% of tasks complete`,
-      cta:"Goals", href:"/goals",
-      cls:"bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700",
-      ctaCls:"text-green-700 bg-green-100 hover:bg-green-200 dark:text-green-300",
-    });
-    if (alerts.length === 0) alerts.push({
-      Icon: CheckCircle2, text:"All projects on track · No overdue items",
-      cta:null, href:null,
-      cls:"bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700",
-      ctaCls:"",
-    });
-  } else {
-    alerts.push({
-      Icon: BarChart3, text:"Loading workspace status…", cta:null, href:null,
-      cls:"bg-brand-50 border-brand-200 dark:bg-brand-900/20 dark:border-brand-700",
-      ctaCls:"",
-    });
-  }
-
-  useEffect(() => {
-    if (alerts.length < 2) return;
-    const t = setInterval(() => setIdx(i => (i + 1) % alerts.length), 6000);
-    return () => clearInterval(t);
-  }, [alerts.length]);
-
-  const alert = alerts[Math.min(idx, alerts.length - 1)];
-
-  const linkStyle = {
-    display:"inline-flex", alignItems:"center", gap:"3px",
-    fontSize:"var(--text-xs)", fontWeight:700, padding:"3px 9px",
-    borderRadius:"6px", textDecoration:"none", marginLeft:"6px",
-    border:"1px solid currentColor", opacity:0.85,
-    transition:"opacity 0.15s",
-  };
-
+/* ── Small stat: one neutral style; only a problem (overdue, risks) is shown in red ── */
+function Chip({ Icon, value, label, alert, onClick }) {
   return (
-    <div style={{
-      display:"flex", alignItems:"center", gap:"9px",
-      padding:"8px 14px", borderRadius:"10px",
-      border:"1px solid rgba(99,102,241,0.2)",
-      background:"rgba(99,102,241,0.04)",
-      position:"relative", overflow:"hidden",
-      borderLeft:"3px solid var(--brand-500)", flexShrink:0,
-    }}>
-      <alert.Icon size={15} style={{ flexShrink:0, color:"#5B5FEE" }} />
-      <span style={{ fontWeight:600, fontSize:"var(--text-sm)", color:"#1e293b", whiteSpace:"nowrap" }}>
-        {alert.text}
-      </span>
-      {alert.cta && (
-        <a href={alert.href} style={{ ...linkStyle, color:"#5B5FEE", borderColor:"var(--brand-200)", background:"var(--brand-50)" }}
-           onMouseEnter={e=>e.currentTarget.style.opacity=1}
-           onMouseLeave={e=>e.currentTarget.style.opacity=0.85}>
-          {alert.cta} →
-        </a>
-      )}
-      {alerts.length > 1 && (
-        <div style={{ display:"flex", gap:"4px", alignItems:"center", marginLeft:"4px", flexShrink:0 }}>
-          {alerts.map((_, i) => (
-            <button key={i} onClick={() => setIdx(i)} style={{
-              width: i===idx ? "16px":"6px", height:"6px",
-              borderRadius:"3px", border:"none", cursor:"pointer", padding:0,
-              background: i===idx ? "var(--brand-500)" : "var(--gray-400)",
-              transition:"all 0.2s",
-            }}/>
-          ))}
-        </div>
-      )}
-    </div>
+    <button type="button" className={"dz-chip" + (alert ? " dz-chip--alert" : "")} onClick={onClick}>
+      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+      <span className="dz-chip-v">{value}</span>
+      <span className="dz-chip-l">{label}</span>
+    </button>
   );
 }
-
-
-/* ── Small stat chip ──────────────────────────────────────────── */
-function Chip({ Icon, value, label, color, bg, border, onClick }) {
-  return (
-    <div className="cc3-chip" onClick={onClick}
-      style={{ background:bg, borderColor:border, cursor:onClick?"pointer":"default" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClick)?.(e); } }}>
-      <span className="cc3-chip-icon" style={{ color }}><Icon size={12} /></span>
-      <span className="cc3-chip-value" style={{ color }}>{value}</span>
-      <span className="cc3-chip-label" style={{ color }}>{label}</span>
-    </div>
-  );
-}
-
 
 /* ── Overdue modal ────────────────────────────────────────────── */
 function OverdueModal({ summary, onClose, navigate }) {
@@ -227,19 +120,37 @@ function OverdueModal({ summary, onClose, navigate }) {
 const pct = (v) => Math.max(0, Math.min(100, Math.round(v || 0)));
 const shortDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null);
 
-/** A row of icon-only shortcuts with tooltips (one line; scrolls sideways on small screens). */
+/** A small tooltip that sits above (or below) its target, outside any scrolling row so it is never cut off. */
+function Tip({ text, children }) {
+  const [box, setBox] = useState(null);
+  const show = (e) => { const r = e.currentTarget.getBoundingClientRect(); setBox({ x: r.left + r.width / 2, top: r.top, bottom: r.bottom }); };
+  const hide = () => setBox(null);
+  const below = box && box.top < 48;
+  return (
+    <span className="dz-tip-host" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+      {children}
+      {box && createPortal(
+        <span role="tooltip" className={"dz-tip" + (below ? " dz-tip--below" : "")}
+          style={{ left: box.x, top: below ? box.bottom + 8 : box.top - 8 }}>{text}</span>,
+        document.body)}
+    </span>
+  );
+}
+
+/** A row of icon shortcuts, each with a tooltip naming it (one line; wraps on phones). */
 function IconRail({ label, tiles, navigate }) {
   return (
     <div className="dz-rail">
       <span className="dz-rail-label">{label}</span>
       <div className="dz-rail-icons" role="group" aria-label={label}>
         {tiles.map((t) => (
-          <button key={t.to + t.label} type="button" className="dz-icon" onClick={() => navigate(t.to)}
-            aria-label={t.sub ? `${t.label} - ${t.sub}` : t.label} data-tip={t.label}
-            style={{ "--ic": t.color || "var(--brand-600)", "--ic-bg": t.tint || "var(--brand-50)" }}>
-            <t.Icon size={18} aria-hidden="true" />
-            {t.badge ? <span className="dz-icon-badge">{t.badge}</span> : null}
-          </button>
+          <Tip key={t.to + t.label} text={t.sub ? `${t.label} · ${t.sub}` : t.label}>
+            <button type="button" className={"dz-icon" + (t.badge ? " dz-icon--alert" : "")} onClick={() => navigate(t.to)}
+              aria-label={t.sub ? `${t.label} - ${t.sub}` : t.label}>
+              <t.Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+              {t.badge ? <span className="dz-icon-badge">{t.badge}</span> : null}
+            </button>
+          </Tip>
         ))}
       </div>
     </div>
@@ -251,18 +162,77 @@ function Bar({ value, color }) {
   return <span className="dz-bar" aria-hidden="true"><span style={{ width: `${pct(value)}%`, background: color || "var(--brand-500)" }} /></span>;
 }
 
-/** A compact overview card: title + count, a few one-line items, and an expand button for the full details. */
-function OverviewCard({ Icon, title, count, onExpand, children, empty, action }) {
+/** Projects, goals and tasks in one card, one tab each: a few one-line items, and "Show all" for the full details. */
+function WorkOverview({ projects, goals, dashTasks, navigate, onExpand }) {
+  const [tab, setTab] = useState("projects");
+  const firstTaskTab = dashTasks.overdue.length ? "overdue" : dashTasks.active.length ? "active" : "today";
+  const [taskTab, setTaskTab] = useState(null);
+  const tt = taskTab || firstTaskTab;
+  const openTasks = dashTasks.active.length + dashTasks.overdue.length + dashTasks.today.length;
+  const TABS = [["projects", "Projects", projects.length], ["goals", "Goals", goals.length], ["tasks", "Tasks", openTasks]];
+  const LIMIT = 6;
+  const more = (n, what) => n > LIMIT && <li><button type="button" className="dz-more" onClick={() => onExpand(what, tt)}>Show all {n}</button></li>;
   return (
-    <section className="dz-card dz-ov" aria-label={title}>
-      <header className="dz-ov-head">
-        <span className="dz-ov-title"><Icon size={15} aria-hidden="true" /> {title}{count != null && <span className="dz-count">{count}</span>}</span>
-        {action}
-        <button type="button" className="dz-expand" onClick={onExpand} aria-label={`Show all ${title.toLowerCase()} in detail`} title="Show full details">
-          <Maximize2 size={14} aria-hidden="true" />
-        </button>
+    <section className="dz-card dz-work" aria-label="Work overview">
+      <header className="dz-card-head">
+        <div className="dz-tabs" role="tablist" aria-label="Work overview">
+          {TABS.map(([k, l, n]) => (
+            <button key={k} type="button" role="tab" id={`dz-tab-${k}`} aria-selected={tab === k} aria-controls="dz-work-panel"
+              className={"dz-tab" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>
+              {l}<span className="dz-tab-n">{n}</span>
+            </button>
+          ))}
+        </div>
+        <Tip text="Show full details">
+          <button type="button" className="dz-expand" onClick={() => onExpand(tab, tt)} aria-label={`Show all ${tab} in detail`}>
+            <Maximize2 size={14} aria-hidden="true" />
+          </button>
+        </Tip>
       </header>
-      {empty || <ul className="dz-ov-list">{children}</ul>}
+
+      <div id="dz-work-panel" role="tabpanel" aria-labelledby={`dz-tab-${tab}`}>
+        {tab === "projects" && (projects.length ? (
+          <ul className="dz-ov-list">
+            {projects.slice(0, LIMIT).map(p => (
+              <li key={p.id}><button type="button" className="dz-ov-row" onClick={() => navigate(`/tasks?projectId=${p.id}`)}>
+                <span className="dz-dot" style={{ background: p.color || "var(--brand-500)" }} aria-hidden="true" />
+                <span className="dz-ov-name">{p.name}</span><Bar value={p.progress} color={p.color} /><span className="dz-num">{pct(p.progress)}%</span>
+              </button></li>
+            ))}
+            {more(projects.length, "projects")}
+          </ul>
+        ) : <p className="dz-muted">No projects yet. <button type="button" className="dz-link" onClick={() => navigate("/projects?new=true")}>Create one</button></p>)}
+
+        {tab === "goals" && (goals.length ? (
+          <ul className="dz-ov-list">
+            {goals.slice(0, LIMIT).map(g => (
+              <li key={g.id}><button type="button" className="dz-ov-row" onClick={() => navigate("/goals")}>
+                <span className="dz-dot" style={{ background: "var(--viz-goal, #7C5CBF)" }} aria-hidden="true" />
+                <span className="dz-ov-name">{g.title}</span><Bar value={g.progress} color="var(--viz-goal, #7C5CBF)" /><span className="dz-num">{pct(g.progress)}%</span>
+              </button></li>
+            ))}
+            {more(goals.length, "goals")}
+          </ul>
+        ) : <p className="dz-muted">No goals yet. <button type="button" className="dz-link" onClick={() => navigate("/goals?new=true")}>Set one</button></p>)}
+
+        {tab === "tasks" && (
+          <>
+            <div className="dz-seg dz-seg-sm dz-subtabs" role="group" aria-label="Which tasks">
+              {TASK_TABS.map(([k, l]) => (
+                <button key={k} type="button" aria-pressed={tt === k} className={tt === k ? "on" : ""} onClick={() => setTaskTab(k)}>
+                  {l} <span className="dz-num">{dashTasks[k].length}</span>
+                </button>
+              ))}
+            </div>
+            {dashTasks[tt].length ? (
+              <ul className="dz-ov-list">
+                {dashTasks[tt].slice(0, LIMIT).map(t => <li key={t.id}><TaskLine task={t} navigate={navigate} /></li>)}
+                {more(dashTasks[tt].length, "tasks")}
+              </ul>
+            ) : <p className="dz-muted">{tt === "overdue" ? "Nothing overdue." : tt === "today" ? "Nothing due today." : "Nothing in progress."}</p>}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -555,8 +525,6 @@ export default function Dashboard() {
   const projects = summary.projectsWithProgress?.length > 0 ? summary.projectsWithProgress : (summary.activeProjectList || []);
   const goals = summary.activeGoalList || [];
   const projectName = (id) => projects.find(p => p.id === id)?.name;
-  const firstTaskTab = dashTasks.overdue.length ? "overdue" : dashTasks.active.length ? "active" : "today";
-  const tTab = dashTasks[taskTab]?.length || taskTab === firstTaskTab ? taskTab : firstTaskTab;
 
   /* hub definitions (icons only on the page; names show as tooltips) */
   const workTiles = [
@@ -613,91 +581,48 @@ export default function Dashboard() {
   return (
     <div className="db-root dz">
 
-      {/* STATUS BAR */}
-      <StatusStrip summary={summary} />
 
-      {/* HERO */}
-      <div className="db-hero">
-        <div className="db-hero-bar" />
-        <div className="db-hero-body">
-          <div className="db-hero-left">
-            <h1 className="db-hero-greeting">{greeting()}, {userName}</h1>
-            <div className="db-hero-date">{todayStr}</div>
-            <div className="db-chips-row">
-              {totalOverdue > 0 && <Chip Icon={AlertTriangle} value={totalOverdue} label="overdue" color="#ef4444" bg="rgba(239,68,68,0.08)" border="rgba(239,68,68,0.25)" onClick={() => setShowOverdue(true)} />}
-              <Chip Icon={CheckSquare} value={summary.inProgressTasks||0} label="in progress" color="#6366f1" bg="rgba(99,102,241,0.08)" border="rgba(99,102,241,0.2)" onClick={() => navigate("/tasks?status=IN_PROGRESS")} />
-              <Chip Icon={Target} value={`${goalHealth}%`} label="goal health" color={goalHealth>=70?"#10b981":"#f59e0b"} bg={goalHealth>=70?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"} border={goalHealth>=70?"rgba(16,185,129,0.25)":"rgba(245,158,11,0.25)"} onClick={() => navigate("/goals")} />
-              <Chip Icon={LineChart} value={`${completionRate}%`} label="completion" color="#8b5cf6" bg="rgba(139,92,246,0.08)" border="rgba(139,92,246,0.2)" onClick={() => navigate("/analytics")} />
-              <Chip Icon={ShieldCheck} value={summary.raidRisks||0} label="RAID risks" color="#dc2626" bg="rgba(220,38,38,0.07)" border="rgba(220,38,38,0.2)" onClick={() => navigate("/roadmap")} />
-              <Chip Icon={DollarSign} value={summary.roiForecast||"–"} label="ROI forecast" color="#0d9488" bg="rgba(13,148,136,0.07)" border="rgba(13,148,136,0.2)" onClick={() => navigate("/roi")} />
-              <Chip Icon={Users} value={summary.onlineCount||0} label="online" color="#10b981" bg="rgba(16,185,129,0.07)" border="rgba(16,185,129,0.2)" onClick={() => navigate("/team")} />
-            </div>
-          </div>
-          <div className="db-hero-actions">
-            <div className="db-live-pill"><span className="db-live-dot" /><span>Live</span></div>
-            <button className="db-btn db-btn-primary" onClick={() => navigate("/projects?new=true")}>+ New Project</button>
-            <button className="db-btn db-btn-green" onClick={() => navigate("/goals?new=true")}>+ New Goal</button>
-            <button className="db-btn db-btn-secondary" onClick={handleSendReminder}><Mail size={13} /> Reminder</button>
-            <button className="db-btn db-btn-indigo" onClick={() => navigate("/workflow-guide")}><Compass size={13} /> Guide</button>
-          </div>
+      {/* HEADER */}
+      <header className="dz-hero">
+        <div className="dz-hero-text">
+          <h1>{greeting()}, {userName}</h1>
+          <p>{todayStr}</p>
         </div>
+        <div className="dz-hero-actions">
+          <button type="button" className="dz-btn dz-btn--quiet" onClick={() => navigate("/workflow-guide")}><Compass size={15} aria-hidden="true" /> Guide</button>
+          <button type="button" className="dz-btn dz-btn--quiet" onClick={handleSendReminder}><Mail size={15} aria-hidden="true" /> Send reminder</button>
+          <button type="button" className="dz-btn" onClick={() => navigate("/goals?new=true")}><Plus size={15} aria-hidden="true" /> New goal</button>
+          <button type="button" className="dz-btn dz-btn--primary" onClick={() => navigate("/projects?new=true")}><Plus size={15} aria-hidden="true" /> New project</button>
+        </div>
+      </header>
+      <div className="dz-chips" aria-label="At a glance">
+        {totalOverdue > 0 && <Chip Icon={AlertTriangle} value={totalOverdue} label="overdue" alert onClick={() => setShowOverdue(true)} />}
+        <Chip Icon={CheckSquare} value={summary.inProgressTasks||0} label="in progress" onClick={() => navigate("/tasks?status=IN_PROGRESS")} />
+        <Chip Icon={Target} value={`${goalHealth}%`} label="goal health" onClick={() => navigate("/goals")} />
+        <Chip Icon={LineChart} value={`${completionRate}%`} label="complete" onClick={() => navigate("/analytics")} />
+        <Chip Icon={ShieldCheck} value={summary.raidRisks||0} label="RAID risks" alert={(summary.raidRisks||0) > 0} onClick={() => navigate("/roadmap")} />
+        <Chip Icon={DollarSign} value={summary.roiForecast||"–"} label="ROI forecast" onClick={() => navigate("/roi")} />
+        <Chip Icon={Users} value={summary.onlineCount||0} label="online" onClick={() => navigate("/team")} />
       </div>
 
-      {/* PROJECTS · GOALS · TASKS — minimal, expand for the full details */}
-      <div className="dz-overview">
-        <OverviewCard Icon={Folder} title="Active projects" count={projects.length} onExpand={() => setDetail("projects")}
-          empty={projects.length ? null : <p className="dz-muted">No projects — <button type="button" className="dz-link" onClick={() => navigate("/projects?new=true")}>create one</button></p>}>
-          {projects.slice(0, 4).map(p => (
-            <li key={p.id}><button type="button" className="dz-ov-row" onClick={() => navigate(`/tasks?projectId=${p.id}`)}>
-              <span className="dz-dot" style={{ background: p.color || "var(--brand-500)" }} aria-hidden="true" />
-              <span className="dz-ov-name">{p.name}</span><Bar value={p.progress} color={p.color} /><span className="dz-num">{pct(p.progress)}%</span>
-            </button></li>
-          ))}
-          {projects.length > 4 && <li><button type="button" className="dz-more" onClick={() => setDetail("projects")}>+{projects.length - 4} more</button></li>}
-        </OverviewCard>
-
-        <OverviewCard Icon={Target} title="Active goals" count={goals.length} onExpand={() => setDetail("goals")}
-          empty={goals.length ? null : <p className="dz-muted">No goals — <button type="button" className="dz-link" onClick={() => navigate("/goals?new=true")}>set one</button></p>}>
-          {goals.slice(0, 4).map(g => (
-            <li key={g.id}><button type="button" className="dz-ov-row" onClick={() => navigate("/goals")}>
-              <span className="dz-dot" style={{ background: "var(--viz-goal, #7C5CBF)" }} aria-hidden="true" />
-              <span className="dz-ov-name">{g.title}</span><Bar value={g.progress} color="var(--viz-goal, #7C5CBF)" /><span className="dz-num">{pct(g.progress)}%</span>
-            </button></li>
-          ))}
-          {goals.length > 4 && <li><button type="button" className="dz-more" onClick={() => setDetail("goals")}>+{goals.length - 4} more</button></li>}
-        </OverviewCard>
-
-        <OverviewCard Icon={ClipboardList} title="Tasks" onExpand={() => openTasks(tTab)}
-          action={
-            <div className="dz-seg dz-seg-sm" role="tablist" aria-label="Which tasks">
-              {TASK_TABS.map(([k, l]) => (
-                <button key={k} type="button" role="tab" aria-selected={tTab === k} className={tTab === k ? "on" : ""} onClick={() => setTaskTab(k)}
-                  title={l}>{k === "active" ? "Active" : k === "overdue" ? "Overdue" : "Today"} <span className="dz-num">{dashTasks[k].length}</span></button>
-              ))}
-            </div>
-          }
-          empty={dashTasks[tTab].length ? null : <p className="dz-muted">{tTab === "overdue" ? "Nothing overdue." : tTab === "today" ? "Nothing due today." : "Nothing in progress."}</p>}>
-          {dashTasks[tTab].slice(0, 4).map(t => <li key={t.id}><TaskLine task={t} navigate={navigate} /></li>)}
-          {dashTasks[tTab].length > 4 && <li><button type="button" className="dz-more" onClick={() => openTasks(tTab)}>+{dashTasks[tTab].length - 4} more</button></li>}
-        </OverviewCard>
-      </div>
-
-      {/* HUBS (icons) | AI HUB */}
-      <div className="dz-row">
-        <section className="dz-card dz-launch" aria-label="Shortcuts">
-          <IconRail label="Work" tiles={workTiles} navigate={navigate} />
-          <IconRail label="Insights" tiles={insightsTiles} navigate={navigate} />
-          <IconRail label="Knowledge" tiles={knowledgeTiles} navigate={navigate} />
-          <IconRail label="Automate" tiles={automateTiles} navigate={navigate} />
-          <IconRail label="Quick actions" tiles={quickTiles} navigate={navigate} />
-        </section>
-        <AiHub summary={summary} totalOverdue={totalOverdue} completionRate={completionRate} navigate={navigate} tiles={aiTiles} />
-      </div>
-
-      {/* CHARTS | TODAY'S MEETINGS */}
-      <div className="dz-row">
-        <ChartsPanel summary={summary} navigate={navigate} />
-        <div className="dz-pulse"><MeetingPulseCard /></div>
+      {/* Two columns: work and shortcuts on the left; charts, AI and today's meetings on the right. */}
+      <div className="dz-cols">
+        <div className="dz-col">
+          <WorkOverview projects={projects} goals={goals} dashTasks={dashTasks} navigate={navigate}
+            onExpand={(what, tt) => { if (what === "tasks") openTasks(tt); else setDetail(what); }} />
+          <section className="dz-card dz-launch" aria-label="Shortcuts">
+            <IconRail label="Work" tiles={workTiles} navigate={navigate} />
+            <IconRail label="Insights" tiles={insightsTiles} navigate={navigate} />
+            <IconRail label="Knowledge" tiles={knowledgeTiles} navigate={navigate} />
+            <IconRail label="Automate" tiles={automateTiles} navigate={navigate} />
+            <IconRail label="Quick actions" tiles={quickTiles} navigate={navigate} />
+          </section>
+        </div>
+        <div className="dz-col">
+          <ChartsPanel summary={summary} navigate={navigate} />
+          <AiHub summary={summary} totalOverdue={totalOverdue} completionRate={completionRate} navigate={navigate} tiles={aiTiles} />
+          <div className="dz-pulse"><MeetingPulseCard /></div>
+        </div>
       </div>
 
       {detail === "projects" && <DetailPanel title={`Active projects (${projects.length})`} onClose={() => setDetail(null)}><ProjectsDetail projects={projects} navigate={navigate} /></DetailPanel>}

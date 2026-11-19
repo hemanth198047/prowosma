@@ -3,9 +3,9 @@
     "appName": "Prowosma"
   },
   "login": {
-    "tagline1": "Gestión de proyectos",
-    "taglineAccent": "hecha para la velocidad.",
-    "description": "Una sola plataforma para proyectos, objetivos, conocimiento y colaboración en equipo — todo lo que tu equipo necesita, sin buscar en ningún otro lugar.",
+    "tagline1": "Planifica el trabajo, coordina al equipo",
+    "taglineAccent": "y mira a dónde van las horas.",
+    "description": "Proyectos, tareas, tiempo y chat de equipo para estudios y equipos de rodaje, en un solo lugar.",
     "chips": {
       "ai": "Gestión de tareas con IA",
       "goals": "Seguimiento de objetivos y OKR",
@@ -35,11 +35,11 @@
     "emailPlaceholder": "tu@empresa.com",
     "passwordLabel": "Contraseña",
     "pleaseWait": "Espera un momento…",
-    "signInSubmit": "Iniciar sesión →",
-    "createAccountSubmit": "Crear cuenta →",
-    "orSignInWith": "o inicia sesión con",
-    "magicLinkButton": "✉️ Enviar enlace mágico (sin contraseña)",
-    "magicLinkSentSuccess": "✅ Enlace mágico enviado — revisa tu correo",
+    "signInSubmit": "Iniciar sesión",
+    "createAccountSubmit": "Crear cuenta",
+    "orSignInWith": "o",
+    "magicLinkButton": "Envíame un enlace para entrar",
+    "magicLinkSentSuccess": "Enlace enviado. Revisa tu correo.",
     "magicLinkFailed": "No se pudo enviar el enlace mágico",
     "enterEmailFirst": "Introduce tu correo electrónico arriba primero",
     "continueWithAuth0": "Continuar con Auth0 SSO",
@@ -52,8 +52,8 @@
     "roleViewer": "Observador",
     "newToProwosma": "¿Nuevo en Prowosma?",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-    "createFreeAccount": "Crear una cuenta gratis",
-    "signInInstead": "Iniciar sesión en su lugar",
+    "createFreeAccount": "Crear una cuenta",
+    "signInInstead": "Iniciar sesión",
     "footer": "© {{year}} {{appName}} · Todos los derechos reservados",
     "passwordExpired": {
       "heading": "Tu contraseña ha caducado",
@@ -75,6 +75,7 @@
       "genericFailed": "Algo salió mal. Inténtalo de nuevo.",
       "passwordMismatch": "Las nuevas contraseñas no coinciden.",
       "resetFailed": "No se pudo restablecer tu contraseña. Inténtalo de nuevo."
-    }
+    },
+    "selfHostedNote": "Funciona en tu propio servidor. Tus datos se quedan contigo."
   }
 }

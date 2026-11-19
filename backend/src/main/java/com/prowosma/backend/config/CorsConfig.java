@@ -34,7 +34,7 @@ public class CorsConfig {
     public static List<String> originPatterns(String raw, boolean anyLocalhost) {
         List<String> out = new java.util.ArrayList<>();
         for (String o : raw.split(",")) if (!o.isBlank()) out.add(o.trim());
-        if (anyLocalhost) { out.add("http://localhost:[*]"); out.add("http://127.0.0.1:[*]"); }
+        if (anyLocalhost) { out.add("http://localhost:[*]"); out.add("http://127.0.0.1:[*]"); out.add("http://[::1]:[*]"); }
         return out;
     }
 

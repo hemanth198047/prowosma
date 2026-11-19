@@ -32,7 +32,7 @@ describe("Login — internationalization", () => {
     await waitFor(() => {
       expect(screen.getByText("Welcome back")).toBeInTheDocument();
     });
-    expect(screen.getByText(/built for velocity/i)).toBeInTheDocument();
+    expect(screen.getByText(/see where the hours go/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText("you@company.com")).toBeInTheDocument();
   });
 
@@ -43,7 +43,7 @@ describe("Login — internationalization", () => {
     await waitFor(() => {
       expect(screen.getByText("Bienvenido de nuevo")).toBeInTheDocument();
     });
-    expect(screen.getByText(/hecha para la velocidad/i)).toBeInTheDocument();
+    expect(screen.getByText(/a dónde van las horas/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText("tu@empresa.com")).toBeInTheDocument();
   });
 

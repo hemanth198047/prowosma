@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { chatWithAI, getAISettings, toggleAI } from "../api/ai";
+import { MessageCircle, X as XIcon } from "lucide-react";
 
 /* ─── Help guide content (offline fallback when AI is off) ─── */
 const HELP_CONTENT = {
@@ -524,9 +525,9 @@ export default function ChatBot() {
         title="Ask me anything (Ctrl+/)"
         aria-label="Open help assistant"
       >
-        <span className="cb-fab-icon">{open?"✕":"💬"}</span>
+        <span className="cb-fab-icon" aria-hidden="true">{open ? <XIcon size={18} /> : <MessageCircle size={18} />}</span>
         {!open&&unread>0&&<span className="cb-fab-badge">{unread}</span>}
-        {!open&&<span className="cb-fab-label">Ask me</span>}
+        {!open&&<span className="cb-fab-label">Help</span>}
       </button>
 
       {/* ── Window ───────────────────────────────────────── */}

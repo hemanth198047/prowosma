@@ -8,7 +8,7 @@ import { SUPPORTED_LANGUAGES } from "../i18n";
  * src/i18n/index.js's detection config), so it's remembered on return
  * visits.
  */
-export default function LanguageSwitcher({ style }) {
+export default function LanguageSwitcher({ style, className }) {
   const { i18n } = useTranslation();
 
   return (
@@ -16,7 +16,8 @@ export default function LanguageSwitcher({ style }) {
       aria-label="Language"
       value={i18n.resolvedLanguage || "en"}
       onChange={(e) => i18n.changeLanguage(e.target.value)}
-      style={{ fontSize: "12px", padding: "4px 6px", borderRadius: "6px", ...style }}
+      className={className}
+      style={className ? style : { fontSize: "12px", padding: "4px 6px", borderRadius: "6px", ...style }}
     >
       {SUPPORTED_LANGUAGES.map((lang) => (
         <option key={lang.code} value={lang.code}>{lang.label}</option>

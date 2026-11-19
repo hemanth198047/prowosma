@@ -25,26 +25,30 @@ describe("Dashboard", () => {
     projectsWithProgress: PROJECTS, activeGoalList: [{ id: "g1", title: "Ship 10 films", progress: 40, status: "ACTIVE" }],
   } }));
 
-  it("keeps the header, shows compact projects / goals / tasks at the top, and drops Team, Configure and the meeting card", async () => {
+  it("keeps the header and puts projects, goals and tasks in one card with tabs; no Team / Configure / meeting card / status banner", async () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     expect(await screen.findByText(/Bo/)).toBeInTheDocument();
-    const projects = screen.getByRole("region", { name: "Active projects" });
-    expect(within(projects).getAllByRole("listitem").length).toBe(5);         // 4 + "more"
-    expect(within(projects).getByText("+2 more")).toBeInTheDocument();
-    expect(within(projects).queryByText("Wedding film for the Sharmas")).not.toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Active goals" })).toHaveTextContent("Ship 10 films");
-    expect(await within(screen.getByRole("region", { name: "Tasks" })).findByText("Colour grade")).toBeInTheDocument();
-    for (const gone of ["TEAM", "CONFIGURE", "MEETING ASSISTANT", "WORK HUB"]) expect(screen.queryByText(gone)).not.toBeInTheDocument();
+    const work = screen.getByRole("region", { name: "Work overview" });
+    expect(within(work).getByRole("tab", { name: /Projects/ })).toHaveAttribute("aria-selected", "true");
+    expect(within(work).getByText("Film 1")).toBeInTheDocument();
+    expect(within(work).queryByText("Wedding film for the Sharmas")).not.toBeInTheDocument();
+    fireEvent.click(within(work).getByRole("tab", { name: /Goals/ }));
+    expect(within(work).getByText("Ship 10 films")).toBeInTheDocument();
+    fireEvent.click(within(work).getByRole("tab", { name: /Tasks/ }));
+    expect(await within(work).findByText("Colour grade")).toBeInTheDocument();
+    for (const gone of ["TEAM", "CONFIGURE", "MEETING ASSISTANT", "WORK HUB", "Loading workspace status…"]) expect(screen.queryByText(gone)).not.toBeInTheDocument();
   });
 
-  it("hubs and quick actions are icons with names; expanding shows full details in a side panel", async () => {
+  it("shortcut icons have names and tooltips; expanding shows the full details in a side panel", async () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     await screen.findByText(/Bo/);
     for (const g of ["Work", "Insights", "Knowledge", "Automate", "Quick actions"]) expect(screen.getByRole("group", { name: g })).toBeInTheDocument();
-    expect(within(screen.getByRole("group", { name: "Work" })).getByRole("button", { name: /^Kanban/ })).toBeInTheDocument();
+    const kanban = within(screen.getByRole("group", { name: "Work" })).getByRole("button", { name: /^Kanban/ });
+    fireEvent.mouseEnter(kanban.parentElement);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Kanban");
     expect(within(screen.getByRole("group", { name: "Quick actions" })).getByRole("button", { name: "New task" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Show all active projects/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Show all projects in detail/ }));
     const panel = screen.getByRole("dialog", { name: "Active projects (6)" });
     expect(within(panel).getByText("Film 6")).toBeInTheDocument();
     expect(within(panel).getByText("Wedding film for the Sharmas")).toBeInTheDocument();

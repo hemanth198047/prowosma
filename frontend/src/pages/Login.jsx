@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { isAuth0Configured } from "../config/auth0";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail, KeyRound, Building2 } from "lucide-react";
 
 import "../styles/pages/auth.css";
 const API = (import.meta.env.VITE_API_URL || "http://localhost:9090") + "/api";
@@ -20,23 +20,8 @@ const API_ORIGIN = API.replace(/\/api\/?$/, "");
 // Translation keys, not literal text — see src/i18n/locales/en.json /
 // es.json. Colors stay here since they're presentation, not translatable
 // content.
-const CHIP_KEYS = [
-  { key: "ai",           color:"#5B5FEE" },
-  { key: "goals",        color:"#7C5CBF" },
-  { key: "boards",       color: "#06b6d4" },
-  { key: "docs",         color:"#1E8E5A" },
-  { key: "collab",       color:"#C17D22" },
-  { key: "reports",      color: "#ec4899" },
-  { key: "integrations", color: "#3b82f6" },
-  { key: "rbac",         color: "#a855f7" },
-];
-
-const STAT_KEYS = [
-  { num: "26+",  key: "aiFeatures" },
-  { num: "14",   key: "modules" },
-  { num: "8",    key: "integrations" },
-  { num: "100%", key: "selfHosted" },
-];
+// The brand panel lists a few plain facts (no metrics, no colour-coded chips).
+const POINT_KEYS = ["boards", "collab", "docs", "reports"];
 
 export default function Login() {
   const { t } = useTranslation();
@@ -219,301 +204,182 @@ export default function Login() {
     }
   };
 
-  const handleKey = (e) => { if (e.key === "Enter") handleSubmit(); };
 
   if (mode === "twoFactor") {
     return (
-      <div className="auth-page">
-        <div className="auth-right" style={{ margin: "0 auto", maxWidth: 440 }}>
-          <div className="auth-right-inner">
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-              <LanguageSwitcher />
-            </div>
-            <h2 className="auth-form-heading">
-              {t("login.twoFactor.heading", "Two-factor authentication")}
-            </h2>
-            <p className="auth-form-sub">
-              {t("login.twoFactor.subtitle", "Enter the 6-digit code from your authenticator app")}
-            </p>
-
-            {error && <div className="auth-error">{error}</div>}
-
-            <div className="auth-field">
-              <label className="auth-field-label" htmlFor="two-factor-code">
-                {t("login.twoFactor.codeLabel", "Authentication code")}
-              </label>
-              <input id="two-factor-code" className="auth-input" type="text"
-                inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-                placeholder="123456" value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={(e) => { if (e.key === "Enter") handleTwoFactorSubmit(); }} />
-            </div>
-
-            <button className="auth-submit" onClick={handleTwoFactorSubmit} disabled={loading}>
-              {loading ? t("login.pleaseWait") : t("login.twoFactor.submit", "Verify & sign in")}
-            </button>
-
-            <p className="auth-switch">
-              <button className="auth-switch-btn"
-                onClick={() => { setMode("login"); setError(""); setTwoFactorCode(""); }}>
-                {t("login.twoFactor.backToSignIn", "Back to sign in")}
-              </button>
-            </p>
+      <Frame t={t}>
+        <h1 className="auth-title">{t("login.twoFactor.heading", "Two-step verification")}</h1>
+        <p className="auth-sub">{t("login.twoFactor.subtitle", "Enter the 6-digit code from your authenticator app")}</p>
+        {error && <div className="auth-error" role="alert">{error}</div>}
+        <form className="auth-form" noValidate onSubmit={(e) => { e.preventDefault(); handleTwoFactorSubmit(); }}>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="two-factor-code">{t("login.twoFactor.codeLabel", "Authentication code")}</label>
+            <input id="two-factor-code" className="auth-input" type="text"
+              inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              placeholder="123456" value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))} />
           </div>
-        </div>
-      </div>
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? t("login.pleaseWait") : t("login.twoFactor.submit", "Verify & sign in")}
+          </button>
+        </form>
+        <p className="auth-switch">
+          <button type="button" className="auth-link"
+            onClick={() => { setMode("login"); setError(""); setTwoFactorCode(""); }}>
+            {t("login.twoFactor.backToSignIn", "Back to sign in")}
+          </button>
+        </p>
+      </Frame>
     );
   }
 
   if (mode === "expiredReset") {
     return (
-      <div className="auth-page">
-        <div className="auth-right" style={{ margin: "0 auto", maxWidth: 440 }}>
-          <div className="auth-right-inner">
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-              <LanguageSwitcher />
-            </div>
-            <h2 className="auth-form-heading">{t("login.passwordExpired.heading")}</h2>
-            <p className="auth-form-sub">{t("login.passwordExpired.subtitle")}</p>
-
-            {error && <div className="auth-error">{error}</div>}
-
-            <div className="auth-field">
-              <label className="auth-field-label" htmlFor="reset-new-password">{t("login.passwordExpired.newPasswordLabel")}</label>
-              <input id="reset-new-password" className="auth-input" type="password"
-                placeholder="••••••••••" value={resetForm.newPassword}
-                onChange={(e) => setResetForm(f => ({ ...f, newPassword: e.target.value }))}
-                onKeyDown={(e) => { if (e.key === "Enter") handleExpiredReset(); }} />
-            </div>
-
-            <div className="auth-field">
-              <label className="auth-field-label" htmlFor="reset-confirm-password">{t("login.passwordExpired.confirmPasswordLabel")}</label>
-              <input id="reset-confirm-password" className="auth-input" type="password"
-                placeholder="••••••••••" value={resetForm.confirmPassword}
-                onChange={(e) => setResetForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                onKeyDown={(e) => { if (e.key === "Enter") handleExpiredReset(); }} />
-            </div>
-
-            <button className="auth-submit" onClick={handleExpiredReset} disabled={loading}>
-              {loading ? t("login.pleaseWait") : t("login.passwordExpired.submit")}
-            </button>
-
-            <p className="auth-switch">
-              <button className="auth-switch-btn"
-                onClick={() => { setMode("login"); setError(""); setResetForm({ newPassword: "", confirmPassword: "" }); }}>
-                {t("login.passwordExpired.backToSignIn")}
-              </button>
-            </p>
+      <Frame t={t}>
+        <h1 className="auth-title">{t("login.passwordExpired.heading")}</h1>
+        <p className="auth-sub">{t("login.passwordExpired.subtitle")}</p>
+        {error && <div className="auth-error" role="alert">{error}</div>}
+        <form className="auth-form" noValidate onSubmit={(e) => { e.preventDefault(); handleExpiredReset(); }}>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="reset-new-password">{t("login.passwordExpired.newPasswordLabel")}</label>
+            <input id="reset-new-password" className="auth-input" type="password" autoComplete="new-password"
+              value={resetForm.newPassword}
+              onChange={(e) => setResetForm(f => ({ ...f, newPassword: e.target.value }))} />
           </div>
-        </div>
-      </div>
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="reset-confirm-password">{t("login.passwordExpired.confirmPasswordLabel")}</label>
+            <input id="reset-confirm-password" className="auth-input" type="password" autoComplete="new-password"
+              value={resetForm.confirmPassword}
+              onChange={(e) => setResetForm(f => ({ ...f, confirmPassword: e.target.value }))} />
+          </div>
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? t("login.pleaseWait") : t("login.passwordExpired.submit")}
+          </button>
+        </form>
+        <p className="auth-switch">
+          <button type="button" className="auth-link"
+            onClick={() => { setMode("login"); setError(""); setResetForm({ newPassword: "", confirmPassword: "" }); }}>
+            {t("login.passwordExpired.backToSignIn")}
+          </button>
+        </p>
+      </Frame>
     );
   }
+
+  const isLogin = mode === "login";
+  const noEmoji = (v) => String(v).replace(/^[\p{Extended_Pictographic}️‍\s]+/u, "");
 
   return (
     <div className="auth-page">
 
-      {/* ── LEFT: Brand story ── */}
-      <div className="auth-left">
-        <div className="auth-left-top">
-
-          {/* Brand */}
-          <div className="auth-brand">
-            <img src="/logo-icon.png" alt="" className="auth-brand-mark" />
-            <span className="auth-brand-name">{t("common.appName")}</span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="auth-tagline">
-            {t("login.tagline1")}<br />
-            <span className="auth-tagline-accent">{t("login.taglineAccent")}</span>
-          </h1>
-
+      {/* Brand panel (hidden on small screens) */}
+      <aside className="auth-brand" aria-label={t("common.appName")}>
+        <div className="auth-mark auth-mark--light"><img src="/logo-mark-64.png" width="32" height="32" alt="" /><span>{t("common.appName")}</span></div>
+        <div className="auth-brand-copy">
+          <p className="auth-tagline">{t("login.tagline1")} {t("login.taglineAccent")}</p>
           <p className="auth-desc">{t("login.description")}</p>
-
-          {/* Feature chips */}
-          <div className="auth-chips">
-            {CHIP_KEYS.map((c) => (
-              <div key={c.key} className="auth-chip">
-                <span className="auth-chip-dot" style={{ background: c.color }} />
-                {t(`login.chips.${c.key}`)}
-              </div>
-            ))}
-          </div>
+          <ul className="auth-points">
+            {POINT_KEYS.map((k) => <li key={k}>{t(`login.chips.${k}`)}</li>)}
+          </ul>
         </div>
+        <p className="auth-brand-note">{t("login.selfHostedNote", "Runs on your own server. Your data stays with you.")}</p>
+      </aside>
 
-        {/* Stats row */}
-        <div className="auth-left-bottom">
-          {STAT_KEYS.map((s, i) => (
-            <Fragment key={s.key}>
-              <div className="auth-stat">
-                <span className="auth-stat-num">{s.num}</span>
-                <span className="auth-stat-label">{t(`login.stats.${s.key}`)}</span>
-              </div>
-              {i < STAT_KEYS.length - 1 && <div className="auth-stat-divider" />}
-            </Fragment>
-          ))}
-        </div>
-      </div>
+      <main className="auth-main" id="main">
+        <header className="auth-main-top">
+          <div className="auth-mark auth-mark--mobile"><img src="/logo-mark-64.png" width="28" height="28" alt="" /><span>{t("common.appName")}</span></div>
+          <LanguageSwitcher className="auth-lang" />
+        </header>
 
-      {/* ── RIGHT: Login form ── */}
-      <div className="auth-right">
-        <div className="auth-right-inner">
+        <div className="auth-card">
+          <h1 className="auth-title">{isLogin ? t("login.welcomeBack") : t("login.createAccountHeading")}</h1>
+          <p className="auth-sub">{isLogin ? t("login.signInSubtitle") : t("login.registerSubtitle")}</p>
 
-          <div className="auth-top-row">
-            <div className="auth-mobile-brand" aria-hidden="true">
-              <img src="/logo-icon.png" alt="" /><span>{t("common.appName")}</span>
-            </div>
-            <LanguageSwitcher />
-          </div>
+          {error   && <div className="auth-error" role="alert">{error}</div>}
+          {success && <div className="auth-success" role="status">{noEmoji(success)}</div>}
 
-          <h2 className="auth-form-heading">
-            {mode === "login" ? t("login.welcomeBack") : t("login.createAccountHeading")}
-          </h2>
-          <p className="auth-form-sub">
-            {mode === "login" ? t("login.signInSubtitle") : t("login.registerSubtitle")}
-          </p>
+          <form className="auth-form" noValidate onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+            {!isLogin && (
+              <>
+                <div className="auth-field">
+                  <label className="auth-label" htmlFor="auth-name">{t("login.fullNameLabel")}</label>
+                  <input id="auth-name" className="auth-input" name="name" type="text" autoComplete="name"
+                    placeholder={t("login.fullNamePlaceholder")} value={form.name} onChange={handleChange} />
+                </div>
+                <p className="auth-note">{t("login.accountTypeNote")}</p>
+              </>
+            )}
 
-          {/* Mode toggle */}
-          <div className="auth-mode-row">
-            <button
-              className={`auth-mode-btn ${mode === "login" ? "active" : ""}`}
-              onClick={() => { setMode("login"); setError(""); }}
-            >{t("login.signInTab")}</button>
-            <button
-              className={`auth-mode-btn ${mode === "register" ? "active" : ""}`}
-              onClick={() => { setMode("register"); setError(""); }}
-            >{t("login.createAccountTab")}</button>
-          </div>
-
-          {error   && <div className="auth-error">{error}</div>}
-          {success && <div className="auth-success" style={{color:"#1E8E5A",fontSize:"13px",marginBottom:"8px"}}>{success}</div>}
-
-          {mode === "register" && (
             <div className="auth-field">
-              <label className="auth-field-label" htmlFor="auth-name">{t("login.fullNameLabel")}</label>
-              <input id="auth-name" className="auth-input" name="name" type="text"
-                placeholder={t("login.fullNamePlaceholder")} value={form.name}
-                onChange={handleChange} onKeyDown={handleKey} />
+              <label className="auth-label" htmlFor="auth-email">{t("login.emailLabel")}</label>
+              <input id="auth-email" className="auth-input" name="email" type="email"
+                placeholder={t("login.emailPlaceholder")} value={form.email}
+                autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next"
+                onChange={handleChange} />
             </div>
-          )}
 
-          {mode === "register" && (
-            <div className="auth-account-type-note">
-              {t("login.accountTypeNote")}
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="auth-password">{t("login.passwordLabel")}</label>
+              <div className="auth-pw-wrap">
+                <input id="auth-password" className="auth-input" name="password" type={showPw ? "text" : "password"}
+                  value={form.password}
+                  autoComplete={isLogin ? "current-password" : "new-password"} enterKeyHint="go"
+                  onChange={handleChange} />
+                <button type="button" className="auth-pw-toggle" onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? t("login.hidePassword", "Hide password") : t("login.showPassword", "Show password")} aria-pressed={showPw}>
+                  {showPw ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                </button>
+              </div>
             </div>
-          )}
 
-          <div className="auth-field">
-            <label className="auth-field-label" htmlFor="auth-email">{t("login.emailLabel")}</label>
-            <input id="auth-email" className="auth-input" name="email" type="email"
-              placeholder={t("login.emailPlaceholder")} value={form.email}
-              autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next"
-              onChange={handleChange} onKeyDown={handleKey} />
-          </div>
+            {isLogin && (
+              <label className="auth-remember">
+                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                <span>{t("login.keepSignedIn", "Keep me signed in on this device")}<small>{t("login.keepSignedInHint", "For 30 days. Don't use on a shared computer.")}</small></span>
+              </label>
+            )}
 
-          <div className="auth-field">
-            <label className="auth-field-label" htmlFor="auth-password">{t("login.passwordLabel")}</label>
-            <div className="auth-pw-wrap">
-              <input id="auth-password" className="auth-input" name="password" type={showPw ? "text" : "password"}
-                placeholder="••••••••••" value={form.password}
-                autoComplete={mode === "login" ? "current-password" : "new-password"} enterKeyHint="go"
-                onChange={handleChange} onKeyDown={handleKey} />
-              <button type="button" className="auth-pw-toggle" onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? t("login.hidePassword", "Hide password") : t("login.showPassword", "Show password")} aria-pressed={showPw}>
-                {showPw ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
+            <button type="submit" className="auth-submit" disabled={loading}>
+              {loading ? t("login.pleaseWait") : noEmoji(isLogin ? t("login.signInSubmit") : t("login.createAccountSubmit")).replace(/\s*[→>]\s*$/, "")}
+            </button>
+          </form>
 
-          {mode === "login" && (
-            <label className="auth-remember">
-              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-              <span>{t("login.keepSignedIn", "Keep me signed in on this device")}<small>{t("login.keepSignedInHint", "For 30 days. Don't use on a shared computer.")}</small></span>
-            </label>
-          )}
-
-          <button className="auth-submit" onClick={handleSubmit} disabled={loading}>
-            {loading
-              ? t("login.pleaseWait")
-              : mode === "login" ? t("login.signInSubmit") : t("login.createAccountSubmit")}
-          </button>
-
-          {mode === "login" && (
-            <div className="auth-sso-section">
-              <div className="auth-sso-divider"><span>{t("login.orSignInWith")}</span></div>
-
-              {/* ── Magic link ── */}
-              <button className="auth-sso-btn" type="button" onClick={async()=>{
+          {isLogin && (
+            <div className="auth-alt">
+              <div className="auth-or"><span>{t("login.orSignInWith")}</span></div>
+              <button className="auth-secondary" type="button" onClick={async () => {
                 if (!form.email) return setError(t("login.enterEmailFirst"));
+                setError(""); setSuccess("");
                 try {
                   const client = (await import("../api/client")).default;
-                  await client.post("/auth/magic-link",{email:form.email});
+                  await client.post("/auth/magic-link", { email: form.email });
                   setSuccess(t("login.magicLinkSentSuccess"));
                 } catch { setError(t("login.magicLinkFailed")); }
-              }}>{t("login.magicLinkButton")}</button>
+              }}>
+                <Mail size={16} aria-hidden="true" /> {noEmoji(t("login.magicLinkButton"))}
+              </button>
 
-              {/* ── Social login & Auth0 SSO — only rendered once a real,
-                   customer-supplied Auth0 tenant is configured via
-                   VITE_AUTH0_DOMAIN / VITE_AUTH0_CLIENT_ID (see
-                   src/config/auth0.js). In a production build that hasn't
-                   set those, isAuth0Configured is false and this whole
-                   block just doesn't render — never silently authenticates
-                   real users against the shared development tenant. ── */}
               {isAuth0Configured && (
                 <>
-                  {/* Real OAuth via Auth0's federated connections, not a
-                       self-asserted email. Each button deep-links into the
-                       same Auth0 Universal Login flow used by "Continue
-                       with Auth0 SSO" below, pre-selecting the matching
-                       upstream provider. Requires that provider to be
-                       enabled as a Social Connection in the Auth0
-                       dashboard. Provider display names (Google/Microsoft/
-                       GitHub) are proper nouns/brand names — deliberately
-                       NOT translated, matching standard i18n practice for
-                       third-party product names. */}
-                  <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
-                    {[
-                      {p:"google-oauth2", label:"Google",    icon:"G", color:"#ea4335"},
-                      {p:"windowslive",   label:"Microsoft",  icon:"⊞", color:"#00a4ef"},
-                      {p:"github",        label:"GitHub",     icon:"⬡", color:"#24292e"},
-                    ].map(({p,label,icon,color})=>(
-                      <button key={p} type="button" style={{flex:1,padding:"9px 4px",
-                        border:`1px solid ${color}44`,borderRadius:"8px",
-                        background:`${color}10`,color,fontWeight:700,fontSize:"12px",cursor:"pointer"}}
-                        onClick={() => auth0Login({ authorizationParams: { connection: p } })}>
-                        {icon} {label}
-                      </button>
+                  <div className="auth-social">
+                    {[["google-oauth2", "Google"], ["windowslive", "Microsoft"], ["github", "GitHub"]].map(([p, label]) => (
+                      <button key={p} type="button" className="auth-secondary"
+                        onClick={() => auth0Login({ authorizationParams: { connection: p } })}>{label}</button>
                     ))}
                   </div>
-
-                  <button className="auth-sso-btn" style={{marginTop:"8px"}}
-                    onClick={() => auth0Login()} type="button">
-                    <span className="auth-sso-icon">🔐</span>
-                    {t("login.continueWithAuth0")}
+                  <button className="auth-secondary" type="button" onClick={() => auth0Login()}>
+                    <KeyRound size={16} aria-hidden="true" /> {t("login.continueWithAuth0")}
                   </button>
                 </>
               )}
 
-              {/* ── Enterprise SAML SSO ──────────────────────────────
-                   Only rendered once a workspace admin has actually wired
-                   up a real IdP (see the effect above) — a full-page
-                   redirect into Spring Security's own SAML2 flow, not an
-                   axios call, since the IdP needs to see the browser
-                   navigate there directly. */}
               {ssoProviders.length > 0 && (
                 <>
-                  <div className="auth-sso-divider" style={{marginTop:"14px"}}>
-                    <span>{t("login.enterpriseSso")}</span>
-                  </div>
+                  <div className="auth-or"><span>{t("login.enterpriseSso")}</span></div>
                   {ssoProviders.map((provider) => (
-                    <button key={provider.id} className="auth-sso-btn"
-                      style={{marginTop:"8px"}} type="button"
-                      onClick={() => {
-                        window.location.href = `${API_ORIGIN}${provider.loginUrl}`;
-                      }}>
-                      <span className="auth-sso-icon">🏢</span>
-                      {t("login.continueWithProvider", { provider: provider.label })}
+                    <button key={provider.id} className="auth-secondary" type="button"
+                      onClick={() => { window.location.href = `${API_ORIGIN}${provider.loginUrl}`; }}>
+                      <Building2 size={16} aria-hidden="true" /> {t("login.continueWithProvider", { provider: provider.label })}
                     </button>
                   ))}
                 </>
@@ -521,31 +387,45 @@ export default function Login() {
             </div>
           )}
 
-          <div className="auth-divider">
-            <div className="auth-divider-line" />
-            <span className="auth-divider-text">
-              {mode === "login" ? t("login.newToProwosma") : t("login.alreadyHaveAccount")}
-            </span>
-            <div className="auth-divider-line" />
-          </div>
-
           <p className="auth-switch">
-            <button className="auth-switch-btn"
-              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
-              {mode === "login" ? t("login.createFreeAccount") : t("login.signInInstead")}
+            {isLogin ? t("login.newToProwosma") : t("login.alreadyHaveAccount")}{" "}
+            <button type="button" className="auth-link"
+              onClick={() => { setMode(isLogin ? "register" : "login"); setError(""); setSuccess(""); }}>
+              {isLogin ? t("login.createFreeAccount") : t("login.signInInstead")}
             </button>
           </p>
-
         </div>
 
-        <div className="auth-right-footer">
-          {t("login.footer", { year: new Date().getFullYear(), appName: t("common.appName") })}
-          <div style={{ marginTop: 6 }}>
-            <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a>
-          </div>
-        </div>
-      </div>
-
+        <AuthFooter t={t} />
+      </main>
     </div>
+  );
+}
+
+/* Shared frame for the short single-purpose screens (2-step code, expired password). */
+function Frame({ t, children }) {
+  return (
+    <div className="auth-page auth-page--single">
+      <main className="auth-main" id="main">
+        <header className="auth-main-top">
+          <div className="auth-mark"><img src="/logo-mark-64.png" width="28" height="28" alt="" /><span>{t("common.appName")}</span></div>
+          <LanguageSwitcher className="auth-lang" />
+        </header>
+        <div className="auth-card">{children}</div>
+        <AuthFooter t={t} />
+      </main>
+    </div>
+  );
+}
+
+function AuthFooter({ t }) {
+  return (
+    <footer className="auth-footer">
+      <span>{t("login.footer", { year: new Date().getFullYear(), appName: t("common.appName") })}</span>
+      <nav aria-label="Legal" className="auth-legal">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+      </nav>
+    </footer>
   );
 }

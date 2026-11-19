@@ -3,9 +3,9 @@
     "appName": "Prowosma"
   },
   "login": {
-    "tagline1": "Project management",
-    "taglineAccent": "built for velocity.",
-    "description": "One platform for projects, goals, knowledge, and team collaboration — everything your team needs, nowhere else to look.",
+    "tagline1": "Plan the work, keep the team in step,",
+    "taglineAccent": "and see where the hours go.",
+    "description": "Projects, tasks, time and team chat for studios and crews, in one place.",
     "chips": {
       "ai": "AI-powered task management",
       "goals": "Goals & OKR tracking",
@@ -24,7 +24,7 @@
     },
     "welcomeBack": "Welcome back",
     "createAccountHeading": "Create account",
-    "signInSubtitle": "Sign in to your Prowosma workspace.",
+    "signInSubtitle": "Sign in to your workspace.",
     "registerSubtitle": "Get started with Prowosma for free.",
     "signInTab": "Sign In",
     "createAccountTab": "Create account",
@@ -35,11 +35,11 @@
     "emailPlaceholder": "you@company.com",
     "passwordLabel": "Password",
     "pleaseWait": "Please wait…",
-    "signInSubmit": "Sign in →",
-    "createAccountSubmit": "Create account →",
-    "orSignInWith": "or sign in with",
-    "magicLinkButton": "✉️ Send Magic Link (passwordless)",
-    "magicLinkSentSuccess": "✅ Magic link sent — check your email!",
+    "signInSubmit": "Sign in",
+    "createAccountSubmit": "Create account",
+    "orSignInWith": "or",
+    "magicLinkButton": "Email me a sign-in link",
+    "magicLinkSentSuccess": "Sign-in link sent. Check your email.",
     "magicLinkFailed": "Failed to send magic link",
     "enterEmailFirst": "Enter your email above first",
     "continueWithAuth0": "Continue with Auth0 SSO",
@@ -52,8 +52,8 @@
     "roleViewer": "Viewer",
     "newToProwosma": "New to Prowosma?",
     "alreadyHaveAccount": "Already have an account?",
-    "createFreeAccount": "Create a free account",
-    "signInInstead": "Sign in instead",
+    "createFreeAccount": "Create an account",
+    "signInInstead": "Sign in",
     "footer": "© {{year}} {{appName}} · All rights reserved",
     "passwordExpired": {
       "heading": "Your password has expired",
@@ -75,6 +75,7 @@
       "genericFailed": "Something went wrong. Please try again.",
       "passwordMismatch": "New passwords don't match.",
       "resetFailed": "Couldn't reset your password. Please try again."
-    }
+    },
+    "selfHostedNote": "Runs on your own server. Your data stays with you."
   }
 }
