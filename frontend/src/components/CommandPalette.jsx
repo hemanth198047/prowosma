@@ -8,33 +8,34 @@ import { useAccess } from "../hooks/useAccess";
 import { getTasks } from "../api/tasks";
 import { getProjects } from "../api/projects";
 import { statusText } from "../utils/statusText";
+import { Bot as IcBot, Building as IcBuilding, Calendar as IcCalendar, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, FileText as IcFileText, Folder as IcFolder, FolderKanban as IcFolderKanban, Mic as IcMic, RefreshCw as IcRefreshCw, Search as IcSearch, Settings as IcSettings, Target as IcTarget, Timer as IcTimer, TrendingUp as IcTrendingUp, User as IcUser, Users as IcUsers, Square as IcSquare } from "lucide-react";
 
 // ── Static commands ───────────────────────────────────────────
 const PAGES = [
-  { id: "go-dashboard",   icon: "📊", label: "Go to Dashboard",        path: "/",               group: "Navigate" },
-  { id: "go-tasks",       icon: "✅", label: "Go to Tasks",            path: "/tasks",           group: "Navigate" },
-  { id: "go-projects",    icon: "📁", label: "Go to Projects",         path: "/projects",        group: "Navigate" },
-  { id: "go-meeting-assistant", icon: "🤖", label: "Go to Meeting Assistant", path: "/meeting-assistant", group: "Navigate", needs: "USE_MEETING_ASSISTANT" },
-  { id: "go-goals",       icon: "🎯", label: "Go to Goals",            path: "/goals",           group: "Navigate" },
-  { id: "go-kanban",      icon: "🗂️", label: "Go to Kanban",           path: "/kanban",          group: "Navigate" },
-  { id: "go-calendar",    icon: "📅", label: "Go to Calendar",         path: "/calendar",        group: "Navigate" },
-  { id: "go-gantt",       icon: "📅", label: "Go to Gantt Chart",      path: "/gantt",           group: "Navigate" },
-  { id: "go-analytics",   icon: "📈", label: "Go to Analytics",        path: "/analytics",       group: "Navigate" },
-  { id: "go-reports",     icon: "📄", label: "Go to Reports",          path: "/reports",         group: "Navigate" },
-  { id: "go-team",        icon: "👥", label: "Go to Team",             path: "/team",            group: "Navigate" },
-  { id: "go-activity",    icon: "📋", label: "Go to Activity Log",     path: "/activity",        group: "Navigate" },
-  { id: "go-time",        icon: "⏱️", label: "Go to Time & Billing",   path: "/time-tracking",   group: "Navigate" },
-  { id: "go-developer",   icon: "⚙️", label: "Go to Developer Portal", path: "/developer",       group: "Navigate" },
-  { id: "go-ws-settings", icon: "🏢", label: "Workspace Settings",     path: "/workspace-settings", group: "Navigate" },
-  { id: "go-profile",     icon: "👤", label: "Profile & Security",     path: "/profile",         group: "Navigate" },
-  { id: "go-search",      icon: "🔍", label: "Search",                 path: "/search",          group: "Navigate" },
+  { id: "go-dashboard",   icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Dashboard",        path: "/",               group: "Navigate" },
+  { id: "go-tasks",       icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Tasks",            path: "/tasks",           group: "Navigate" },
+  { id: "go-projects",    icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Projects",         path: "/projects",        group: "Navigate" },
+  { id: "go-meeting-assistant", icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Meeting Assistant", path: "/meeting-assistant", group: "Navigate", needs: "USE_MEETING_ASSISTANT" },
+  { id: "go-goals",       icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Goals",            path: "/goals",           group: "Navigate" },
+  { id: "go-kanban",      icon: <IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Kanban",           path: "/kanban",          group: "Navigate" },
+  { id: "go-calendar",    icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Calendar",         path: "/calendar",        group: "Navigate" },
+  { id: "go-gantt",       icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Gantt Chart",      path: "/gantt",           group: "Navigate" },
+  { id: "go-analytics",   icon: <IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Analytics",        path: "/analytics",       group: "Navigate" },
+  { id: "go-reports",     icon: <IcFileText size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Reports",          path: "/reports",         group: "Navigate" },
+  { id: "go-team",        icon: <IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Team",             path: "/team",            group: "Navigate" },
+  { id: "go-activity",    icon: <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Activity Log",     path: "/activity",        group: "Navigate" },
+  { id: "go-time",        icon: <IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Time & Billing",   path: "/time-tracking",   group: "Navigate" },
+  { id: "go-developer",   icon: <IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Developer Portal", path: "/developer",       group: "Navigate" },
+  { id: "go-ws-settings", icon: <IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Workspace Settings",     path: "/workspace-settings", group: "Navigate" },
+  { id: "go-profile",     icon: <IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Profile & Security",     path: "/profile",         group: "Navigate" },
+  { id: "go-search",      icon: <IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Search",                 path: "/search",          group: "Navigate" },
 ];
 
 const ACTIONS = [
-  { id: "new-task",    icon: "✅", label: "Create New Task",    action: "new-task",    group: "Actions" },
-  { id: "new-project", icon: "📁", label: "Create New Project", action: "new-project", group: "Actions" },
-  { id: "new-goal",    icon: "🎯", label: "Create New Goal",    action: "new-goal",    group: "Actions" },
-  { id: "new-meeting-summary", icon: "🎙", label: "Analyse a Meeting (summary, minutes, tasks)", path: "/meeting-assistant", group: "Actions", needs: "USE_MEETING_ASSISTANT" },
+  { id: "new-task",    icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Task",    action: "new-task",    group: "Actions" },
+  { id: "new-project", icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Project", action: "new-project", group: "Actions" },
+  { id: "new-goal",    icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Goal",    action: "new-goal",    group: "Actions" },
+  { id: "new-meeting-summary", icon: <IcMic size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Analyse a Meeting (summary, minutes, tasks)", path: "/meeting-assistant", group: "Actions", needs: "USE_MEETING_ASSISTANT" },
 ];
 
 // ── Fuzzy match ───────────────────────────────────────────────
@@ -93,14 +94,14 @@ export default function CommandPalette({ onClose, onAction }) {
       ...ACTIONS.filter(a => !a.needs || can(a.needs)),
       ...PAGES.filter(p => !p.needs || can(p.needs)),
       ...tasks.slice(0, 100).map(t => ({
-        id: `task-${t.id}`, icon: t.status === "DONE" ? "✅" : t.status === "IN_PROGRESS" ? "🔄" : "⬜",
+        id: `task-${t.id}`, icon: t.status === "DONE" ? <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> : t.status === "IN_PROGRESS" ? <IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
         label: t.title,
         sub:   statusText(t.status),
         path:  `/tasks?highlight=${t.id}`,
         group: "Tasks",
       })),
       ...projects.map(p => ({
-        id: `proj-${p.id}`, icon: "📁",
+        id: `proj-${p.id}`, icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />,
         label: p.name,
         sub:   p.status,
         path:  `/projects?highlight=${p.id}`,

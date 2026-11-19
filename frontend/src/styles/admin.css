@@ -1,15 +1,15 @@
 /* === ADMIN CENTRE ======================================== */
 .admin-tab-bar { display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px; flex-wrap:wrap; }
-.admin-tab-btn { padding:7px 16px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:600; background:var(--bg-card); color:var(--gray-500); cursor:pointer; transition:all .15s; }
+.admin-tab-btn { padding:7px 16px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:600; background:var(--bg-card); color:var(--gray-500); cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1)); }
 .admin-tab-btn:hover { border-color:var(--brand-400); color:var(--brand-500); }
 .admin-tab-btn.active { background:rgba(99,102,241,0.1); border-color:rgba(99,102,241,0.3); color:var(--brand-500); }
 .admin-section { display:flex; flex-direction:column; gap:16px; }
 .admin-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
-.admin-card-title { font-size:13px; font-weight:800; color:var(--gray-700); margin-bottom:14px; }
+.admin-card-title { font-size:13px; font-weight: 600; color:var(--gray-700); margin-bottom:14px; }
 .admin-stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
 .admin-stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; text-align:center; }
 .admin-stat-icon { font-size:22px; margin-bottom:6px; }
-.admin-stat-num  { font-size:24px; font-weight:800; line-height:1; margin-bottom:4px; }
+.admin-stat-num  { font-size:24px; font-weight: 600; line-height:1; margin-bottom:4px; }
 .admin-stat-label { font-size:11px; color:var(--gray-400); }
 .admin-mfa-bar { height:8px; background:var(--gray-100); border-radius: var(--radius-full); margin:8px 0; overflow:hidden; }
 .admin-mfa-fill { height:100%; background:var(--success); border-radius: var(--radius-full); transition:width .4s; }
@@ -18,7 +18,7 @@
 .admin-session-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
 .admin-session-row:last-child { border-bottom:none; }
 .admin-session-info { flex:1; }
-.admin-session-user { font-size:12px; font-weight:700; color:var(--gray-700); }
+.admin-session-user { font-size:12px; font-weight: 600; color:var(--gray-700); }
 .admin-session-meta { font-size:11px; color:var(--gray-400); }
 .admin-audit-note { font-size:12px; color:var(--gray-500); line-height:1.7; }
 .admin-code { font-family:monospace; background:var(--gray-100); padding:2px 6px; border-radius:4px; font-size:12px; }
@@ -41,21 +41,21 @@
 .admin-flag-switch input:checked + .admin-flag-slider::before { transform:translateX(18px); }
 .admin-usage-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
 .admin-usage-stat { text-align:center; padding:10px; background:var(--gray-50); border-radius:var(--radius-sm); border:1px solid var(--border); }
-.admin-usage-num   { font-size:18px; font-weight:800; color:var(--gray-800); }
+.admin-usage-num   { font-size:18px; font-weight: 600; color:var(--gray-800); }
 .admin-usage-label { font-size:10px; color:var(--gray-400); margin-top:2px; }
 .admin-plans-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
 .admin-plan-card { border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; }
 .admin-plan-card.current { border-color:var(--brand-500); background:rgba(99,102,241,0.04); }
-.admin-plan-name { font-size:14px; font-weight:800; color:var(--gray-800); margin-bottom:4px; }
-.admin-plan-price { font-size:20px; font-weight:800; color:var(--brand-500); }
+.admin-plan-name { font-size:14px; font-weight: 600; color:var(--gray-800); margin-bottom:4px; }
+.admin-plan-price { font-size:20px; font-weight: 600; color:var(--brand-500); }
 .admin-plan-period { font-size:11px; font-weight:400; color:var(--gray-400); }
 .admin-plan-features { list-style:none; padding:0; margin:10px 0; font-size:12px; color:var(--gray-600); display:flex; flex-direction:column; gap:4px; }
-.admin-plan-current-badge { text-align:center; font-size:12px; font-weight:700; color:var(--success); margin-top:10px; }
+.admin-plan-current-badge { text-align:center; font-size:12px; font-weight: 600; color:var(--success); margin-top:10px; }
 .admin-billing-current { display:flex; flex-direction:column; gap:4px; }
-.admin-billing-plan-name { font-size:16px; font-weight:800; color:var(--gray-800); }
-.admin-billing-plan-price { font-size:22px; font-weight:800; color:var(--brand-500); }
+.admin-billing-plan-name { font-size:16px; font-weight: 600; color:var(--gray-800); }
+.admin-billing-plan-price { font-size:22px; font-weight: 600; color:var(--brand-500); }
 .admin-billing-period { font-size:13px; font-weight:400; color:var(--gray-400); }
 .admin-billing-seats { font-size:12px; color:var(--gray-500); margin-top:4px; }
 .admin-billing-next  { font-size:12px; color:var(--gray-400); }
 .admin-invoice-row { display:flex; gap:16px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
-.admin-invoice-status { color:var(--success); font-weight:700; flex:1; }
+.admin-invoice-status { color:var(--success); font-weight: 600; flex:1; }

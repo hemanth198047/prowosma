@@ -5,6 +5,7 @@ import client from "../api/client";
 import { useToast } from "../components/ToastContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer } from "recharts";
+import { CircleCheck as IcCircleCheck, CircleX as IcCircleX, Rocket as IcRocket, SkipBack as IcSkipBack, Timer as IcTimer, Zap as IcZap } from "lucide-react";
 
 const api = {
   metrics:  (days) => client.get(`/deployments/metrics?days=${days}`),
@@ -15,7 +16,7 @@ const api = {
 const STATUS_META = {
   SUCCESS:  { color:"var(--success)", bg:"rgba(16,185,129,.1)",  label:"Success"  },
   FAILED:   { color:"var(--danger)", bg:"rgba(239,68,68,.1)",   label:"Failed"   },
-  ROLLBACK: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  label:"⏮ Rollback" },
+  ROLLBACK: { color:"var(--warning)", bg:"rgba(245,158,11,.1)",  label:"Rollback" },
 };
 
 const DORA_META = {
@@ -73,7 +74,7 @@ export default function DeploymentAnalytics() {
 
   return (
     <div>
-      <PageHeader icon="🚀" title="Deployment Analytics"
+      <PageHeader icon={<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />} title="Deployment Analytics"
         description="DORA metrics, deployment frequency, and failure rate tracking"
         action={<button className="btn-primary" onClick={()=>setShowAdd(v=>!v)}>
           + Log Deployment
@@ -144,14 +145,14 @@ export default function DeploymentAnalytics() {
           {/* Key metrics */}
           <div className="dep-metrics-grid">
             {[
-              {icon:"🚀",label:"Total Deployments",value:metrics.totalDeployments ?? 0,color:"var(--brand-500)"},
-              {icon:"⚡",label:"Deploy Frequency",value:`${(metrics.deployFrequency ?? 0).toFixed(2)}/day`,color:"var(--success)"},
-              {icon:"💥",label:"Change Failure Rate",value:`${(metrics.changeFailureRate ?? 0).toFixed(1)}%`,
+              {icon:<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Total Deployments",value:metrics.totalDeployments ?? 0,color:"var(--brand-500)"},
+              {icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Deploy Frequency",value:`${(metrics.deployFrequency ?? 0).toFixed(2)}/day`,color:"var(--success)"},
+              {icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Change Failure Rate",value:`${(metrics.changeFailureRate ?? 0).toFixed(1)}%`,
                 color:(metrics.changeFailureRate??0)>15?"var(--danger)":"var(--success)"},
-              {icon:"✅",label:"Success",value:metrics.successCount ?? 0,color:"var(--success)"},
-              {icon:"❌",label:"Failed",value:metrics.failedCount ?? 0,color:"var(--danger)"},
-              {icon:"⏮",label:"Rollbacks",value:metrics.rollbackCount ?? 0,color:"var(--warning)"},
-              {icon:"⏱",label:"Avg Duration",value:metrics.avgDurationSec ? `${Math.round(metrics.avgDurationSec/60)} min` : "0 min",color:"var(--gray-700)"},
+              {icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Success",value:metrics.successCount ?? 0,color:"var(--success)"},
+              {icon:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Failed",value:metrics.failedCount ?? 0,color:"var(--danger)"},
+              {icon:<IcSkipBack size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Rollbacks",value:metrics.rollbackCount ?? 0,color:"var(--warning)"},
+              {icon:<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Avg Duration",value:metrics.avgDurationSec ? `${Math.round(metrics.avgDurationSec/60)} min` : "0 min",color:"var(--gray-700)"},
             ].map(m=>(
               <div key={m.label} className="dep-metric-card">
                 <div className="dep-metric-icon">{m.icon}</div>

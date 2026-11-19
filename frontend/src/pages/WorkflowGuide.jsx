@@ -1,49 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import { Bot as IcBot, Briefcase as IcBriefcase, Building as IcBuilding, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, Coins as IcCoins, Flame as IcFlame, Folder as IcFolder, FolderKanban as IcFolderKanban, Footprints as IcFootprints, Laptop as IcLaptop, Map as IcMap, NotebookPen as IcNotebookPen, Rocket as IcRocket, Settings as IcSettings, Target as IcTarget, TrendingUp as IcTrendingUp, Users as IcUsers, Zap as IcZap } from "lucide-react";
 
 // ── Workflow definitions per user role ──────────────────────────
 const WORKFLOWS = [
   {
     id: "project-manager",
-    icon: "🗂",
+    icon: <IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />,
     label: "Project Manager",
     // literal hex: concatenated with an alpha suffix below (e.g. `${color}22`)
     color: "#5B5FEE",
     tagline: "Plan, delegate, and track project delivery",
     steps: [
       {
-        step: 1, icon: "📁", title: "Create a Workspace",
+        step: 1, icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Create a Workspace",
         desc: "Your workspace is the home for all your team's work. Set it up with a name, logo, and timezone.",
         action: "Set up workspace", to: "/settings/general",
         tip: "Invite your team right after creating the workspace.",
       },
       {
-        step: 2, icon: "📂", title: "Create Projects",
+        step: 2, icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Create Projects",
         desc: "Break your work into projects. Each project can have sub-projects, categories, and a linked goal.",
         action: "New project", to: "/projects?new=true",
         tip: "Use categories to group related projects (e.g. 'Backend', 'Marketing').",
       },
       {
-        step: 3, icon: "✅", title: "Add Tasks",
+        step: 3, icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Add Tasks",
         desc: "Add tasks to each project with assignees, due dates, priorities, and custom fields.",
         action: "Create tasks", to: "/tasks",
         tip: "Use the Kanban board for a visual overview of task progress.",
       },
       {
-        step: 4, icon: "🎯", title: "Set Goals",
+        step: 4, icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Set Goals",
         desc: "Link projects to goals. Goals track the 'why' behind your work and show overall progress.",
         action: "Set a goal", to: "/goals?new=true",
         tip: "Goals with sub-goals give you a hierarchy: Company → Team → Personal.",
       },
       {
-        step: 5, icon: "⚡", title: "Run Sprints",
+        step: 5, icon: <IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Run Sprints",
         desc: "Use sprints to time-box work into 1–4 week cycles. Start a sprint and move tasks in.",
         action: "Start sprint", to: "/sprints",
         tip: "Review your burndown chart daily to spot blockers early.",
       },
       {
-        step: 6, icon: "📊", title: "Track & Report",
+        step: 6, icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Track & Report",
         desc: "Use the Dashboard, Reports, and Analytics pages to monitor delivery and share status updates.",
         action: "Open reports", to: "/reports",
         tip: "Schedule weekly reports to be emailed to stakeholders automatically.",
@@ -52,43 +53,43 @@ const WORKFLOWS = [
   },
   {
     id: "developer",
-    icon: "💻",
+    icon: <IcLaptop size={16} strokeWidth={1.5} aria-hidden="true" />,
     label: "Developer",
     color: "#0ea5e9",
     tagline: "Ship code faster with structured workflows",
     steps: [
       {
-        step: 1, icon: "🗂", title: "Join your Workspace",
+        step: 1, icon: <IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Join your Workspace",
         desc: "Accept the invitation link from your team lead. Your role and permissions are set automatically.",
         action: "Check invitations", to: "/team",
         tip: "Ask your admin to set your role to ADMIN if you need to create sprints.",
       },
       {
-        step: 2, icon: "🏃", title: "Pick up Sprint Tasks",
+        step: 2, icon: <IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Pick up Sprint Tasks",
         desc: "Check the active sprint for tasks assigned to you. Update status as you work.",
         action: "Open sprint", to: "/sprints",
         tip: "Use IN_PROGRESS status to signal you've started — the PM's board updates live.",
       },
       {
-        step: 3, icon: "🗂", title: "Use the Jira-style Board",
+        step: 3, icon: <IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Use the Jira-style Board",
         desc: "Move tasks across columns (To Do → In Progress → Done) with drag and drop.",
         action: "Open board", to: "/jira-board",
         tip: "Filter by your name to see only your tasks.",
       },
       {
-        step: 4, icon: "🚀", title: "Log Deployments",
+        step: 4, icon: <IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Log Deployments",
         desc: "After each release, log a deployment to track DORA metrics and failure rates.",
         action: "Log deployment", to: "/deployments",
         tip: "Connect your CI/CD webhook to log deployments automatically.",
       },
       {
-        step: 5, icon: "📝", title: "Write Docs",
+        step: 5, icon: <IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Write Docs",
         desc: "Document decisions, architecture, and runbooks in the Knowledge Base.",
         action: "Open docs", to: "/docs",
         tip: "Use /task to embed a related task directly inside a doc.",
       },
       {
-        step: 6, icon: "🤖", title: "Use AI Features",
+        step: 6, icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Use AI Features",
         desc: "Let AI estimate task effort, detect dependencies, and flag delay risks automatically.",
         action: "Try AI", to: "/ai",
         tip: "Enable 'Smart Prioritization' to have AI order your backlog by urgency.",
@@ -97,43 +98,43 @@ const WORKFLOWS = [
   },
   {
     id: "team-lead",
-    icon: "👥",
+    icon: <IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />,
     label: "Team Lead",
     color: "#1E8E5A",
     tagline: "Align your team and unblock delivery",
     steps: [
       {
-        step: 1, icon: "👥", title: "Manage your Team",
+        step: 1, icon: <IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Manage your Team",
         desc: "Invite members, set roles, and track who's online. ADMIN role can manage sprints and tasks.",
         action: "Team page", to: "/team",
         tip: "Use presence indicators to see who's active right now.",
       },
       {
-        step: 2, icon: "🎯", title: "Align on Goals",
+        step: 2, icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Align on Goals",
         desc: "Set team-level goals and link projects to them. Every sprint should move the needle on a goal.",
         action: "View goals", to: "/goals",
         tip: "Review goal progress in your weekly team meeting.",
       },
       {
-        step: 3, icon: "📋", title: "Run Standups",
+        step: 3, icon: <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Run Standups",
         desc: "Use the Standup feature to collect async updates from your team without a meeting.",
         action: "Standup", to: "/channels",
         tip: "AI can auto-generate standup summaries from task activity.",
       },
       {
-        step: 4, icon: "⚡", title: "Plan Sprints",
+        step: 4, icon: <IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Plan Sprints",
         desc: "Create a sprint, add tasks from the backlog, and set a capacity target for the team.",
         action: "Plan sprint", to: "/sprints",
         tip: "Use story points for capacity planning — the burndown tracks automatically.",
       },
       {
-        step: 5, icon: "🔥", title: "Monitor Risks",
+        step: 5, icon: <IcFlame size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Monitor Risks",
         desc: "Use AI Intelligence to see which tasks are at risk of missing deadlines before it happens.",
         action: "AI insights", to: "/ai-intelligence",
         tip: "Set up Automations to alert you when a task becomes overdue.",
       },
       {
-        step: 6, icon: "📈", title: "Review in Meetings",
+        step: 6, icon: <IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Review in Meetings",
         desc: "Record meeting notes, assign action items as tasks, and track decisions in the Decision Log.",
         action: "Meetings", to: "/meetings",
         tip: "AI can extract tasks from meeting notes automatically.",
@@ -142,43 +143,43 @@ const WORKFLOWS = [
   },
   {
     id: "executive",
-    icon: "🏢",
+    icon: <IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />,
     label: "Executive / Stakeholder",
     color: "#C17D22",
     tagline: "Get the full picture without the noise",
     steps: [
       {
-        step: 1, icon: "📊", title: "Executive Dashboard",
+        step: 1, icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Executive Dashboard",
         desc: "See KPIs, portfolio health, goal progress, and delivery metrics in one view.",
         action: "Open dashboard", to: "/executive",
         tip: "Bookmark this page — it refreshes automatically every 30 seconds.",
       },
       {
-        step: 2, icon: "💼", title: "Portfolio Overview",
+        step: 2, icon: <IcBriefcase size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Portfolio Overview",
         desc: "See all projects across the portfolio with RAG status, budget, and timeline.",
         action: "Portfolio", to: "/portfolio",
         tip: "Use Portfolio+ for cross-project dependencies and programme management.",
       },
       {
-        step: 3, icon: "🎯", title: "Goal Progress",
+        step: 3, icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Goal Progress",
         desc: "Company goals roll up from team goals → project goals → task completion.",
         action: "Goals", to: "/goals",
         tip: "Set quarterly goals (OKRs) and review progress monthly.",
       },
       {
-        step: 4, icon: "💰", title: "ROI Engine",
+        step: 4, icon: <IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />, title: "ROI Engine",
         desc: "Track investment, revenue, and return on investment per project.",
         action: "ROI Engine", to: "/roi",
         tip: "Projects with negative ROI after 6 months should be reviewed for scope changes.",
       },
       {
-        step: 5, icon: "📈", title: "Reports",
+        step: 5, icon: <IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Reports",
         desc: "Generate summary reports by week/month/quarter and share them with your board.",
         action: "Reports", to: "/reports",
         tip: "Schedule automated reports to be emailed every Monday morning.",
       },
       {
-        step: 6, icon: "⚙️", title: "Configure & Govern",
+        step: 6, icon: <IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Configure & Govern",
         desc: "Set workspace policies, IP allowlists, audit logs, and compliance settings in Admin Center.",
         action: "Admin Center", to: "/admin",
         tip: "Activity logs track every change for compliance and audit purposes.",
@@ -200,7 +201,7 @@ function StepCard({ step, color, isLast }) {
           width: "32px", height: "32px", borderRadius: "50%",
           background: color, color: "#fff",
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontWeight: 800, fontSize: "13px", flexShrink: 0, zIndex: 1,
+          fontWeight: 600, fontSize: "13px", flexShrink: 0, zIndex: 1,
           boxShadow: `0 0 0 3px ${color}22`,
         }}>{step.step}</div>
         {!isLast && (
@@ -217,7 +218,7 @@ function StepCard({ step, color, isLast }) {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "18px" }}>{step.icon}</span>
-          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--gray-800, var(--gray-800))" }}>
+          <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--gray-800, var(--gray-800))" }}>
             {step.title}
           </span>
         </div>
@@ -256,7 +257,7 @@ export default function WorkflowGuide() {
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px 40px" }}>
       <PageHeader
-        icon="🗺"
+        icon={<IcMap size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Workflow Guide"
         description="Choose your role to see how to use Prowosma as your execution operating system"
       />
@@ -278,13 +279,13 @@ export default function WorkflowGuide() {
               borderRadius: "12px",
               padding: "20px 16px",
               cursor: "pointer",
-              transition: "all 0.15s",
+              transition: "color 0.15s, background-color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s",
               textAlign: "center",
             }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setSelected(selected === w.id ? null : w.id))?.(e); } }}
           >
             <div style={{ fontSize: "32px", marginBottom: "8px" }}>{w.icon}</div>
             <div style={{
-              fontWeight: 700, fontSize: "14px",
+              fontWeight: 600, fontSize: "14px",
               color: selected === w.id ? "#fff" : "var(--gray-800, var(--gray-800))",
               marginBottom: "4px",
             }}>{w.label}</div>
@@ -310,7 +311,7 @@ export default function WorkflowGuide() {
           }}>
             <span style={{ fontSize: "24px" }}>{workflow.icon}</span>
             <div>
-              <div style={{ fontWeight: 700, fontSize: "15px", color: workflow.color }}>
+              <div style={{ fontWeight: 600, fontSize: "15px", color: workflow.color }}>
                 {workflow.label} Workflow
               </div>
               <div style={{ fontSize: "12px", color: "var(--gray-500)", marginTop: "2px" }}>

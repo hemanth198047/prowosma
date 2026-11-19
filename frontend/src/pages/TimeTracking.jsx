@@ -9,6 +9,7 @@ import "../styles/pages/time.css";
 import { statusText } from "../utils/statusText";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { Banknote as IcBanknote, ClipboardList as IcClipboardList, Coins as IcCoins, Receipt as IcReceipt, Timer as IcTimer, Trash2 as IcTrash2 } from "lucide-react";
 function fmt(minutes) {
   if (!minutes) return "0h";
   const h = Math.floor(minutes / 60), m = minutes % 60;
@@ -209,7 +210,7 @@ export default function TimeTracking() {
   return (
     <div>
       <PageHeader
-        icon="⏱️"
+        icon={<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Time Tracking & Billing"
         description="Workspace-wide time reports and client invoicing"
         action={
@@ -248,28 +249,28 @@ export default function TimeTracking() {
               {/* KPI row */}
               <div className="tt-kpi-row">
                 <div className="tt-kpi-card">
-                  <div className="tt-kpi-icon" style={{ background: "#e0f2fe", color: "#0369a1" }}>⏱️</div>
+                  <div className="tt-kpi-icon" style={{ background: "#e0f2fe", color: "#0369a1" }}><IcTimer size={16} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div>
                     <div className="tt-kpi-value">{fmt(report.totalMinutes)}</div>
                     <div className="tt-kpi-label">Total Time Logged</div>
                   </div>
                 </div>
                 <div className="tt-kpi-card">
-                  <div className="tt-kpi-icon" style={{ background: "rgba(5,150,105,0.12)", color: "#065f46" }}>💰</div>
+                  <div className="tt-kpi-icon" style={{ background: "rgba(5,150,105,0.12)", color: "#065f46" }}><IcCoins size={16} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div>
                     <div className="tt-kpi-value">{fmt(report.billableMinutes)}</div>
                     <div className="tt-kpi-label">Billable Hours</div>
                   </div>
                 </div>
                 <div className="tt-kpi-card">
-                  <div className="tt-kpi-icon" style={{ background: "#ede9fe", color: "#5b21b6" }}>💵</div>
+                  <div className="tt-kpi-icon" style={{ background: "#ede9fe", color: "#5b21b6" }}><IcBanknote size={16} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div>
                     <div className="tt-kpi-value">{currency(report.totalAmount)}</div>
                     <div className="tt-kpi-label">Billable Amount</div>
                   </div>
                 </div>
                 <div className="tt-kpi-card">
-                  <div className="tt-kpi-icon" style={{ background: "rgba(217,119,6,0.12)", color: "var(--warning)" }}>📋</div>
+                  <div className="tt-kpi-icon" style={{ background: "rgba(217,119,6,0.12)", color: "var(--warning)" }}><IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div>
                     <div className="tt-kpi-value">{report.entries?.length || 0}</div>
                     <div className="tt-kpi-label">Time Entries</div>
@@ -339,7 +340,7 @@ export default function TimeTracking() {
                         <span style={{ color: "var(--gray-500)", fontSize: "12px" }}>{e.description || "—"}</span>
                         <span style={{ fontWeight: 600 }}>{fmt(e.minutes)}</span>
                         <span>{e.billable
-                          ? <span style={{ color: "var(--success)", fontSize: "11px", fontWeight: 700 }}>✓ Billable</span>
+                          ? <span style={{ color: "var(--success)", fontSize: "11px", fontWeight: 600 }}>✓ Billable</span>
                           : <span style={{ color: "var(--gray-400)", fontSize: "11px" }}>Non-billable</span>}
                         </span>
                         <span style={{ fontWeight: 600, color: e.amount > 0 ? "var(--brand-500)" : "var(--gray-400)" }}>
@@ -363,7 +364,7 @@ export default function TimeTracking() {
         <div>
           {invoices.length === 0 ? (
             <div className="dev-empty">
-              <div style={{ fontSize: "40px", marginBottom: "12px" }}>🧾</div>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}><IcReceipt size={16} strokeWidth={1.5} aria-hidden="true" /></div>
               <div style={{ fontWeight: 600, marginBottom: "6px" }}>No invoices yet</div>
               <div style={{ fontSize: "13px", color: "var(--gray-400)", marginBottom: "16px" }}>
                 Generate an invoice from your billable time logs.
@@ -395,7 +396,7 @@ export default function TimeTracking() {
                     <button className="btn-secondary"
                       style={{ fontSize: "11px", padding: "4px 10px", color: "var(--danger)" }}
                       onClick={e => { e.stopPropagation(); handleDelete(inv.id); }}>
-                      🗑️
+                      <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                     </button>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import { usePeople } from "../context/PeopleContext";
 import { useRole } from "../hooks/useRole";
 import { buildTree, managerChain, searchVisible, teamSize } from "../utils/org";
 import "../styles/pages/org-chart.css";
+import { Building as IcBuilding } from "lucide-react";
 
 const DEFAULT_DEPTH = 2;
 
@@ -111,7 +112,7 @@ export default function OrgChart() {
 
   return (
     <div className="oc-page">
-      <PageHeader icon="🏢" title="Org chart" description="Who reports to whom. Hover or click anyone for their profile card." />
+      <PageHeader icon={<IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />} title="Org chart" description="Who reports to whom. Hover or click anyone for their profile card." />
 
       <div className="oc-toolbar">
         <div className="oc-search">

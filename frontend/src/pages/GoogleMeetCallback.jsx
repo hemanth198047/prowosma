@@ -45,7 +45,7 @@ export default function GoogleMeetCallback() {
 
   return (
     <div>
-      <PageHeader icon="🟢" title="Connecting Google Meet" />
+      <PageHeader icon={<span className="emo-dot emo-dot--green" aria-hidden="true" />} title="Connecting Google Meet" />
       <div className="ma-card" aria-live="polite">
         {state.phase === "working" && <p>Finishing the connection…</p>}
         {state.phase === "done" && (

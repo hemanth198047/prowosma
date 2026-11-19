@@ -9,18 +9,19 @@ import {
 import client from "../api/client";
 import { useToast } from "./ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { Bell as IcBell, CircleCheck as IcCircleCheck, CircleX as IcCircleX, ClipboardList as IcClipboardList, Folder as IcFolder, Footprints as IcFootprints, Info as IcInfo, Mail as IcMail, MapPin as IcMapPin, Moon as IcMoon, Pin as IcPin, Target as IcTarget, TriangleAlert as IcTriangleAlert, User as IcUser, Zap as IcZap } from "lucide-react";
 
 const TYPE_COLOR = { INFO:"var(--brand-500)", WARNING:"var(--warning)", SUCCESS:"var(--success)", ERROR:"var(--danger)" };
-const TYPE_ICON  = { INFO:"ℹ️", WARNING:"⚠️", SUCCESS:"✅", ERROR:"❌" };
-const ENTITY_ICON= { TASK:"✅", PROJECT:"📁", GOAL:"🎯", SPRINT:"🏃", AUTOMATION:"⚡", APPROVAL:"📋" };
+const TYPE_ICON  = { INFO:<IcInfo size={16} strokeWidth={1.5} aria-hidden="true" />, WARNING:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, SUCCESS:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, ERROR:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" /> };
+const ENTITY_ICON= { TASK:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, PROJECT:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, GOAL:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, SPRINT:<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, AUTOMATION:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, APPROVAL:<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /> };
 
 const CATEGORY_META = {
-  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"#5B5FEE" },
+  ASSIGNMENT: { label:"Assignments", icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#5B5FEE" },
   MENTION:    { label:"Mentions",    icon:"@",  color:"#ec4899" },
-  APPROVAL:   { label:"Approvals",   icon:"✅", color:"#1E8E5A" },
-  GOAL:       { label:"Goals",       icon:"🎯", color:"#7C5CBF" },
-  RISK:       { label:"Risks",       icon:"⚠️", color:"#C17D22" },
-  SYSTEM:     { label:"System",      icon:"🔔", color:"#64748b" },
+  APPROVAL:   { label:"Approvals",   icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#1E8E5A" },
+  GOAL:       { label:"Goals",       icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#7C5CBF" },
+  RISK:       { label:"Risks",       icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#C17D22" },
+  SYSTEM:     { label:"System",      icon:<IcBell size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#64748b" },
 };
 
 const SNOOZE_OPTIONS = [
@@ -157,7 +158,7 @@ export default function NotificationBell() {
   return (
     <div className="notif-bell-wrapper" ref={ref}>
       <button className="notif-bell-btn" onClick={() => setOpen(o => !o)}>
-        🔔
+        <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="notif-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}
@@ -236,8 +237,8 @@ export default function NotificationBell() {
 
                   <div className="notif-item-content">
                     <div className="notif-item-title">
-                      {n.pinned && <span className="notif-pin-icon">📌</span>}
-                      {n.priority === "HIGH" && <span className="notif-high-badge">HIGH</span>}
+                      {n.pinned && <span className="notif-pin-icon"><IcPin size={16} strokeWidth={1.5} aria-hidden="true" /></span>}
+                      {n.priority === "HIGH" && <span className="notif-high-badge">High</span>}
                       <span className="notif-cat-chip" style={{ background:`${catMeta.color}18`, color:catMeta.color }}>
                         {catMeta.icon}
                       </span>
@@ -269,10 +270,10 @@ export default function NotificationBell() {
                   <div className="notif-item-actions" onClick={e => e.stopPropagation()} role="presentation">
                     {!n.read && <div className="notif-unread-dot" />}
                     <button className="notif-action-btn" title={n.pinned ? "Unpin" : "Pin"}
-                      onClick={() => handlePin(n.id)}>{n.pinned ? "📌" : "📍"}</button>
+                      onClick={() => handlePin(n.id)}>{n.pinned ? <IcPin size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcMapPin size={16} strokeWidth={1.5} aria-hidden="true" />}</button>
                     <div className="notif-snooze-wrap">
                       <button className="notif-action-btn" title="Snooze"
-                        onClick={() => setSnoozeMenuId(id => id === n.id ? null : n.id)}>💤</button>
+                        onClick={() => setSnoozeMenuId(id => id === n.id ? null : n.id)}><IcMoon size={16} strokeWidth={1.5} aria-hidden="true" /></button>
                       {snoozeMenuId === n.id && (
                         <div className="notif-snooze-menu">
                           {SNOOZE_OPTIONS.map(opt => (
@@ -291,10 +292,10 @@ export default function NotificationBell() {
             }) : (
               <div className="notif-empty">
                 <div style={{ fontSize:"32px", marginBottom:"8px" }}>
-                  {activeGroup === "PINNED" ? "📌" : activeGroup === "UNREAD" ? "✉️" : "🔔"}
+                  {activeGroup === "PINNED" ? <IcPin size={16} strokeWidth={1.5} aria-hidden="true" /> : activeGroup === "UNREAD" ? <IcMail size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />}
                 </div>
                 <p style={{ color:"#888", fontSize:"13px" }}>
-                  {activeGroup === "UNREAD" ? "All caught up!" : "Nothing here"}
+                  {activeGroup === "UNREAD" ? "All caught up" : "Nothing here"}
                 </p>
               </div>
             )}

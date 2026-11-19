@@ -60,7 +60,7 @@ function ReactionBar({ comment, taskId, currentUser, onRefresh }) {
         <button className="comment-reaction-add-btn"
           onClick={() => setShowPicker(v => !v)}
           title="Add reaction">
-          😊 +
+          +
         </button>
         {showPicker && (
           <div className="comment-reaction-picker">
@@ -240,7 +240,7 @@ export default function TaskComments({ task, onRefresh, compact = false }) {
               </div>
             )) : (
               <div className="task-comments-empty">
-                No comments yet. Be the first to comment!
+                No comments yet. Be the first to comment
               </div>
             )}
           </div>

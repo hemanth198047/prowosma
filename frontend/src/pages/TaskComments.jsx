@@ -2,6 +2,7 @@ import { unwrapList } from "../api/client";
 import { useState, useRef, useEffect } from "react";
 import { addComment, deleteComment, toggleReaction } from "../api/tasks";
 import { useAuth } from "../hooks/useAuth";
+import { SmilePlus } from "lucide-react";
 import { getTeamMembers } from "../api/team";
 
 // A-10: Supported emoji reactions
@@ -59,8 +60,8 @@ function ReactionBar({ comment, taskId, currentUser, onRefresh }) {
       <div className="comment-reaction-add-wrap">
         <button className="comment-reaction-add-btn"
           onClick={() => setShowPicker(v => !v)}
-          title="Add reaction">
-          😊 +
+          title="Add reaction" aria-label="Add reaction">
+          <SmilePlus size={16} strokeWidth={1.5} aria-hidden="true" />
         </button>
         {showPicker && (
           <div className="comment-reaction-picker">
@@ -229,7 +230,7 @@ export default function TaskComments({ task, onRefresh }) {
               </div>
             )) : (
               <div className="task-comments-empty">
-                No comments yet. Be the first to comment!
+                No comments yet. Be the first to comment
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import {
 } from "../api/tasks";
 import { useToast } from "./ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { ChartColumn as IcChartColumn, FileArchive as IcFileArchive, FileText as IcFileText, Image as IcImage, NotebookPen as IcNotebookPen, Paperclip as IcPaperclip, Trash2 as IcTrash2 } from "lucide-react";
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -15,13 +16,13 @@ function formatSize(bytes) {
 }
 
 function fileIcon(type) {
-  if (!type) return "📎";
-  if (type.startsWith("image/")) return "🖼️";
-  if (type === "application/pdf") return "📄";
-  if (type.includes("word")) return "📝";
-  if (type.includes("sheet") || type.includes("excel")) return "📊";
-  if (type.includes("zip") || type.includes("rar")) return "🗜️";
-  return "📎";
+  if (!type) return <IcPaperclip size={16} strokeWidth={1.5} aria-hidden="true" />;
+  if (type.startsWith("image/")) return <IcImage size={16} strokeWidth={1.5} aria-hidden="true" />;
+  if (type === "application/pdf") return <IcFileText size={16} strokeWidth={1.5} aria-hidden="true" />;
+  if (type.includes("word")) return <IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />;
+  if (type.includes("sheet") || type.includes("excel")) return <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />;
+  if (type.includes("zip") || type.includes("rar")) return <IcFileArchive size={16} strokeWidth={1.5} aria-hidden="true" />;
+  return <IcPaperclip size={16} strokeWidth={1.5} aria-hidden="true" />;
 }
 
 export default function FileAttachments({ task, onRefresh, compact = false }) {
@@ -127,7 +128,7 @@ export default function FileAttachments({ task, onRefresh, compact = false }) {
                     style={{ fontSize: "12px" }}
                     onClick={() => handleDelete(a.id)}
                   >
-                    🗑️
+                    <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                   </button>
                 </div>
               ))}

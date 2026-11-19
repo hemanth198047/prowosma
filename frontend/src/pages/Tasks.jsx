@@ -11,6 +11,7 @@ import { getGoals, toggleStep, deleteStep, addStep, updateSubGoal,
 import { getProjects } from "../api/projects";
 import ActionMenu from "../components/ui/ActionMenu";
 import StatusPill from "../components/ui/StatusPill";
+import DueTag from "../components/ui/DueTag";
 import PriorityTag from "../components/ui/PriorityTag";
 import { taskMatches, facetCount, matchesDue, groupTasks } from "../utils/taskFilters";
 import IntegrationPanel from "../components/IntegrationPanel";
@@ -38,6 +39,7 @@ import {
   PanelRight, Pencil, Plus, Search, SlidersHorizontal, Table2, Trash2,
 } from "lucide-react";
 import { isTaskOverdue } from "../utils/overdue";
+import { FileText as IcFileText, Hourglass as IcHourglass, Link as IcLink, MessageSquare as IcMessageSquare, Paperclip as IcPaperclip, Pencil as IcPencil, Target as IcTarget, Trash2 as IcTrash2 } from "lucide-react";
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 
@@ -59,10 +61,10 @@ function LinkedDocsPanel({ taskId, allDocs }) {
 
   return (
     <div className="task-linked-docs">
-      <span className="task-linked-docs-label">📄 Linked docs</span>
+      <span className="task-linked-docs-label">Linked docs</span>
       {linked.map(d => (
         <a key={d.id} href={`/docs?id=${d.id}`} className="task-linked-doc-chip" title={d.title}>
-          {d.emoji || "📄"} {d.title || "Untitled"}
+          {d.emoji || <IcFileText size={16} strokeWidth={1.5} aria-hidden="true" />} {d.title || "Untitled"}
         </a>
       ))}
     </div>
@@ -252,7 +254,7 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
               setFormSaving(true);
               try { await onSave(form); } finally { setFormSaving(false); }
             }}>
-            {formSaving ? "⏳ Saving..." : "Save"}
+            {formSaving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
@@ -303,7 +305,7 @@ function GoalStepAdder({ onAdd }) {
       <button className="btn-primary"
         style={{ fontSize: "12px", padding: "5px 12px", whiteSpace: "nowrap" }}
         onClick={handleAdd} disabled={adderSaving || !title.trim()}>
-        {adderSaving ? "⏳" : "+ Add"}
+        {adderSaving ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "+ Add"}
       </button>
     </div>
   );
@@ -339,14 +341,14 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
   return (
     <>
       <button className="step-tool-btn" title="Comments" onClick={() => toggle("comments")}>
-        💬{cc > 0 && <span className="step-tool-count">{cc}</span>}
+        <IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />{cc > 0 && <span className="step-tool-count">{cc}</span>}
       </button>
       <button className="step-tool-btn" title="Files" onClick={() => toggle("files")}>
-        📎{fc > 0 && <span className="step-tool-count">{fc}</span>}
+        <IcPaperclip size={16} strokeWidth={1.5} aria-hidden="true" />{fc > 0 && <span className="step-tool-count">{fc}</span>}
       </button>
       <button className="step-tool-btn" title="Manage step dependencies — set which steps must finish before this one"
         onClick={() => toggle("deps")}>
-        🔗{dc > 0
+        <IcLink size={16} strokeWidth={1.5} aria-hidden="true" />{dc > 0
           ? <span className="step-tool-count" style={{ background:"rgba(239,68,68,0.12)", color:"var(--danger)" }}>{dc} blocked</span>
           : <span style={{ fontSize:"10px", color:"var(--gray-400)" }}>deps</span>}
       </button>
@@ -374,7 +376,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
         <div className="step-panel" style={{ gridColumn:"1/-1", marginLeft:"24px" }}>
           {step.attachments?.length > 0 ? step.attachments.map(a => (
             <div key={a.id} className="step-file-row">
-              <span>📄</span><span className="step-file-name">{a.originalName || a.fileName}</span>
+              <span><IcFileText size={16} strokeWidth={1.5} aria-hidden="true" /></span><span className="step-file-name">{a.originalName || a.fileName}</span>
               <span className="step-file-size">{a.fileSize ? `${Math.round(a.fileSize/1024)}KB` : ""}</span>
               <button className="btn-icon" style={{ fontSize:"11px" }}
                 onClick={async () => { await deleteStepAttachment(goalId, subGoalId, step.id, a.id); onRefresh(); }}>✕</button>
@@ -383,7 +385,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
           <input type="file" ref={fileRef} style={{ display:"none" }} onChange={uploadFile} />
           <button className="btn-secondary" style={{ fontSize:"11px", marginTop:"4px" }} disabled={uploading}
             onClick={() => fileRef.current?.click()}>
-            {uploading ? "⏳ Uploading…" : "📎 Attach File"}
+            {uploading ? "Uploading…" : "Attach File"}
           </button>
         </div>
       )}
@@ -396,7 +398,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
 
           {step.blockedByStepIds?.length > 0 ? (
             <div style={{ marginBottom:"12px" }}>
-              <div className="step-panel-label">⛔ This step is blocked until these finish:</div>
+              <div className="step-panel-label">This step is blocked until these finish:</div>
               {step.blockedByStepIds.map(bid => {
                 const b = allSteps.find(s => s.id === bid);
                 return b ? (
@@ -410,7 +412,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
                       </span>
                       <span style={{ fontSize:"10px", marginLeft:"6px",
                         color: b.completed ? "var(--success)" : "var(--warning)", fontWeight:600 }}>
-                        {b.completed ? "✓ Done" : "⏳ Pending"}
+                        {b.completed ? "✓ Done" : "Pending"}
                       </span>
                     </div>
                     <button className="btn-icon" style={{ fontSize:"11px" }}
@@ -428,7 +430,7 @@ function StepToolsInline({ step, allSteps, goalId, subGoalId, onRefresh }) {
 
           {allSteps.filter(s => s.id !== step.id && !step.blockedByStepIds?.includes(s.id)).length > 0 && (
             <div>
-              <div className="step-panel-label">➕ Block this step until one of these finishes:</div>
+              <div className="step-panel-label">Block this step until one of these finishes:</div>
               <div className="step-dep-add-list">
                 {allSteps.filter(s => s.id !== step.id && !step.blockedByStepIds?.includes(s.id)).map(s => (
                   <button key={s.id} className="btn-secondary"
@@ -765,9 +767,7 @@ export default function Tasks() {
           <span className={"tk-col-due" + (overdue ? " tk-due--late" : "")}>
             {t.dueDate ? (
               <>
-                {overdue && <AlertTriangle size={12} aria-hidden="true" />}
-                {overdue && <span className="sr-only">Overdue: </span>}
-                {new Date(t.dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                <DueTag date={t.dueDate} overdue={overdue} />
               </>
             ) : <span className="tk-who-none">—</span>}
           </span>
@@ -1073,7 +1073,7 @@ export default function Tasks() {
                 <div key={goal.id} className="goal-steps-group">
                   <div className="goal-steps-group-header"
                     onClick={() => toggleGoalExpanded(goal.id)} style={{ cursor: "pointer" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => toggleGoalExpanded(goal.id))?.(e); } }}>
-                    <span className="goal-steps-icon">{"🎯"}</span>
+                    <span className="goal-steps-icon">{<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
                     <span className="goal-steps-title">{goal.title}</span>
                     <span className={"goal-steps-status " + goal.status.toLowerCase()}>{statusText(goal.status)}</span>
                     <div className="goal-steps-progress-bar">
@@ -1146,7 +1146,7 @@ export default function Tasks() {
                                         <>
                                           <button className="btn-icon" style={{ fontSize: "12px" }}
                                             onClick={() => { setEditingStep({ goalId: goal.id, subGoalId: sg.id, step }); setEditStepTitle(step.title); }}
-                                            title="Edit">{"✏️"}</button>
+                                            title="Edit">{<IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />}</button>
                                           <StepToolsInline
                                             step={step}
                                             allSteps={sg.steps}
@@ -1156,7 +1156,7 @@ export default function Tasks() {
                                           />
                                           <button className="btn-icon" style={{ fontSize: "12px" }}
                                             onClick={() => handleDeleteStep(goal.id, sg.id, step.id)}
-                                            title="Delete">{"🗑️"}</button>
+                                            title="Delete">{<IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />}</button>
                                         </>
                                       )}
                                     </div>

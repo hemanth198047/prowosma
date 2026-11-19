@@ -6,6 +6,7 @@ import { getProjects } from "../api/projects";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { statusText } from "../utils/statusText";
+import { Flame as IcFlame, Link as IcLink, Map as IcMap, MessageCircle as IcMessageCircle, Pencil as IcPencil, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 const getRaid        = (projectId) => client.get("/raid", { params: projectId ? { projectId } : {} });
 const createRaid     = (data)      => client.post("/raid", data);
@@ -16,10 +17,10 @@ const deleteExpense  = (id, eid)   => client.delete(`/projects/${id}/expenses/${
 const updateBudget   = (id, data)  => client.patch(`/projects/${id}/budget`, data);
 
 const TYPE_META = {
-  RISK:       { label:"Risk",       icon:"⚠️", color:"var(--danger)", bg:"rgba(239,68,68,0.1)" },
-  ASSUMPTION: { label:"Assumption", icon:"💭", color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)" },
-  ISSUE:      { label:"Issue",      icon:"🔥", color:"var(--warning)", bg:"rgba(245,158,11,0.1)" },
-  DEPENDENCY: { label:"Dependency", icon:"🔗", color:"var(--success)", bg:"rgba(16,185,129,0.1)" },
+  RISK:       { label:"Risk",       icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, color:"var(--danger)", bg:"rgba(239,68,68,0.1)" },
+  ASSUMPTION: { label:"Assumption", icon:<IcMessageCircle size={16} strokeWidth={1.5} aria-hidden="true" />, color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)" },
+  ISSUE:      { label:"Issue",      icon:<IcFlame size={16} strokeWidth={1.5} aria-hidden="true" />, color:"var(--warning)", bg:"rgba(245,158,11,0.1)" },
+  DEPENDENCY: { label:"Dependency", icon:<IcLink size={16} strokeWidth={1.5} aria-hidden="true" />, color:"var(--success)", bg:"rgba(16,185,129,0.1)" },
 };
 const STATUS_COLORS = {
   OPEN:"var(--danger)", IN_PROGRESS:"var(--warning)", CLOSED:"var(--gray-500)", MITIGATED:"var(--success)"
@@ -148,7 +149,7 @@ function BudgetPanel({ project, onRefresh }) {
             </span>
             <button className="btn-icon" onClick={async () => {
               await deleteExpense(project.id, e.id); onRefresh();
-            }}>🗑️</button>
+            }}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </div>
         ))}
         {(!project.expenses || project.expenses.length === 0) && (
@@ -246,22 +247,22 @@ function RaidPanel({ projectId }) {
             <div className="form-group">
               <label htmlFor={"roadmap-and-raid-impact"}>Impact</label>
               <select value={form.impact} onChange={e => setForm(f=>({...f,impact:e.target.value}))} id={"roadmap-and-raid-impact"}>
-                <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+                <option>High</option><option>Medium</option><option>LOW</option>
               </select>
             </div>
             {form.type === "RISK" && (
               <div className="form-group">
                 <label htmlFor={"roadmap-and-raid-probability"}>Probability</label>
                 <select value={form.probability} onChange={e => setForm(f=>({...f,probability:e.target.value}))} id={"roadmap-and-raid-probability"}>
-                  <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+                  <option>High</option><option>Medium</option><option>LOW</option>
                 </select>
               </div>
             )}
             <div className="form-group">
               <label htmlFor={"roadmap-and-raid-status"}>Status</label>
               <select value={form.status} onChange={e => setForm(f=>({...f,status:e.target.value}))} id={"roadmap-and-raid-status"}>
-                <option>OPEN</option><option>IN_PROGRESS</option>
-                <option>MITIGATED</option><option>CLOSED</option>
+                <option>Open</option><option>In_progress</option>
+                <option>Mitigated</option><option>Closed</option>
               </select>
             </div>
           </div>
@@ -316,8 +317,8 @@ function RaidPanel({ projectId }) {
                     probability:e.probability||"MEDIUM", status:e.status||"OPEN",
                     mitigation:e.mitigation||"" });
                   setShowForm(true);
-                }}>✏️</button>
-                <button className="btn-icon" onClick={() => handleDelete(e.id)}>🗑️</button>
+                }}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                <button className="btn-icon" onClick={() => handleDelete(e.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </span>
             </div>
           );
@@ -417,7 +418,7 @@ export default function RoadmapAndRaid() {
 
   return (
     <div>
-      <PageHeader icon="🗺️" title="Roadmap & RAID"
+      <PageHeader icon={<IcMap size={16} strokeWidth={1.5} aria-hidden="true" />} title="Roadmap & RAID"
         description="Project roadmap timeline, budget tracking, and RAID log" />
 
       <div className="admin-tab-bar">

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { getActivityForProject, getActivityForTask, getActivityForGoal } from "../api/activity";
 import { timeAgo } from "../utils/dateUtils";
+import { ClipboardList as IcClipboardList } from "lucide-react";
 
 const ACTION_META = {
   PROJECT_CREATED:"Project created", PROJECT_UPDATED:"Project updated",
@@ -11,11 +12,11 @@ const ACTION_META = {
   PROJECT_DEADLINE_CHANGED:"Deadline changed", PROJECT_STATUS_CHANGED:"Status changed",
   PROJECT_OWNER_CHANGED:"Owner changed",
   TASK_CREATED:"Task created", TASK_UPDATED:"Task updated", TASK_DELETED:"Task deleted",
-  TASK_COMPLETED:"Task completed ✅", TASK_STATUS_CHANGED:"Status changed",
+  TASK_COMPLETED:"Task completed ", TASK_STATUS_CHANGED:"Status changed",
   TASK_PRIORITY_CHANGED:"Priority changed", TASK_ASSIGNED:"Assigned",
-  TASK_UNASSIGNED:"Unassigned", TASK_BLOCKED:"Blocked 🔒", TASK_UNBLOCKED:"Unblocked",
+  TASK_UNASSIGNED:"Unassigned", TASK_BLOCKED:"Blocked ", TASK_UNBLOCKED:"Unblocked",
   GOAL_CREATED:"Goal created", GOAL_UPDATED:"Goal updated", GOAL_DELETED:"Goal deleted",
-  GOAL_COMPLETED:"Goal completed 🎉", GOAL_PROGRESS_CHANGED:"Progress updated",
+  GOAL_COMPLETED:"Goal completed ", GOAL_PROGRESS_CHANGED:"Progress updated",
   SUBGOAL_CREATED:"Sub-goal added", STEP_COMPLETED:"Step completed ✓",
   TIME_LOGGED:"Time logged", TIME_APPROVED:"Time approved",
   LOGIN_SUCCESS:"Logged in", LOGIN_FAILED:"Login failed",
@@ -104,7 +105,7 @@ export default function EntityActivityTab({ entityType, entityId }) {
   if (loading) return <p className="empty-state" style={{ padding:"24px 0" }}>Loading history…</p>;
   if (logs.length === 0) return (
     <div className="eat-empty">
-      <div style={{ fontSize:"28px", marginBottom:"6px" }}>📋</div>
+      <div style={{ fontSize:"28px", marginBottom:"6px" }}><IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /></div>
       <p>No activity yet</p>
     </div>
   );

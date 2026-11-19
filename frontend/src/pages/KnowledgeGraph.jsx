@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import PageHeader from "../components/PageHeader";
 import client, { unwrapList } from "../api/client";
+import { CircleCheck as IcCircleCheck, Folder as IcFolder, Link as IcLink, Network as IcNetwork, NotebookPen as IcNotebookPen, Target as IcTarget } from "lucide-react";
 
 const api = {
   docs:     (wsId) => wsId ? client.get(`/docs?workspaceId=${wsId}`) : Promise.resolve({ data: { data: [] } }),
@@ -17,10 +18,10 @@ const api = {
 // that concatenation ("var(--success)22" isn't a color), so these stay
 // literal hex here even though the same hues are tokens elsewhere.
 const META = {
-  project: { color:"#3b82f6", bg:"rgba(59,130,246,0.08)", icon:"📁", label:"Project", radius:18 },
-  goal:    { color:"#1E8E5A", bg:"rgba(16,185,129,0.08)", icon:"🎯", label:"Goal",    radius:15 },
-  task:    { color:"#C17D22", bg:"rgba(245,158,11,0.08)",  icon:"✅", label:"Task",    radius:12 },
-  doc:     { color:"#5B5FEE", bg:"rgba(99,102,241,0.08)",  icon:"📝", label:"Doc",     radius:13 },
+  project: { color:"#3b82f6", bg:"rgba(59,130,246,0.08)", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Project", radius:18 },
+  goal:    { color:"#1E8E5A", bg:"rgba(16,185,129,0.08)", icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Goal",    radius:15 },
+  task:    { color:"#C17D22", bg:"rgba(245,158,11,0.08)",  icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Task",    radius:12 },
+  doc:     { color:"#5B5FEE", bg:"rgba(99,102,241,0.08)",  icon:<IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Doc",     radius:13 },
 };
 
 // Same reasoning as META above -- literal hex, not tokens, because of
@@ -252,12 +253,12 @@ function clusteredLayout(nodes, edges, maxRowWidth) {
 
 function StatCard({ icon, label, value, color, onClick }) {
   return (
-    <div onClick={onClick} style={{ background:"#fff", border:`1.5px solid ${color}33`, borderRadius:"12px", padding:"14px 16px", cursor:"pointer", transition:"all .15s", display:"flex", alignItems:"center", gap:"12px" }}
+    <div onClick={onClick} style={{ background:"#fff", border:`1.5px solid ${color}33`, borderRadius:"12px", padding:"14px 16px", cursor:"pointer", transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s", display:"flex", alignItems:"center", gap:"12px" }}
       onMouseEnter={e=>e.currentTarget.style.boxShadow=`0 4px 16px ${color}22`}
       onMouseLeave={e=>e.currentTarget.style.boxShadow="none"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClick)?.(e); } }}>
       <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:`${color}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", flexShrink:0 }}>{icon}</div>
       <div>
-        <div style={{ fontSize:"22px", fontWeight:800, color, lineHeight:1 }}>{value}</div>
+        <div style={{ fontSize:"22px", fontWeight: 600, color, lineHeight:1 }}>{value}</div>
         <div style={{ fontSize:"11px", color:"var(--gray-500)", fontWeight:600, marginTop:"2px" }}>{label}</div>
       </div>
     </div>
@@ -277,7 +278,7 @@ function EntityCard({ node, graph, onClick, isSelected }) {
       background: isSelected ? m.color+"12" : "#fff",
       border: `1.5px solid ${isSelected ? m.color : "var(--border)"}`,
       borderRadius:"12px", padding:"14px", cursor:"pointer",
-      transition:"all .15s", position:"relative",
+      transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s", position:"relative",
       boxShadow: isSelected ? `0 4px 16px ${m.color}22` : "var(--elevation-1)",
     }}
       onMouseEnter={e=>{ if(!isSelected){ e.currentTarget.style.borderColor=m.color+"66"; e.currentTarget.style.boxShadow=`0 4px 12px ${m.color}18`; }}}
@@ -286,9 +287,9 @@ function EntityCard({ node, graph, onClick, isSelected }) {
         <div style={{ width:"34px", height:"34px", borderRadius:"9px", background:m.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0 }}>{m.icon}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"2px" }}>
-            <span style={{ fontSize:"9px", fontWeight:800, padding:"1px 6px", borderRadius:"var(--radius-full)", background:m.color+"18", color:m.color, letterSpacing:".05em", textTransform:"uppercase", flexShrink:0 }}>{node.type}</span>
+            <span style={{ fontSize:"9px", fontWeight: 600, padding:"1px 6px", borderRadius:"var(--radius-full)", background:m.color+"18", color:m.color, flexShrink:0 }}>{node.type}</span>
           </div>
-          <div style={{ fontWeight:700, fontSize:"13px", color:"var(--gray-900)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{node.label}</div>
+          <div style={{ fontWeight: 600, fontSize:"13px", color:"var(--gray-900)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{node.label}</div>
           {node.status && <div style={{ fontSize:"10px", color:"var(--gray-500)", marginTop:"1px" }}>{node.status.replace(/_/g," ")}</div>}
         </div>
       </div>
@@ -297,7 +298,7 @@ function EntityCard({ node, graph, onClick, isSelected }) {
       {(node.type==="project"||node.type==="goal") && (
         <div style={{ marginBottom:"8px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", fontSize:"10px", color:"var(--gray-400)", marginBottom:"3px" }}>
-            <span>Progress</span><span style={{ fontWeight:700, color:m.color }}>{node.progress||0}%</span>
+            <span>Progress</span><span style={{ fontWeight: 600, color:m.color }}>{node.progress||0}%</span>
           </div>
           <div style={{ height:"4px", background:"var(--gray-100)", borderRadius:"99px", overflow:"hidden" }}>
             <div style={{ height:"100%", width:`${node.progress||0}%`, background:m.color, borderRadius:"99px", transition:"width .3s" }} />
@@ -308,8 +309,8 @@ function EntityCard({ node, graph, onClick, isSelected }) {
       {/* Priority badge for tasks */}
       {node.type==="task" && node.priority && (
         <div style={{ marginBottom:"8px" }}>
-          <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px", borderRadius:"var(--radius-full)", background: node.priority==="HIGH"?"#fee2e2":node.priority==="MEDIUM"?"#fef3c7":"#f0fdf4", color: node.priority==="HIGH"?"var(--danger)":node.priority==="MEDIUM"?"var(--warning)":"var(--success)" }}>
-            {node.priority} PRIORITY
+          <span style={{ fontSize:"10px", fontWeight: 600, padding:"2px 8px", borderRadius:"var(--radius-full)", background: node.priority==="HIGH"?"#fee2e2":node.priority==="MEDIUM"?"#fef3c7":"#f0fdf4", color: node.priority==="HIGH"?"var(--danger)":node.priority==="MEDIUM"?"var(--warning)":"var(--success)" }}>
+            {node.priority} Priority
           </span>
         </div>
       )}
@@ -317,7 +318,7 @@ function EntityCard({ node, graph, onClick, isSelected }) {
       {/* Connections */}
       {connectedTo.length > 0 ? (
         <div style={{ borderTop:"1px solid var(--gray-100)", paddingTop:"8px" }}>
-          <div style={{ fontSize:"10px", fontWeight:700, color:"var(--gray-400)", marginBottom:"5px", textTransform:"uppercase", letterSpacing:".05em" }}>Connected to</div>
+          <div style={{ fontSize:"10px", fontWeight: 600, color:"var(--gray-400)", marginBottom:"5px", }}>Connected to</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px" }}>
             {connectedTo.slice(0,4).map((c,i) => (
               <span key={i} title={c.label} style={{ fontSize:"10px", padding:"2px 7px", borderRadius:"var(--radius-full)", background:META[c.type]?.color+"18", color:META[c.type]?.color, fontWeight:600 }}>
@@ -385,7 +386,7 @@ export default function KnowledgeGraph() {
 
   if (loading) return (
     <div>
-      <PageHeader icon="🕸" title="Knowledge Graph" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" />
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px", color:"var(--gray-400)", gap:"12px" }}>
         <div style={{ width:"24px", height:"24px", border:"3px solid var(--border)", borderTopColor:"var(--brand-500)", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
         Building knowledge graph…
@@ -399,15 +400,15 @@ export default function KnowledgeGraph() {
 
   if (!graph || graph.nodes.length === 0) return (
     <div>
-      <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
         {Object.entries(META).map(([type,m])=>(
           <StatCard key={type} icon={m.icon} label={m.label+"s"} value={0} color={m.color} />
         ))}
       </div>
       <div style={{ textAlign:"center", padding:"48px", background:"#fff", borderRadius:"16px", border:"1px solid var(--border)" }}>
-        <div style={{ fontSize:"48px", marginBottom:"12px" }}>🕸</div>
-        <div style={{ fontWeight:800, fontSize:"18px", color:"var(--gray-800)", marginBottom:"8px" }}>No data yet</div>
+        <div style={{ fontSize:"48px", marginBottom:"12px" }}><IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+        <div style={{ fontWeight: 600, fontSize:"18px", color:"var(--gray-800)", marginBottom:"8px" }}>No data yet</div>
         <div style={{ fontSize:"13px", color:"var(--gray-500)" }}>Create projects, goals, docs, and tasks to build your knowledge graph.</div>
       </div>
     </div>
@@ -426,33 +427,33 @@ export default function KnowledgeGraph() {
 
   return (
     <div>
-      <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
 
       {/* Stats row */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
         {/* StatCard also concatenates its color prop with an alpha suffix
             internally (see StatCard above) — literal hex here too, same
             reasoning as META/EDGE_COLORS. */}
-        <StatCard icon="📁" label="Projects" value={counts.project} color="#3b82f6" onClick={()=>setFilter(filter==="project"?"all":"project")} />
-        <StatCard icon="🎯" label="Goals" value={counts.goal} color="#1E8E5A" onClick={()=>setFilter(filter==="goal"?"all":"goal")} />
-        <StatCard icon="✅" label="Tasks" value={counts.task} color="#C17D22" onClick={()=>setFilter(filter==="task"?"all":"task")} />
-        <StatCard icon="📝" label="Docs" value={counts.doc} color="#5B5FEE" onClick={()=>setFilter(filter==="doc"?"all":"doc")} />
-        <StatCard icon="🔗" label="Connections" value={totalConns} color="#7C5CBF" onClick={()=>{}} />
+        <StatCard icon={<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />} label="Projects" value={counts.project} color="#3b82f6" onClick={()=>setFilter(filter==="project"?"all":"project")} />
+        <StatCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} label="Goals" value={counts.goal} color="#1E8E5A" onClick={()=>setFilter(filter==="goal"?"all":"goal")} />
+        <StatCard icon={<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />} label="Tasks" value={counts.task} color="#C17D22" onClick={()=>setFilter(filter==="task"?"all":"task")} />
+        <StatCard icon={<IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />} label="Docs" value={counts.doc} color="#5B5FEE" onClick={()=>setFilter(filter==="doc"?"all":"doc")} />
+        <StatCard icon={<IcLink size={16} strokeWidth={1.5} aria-hidden="true" />} label="Connections" value={totalConns} color="#7C5CBF" onClick={()=>{}} />
       </div>
 
       {/* Controls */}
       <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"12px", flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:"4px", background:"var(--gray-100)", borderRadius:"10px", padding:"3px" }}>
           {["graph","cards"].map(v=>(
-            <button key={v} onClick={()=>setView(v)} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:view===v?"var(--surface-1)":"transparent", color:view===v?"var(--gray-800)":"var(--gray-500)", boxShadow:view===v?"var(--elevation-1)":"none", transition:"all .15s" }}>
+            <button key={v} onClick={()=>setView(v)} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight: 600, background:view===v?"var(--surface-1)":"transparent", color:view===v?"var(--gray-800)":"var(--gray-500)", boxShadow:view===v?"var(--elevation-1)":"none", transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s" }}>
               {v==="graph"?"Graph":"Cards"}
             </button>
           ))}
         </div>
         <div style={{ display:"flex", gap:"4px", flexWrap:"wrap" }}>
           {["all","project","goal","task","doc"].map(f=>(
-            <button key={f} onClick={()=>{setFilter(f);setSelected(null);}} style={{ padding:"5px 12px", borderRadius:"8px", border:`1.5px solid ${f==="all"?"var(--border)":META[f]?.color+"44"}`, background:filter===f?(f==="all"?"var(--gray-800)":META[f]?.color):"#fff", color:filter===f?"#fff":(f==="all"?"var(--gray-700)":META[f]?.color), fontSize:"11px", fontWeight:700, cursor:"pointer", transition:"all .15s" }}>
-              {f==="all" ? "All" : `${META[f]?.icon} ${f}s`}
+            <button key={f} onClick={()=>{setFilter(f);setSelected(null);}} style={{ padding:"5px 12px", borderRadius:"8px", border:`1.5px solid ${f==="all"?"var(--border)":META[f]?.color+"44"}`, background:filter===f?(f==="all"?"var(--gray-800)":META[f]?.color):"#fff", color:filter===f?"#fff":(f==="all"?"var(--gray-700)":META[f]?.color), fontSize:"11px", fontWeight: 600, cursor:"pointer", transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s" }}>
+              {f==="all" ? "All" : `${f}s`}
               {f!=="all" && <span style={{ marginLeft:"5px", background:filter===f?"rgba(255,255,255,.25)":META[f]?.color+"22", borderRadius:"var(--radius-full)", padding:"0 5px", fontSize:"10px" }}>{counts[f]}</span>}
             </button>
           ))}
@@ -472,7 +473,7 @@ export default function KnowledgeGraph() {
       {view==="graph" && isolatedCount > 0 && (
         <div style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"11px", color:"var(--gray-400)", marginBottom:"10px" }}>
           <span>{isolatedCount} item{isolatedCount===1?"":"s"} with no connections yet aren't shown here.</span>
-          <button onClick={()=>setView("cards")} style={{ background:"none", border:"none", color:"var(--brand-500)", fontWeight:700, cursor:"pointer", fontSize:"11px", padding:0 }}>
+          <button onClick={()=>setView("cards")} style={{ background:"none", border:"none", color:"var(--brand-500)", fontWeight: 600, cursor:"pointer", fontSize:"11px", padding:0 }}>
             View in Cards →
           </button>
         </div>
@@ -571,13 +572,13 @@ export default function KnowledgeGraph() {
                   <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
                     <div style={{ width:"42px", height:"42px", borderRadius:"10px", background:META[selected.type]?.color+"22", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px" }}>{META[selected.type]?.icon}</div>
                     <div>
-                      <div style={{ fontWeight:800, fontSize:"14px", color:"var(--gray-900)" }}>{selected.label}</div>
-                      <div style={{ fontSize:"10px", fontWeight:700, color:META[selected.type]?.color, textTransform:"uppercase", letterSpacing:".06em", marginTop:"2px" }}>{selected.type}</div>
+                      <div style={{ fontWeight: 600, fontSize:"14px", color:"var(--gray-900)" }}>{selected.label}</div>
+                      <div style={{ fontSize:"10px", fontWeight: 600, color:META[selected.type]?.color, marginTop:"2px" }}>{selected.type}</div>
                     </div>
                   </div>
                   <button onClick={()=>setSelected(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"18px", color:"var(--gray-400)", padding:"2px 6px", borderRadius:"6px" }}>✕</button>
                 </div>
-                {selected.status && <div style={{ marginTop:"8px", display:"inline-flex", fontSize:"11px", fontWeight:700, padding:"3px 10px", borderRadius:"var(--radius-full)", background:META[selected.type]?.color+"22", color:META[selected.type]?.color }}>{selected.status.replace(/_/g," ")}</div>}
+                {selected.status && <div style={{ marginTop:"8px", display:"inline-flex", fontSize:"11px", fontWeight: 600, padding:"3px 10px", borderRadius:"var(--radius-full)", background:META[selected.type]?.color+"22", color:META[selected.type]?.color }}>{selected.status.replace(/_/g," ")}</div>}
                 {(selected.progress!==undefined && (selected.type==="project"||selected.type==="goal")) && (
                   <div style={{ marginTop:"10px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:"11px", color:"var(--gray-500)", marginBottom:"4px" }}>
@@ -592,7 +593,7 @@ export default function KnowledgeGraph() {
 
               {/* Connections */}
               <div style={{ padding:"14px" }}>
-                <div style={{ fontSize:"11px", fontWeight:800, color:"var(--gray-400)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:"10px" }}>
+                <div style={{ fontSize:"11px", fontWeight: 600, color:"var(--gray-400)", marginBottom:"10px" }}>
                   Connections ({graph.edges.filter(e=>e.from===selected.id||e.to===selected.id).length})
                 </div>
                 {graph.edges.filter(e=>e.from===selected.id||e.to===selected.id).length===0
@@ -608,10 +609,10 @@ export default function KnowledgeGraph() {
                           onMouseLeave={e=>e.currentTarget.style.background="transparent"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setSelected(other))?.(e); } }}>
                           <div style={{ width:"28px", height:"28px", borderRadius:"7px", background:om.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>{om.icon}</div>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:"12px", fontWeight:700, color:"var(--gray-800)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{other.label}</div>
+                            <div style={{ fontSize:"12px", fontWeight: 600, color:"var(--gray-800)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{other.label}</div>
                             <div style={{ fontSize:"10px", color:"var(--gray-400)" }}>{e.type.replace(/_/g," ")}</div>
                           </div>
-                          <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 7px", borderRadius:"var(--radius-full)", background:EDGE_COLORS[e.type]+"22", color:EDGE_COLORS[e.type], flexShrink:0, whiteSpace:"nowrap" }}>{e.type.replace(/_/g," ")}</span>
+                          <span style={{ fontSize:"9px", fontWeight: 600, padding:"2px 7px", borderRadius:"var(--radius-full)", background:EDGE_COLORS[e.type]+"22", color:EDGE_COLORS[e.type], flexShrink:0, whiteSpace:"nowrap" }}>{e.type.replace(/_/g," ")}</span>
                         </div>
                       );
                     })
@@ -633,8 +634,8 @@ export default function KnowledgeGraph() {
               <div key={type} style={{ marginBottom:"24px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px" }}>
                   <span style={{ fontSize:"18px" }}>{m.icon}</span>
-                  <span style={{ fontWeight:800, fontSize:"14px", color:"var(--gray-800)" }}>{m.label}s</span>
-                  <span style={{ fontSize:"11px", color:m.color, background:m.color+"18", padding:"2px 8px", borderRadius:"var(--radius-full)", fontWeight:700 }}>{typeNodes.length}</span>
+                  <span style={{ fontWeight: 600, fontSize:"14px", color:"var(--gray-800)" }}>{m.label}s</span>
+                  <span style={{ fontSize:"11px", color:m.color, background:m.color+"18", padding:"2px 8px", borderRadius:"var(--radius-full)", fontWeight: 600 }}>{typeNodes.length}</span>
                   <div style={{ flex:1, height:"1px", background:"var(--gray-100)", marginLeft:"4px" }} />
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:"10px" }}>

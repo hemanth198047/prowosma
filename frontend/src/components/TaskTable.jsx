@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useToast } from "./ToastContext";
 import { AlertTriangle, Maximize2 } from "lucide-react";
 import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
+import { Trash2 as IcTrash2 } from "lucide-react";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
@@ -140,10 +141,8 @@ function Th({ children, style, sortKey, activeSort, sortDir, onSort }) {
     <th
       onClick={sortable ? () => onSort(sortKey) : undefined}
       style={{
-        textAlign: "left", padding: "10px 10px", fontSize: 11, fontWeight: 700,
-        color: isActive ? "var(--brand-600)" : "var(--gray-400)",
-        textTransform: "uppercase", letterSpacing: 0.4,
-        cursor: sortable ? "pointer" : "default",
+        textAlign: "left", padding: "10px 10px", fontSize: 11, fontWeight: 600,
+        color: isActive ? "var(--brand-600)" : "var(--gray-400)", cursor: sortable ? "pointer" : "default",
         userSelect: "none",
         ...style,
       }}
@@ -268,7 +267,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           {assignees.map((m) => (
             <span key={m.id} title={m.name} style={{
               width: 20, height: 20, borderRadius: "50%", background: m.color || "var(--brand-500)", color: "#fff",
-              fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center",
             }}>
               {m.name.slice(0, 2).toUpperCase()}
             </span>
@@ -358,7 +357,7 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
 
       {/* Actions */}
       <td style={{ ...cellStyle, textAlign: "right" }}>
-        <button className="btn-icon" title="Delete" onClick={() => onDelete(task.id)}>🗑️</button>
+        <button className="btn-icon" title="Delete" onClick={() => onDelete(task.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
       </td>
     </tr>
   );

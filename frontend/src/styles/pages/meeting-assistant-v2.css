@@ -7,7 +7,7 @@
 
 /* Cards: flat, same language as the rest of the app */
 .ma2-page .ma-card { border-radius: var(--radius-lg); box-shadow: none; padding: 20px 22px; background: var(--bg-card, #fff); }
-.ma2-page .ma-card h2 { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+.ma2-page .ma-card h2 { font-size: 16px; font-weight: 600; margin: 0 0 6px; }
 .ma2-page .ma-btn { border-width: 1px; border-radius: var(--radius-md); font-weight: 600; min-height: 34px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; }
 .ma2-page .ma-btn.primary { background: var(--brand-500); border-color: var(--brand-500); }
 .ma2-page .ma-btn.danger { color: var(--danger-text); border-color: #F5C2BC; background: var(--bg-card, #fff); }
@@ -37,7 +37,7 @@
 .ma2-sm { min-height: 28px !important; padding: 0 10px !important; font-size: 12.5px !important; }
 
 /* Add a meeting — the chooser */
-.ma2-start h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.ma2-start h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
 .ma2-start-sub { margin: 2px 0 12px; color: var(--text-secondary); font-size: 14px; }
 .ma2-ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 640px) { .ma2-ways { grid-template-columns: 1fr; } }
@@ -54,7 +54,7 @@
 .ma2-way-icon { width: 34px; height: 34px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: var(--brand-50); color: var(--brand-600); }
 .ma2-way[aria-pressed="true"] .ma2-way-icon { background: var(--bg-card, #fff); }
 .ma2-way-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.ma2-way-title { font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ma2-way-title { font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ma2-way-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
 .ma2-badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--success-soft); color: var(--success-text); }
 

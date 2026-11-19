@@ -1,0 +1,200 @@
+/* =========================================================
+   UNSLOP PASS — loaded last.
+   Direction: steady, exact, a little warm. A planning desk:
+   ruled ledger, wall calendar, ink on paper.
+   Chrome stays quiet; the Overview chart and progress bars carry
+   the colour. Signature: one mono due-date tag that only turns
+   ink-red when a date has passed.
+   ========================================================= */
+
+/* ── Topbar: one quiet row ───────────────────────────────── */
+
+/* Clock: a figure, not a headline */
+.live-clock { padding: 0 12px; margin-right: 0; }
+.live-clock-hm {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+.live-clock-sec, .live-clock-period {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* Attendance timer, Live, AI: status text with a dot, no filled pills */
+.att-pill {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+.att-pill--working, .att-pill--on_break {
+  background: transparent;
+  border-color: var(--border);
+}
+.att-pill--working { color: var(--text-primary); }
+.att-pill--working .att-dot { background: var(--success); }
+
+.ws-status, [data-theme="dark"] .ws-status {
+  height: 28px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ws-status .ws-label { color: var(--text-muted); }
+.ws-dot-live { background: var(--success); box-shadow: none; }
+
+.ai-status {
+  height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+.ai-status.ai-on, .ai-status.ai-off, .ai-status.ai-setup,
+[data-theme="dark"] .ai-status.ai-on,
+[data-theme="dark"] .ai-status.ai-off,
+[data-theme="dark"] .ai-status.ai-setup { color: var(--text-muted); }
+.ai-status.ai-on .ai-dot   { background: var(--success); }
+.ai-status.ai-setup .ai-dot { background: var(--warning); opacity: 1; }
+a.ai-status:hover { background: var(--gray-100); color: var(--text-secondary); }
+
+/* Help trigger: same quiet control as the theme toggle */
+.hg-trigger-inner { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.hg-trigger:hover .hg-trigger-inner { background: var(--gray-100); }
+
+/* Upgrade: a secondary action, not a second primary */
+.upgrade-cta-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brand-600);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.upgrade-cta-btn:hover { background: var(--brand-50); }
+.upgrade-cta-icon { display: none; }
+.upgrade-cta-label { font-size: 13px; font-weight: 500; }
+[data-theme="dark"] .upgrade-cta-btn { color: var(--brand-700); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+
+/* Role: quiet meta text next to the name */
+.role-badge,
+.role-owner, .role-admin, .role-manager, .role-member, .role-viewer, .role-guest {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Floating assistant: a calm surface, not a second accent button */
+.cb-fab {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border), var(--shadow-md);
+  font-size: 13px;
+  font-weight: 500;
+}
+.cb-fab:hover { background: var(--gray-50); box-shadow: inset 0 0 0 1px var(--border-strong), var(--shadow-md); }
+[data-theme="dark"] .cb-fab { background: var(--bg-card); color: var(--gray-800); }
+
+/* ── Signature: the due-date tag ─────────────────────────── */
+.due-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.due-tag--overdue { color: var(--danger-text); }
+.due-tag--today { color: var(--text-primary); font-weight: 500; }
+
+/* ── Small, global craft fixes ───────────────────────────── */
+/* Figures read as figures everywhere */
+.stat-value, .kpi-value, [class*="-count"], [class*="-num"], td { font-variant-numeric: tabular-nums; }
+
+/* Keycaps */
+.topbar-search-kbd, kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+/* Visible focus for keyboard users, inside the palette */
+:where(button, a, [role="button"], [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ── Priority: only "high" carries colour ───────────────── */
+.priority-tag { font-size: 13px; font-weight: 500; }
+.priority-tag--medium,
+[data-theme="dark"] .priority-tag.priority-tag--medium { color: var(--text-secondary); }
+.priority-tag--low,
+[data-theme="dark"] .priority-tag.priority-tag--low { color: var(--text-muted); }
+
+/* ── Kanban: neutral columns, one dot per status ─────────── */
+.kanban-column-header { border-top: 0; }
+.kanban-column-title { font-weight: 500; color: var(--text-primary); }
+.kanban-count {
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 0;
+}
+.kanban-card .priority-tag { font-size: 12px; }
+
+/* ── Tasks list: one overdue warning per group, not per row ─ */
+.tk-col-due { font-family: var(--font-mono); }
+.tk-due--late { color: inherit; }
+
+/* ── Project cards: one primary per screen, so "Start working" is secondary ── */
+.wt-btn {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.wt-btn:hover { background: var(--gray-50); border-color: var(--text-muted); }
+.wt-btn--on { border-color: var(--danger-text); background: transparent; color: var(--danger-text); }
+.wt-btn-time { font-family: var(--font-mono); }
+
+/* ── Dashboard: chips are numbers, the alert one keeps its icon ── */
+.dz-chip-v { font-family: var(--font-mono); font-weight: 500; }
+
+/* Page-level sheets load after this file, so topbar overrides are scoped. */
+.topbar .att-pill { height: 28px; padding: 0 10px; border-radius: 8px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.topbar .att-pill--working, .topbar .att-pill--on_break { background: transparent; border-color: var(--border); }
+.topbar .att-pill--working { color: var(--text-primary); }
+.topbar .att-pill--working .att-dot { background: var(--success); }
+.topbar .att-pill--remind { box-shadow: none; }
+.due-tag.due-tag--overdue { color: var(--danger-text); }

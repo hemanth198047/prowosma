@@ -2,9 +2,9 @@
 
 /* Approval quick-actions in notification bell */
 .notif-approval-actions { display:flex; gap:6px; margin-top:6px; }
-.notif-approve-btn { padding:3px 10px; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.3); color:var(--success); border-radius: var(--radius-full); font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; }
+.notif-approve-btn { padding:3px 10px; background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.3); color:var(--success); border-radius: var(--radius-full); font-size:11px; font-weight: 600; cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1)); }
 .notif-approve-btn:hover { background:var(--success); color:#fff; }
-.notif-reject-btn  { padding:3px 10px; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:var(--danger); border-radius: var(--radius-full); font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; }
+.notif-reject-btn  { padding:3px 10px; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:var(--danger); border-radius: var(--radius-full); font-size:11px; font-weight: 600; cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1)); }
 .notif-reject-btn:hover { background:var(--danger); color:#fff; }
 
 /* Typing indicators in comments */
@@ -14,13 +14,13 @@
 .comment-typing-dots span:nth-child(2) { animation-delay:.15s; }
 .comment-typing-dots span:nth-child(3) { animation-delay:.3s; }
 @keyframes typing-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-4px)} }
-.comment-typing-text { font-size:11px; color:var(--gray-400); font-style:italic; }
+.comment-typing-text { font-size:11px; color:var(--gray-400); font-style: normal; }
 
 /* Cron scheduler UI in Automations */
 .auto-cron-config { background:rgba(99,102,241,.04); border:1px solid rgba(99,102,241,.15); border-radius:var(--radius-md); padding:12px; margin-top:10px; display:flex; flex-direction:column; gap:8px; }
-.auto-cron-label  { font-size:12px; font-weight:700; color:var(--gray-600); }
+.auto-cron-label  { font-size:12px; font-weight: 600; color:var(--gray-600); }
 .auto-cron-presets { display:flex; gap:6px; flex-wrap:wrap; }
-.auto-cron-preset { padding:4px 10px; border:1px solid var(--border); border-radius: var(--radius-full); font-size:11px; font-weight:600; background:none; color:var(--gray-600); cursor:pointer; transition:all .15s; }
+.auto-cron-preset { padding:4px 10px; border:1px solid var(--border); border-radius: var(--radius-full); font-size:11px; font-weight:600; background:none; color:var(--gray-600); cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1)); }
 .auto-cron-preset.active { background:var(--brand-500); color:#fff; border-color:var(--brand-500); }
 .auto-cron-input  { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px; font-family:monospace; }
 .auto-cron-hint   { font-size:11px; color:var(--gray-400); }

@@ -20,6 +20,7 @@ import {
   LockKeyhole, MonitorSmartphone, AlertTriangle, Siren, User, CircleCheck, Briefcase, FileText, Bot, Zap,
   Shield, Eye, MailPlus, CircleDot, Crown, Trash2,
 } from "lucide-react";
+import { Globe as IcGlobe, Pencil as IcPencil } from "lucide-react";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -966,10 +967,10 @@ function DataResidency() {
   const { show:toast } = useToast();
 
   const REGIONS = [
-    { id:"US",    flag:"🇺🇸", name:"United States",  desc:"AWS us-east-1 (N. Virginia)" },
-    { id:"EU",    flag:"🇪🇺", name:"Europe (GDPR)",  desc:"AWS eu-west-1 (Ireland)" },
-    { id:"APAC",  flag:"🌏", name:"Asia Pacific",   desc:"AWS ap-south-1 (Mumbai)" },
-    { id:"AU",    flag:"🇦🇺", name:"Australia",      desc:"AWS ap-southeast-2 (Sydney)" },
+    { id:"US",    flag:"", name:"United States",  desc:"AWS us-east-1 (N. Virginia)" },
+    { id:"EU",    flag:"", name:"Europe (GDPR)",  desc:"AWS eu-west-1 (Ireland)" },
+    { id:"APAC",  flag:<IcGlobe size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Asia Pacific",   desc:"AWS ap-south-1 (Mumbai)" },
+    { id:"AU",    flag:"", name:"Australia",      desc:"AWS ap-southeast-2 (Sydney)" },
   ];
 
   return (
@@ -1029,7 +1030,7 @@ function Soc2Panel() {
       <div className="admin-card">
         <div className="admin-card-title">SOC2 Type II Preparation</div>
         <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"16px"}}>
-          <div style={{fontSize:"32px",fontWeight:800,color}}>{pct}%</div>
+          <div style={{fontSize:"32px",fontWeight: 600,color}}>{pct}%</div>
           <div>
             <div className="admin-mfa-bar" style={{width:"200px"}}>
               <div className="admin-mfa-fill" style={{width:`${pct}%`,background:color}} />
@@ -1098,7 +1099,7 @@ function LicensePanel() {
                   onKeyDown={e => e.key === "Enter" && handleSaveSeats()}
                  
                   style={{ width:"64px", padding:"4px 6px", border:"1px solid var(--primary)",
-                    borderRadius:"6px", fontSize:"16px", fontWeight:700, textAlign:"center" }}
+                    borderRadius:"6px", fontSize:"16px", fontWeight: 600, textAlign:"center" }}
                 />
                 <button className="btn-primary" style={{ fontSize:"11px", padding:"4px 8px" }}
                   onClick={handleSaveSeats}>✓</button>
@@ -1111,7 +1112,7 @@ function LicensePanel() {
                 <button onClick={() => { setSeatInput(String(total)); setEditSeats(true); }}
                   style={{ background:"none", border:"none", cursor:"pointer",
                     fontSize:"13px", color:"var(--gray-400)", padding:"0" }}
-                  title="Edit seats">✏️</button>
+                  title="Edit seats"><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             )}
             <div className="budget-stat-label">Licensed Seats</div>
@@ -1189,7 +1190,7 @@ function TenantAnalytics() {
         <div className="admin-card" style={{marginTop:"16px",background:"var(--gray-50)"}}>
           <div className="admin-card-title">Health Score</div>
           <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
-            <div style={{fontSize:"32px",fontWeight:800,color:churnColor}}>{engagementScore}</div>
+            <div style={{fontSize:"32px",fontWeight: 600,color:churnColor}}>{engagementScore}</div>
             <div>
               <div className="admin-mfa-bar" style={{width:"180px"}}>
                 <div className="admin-mfa-fill" style={{width:`${engagementScore}%`,background:churnColor}} />
@@ -1779,7 +1780,7 @@ function WorkspacePeople() {
                 </div>
               </div>
               {m.role === "OWNER" ? (
-                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>MANAGER</span>
+                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>Manager</span>
               ) : (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <select value={m.role} disabled={busyId === m.id}

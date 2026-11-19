@@ -158,7 +158,7 @@
 .uma-qa li { border-top: 1px solid var(--border); padding: 12px 0; }
 .uma-q { display: flex; gap: 6px; align-items: center; font-weight: 600; margin: 0 0 4px; color: var(--text-primary); }
 .uma-a { margin: 0; line-height: 1.55; color: var(--text-primary); }
-.uma-a--none { color: var(--text-secondary); font-style: italic; }
+.uma-a--none { color: var(--text-secondary); font-style: normal; }
 
 @media (max-width: 900px) {
   .uma-columns { grid-template-columns: 1fr; }

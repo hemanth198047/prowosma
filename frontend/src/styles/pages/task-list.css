@@ -55,10 +55,9 @@
 .tk-facet legend {
   padding: 0 0 6px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 .tk-facet .pg-select { width: 100%; }
 .tk-facet-opt {
@@ -135,7 +134,7 @@
   margin: 0;
   padding: 10px 18px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border);
 }
@@ -221,7 +220,7 @@
 .tk-avatar {
   width: 24px; height: 24px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 10px; font-weight: 700;
+  color: #fff; font-size: 10px; font-weight: 600;
   box-shadow: 0 0 0 2px var(--bg-card, #fff);
 }
 .tk-avatar + .tk-avatar { margin-left: -6px; }

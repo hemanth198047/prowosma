@@ -5,6 +5,7 @@ import client from "../api/client";
 
 import "../styles/pages/white-label.css";
 import { useToast } from "../components/ToastContext";
+import { Tag as IcTag } from "lucide-react";
 /* ── API helpers ─────────────────────────────────────────────────── */
 const getBranding  = ()     => client.get("/workspaces/branding");
 const saveBranding = (data) => client.put("/workspaces/branding", data);
@@ -50,7 +51,7 @@ function LogoUploader({ label, value, onChange, size="120px" }) {
         {value
           ? <img src={value} alt="logo" style={{width:"100%",height:"100%",objectFit:"contain"}}/>
           : <div className="wl-logo-placeholder">
-              <span style={{fontSize:28}}>🏷</span>
+              <span style={{fontSize:28}}><IcTag size={16} strokeWidth={1.5} aria-hidden="true" /></span>
               <span style={{fontSize:11,color:"var(--gray-400)"}}>Click to upload</span>
             </div>
         }
@@ -101,14 +102,14 @@ function LivePreview({ brand }) {
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           {brand.logoUrl
             ? <img src={brand.logoUrl} style={{height:22,objectFit:"contain"}} alt="logo"/>
-            : <div style={{fontWeight:800,fontSize:14,color:bg}}>{name}</div>
+            : <div style={{fontWeight: 600,fontSize:14,color:bg}}>{name}</div>
           }
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <div style={{width:60,height:6,borderRadius:3,background:"#e2e8f0"}}/>
           <div style={{width:24,height:24,borderRadius:"50%",background:light,
             border:`2px solid ${bg}`,display:"flex",alignItems:"center",
-            justifyContent:"center",fontSize:9,fontWeight:700,color:bg}}>A</div>
+            justifyContent:"center",fontSize:9,fontWeight: 600,color:bg}}>A</div>
         </div>
       </div>
       {/* Mini layout */}

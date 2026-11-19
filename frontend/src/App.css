@@ -51,3 +51,6 @@
 @import './styles/mobile-fixes.css';
 @import './styles/page-kit.css';
 @import './styles/shell.css';
+
+/* Unslop pass — quiet chrome, signature due tag. Loaded last. */
+@import './styles/unslop.css';

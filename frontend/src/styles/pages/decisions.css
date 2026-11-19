@@ -11,7 +11,7 @@
   margin-bottom: 20px;
 }
 
-.dec-stat-count { font-size: 16px; font-weight: 800; }
+.dec-stat-count { font-size: 16px; font-weight: 600; }
 
 .dec-stat-label { font-size: 12px; }
 
@@ -39,7 +39,7 @@
 
 .dec-empty-icon { font-size: 48px; margin-bottom: 16px; }
 
-.dec-empty h3   { font-size: 20px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+.dec-empty h3   { font-size: 20px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px; }
 
 .dec-empty p    { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; }
 
@@ -63,11 +63,11 @@
 
 .dec-card-chevron   { color: var(--gray-400); font-size: 13px; flex-shrink: 0; }
 
-.dec-card-title     { font-size: 14px; font-weight: 700; color: var(--gray-800); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dec-card-title     { font-size: 14px; font-weight: 600; color: var(--gray-800); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .dec-card-meta      { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
 
-.dec-status-badge   { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: .04em; }
+.dec-status-badge   { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: .04em; }
 
 .dec-impact-badge   { font-size: 12px; font-weight: 600; }
 
@@ -89,12 +89,12 @@
 
 .dec-field      { margin-top: 12px; }
 
-.dec-field-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--gray-400); display: block; margin-bottom: 3px; }
+.dec-field-label { font-size: 11px; font-weight: 600;
+  letter-spacing: 0; color: var(--gray-400); display: block; margin-bottom: 3px; }
 
 .dec-field p    { font-size: 13px; color: var(--gray-600); line-height: 1.6; margin: 0; }
 
-.dec-field--outcome p { color: var(--gray-700); font-style: italic; }
+.dec-field--outcome p { color: var(--gray-700); font-style: normal; }
 
 .dec-card-footer {
   display: flex; align-items: flex-start; justify-content: space-between;

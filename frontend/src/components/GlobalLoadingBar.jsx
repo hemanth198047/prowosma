@@ -57,7 +57,7 @@ export default function GlobalLoadingBar() {
         style={{
           height: "100%",
           width: "40%",
-          background: "linear-gradient(90deg, #0ea5e9, #6366f1)",
+          background: "#0ea5e9",
           borderRadius: 2,
           animation: "globalLoadingBarSlide 1.1s ease-in-out infinite",
         }}

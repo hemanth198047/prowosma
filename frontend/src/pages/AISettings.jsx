@@ -10,144 +10,145 @@ import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/ai.css";
 import { useToast } from "../components/ToastContext";
+import { Bot as IcBot, Brain as IcBrain, Calendar as IcCalendar, ChartColumn as IcChartColumn, Handshake as IcHandshake, Link as IcLink, Map as IcMap, MessageSquare as IcMessageSquare, MessagesSquare as IcMessagesSquare, NotebookPen as IcNotebookPen, Pill as IcPill, Settings as IcSettings, Sparkles as IcSparkles, Sun as IcSun, Target as IcTarget, Timer as IcTimer, TriangleAlert as IcTriangleAlert, Users as IcUsers } from "lucide-react";
 const AI_FEATURES = [
   {
     key: "task_assistant",
     label: "Task Assistant",
-    icon: "🤖",
+    icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Auto-generate tasks from project description",
     category: "Task Management",
   },
   {
     key: "goal_advisor",
     label: "Goal Advisor",
-    icon: "🎯",
+    icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Suggest sub-goals and steps from goal title",
     category: "Goal Management",
   },
   {
     key: "prioritization",
     label: "Smart Prioritization",
-    icon: "📊",
+    icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Auto-prioritize tasks by due date and dependencies",
     category: "Planning",
   },
   {
     key: "daily_digest",
     label: "Daily Digest",
-    icon: "☀️",
+    icon: <IcSun size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI-generated daily summary and recommendations",
     category: "Daily Review",
   },
   {
     key: "breakdown",
     label: "Goal→Project→Task Breakdown",
-    icon: "🗺️",
+    icon: <IcMap size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Full breakdown from one goal input",
     category: "Planning",
   },
   {
     key: "scheduling",
     label: "Smart Scheduling",
-    icon: "📅",
+    icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI-powered task auto-scheduling",
     category: "Planning",
   },
   {
     key: "weekly_planning",
     label: "Weekly Planning",
-    icon: "📆",
+    icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI weekly plan generation",
     category: "Planning",
   },
   {
     key: "estimation",
     label: "Task Estimation",
-    icon: "⏱️",
+    icon: <IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI time estimation for tasks",
     category: "Task Management",
   },
   {
     key: "standup",
     label: "Daily Standup",
-    icon: "🗣️",
+    icon: <IcMessagesSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Auto-generate standup reports",
     category: "Daily Review",
   },
   {
     key: "dependency_detection",
     label: "Dependency Detection",
-    icon: "🔗",
+    icon: <IcLink size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Auto-detect task dependencies",
     category: "Task Management",
   },
   {
     key: "risk_detection",
     label: "Risk Detection",
-    icon: "⚠️",
+    icon: <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Identify project risks automatically",
     category: "Analytics",
   },
   {
     key: "natural_language",
     label: "Natural Language Tasks",
-    icon: "💬",
+    icon: <IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Create tasks from plain text",
     category: "Task Management",
   },
   {
     key: "meeting_notes",
     label: "Meeting Notes → Tasks",
-    icon: "📝",
+    icon: <IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Extract tasks from meeting notes",
     category: "Task Management",
   },
   {
     key: "focus_mode",
     label: "Focus Mode",
-    icon: "🎯",
+    icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI suggests what to focus on",
     category: "Productivity",
   },
   {
     key: "deadline_negotiator",
     label: "Deadline Negotiator",
-    icon: "🤝",
+    icon: <IcHandshake size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI suggests deadline alternatives",
     category: "Planning",
   },
   {
     key: "burnout_detection",
     label: "Burnout Detection",
-    icon: "💊",
+    icon: <IcPill size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Monitor workload and burnout risk",
     category: "Wellbeing",
   },
   {
     key: "knowledge_assistant",
     label: "Knowledge Assistant",
-    icon: "🧠",
+    icon: <IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Ask questions about your projects",
     category: "Knowledge",
   },
   {
     key: "chat_assistant",
     label: "AI Chat Assistant",
-    icon: "💬",
+    icon: <IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Full AI chat for project help",
     category: "Chat",
   },
   {
     key: "predictive_planning",
     label: "Predictive Planning",
-    icon: "🔮",
+    icon: <IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Predict risks and plan ahead",
     category: "Analytics",
   },
   {
     key: "team_insights",
     label: "Team Performance",
-    icon: "👥",
+    icon: <IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "AI team workload analysis",
     category: "Team",
   },
@@ -309,7 +310,7 @@ export default function AISettings() {
   return (
     <div className="ai-page-root">
       <PageHeader
-        icon="⚙️"
+        icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="AI Settings"
         description="Configure AI — you control which features are on and what API key to use"
       />
@@ -317,7 +318,7 @@ export default function AISettings() {
       {/* Master Toggle */}
       <div className="ai-master-card">
         <div className="ai-master-left">
-          <div className="ai-master-icon">🤖</div>
+          <div className="ai-master-icon"><IcBot size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           <div>
             <div className="ai-master-title">AI Features</div>
             <div className="ai-master-desc">
@@ -349,9 +350,9 @@ export default function AISettings() {
 
         {/* Primary LLM Selector */}
         <div style={{ marginBottom: "20px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--gray-700)",
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--gray-700)",
             marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <span>🎯</span> Select Primary LLM
+            <span><IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /></span> Select Primary LLM
             <span style={{ fontWeight: 400, fontSize: "11px", color: "var(--gray-400)" }}>
               — All AI features will use this provider
             </span>
@@ -360,7 +361,7 @@ export default function AISettings() {
             {PROVIDERS.map((p) => {
               const isPrimary = form.apiProvider === p.value;
               const hasKey = !!(providerKeys[p.value] || (isPrimary && form.apiKey));
-              const ICONS = { ANTHROPIC: "🟣", OPENAI: "🟢", GEMINI: "🔵", CUSTOM: "⚙️" };
+              const ICONS = { ANTHROPIC: <span className="emo-dot emo-dot--violet" aria-hidden="true" />, OPENAI: <span className="emo-dot emo-dot--green" aria-hidden="true" />, GEMINI: <span className="emo-dot emo-dot--blue" aria-hidden="true" />, CUSTOM: <IcSettings size={16} strokeWidth={1.5} aria-hidden="true" /> };
               const TAGS = { ANTHROPIC: "Recommended", OPENAI: "Popular", GEMINI: "Free Tier", CUSTOM: "Advanced" };
               return (
                 <div key={p.value}
@@ -373,21 +374,20 @@ export default function AISettings() {
                       position: "absolute", top: "-8px", left: "50%",
                       transform: "translateX(-50%)",
                       background: "var(--brand-600)",
-                      color: "#fff", fontSize: "9px", fontWeight: 800,
+                      color: "#fff", fontSize: "9px", fontWeight: 600,
                       padding: "2px 10px", borderRadius: "999px",
-                      letterSpacing: "0.06em", textTransform: "uppercase",
                       whiteSpace: "nowrap", boxShadow: "var(--elevation-2)",
-                    }}>PRIMARY</div>
+                    }}>Primary</div>
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px",
                     marginBottom: "6px", marginTop: isPrimary ? "6px" : "0" }}>
                     <span style={{ fontSize: "18px" }}>{ICONS[p.value]}</span>
-                    <span style={{ fontWeight: 700, fontSize: "13px",
+                    <span style={{ fontWeight: 600, fontSize: "13px",
                       color: isPrimary ? "var(--brand-700)" : "var(--gray-800)" }}>{p.label}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center",
                     justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "10px", fontWeight: 700,
+                    <span style={{ fontSize: "10px", fontWeight: 600,
                       padding: "2px 7px", borderRadius: "999px",
                       background: isPrimary ? "rgba(99,102,241,0.1)" : "var(--gray-100)",
                       color: isPrimary ? "var(--brand-500)" : "var(--gray-500)" }}>
@@ -417,22 +417,21 @@ export default function AISettings() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px",
             marginBottom: "12px" }}>
             <span style={{ fontSize: "16px" }}>
-              {{ ANTHROPIC:"🟣", OPENAI:"🟢", GEMINI:"🔵", CUSTOM:"⚙️" }[form.apiProvider]}
+              {{ ANTHROPIC:<span className="emo-dot emo-dot--violet" aria-hidden="true" />, OPENAI:<span className="emo-dot emo-dot--green" aria-hidden="true" />, GEMINI:<span className="emo-dot emo-dot--blue" aria-hidden="true" />, CUSTOM:<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" /> }[form.apiProvider]}
             </span>
-            <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--gray-800)" }}>
+            <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--gray-800)" }}>
               {selectedProvider.label} Configuration
             </span>
             <span style={{
-              marginLeft: "auto", fontSize: "10px", fontWeight: 800,
+              marginLeft: "auto", fontSize: "10px", fontWeight: 600,
               padding: "3px 10px", borderRadius: "999px",
               background: "var(--brand-600)",
-              color: "#fff", letterSpacing: "0.05em",
-            }}>PRIMARY LLM</span>
+              color: "#fff", }}>Primary LLM</span>
           </div>
 
         <div className="form-row" style={{ marginTop: "0" }}>
           <div className="form-group" style={{ flex: 2 }}>
-            <label htmlFor="ai-api-key" style={{ fontWeight: 700 }}>
+            <label htmlFor="ai-api-key" style={{ fontWeight: 600 }}>
               API Key
               {form.apiKey && testResult === "ok" && <span style={{ color:"var(--success)",marginLeft:8,fontSize:11 }}>✓ Verified</span>}
               {form.apiKey && testResult === "fail" && <span style={{ color:"var(--danger)",marginLeft:8,fontSize:11 }}>✗ Invalid key</span>}
@@ -469,7 +468,7 @@ export default function AISettings() {
 
           {selectedProvider.models.length > 0 ? (
             <div className="form-group">
-              <label style={{ fontWeight: 700 }} htmlFor={"aisettings-model"}>Model</label>
+              <label style={{ fontWeight: 600 }} htmlFor={"aisettings-model"}>Model</label>
               <select
                 value={form.model}
                 onChange={(e) => set("model", e.target.value)} id={"aisettings-model"}
@@ -539,7 +538,7 @@ export default function AISettings() {
           </button>
           {saved && (
             <span style={{ color: "var(--success)", fontSize: "13px" }}>
-              Saved!
+              Saved
             </span>
           )}
           <span style={{ fontSize: "12px", color: "#888", marginLeft: "8px" }}>

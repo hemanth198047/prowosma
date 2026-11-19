@@ -16,23 +16,24 @@ import "../styles/pages/jira-board.css";
 import { statusText } from "../utils/statusText";
 import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
+import { Book as IcBook, Bug as IcBug, CircleCheck as IcCircleCheck, Diamond as IcDiamond, Settings as IcSettings, Zap as IcZap } from "lucide-react";
 const getEpics    = () => client.get("/epics").catch(()=>({data:[]}));
 const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
 /* ── Constants ─────────────────────────────────────────────────── */
 const PRIORITY_META = {
-  HIGHEST:{ icon:"🔴", label:"Highest", color:"#D64545" },
-  HIGH:   { icon:"🟠", label:"High",    color:"#f97316" },
-  MEDIUM: { icon:"🟡", label:"Medium",  color:"#C17D22" },
-  LOW:    { icon:"🟢", label:"Low",     color:"#1E8E5A" },
-  LOWEST: { icon:"🔵", label:"Lowest",  color:"#5B5FEE" },
+  HIGHEST:{ icon:<span className="emo-dot emo-dot--red" aria-hidden="true" />, label:"Highest", color:"#D64545" },
+  HIGH:   { icon:<span className="emo-dot emo-dot--orange" aria-hidden="true" />, label:"High",    color:"#f97316" },
+  MEDIUM: { icon:<span className="emo-dot emo-dot--yellow" aria-hidden="true" />, label:"Medium",  color:"#C17D22" },
+  LOW:    { icon:<span className="emo-dot emo-dot--green" aria-hidden="true" />, label:"Low",     color:"#1E8E5A" },
+  LOWEST: { icon:<span className="emo-dot emo-dot--blue" aria-hidden="true" />, label:"Lowest",  color:"#5B5FEE" },
 };
 const TYPE_META = {
-  STORY:  { icon:"📗", label:"Story",   color:"#1E8E5A" },
-  BUG:    { icon:"🐛", label:"Bug",     color:"#D64545" },
-  TASK:   { icon:"✅", label:"Task",    color:"#5B5FEE" },
-  SUBTASK:{ icon:"🔹", label:"Subtask", color:"#7C5CBF" },
-  EPIC:   { icon:"⚡", label:"Epic",    color:"#C17D22" },
+  STORY:  { icon:<IcBook size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Story",   color:"#1E8E5A" },
+  BUG:    { icon:<IcBug size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Bug",     color:"#D64545" },
+  TASK:   { icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Task",    color:"#5B5FEE" },
+  SUBTASK:{ icon:<IcDiamond size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Subtask", color:"#7C5CBF" },
+  EPIC:   { icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Epic",    color:"#C17D22" },
 };
 const DEFAULT_COLUMNS = [
   { id:"TODO",        label:"To Do",       color:"#64748b", bg:"rgba(100,116,139,0.08)", wipLimit:null },
@@ -73,7 +74,7 @@ function BoardConfigModal({ config, onSave, onClose }) {
     <div className="jb-modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="jb-modal jb-config-modal" onClick={e=>e.stopPropagation()} role="presentation">
         <div className="jb-modal-header">
-          <span style={{fontWeight:800,fontSize:16}}>Board Configuration</span>
+          <span style={{fontWeight: 600,fontSize:16}}>Board Configuration</span>
           <button className="jb-modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -325,7 +326,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
     <div className="jb-modal-overlay" onClick={onClose} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onClose)?.(e); } }}>
       <div className="jb-modal" style={{maxWidth:540}} onClick={e=>e.stopPropagation()} role="presentation">
         <div className="jb-modal-header">
-          <span style={{fontWeight:800}}>Complete Sprint — {sprint?.name}</span>
+          <span style={{fontWeight: 600}}>Complete Sprint — {sprint?.name}</span>
           <button className="jb-modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -336,7 +337,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
               <span key={s} style={{display:"flex",alignItems:"center",gap:4}}>
                 <span style={{
                   width:24,height:24,borderRadius:"50%",display:"flex",
-                  alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,
+                  alignItems:"center",justifyContent:"center",fontSize:11,fontWeight: 600,
                   background:step>=s?"var(--brand-700)":"var(--gray-100)",
                   color:step>=s?"#fff":"var(--gray-400)",
                 }}>{ s}</span>
@@ -350,7 +351,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
 
           {step===1 && (
             <>
-              <div style={{fontWeight:700,fontSize:14}}>
+              <div style={{fontWeight: 600,fontSize:14}}>
                 {unfinished.length} unfinished {unfinished.length===1?"issue":"issues"}
               </div>
               {unfinished.length>0 && (
@@ -383,7 +384,7 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
 
           {step===2 && (
             <>
-              <div style={{fontWeight:700,fontSize:14}}>Sprint Retrospective</div>
+              <div style={{fontWeight: 600,fontSize:14}}>Sprint Retrospective</div>
               <div className="jb-form-group">
                 <label htmlFor={"jira-board-what-went-well"}>What went well?</label>
                 <textarea className="jb-desc-editor" rows={3} value={retroWent}
@@ -411,11 +412,11 @@ function CompleteSprintModal({ sprint, unfinished, config, nextSprint, onComplet
 
           {step===3 && (
             <>
-              <div style={{fontWeight:700,fontSize:14}}>Confirm completion</div>
+              <div style={{fontWeight: 600,fontSize:14}}>Confirm completion</div>
               <div style={{padding:14,background:"rgba(16,185,129,0.06)",
                 border:"1px solid rgba(16,185,129,0.2)",borderRadius:10,fontSize:13,
                 lineHeight:1.6}}>
-                <div>Sprint <strong>{sprint?.name}</strong> will be marked <strong>COMPLETED</strong>.</div>
+                <div>Sprint <strong>{sprint?.name}</strong> will be marked <strong>Completed</strong>.</div>
                 {unfinished.length>0 && (
                   <div style={{marginTop:4}}>
                     {unfinished.length} unfinished issue{unfinished.length>1?"s":""} will move to{" "}
@@ -553,7 +554,7 @@ function VelocityChart({ sprints, tasks, metric }) {
         {data.map((d,i)=>(
           <div key={i} style={{flex:1,display:"flex",flexDirection:"column",
             alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}>
-            <div style={{fontSize:9,color:"#94a3b8",fontWeight:700}}>{d.done}</div>
+            <div style={{fontSize:9,color:"#94a3b8",fontWeight: 600}}>{d.done}</div>
             <div style={{width:"60%",background:"var(--brand-700)",borderRadius:"3px 3px 0 0",
               height:`${(d.done/max)*100}%`,minHeight:2,transition:"height .3s"}}/>
             <div style={{width:"80%",background:"rgba(99,102,241,0.2)",borderRadius:"3px 3px 0 0",
@@ -710,7 +711,7 @@ function IssueModal({ task, projects, epics, sprints, members, spScale, onSave, 
                     <label htmlFor={"jira-board-type"}>Type</label>
                     <select value={form.taskType||"TASK"} onChange={e=>set("taskType",e.target.value)} id={"jira-board-type"}>
                       {Object.entries(TYPE_META).map(([k,v])=>(
-                        <option key={k} value={k}>{v.icon} {v.label}</option>
+                        <option key={k} value={k}>{v.label}</option>
                       ))}
                     </select>
                   </div>
@@ -727,7 +728,7 @@ function IssueModal({ task, projects, epics, sprints, members, spScale, onSave, 
                     <label htmlFor={"jira-board-priority"}>Priority</label>
                     <select value={form.priority||"MEDIUM"} onChange={e=>set("priority",e.target.value)} id={"jira-board-priority"}>
                       {Object.entries(PRIORITY_META).map(([k,v])=>(
-                        <option key={k} value={k}>{v.icon} {v.label}</option>
+                        <option key={k} value={k}>{v.label}</option>
                       ))}
                     </select>
                   </div>
@@ -1136,14 +1137,14 @@ export default function JiraBoard() {
           onChange={e=>setFilterType(e.target.value)}>
           <option value="">All types</option>
           {Object.entries(TYPE_META).map(([k,v])=>(
-            <option key={k} value={k}>{v.icon} {v.label}</option>
+            <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
         <select className="jb-filter-select" aria-label="Filter by priority" value={filterPri}
           onChange={e=>setFilterPri(e.target.value)}>
           <option value="">All priorities</option>
           {Object.entries(PRIORITY_META).map(([k,v])=>(
-            <option key={k} value={k}>{v.icon} {v.label}</option>
+            <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
         <select className="jb-filter-select" aria-label="Filter by assignee" value={filterAssignee}
@@ -1154,7 +1155,7 @@ export default function JiraBoard() {
         {/* Toolbar actions */}
         <button className={"jb-icon-btn"+(compact?" active":"")}
           onClick={()=>setCompact(c=>!c)} title="Compact view">⊟</button>
-        <button className="jb-icon-btn" onClick={()=>setShowConfig(true)} title="Configure board">⚙️</button>
+        <button className="jb-icon-btn" onClick={()=>setShowConfig(true)} title="Configure board"><IcSettings size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         <button className="jb-btn-primary" onClick={()=>setQuickCreate({status:"TODO"})}>
           + Create issue
         </button>
@@ -1290,7 +1291,7 @@ export default function JiraBoard() {
           {showNewSprint&&(
             <div className="jb-modal-overlay" onClick={()=>setShowNewSprint(false)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setShowNewSprint(false))?.(e); } }}>
               <div className="jb-mini-modal" onClick={e=>e.stopPropagation()} role="presentation">
-                <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>Create Sprint</div>
+                <div style={{fontWeight: 600,fontSize:15,marginBottom:12}}>Create Sprint</div>
                 {config.autoNumberSprints
                   ? <div style={{padding:"10px 14px",background:"var(--gray-50)",borderRadius:8,fontSize:13}}>
                       Will be named: <strong>Sprint {sprints.filter(s=>s.status!=="CANCELLED").length+1}</strong>
@@ -1336,7 +1337,7 @@ export default function JiraBoard() {
               ].map(m=>(
                 <div key={m.l} style={{padding:"10px 12px",background:"var(--gray-50)",
                   borderRadius:8,textAlign:"center",border:`1px solid ${m.c}22`}}>
-                  <div style={{fontSize:22,fontWeight:900,color:m.c}}>{m.v}</div>
+                  <div style={{fontSize:22,fontWeight: 600,color:m.c}}>{m.v}</div>
                   <div style={{fontSize:10,color:"#64748b",marginTop:2}}>{m.l}</div>
                 </div>
               ))}
@@ -1362,7 +1363,7 @@ export default function JiraBoard() {
                       <div style={{height:"100%",background:v.color,borderRadius:99,
                         width:`${pct}%`,transition:"width .3s"}}/>
                     </div>
-                    <span style={{fontWeight:700,color:"#334155",minWidth:20}}>{count}</span>
+                    <span style={{fontWeight: 600,color:"#334155",minWidth:20}}>{count}</span>
                   </div>
                 );
               })}

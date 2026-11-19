@@ -5,6 +5,7 @@ import { getBillingSummary, startCheckout, openBillingPortal, startTrial } from 
 import "../styles/pages/licensing.css";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import { Bot as IcBot, Building2 as IcBuilding2, ChartColumn as IcChartColumn, CreditCard as IcCreditCard, Globe as IcGlobe, Handshake as IcHandshake, KeyRound as IcKeyRound, Library as IcLibrary, Lock as IcLock, MessageSquare as IcMessageSquare, Plug as IcPlug, RefreshCw as IcRefreshCw, Save as IcSave, Settings as IcSettings, Shield as IcShield, Shuffle as IcShuffle, Star as IcStar, Tag as IcTag, TrendingUp as IcTrendingUp, Users as IcUsers, Zap as IcZap } from "lucide-react";
 /* ══════════════════════════════════════════════════════════════════
    PLAN DEFINITIONS — every feature in the application
    ══════════════════════════════════════════════════════════════════ */
@@ -286,26 +287,26 @@ const PLANS = [
 const GROUPS = ["Work","Knowledge","Insights","Automate","Collaborate","AI","Configure","Security","Platform"];
 
 const GROUP_ICONS = {
-  Work:"⚡", Knowledge:"📚", Insights:"📈", Automate:"🔀",
-  Collaborate:"💬", AI:"🤖", Configure:"⚙️", Security:"🛡", Platform:"🏗",
+  Work:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, Knowledge:<IcLibrary size={16} strokeWidth={1.5} aria-hidden="true" />, Insights:<IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />, Automate:<IcShuffle size={16} strokeWidth={1.5} aria-hidden="true" />,
+  Collaborate:<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />, AI:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, Configure:<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />, Security:<IcShield size={16} strokeWidth={1.5} aria-hidden="true" />, Platform:<IcBuilding2 size={16} strokeWidth={1.5} aria-hidden="true" />,
 };
 
 const ADDONS = [
-  { icon:"💾", name:"Extra Storage",     desc:"Add 100 GB of storage to any plan",          price:8,  unit:"/mo",
+  { icon:<IcSave size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Extra Storage",     desc:"Add 100 GB of storage to any plan",          price:8,  unit:"/mo",
     features:["100 GB additional storage","Applies instantly to your workspace","Stackable — add multiple packs","No transfer fees","Includes doc, file, and media storage"] },
-  { icon:"🤖", name:"AI Power Pack",     desc:"Unlimited AI queries + proactive intelligence",price:12, unit:"/mo",
+  { icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, name:"AI Power Pack",     desc:"Unlimited AI queries + proactive intelligence",price:12, unit:"/mo",
     features:["Unlimited AI Assistant queries","AI Intelligence — proactive insights","AI Settings & fine-tuning controls","Auto-changelog generation","Risk prediction & burnout detection"] },
-  { icon:"🔌", name:"Integrations Pack", desc:"Unlock all 50+ native integrations",          price:10, unit:"/mo",
+  { icon:<IcPlug size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Integrations Pack", desc:"Unlock all 50+ native integrations",          price:10, unit:"/mo",
     features:["All 50+ integrations unlocked","Slack, Jira, GitHub, Salesforce, HubSpot","Bidirectional sync support","Custom webhook support","Import from Asana, Trello, Monday.com"] },
-  { icon:"👥", name:"Seat Expansion",    desc:"Add 10 extra seats to your current plan",     price:15, unit:"/mo",
+  { icon:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Seat Expansion",    desc:"Add 10 extra seats to your current plan",     price:15, unit:"/mo",
     features:["10 additional user seats","Same role & permission controls","Stackable — buy as many packs as needed","Seats are active immediately","Remove seats at billing cycle end"] },
-  { icon:"🛡", name:"Security Pack",     desc:"Enterprise-grade security on any plan",       price:20, unit:"/mo",
+  { icon:<IcShield size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Security Pack",     desc:"Enterprise-grade security on any plan",       price:20, unit:"/mo",
     features:["SSO / SAML 2.0 integration","SCIM automated provisioning","IP allow-list network control","Audit logs (12 months retention)","DLP & data policies management"] },
-  { icon:"⭐", name:"Priority Support",  desc:"Dedicated support with guaranteed SLAs",      price:18, unit:"/mo",
+  { icon:<IcStar size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Priority Support",  desc:"Dedicated support with guaranteed SLAs",      price:18, unit:"/mo",
     features:["< 2 hour first-response SLA","Dedicated Slack support channel","Named Customer Success Manager","Monthly check-in calls","Early access to new features"] },
-  { icon:"🏷", name:"White-label",       desc:"Your brand, your colours on Prowosma",       price:25, unit:"/mo",
+  { icon:<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />, name:"White-label",       desc:"Your brand, your colours on Prowosma",       price:25, unit:"/mo",
     features:["Custom logo & brand colours","Custom domain (e.g. pm.yourcompany.com)","Remove all Prowosma branding","Custom email sender domain","White-labelled PDF exports"] },
-  { icon:"📊", name:"BI Export Pack",    desc:"Stream your data to BI tools in real time",  price:15, unit:"/mo",
+  { icon:<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, name:"BI Export Pack",    desc:"Stream your data to BI tools in real time",  price:15, unit:"/mo",
     features:["Export to Looker, Tableau, Power BI","Raw data access via secure API","Scheduled data snapshots","Custom field data included","Historical data export (unlimited)"] },
 ];
 
@@ -721,10 +722,10 @@ export default function Licensing() {
       {/* ── Trust bar ──────────────────────────────────────── */}
       <div className="lic-trust-bar">
         {[
-          {icon:"🔒",label:"SOC 2 Type II"},{icon:"🇪🇺",label:"GDPR Ready"},
-          {icon:"⚡",label:"99.99% Enterprise SLA"},{icon:"💳",label:"No card for free tier"},
-          {icon:"🔄",label:"Cancel anytime"},{icon:"🔐",label:"AES-256 encryption"},
-          {icon:"🌍",label:"Data residency choice"},{icon:"🤝",label:"Dedicated CSM (Enterprise)"},
+          {icon:<IcLock size={16} strokeWidth={1.5} aria-hidden="true" />,label:"SOC 2 Type II"},{icon:"",label:"GDPR Ready"},
+          {icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />,label:"99.99% Enterprise SLA"},{icon:<IcCreditCard size={16} strokeWidth={1.5} aria-hidden="true" />,label:"No card for free tier"},
+          {icon:<IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Cancel anytime"},{icon:<IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />,label:"AES-256 encryption"},
+          {icon:<IcGlobe size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Data residency choice"},{icon:<IcHandshake size={16} strokeWidth={1.5} aria-hidden="true" />,label:"Dedicated CSM (Enterprise)"},
         ].map((t,i)=>(
           <div key={i} className="lic-trust-item">
             <span className="lic-trust-icon">{t.icon}</span>

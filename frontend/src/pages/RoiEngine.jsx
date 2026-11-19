@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
+import { CircleCheck as IcCircleCheck, Coins as IcCoins, Rocket as IcRocket, Scale as IcScale, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 // ROI Engine API — backed by RoiController at /api/roi
 const getPortfolioRoi = ()          => client.get("/roi/calculate");
@@ -16,10 +17,10 @@ const addRevenue      = (id, d)     => client.post("/roi", { ...d, projectId: id
 const updateRoiSettings=(id,d)      => client.post("/roi", { ...d, projectId: id });
 
 const HEALTH_META = {
-  EXCELLENT:   { label:"Excellent ROI",   color:"#1E8E5A", icon:"🚀" },
-  GOOD:        { label:"Good ROI",        color:"#5B5FEE", icon:"✅" },
-  BREAK_EVEN:  { label:"Break Even",      color:"#C17D22", icon:"⚖️" },
-  NEGATIVE:    { label:"Negative ROI",    color:"#D64545", icon:"⚠️" },
+  EXCELLENT:   { label:"Excellent ROI",   color:"#1E8E5A", icon:<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  GOOD:        { label:"Good ROI",        color:"#5B5FEE", icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  BREAK_EVEN:  { label:"Break Even",      color:"#C17D22", icon:<IcScale size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  NEGATIVE:    { label:"Negative ROI",    color:"#D64545", icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" /> },
 };
 
 function ProjectRoiCard({ project, onUpdate }) {
@@ -219,7 +220,7 @@ export default function RoiEngine() {
 
   return (
     <div>
-      <PageHeader icon="💰" title="ROI Engine"
+      <PageHeader icon={<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />} title="ROI Engine"
         description="Track return on investment, revenue, and payback period across all projects" />
 
       {/* Portfolio summary */}

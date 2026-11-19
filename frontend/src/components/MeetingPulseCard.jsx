@@ -31,7 +31,7 @@ export default function MeetingPulseCard() {
     return (
       <div className="db-card">
         <div className="db-card-header">
-          <span className="db-card-title"><Calendar size={13} /> DAILY MEETING PULSE</span>
+          <span className="db-card-title"><Calendar size={13} /> Daily meeting pulse</span>
         </div>
         <div className="db-empty">Couldn't load meeting data right now.</div>
       </div>
@@ -52,7 +52,7 @@ export default function MeetingPulseCard() {
     return (
       <div className="db-card">
         <div className="db-card-header">
-          <span className="db-card-title"><Calendar size={13} /> DAILY MEETING PULSE</span>
+          <span className="db-card-title"><Calendar size={13} /> Daily meeting pulse</span>
           <button className="db-link" onClick={() => navigate("/meetings")}>Open meetings →</button>
         </div>
         <div style={{ fontSize: "13px", color: "var(--gray-500)" }}>No meetings today · 0 open actions</div>
@@ -63,7 +63,7 @@ export default function MeetingPulseCard() {
   return (
     <div className="db-card">
       <div className="db-card-header">
-        <span className="db-card-title"><Calendar size={13} /> DAILY MEETING PULSE</span>
+        <span className="db-card-title"><Calendar size={13} /> Daily meeting pulse</span>
         <button className="db-link" onClick={() => navigate("/meetings")}>Open meetings →</button>
       </div>
 
@@ -95,7 +95,7 @@ export default function MeetingPulseCard() {
 
       {!hasAttention && (
         <div style={{ marginTop: "8px", fontSize: "12px", color: "#10b981", fontWeight: 600 }}>
-          Nothing urgent — you're on track. 🎉
+          Nothing urgent — you're on track. 
         </div>
       )}
 
@@ -112,7 +112,7 @@ function PulseChip({ icon: Icon, value, label, color }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: "4px",
-      fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "999px",
+      fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "999px",
       background: color + "18", color,
     }}>
       <Icon size={11} /> {value} {label}

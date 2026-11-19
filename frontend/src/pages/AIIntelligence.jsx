@@ -2,6 +2,7 @@ import { useState } from "react";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import "../styles/pages/ai.css";
+import { AlarmClock as IcAlarmClock, Bot as IcBot, Brain as IcBrain, Flame as IcFlame, Hammer as IcHammer, Hourglass as IcHourglass, Lightbulb as IcLightbulb, Network as IcNetwork, Search as IcSearch, ShoppingBag as IcShoppingBag, Tag as IcTag, Target as IcTarget, TriangleAlert as IcTriangleAlert, Users as IcUsers } from "lucide-react";
 
 // ── API ───────────────────────────────────────────────────────
 const api = {
@@ -38,7 +39,7 @@ function IntelCard({ icon, title, desc, onRun, renderData }) {
         </div>
         <button className="btn-primary" style={{ fontSize:"11px", padding:"5px 12px", flexShrink:0 }}
           onClick={handleRun} disabled={loading}>
-          {loading ? "⏳" : "▶ Run"}
+          {loading ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "▶ Run"}
         </button>
       </div>
       {error && <div className="intel-error">{error}</div>}
@@ -54,13 +55,13 @@ const SEV_COLOR = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--su
 export default function AIIntelligence() {
   return (
     <div>
-      <PageHeader icon="🧠" title="AI Intelligence"
+      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="AI Intelligence"
         description="Predictive analytics, burnout detection, process mining, and autonomous insights" />
 
       <div className="intel-section-label">Predictive Insights</div>
       <div className="intel-cards-grid">
 
-      <IntelCard icon="⏰" title="Predictive Delay Detection" desc="Identifies tasks at risk of missing their deadline before it happens"
+      <IntelCard icon={<IcAlarmClock size={16} strokeWidth={1.5} aria-hidden="true" />} title="Predictive Delay Detection" desc="Identifies tasks at risk of missing their deadline before it happens"
         onRun={() => api.predictDelays().then(r => r.data)}
         renderData={d => (
           <div>
@@ -79,7 +80,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="🎯" title="Goal Failure Prediction" desc="Weekly AI confidence update with reasoning for each active goal"
+      <IntelCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} title="Goal Failure Prediction" desc="Weekly AI confidence update with reasoning for each active goal"
         onRun={() => api.goalFailure().then(r => r.data)}
         renderData={d => (
           <div>
@@ -98,7 +99,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="🔥" title="Burnout & Overload Detection" desc="Pattern recognition: consecutive overloaded sprints, missed deadlines trend"
+      <IntelCard icon={<IcFlame size={16} strokeWidth={1.5} aria-hidden="true" />} title="Burnout & Overload Detection" desc="Pattern recognition: consecutive overloaded sprints, missed deadlines trend"
         onRun={() => api.burnout().then(r => r.data)}
         renderData={d => (
           <div>
@@ -132,7 +133,7 @@ export default function AIIntelligence() {
       <div className="intel-section-label">Daily Intelligence</div>
       <div className="intel-cards-grid">
 
-      <IntelCard icon="🎯" title="AI Daily Priorities" desc="What to work on today — ranked by urgency, priority, goal alignment, and risk"
+      <IntelCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} title="AI Daily Priorities" desc="What to work on today — ranked by urgency, priority, goal alignment, and risk"
         onRun={() => api.dailyPriorities().then(r => r.data)}
         renderData={d => (
           <div>
@@ -153,7 +154,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="👥" title="Team Insights" desc="Throughput, cycle time, utilisation, and performance patterns per team member"
+      <IntelCard icon={<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />} title="Team Insights" desc="Throughput, cycle time, utilisation, and performance patterns per team member"
         onRun={() => api.teamInsights().then(r => r.data)}
         renderData={d => (
           <div>
@@ -188,7 +189,7 @@ export default function AIIntelligence() {
       <div className="intel-section-label">Advanced Analytics</div>
       <div className="intel-cards-grid">
 
-      <IntelCard icon="🕸" title="Dependency Risk Detection" desc="Surfaces hidden dependency blockers proactively before humans notice"
+      <IntelCard icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Dependency Risk Detection" desc="Surfaces hidden dependency blockers proactively before humans notice"
         onRun={() => api.detectDeps().then(r => r.data)}
         renderData={d => (
           <div>
@@ -222,7 +223,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="⚠️" title="Risk Detection" desc="AI surfaces project and task risks across the workspace"
+      <IntelCard icon={<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />} title="Risk Detection" desc="AI surfaces project and task risks across the workspace"
         onRun={() => api.risks().then(r => r.data)}
         renderData={d => (
           <div>
@@ -242,7 +243,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="⛏️" title="Process Mining" desc="AI analyses actual workflow vs expected — finds bottlenecks and handoff friction"
+      <IntelCard icon={<IcHammer size={16} strokeWidth={1.5} aria-hidden="true" />} title="Process Mining" desc="AI analyses actual workflow vs expected — finds bottlenecks and handoff friction"
         onRun={() => api.processMining().then(r => r.data).catch(() => ({
           summary:"Process mining analysis complete.",
           bottlenecks:[{ stage:"TODO → IN_PROGRESS", avgDays:3.2, issue:"Tasks linger in backlog" },
@@ -254,7 +255,7 @@ export default function AIIntelligence() {
             <div className="intel-summary">{d.summary}</div>
             {d.bottlenecks?.map((b,i) => (
               <div key={i} className="intel-risk-row">
-                <span className="intel-sev" style={{ background:"#f59e0b22", color:"var(--warning)" }}>BOTTLENECK</span>
+                <span className="intel-sev" style={{ background:"#f59e0b22", color:"var(--warning)" }}>Bottleneck</span>
                 <div className="intel-risk-info">
                   <div className="intel-risk-title">{b.stage}</div>
                   <div className="intel-risk-reason">{b.issue} · Avg {b.avgDays} days</div>
@@ -275,7 +276,7 @@ export default function AIIntelligence() {
       <div className="intel-section-label">Goal Intelligence</div>
       <div className="intel-cards-grid">
 
-      <IntelCard icon="💡" title="AI Goal Recommendations" desc="Analyses your current goals and suggests new OKRs that fill strategic gaps"
+      <IntelCard icon={<IcLightbulb size={16} strokeWidth={1.5} aria-hidden="true" />} title="AI Goal Recommendations" desc="Analyses your current goals and suggests new OKRs that fill strategic gaps"
         onRun={() => client.get("/ai/goal-recommendations").then(r => r.data)}
         renderData={d => (
           <div>
@@ -283,7 +284,7 @@ export default function AIIntelligence() {
             {(d.recommendations||[]).map((r,i) => (
               <div key={i} className="intel-priority-row">
                 <div className="intel-priority-rank">
-                  <span style={{ fontSize:"10px", fontWeight:700,
+                  <span style={{ fontSize:"10px", fontWeight: 600,
                     color:r.priority==="HIGH"?"var(--danger)":r.priority==="MEDIUM"?"var(--warning)":"var(--success)" }}>
                     {r.priority}
                   </span>
@@ -303,7 +304,7 @@ export default function AIIntelligence() {
         )}
       />
 
-      <IntelCard icon="🔍" title="Semantic Search" desc="Search tasks, goals, and docs by meaning — not just exact keywords"
+      <IntelCard icon={<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />} title="Semantic Search" desc="Search tasks, goals, and docs by meaning — not just exact keywords"
         onRun={() => {
           const q = prompt("What are you looking for?", "");
           if (!q) return Promise.reject(new Error("Cancelled"));
@@ -334,12 +335,12 @@ export default function AIIntelligence() {
       <div className="intel-section-label">Roadmap (Coming in Phase D)</div>
       <div className="intel-roadmap-grid">
         {[
-          { icon:"🧠", title:"Enterprise Memory",  desc:"AI remembers past decisions and lessons learned" },
-          { icon:"🔍", title:"Semantic Search",     desc:"Vector embeddings for intelligent search across all content" },
-          { icon:"🕸", title:"Knowledge Graph",     desc:"Who knows what — expert recommendation engine" },
-          { icon:"🤖", title:"Autonomous Agents",   desc:"PM Agent, Risk Agent, Goal Agent running in background" },
-          { icon:"🏷", title:"White-Label Module",  desc:"Custom domain, branding, remove Prowosma branding" },
-          { icon:"🏪", title:"Integration Marketplace", desc:"Partner app ecosystem with install/uninstall flow" },
+          { icon:<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Enterprise Memory",  desc:"AI remembers past decisions and lessons learned" },
+          { icon:<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Semantic Search",     desc:"Vector embeddings for intelligent search across all content" },
+          { icon:<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Knowledge Graph",     desc:"Who knows what — expert recommendation engine" },
+          { icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Autonomous Agents",   desc:"PM Agent, Risk Agent, Goal Agent running in background" },
+          { icon:<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />, title:"White-Label Module",  desc:"Custom domain, branding, remove Prowosma branding" },
+          { icon:<IcShoppingBag size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Integration Marketplace", desc:"Partner app ecosystem with install/uninstall flow" },
         ].map((f,i) => (
           <div key={i} className="intel-roadmap-card">
             <div className="intel-roadmap-icon">{f.icon}</div>

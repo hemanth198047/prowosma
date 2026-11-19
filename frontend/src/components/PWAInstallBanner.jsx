@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usePWA } from '../hooks/usePWA';
 import PushNotificationToggle from './PushNotificationToggle';
+import { Bell as IcBell, PartyPopper as IcPartyPopper, Signal as IcSignal, Star as IcStar, Zap as IcZap } from "lucide-react";
 
 export default function PWAInstallBanner() {
   const { canInstall, isInstalled, promptInstall } = usePWA();
@@ -61,8 +62,8 @@ export default function PWAInstallBanner() {
         {/* ── Installed success ── */}
         {installed && (
           <div className="pwa-modal-success">
-            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🎉</div>
-            <h2 className="pwa-modal-title">Prowosma Installed!</h2>
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}><IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+            <h2 className="pwa-modal-title">Prowosma Installed</h2>
             <p className="pwa-modal-desc">
               You can now launch Prowosma directly from your desktop or home screen.
             </p>
@@ -95,7 +96,7 @@ export default function PWAInstallBanner() {
                     <div className="pwa-address-bar-demo">
                       <span style={{ color:'#888', fontSize:'12px' }}>localhost:5173</span>
                       <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
-                        <span style={{ fontSize:'13px' }}>⭐</span>
+                        <span style={{ fontSize:'13px' }}><IcStar size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                         <div className="pwa-install-icon-demo" title="Install Prowosma">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="3" y="3" width="18" height="18" rx="3"/>
@@ -150,21 +151,21 @@ export default function PWAInstallBanner() {
 
             <div className="pwa-modal-features">
               <div className="pwa-modal-feature">
-                <span className="pwa-modal-feature-icon">⚡</span>
+                <span className="pwa-modal-feature-icon"><IcZap size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 <div>
                   <div className="pwa-modal-feature-title">Instant Launch</div>
                   <div className="pwa-modal-feature-desc">Opens like a native app, no browser chrome</div>
                 </div>
               </div>
               <div className="pwa-modal-feature">
-                <span className="pwa-modal-feature-icon">📶</span>
+                <span className="pwa-modal-feature-icon"><IcSignal size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 <div>
                   <div className="pwa-modal-feature-title">Works Offline</div>
                   <div className="pwa-modal-feature-desc">Access your tasks even without internet</div>
                 </div>
               </div>
               <div className="pwa-modal-feature">
-                <span className="pwa-modal-feature-icon">🔔</span>
+                <span className="pwa-modal-feature-icon"><IcBell size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 <div>
                   <div className="pwa-modal-feature-title">Push Notifications</div>
                   <div className="pwa-modal-feature-desc">Get notified about overdue tasks and mentions</div>

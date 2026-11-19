@@ -42,6 +42,7 @@ import ProjectAccessModal from "../components/ProjectAccessModal";
 import ProjectTeamModal from "../components/ProjectTeamModal";
 import CloneProjectDialog from "../components/CloneProjectDialog";
 import PersonAvatar from "../components/people/PersonAvatar";
+import { Target as IcTarget } from "lucide-react";
 
 const COLORS = [
   "var(--brand-500)",
@@ -236,7 +237,7 @@ function ProjectForm({
                 background: showNewCat ? "var(--brand-500)" : "var(--gray-50)",
                 color: showNewCat ? "#fff" : "var(--brand-500)",
                 cursor: "pointer",
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: "16px",
                 lineHeight: 1,
                 flexShrink: 0,
@@ -334,7 +335,7 @@ function ProjectForm({
               <option value="">-- No Goal --</option>
               {localGoals.map((g) => (
                 <option key={g.id} value={g.id}>
-                  🎯 {g.title} ({g.progress || 0}%)
+                  <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /> {g.title} ({g.progress || 0}%)
                 </option>
               ))}
             </select>
@@ -349,7 +350,7 @@ function ProjectForm({
                 background: showNewGoal ? "var(--success)" : "var(--gray-50)",
                 color: showNewGoal ? "#fff" : "var(--success)",
                 cursor: "pointer",
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: "16px",
                 lineHeight: 1,
                 flexShrink: 0,
@@ -371,7 +372,7 @@ function ProjectForm({
               gap: "10px",
             }}>
               <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--gray-700)" }}>
-                🎯 New Goal
+                New Goal
               </div>
               <input
                 type="text"
@@ -554,7 +555,7 @@ function ProjectForm({
               finally { setSaving(false); }
             }}
           >
-            {saving ? "⏳ Saving..." : initial?.id ? "Update" : "Create"}
+            {saving ? "Saving..." : initial?.id ? "Update" : "Create"}
           </button>
         </div>
       </div>
@@ -623,7 +624,7 @@ function SubProjectCard({
             opacity:0.6, flexShrink:0,
           }}><Trash2 size={14} aria-hidden="true" /></button>
           <button onClick={(e) => { e.stopPropagation(); navigate(`/tasks?projectId=${sub.id}`); }} style={{
-            flexShrink:0, fontSize:10, fontWeight:700, padding:"2px 8px",
+            flexShrink:0, fontSize:10, fontWeight: 600, padding:"2px 8px",
             border:`1px solid ${subColor}`, borderRadius:6, background:"transparent",
             color:subColor, cursor:"pointer", whiteSpace:"nowrap",
           }}>Tasks →</button>

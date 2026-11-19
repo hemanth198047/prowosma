@@ -38,6 +38,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import { Hourglass as IcHourglass, Pencil as IcPencil, Trash2 as IcTrash2, Users as IcUsers } from "lucide-react";
 
 const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
 const COLORS = [
@@ -79,7 +80,7 @@ function MemberAvatar({ member, size = 36 }) {
         borderRadius: "50%",
         background: member.color || "var(--brand-500)",
         color: "#fff",
-        fontWeight: 700,
+        fontWeight: 600,
         fontSize: size * 0.35,
         display: "flex",
         alignItems: "center",
@@ -400,7 +401,7 @@ export default function Team() {
   return (
     <div>
       <PageHeader
-        icon="👥"
+        icon={<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Team"
         description="Manage team members and assign tasks"
         action={
@@ -532,7 +533,7 @@ export default function Team() {
                               setShowForm(true);
                             }}
                           >
-                            ✏️
+                            <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />
                           </button>
                         </CanDo>
                         <CanDo action="manageMembers">
@@ -540,7 +541,7 @@ export default function Team() {
                             className="btn-icon"
                             onClick={() => handleDelete(m.id)}
                           >
-                            🗑️
+                            <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                           </button>
                         </CanDo>
                       </>
@@ -767,7 +768,7 @@ export default function Team() {
                     {new Date(inv.expiresAt).toLocaleDateString()}
                   </div>
                 </div>
-                <span className="pending-invite-badge">PENDING</span>
+                <span className="pending-invite-badge">Pending</span>
                 <div className="pending-invite-actions">
                   <button
                     className="btn-secondary"
@@ -992,7 +993,7 @@ function ExpertiseProfileModal({ member, onSave, onClose }) {
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <input type="range" min={0} max={100} value={form.capacityPercent}
                 onChange={e=>set("capacityPercent",Number(e.target.value))} style={{flex:1}} id={"team-capacity"} />
-              <span style={{fontWeight:700,minWidth:36}}>{form.capacityPercent}%</span>
+              <span style={{fontWeight: 600,minWidth:36}}>{form.capacityPercent}%</span>
             </div>
           </div>
         </div>
@@ -1083,7 +1084,7 @@ function ExpertFinder() {
             onKeyDown={e=>e.key==="Enter"&&askAI()}
             placeholder="Who is best for a Python ML project? Who can mentor React?" />
           <button className="btn-primary" onClick={askAI} disabled={aiLoading||!aiQuery.trim()}>
-            {aiLoading ? "⏳" : "Ask →"}
+            {aiLoading ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Ask →"}
           </button>
         </div>
         {aiResult && (
@@ -1102,7 +1103,7 @@ function ExpertFinder() {
             placeholder="Search by skill (e.g. React, Python, DevOps, ML)…"
             className="exp-search-input" />
           <button className="btn-primary" onClick={search} disabled={searching||!query.trim()}>
-            {searching ? "⏳" : "Find Experts"}
+            {searching ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Find Experts"}
           </button>
         </div>
         <button className="btn-secondary" onClick={runInfer} disabled={inferring}
@@ -1135,7 +1136,7 @@ function ExpertFinder() {
                     </div>
                     <div className="exp-result-avail">
                       <span className="exp-avail-dot" style={{background:avColor}} />
-                      <span style={{color:avColor,fontSize:"11px",fontWeight:700}}>{m.availability}</span>
+                      <span style={{color:avColor,fontSize:"11px",fontWeight: 600}}>{m.availability}</span>
                       {m.capacityPercent < 100 && (
                         <span style={{fontSize:"10px",color:"#64748b",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
                       )}
@@ -1318,9 +1319,9 @@ function TribalKnowledgeTab() {
   }, []);
 
   const RISK_META = {
-    HIGH:   { color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
-    MEDIUM: { color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
-    LOW:    { color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
+    HIGH:   { color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:<span className="emo-dot emo-dot--red" aria-hidden="true" /> },
+    MEDIUM: { color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:<span className="emo-dot emo-dot--yellow" aria-hidden="true" /> },
+    LOW:    { color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:<span className="emo-dot emo-dot--green" aria-hidden="true" /> },
   };
 
   if (loading) return <div className="exp-empty">Analysing tribal knowledge risks…</div>;

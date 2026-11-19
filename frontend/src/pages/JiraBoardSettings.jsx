@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import "../styles/pages/jira-board.css";
+import { Ban as IcBan, Book as IcBook, Bug as IcBug, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, Diamond as IcDiamond, Footprints as IcFootprints, Image as IcImage, KeyRound as IcKeyRound, Recycle as IcRecycle, RefreshCw as IcRefreshCw, Repeat as IcRepeat, Tag as IcTag, Target as IcTarget, User as IcUser, Zap as IcZap } from "lucide-react";
 /* ── Shared constants (mirrors JiraBoard.jsx) ───────────────────── */
 const STORY_POINT_SCALE = {
   fibonacci: [1,2,3,5,8,13,21,34],
@@ -10,11 +11,11 @@ const STORY_POINT_SCALE = {
   powers:    [1,2,4,8,16,32],
 };
 const TYPE_META = {
-  STORY:  { icon:"📗", label:"Story",   color:"var(--success)" },
-  BUG:    { icon:"🐛", label:"Bug",     color:"var(--danger)" },
-  TASK:   { icon:"✅", label:"Task",    color:"var(--brand-500)" },
-  SUBTASK:{ icon:"🔹", label:"Subtask", color:"var(--purple)" },
-  EPIC:   { icon:"⚡", label:"Epic",    color:"var(--warning)" },
+  STORY:  { icon:<IcBook size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Story",   color:"var(--success)" },
+  BUG:    { icon:<IcBug size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Bug",     color:"var(--danger)" },
+  TASK:   { icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Task",    color:"var(--brand-500)" },
+  SUBTASK:{ icon:<IcDiamond size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Subtask", color:"var(--purple)" },
+  EPIC:   { icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Epic",    color:"var(--warning)" },
 };
 const DEFAULT_COLUMNS = [
   { id:"TODO",        label:"To Do",       color:"var(--gray-500)", wipLimit:null },
@@ -32,14 +33,14 @@ const DEFAULT_CONFIG = {
 };
 
 const TABS = [
-  { id:"columns",    icon:"📋", label:"Columns & WIP"    },
-  { id:"sprints",    icon:"🏃", label:"Sprint Settings"  },
-  { id:"estimation", icon:"🎯", label:"Estimation"       },
-  { id:"display",    icon:"🖼", label:"Cards & Display"  },
-  { id:"types",      icon:"🏷", label:"Issue Types"      },
-  { id:"workflow",   icon:"🔄", label:"Workflow Rules"   },
-  { id:"statuses",   icon:"🔁", label:"Status Mapping"   },
-  { id:"permissions",icon:"🔐", label:"Permissions"      },
+  { id:"columns",    icon:<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Columns & WIP"    },
+  { id:"sprints",    icon:<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Sprint Settings"  },
+  { id:"estimation", icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Estimation"       },
+  { id:"display",    icon:<IcImage size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Cards & Display"  },
+  { id:"types",      icon:<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Issue Types"      },
+  { id:"workflow",   icon:<IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Workflow Rules"   },
+  { id:"statuses",   icon:<IcRepeat size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Status Mapping"   },
+  { id:"permissions",icon:<IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Permissions"      },
 ];
 
 /* ── Column row editor ──────────────────────────────────────────── */
@@ -176,7 +177,7 @@ export default function JiraBoardSettings() {
           ))}
           <div className="jbs-sidebar-divider"/>
           <button className="jbs-tab jbs-tab-danger" onClick={handleReset}>
-            <span className="jbs-tab-icon">♻️</span>
+            <span className="jbs-tab-icon"><IcRecycle size={16} strokeWidth={1.5} aria-hidden="true" /></span>
             <span>Reset defaults</span>
           </button>
         </div>
@@ -497,22 +498,22 @@ export default function JiraBoardSettings() {
               <div className="jbs-card">
                 {[
                   {
-                    k:"requireEstimate", icon:"🎯",
+                    k:"requireEstimate", icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />,
                     title:"Require story point estimate before In Progress",
                     desc:"Issues without a story point value cannot be dragged to In Progress.",
                   },
                   {
-                    k:"requireAssignee", icon:"👤",
+                    k:"requireAssignee", icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />,
                     title:"Require assignee before In Progress",
                     desc:"Issues must have an assignee to move to In Progress.",
                   },
                   {
-                    k:"blockAfterWip", icon:"🚫",
+                    k:"blockAfterWip", icon:<IcBan size={16} strokeWidth={1.5} aria-hidden="true" />,
                     title:"Block drag when WIP limit is reached",
                     desc:"Hard block — issues cannot be dragged into a full column. Without this, a warning is shown but drag succeeds.",
                   },
                   {
-                    k:"autoCloseSprint", icon:"✅",
+                    k:"autoCloseSprint", icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />,
                     title:"Auto-complete sprint when all issues are Done",
                     desc:"Automatically marks the sprint as Completed when every issue reaches Done status.",
                   },

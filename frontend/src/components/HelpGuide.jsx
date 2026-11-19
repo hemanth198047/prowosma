@@ -1,19 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Bot as IcBot, FileText as IcFileText, House as IcHouse, Library as IcLibrary, MessageSquare as IcMessageSquare, Search as IcSearch, Settings as IcSettings, Shuffle as IcShuffle, TrendingUp as IcTrendingUp, Users as IcUsers, Zap as IcZap } from "lucide-react";
 
 const HELP_PDF_URL = "/Prowosma_Help_Guide.pdf";
 
 const SECTIONS = [
-  { icon:"🏠", label:"Dashboard",      desc:"Command center, charts, AI insight" },
-  { icon:"⚡", label:"Work",           desc:"Projects, Tasks, Goals, Kanban, Sprints, Gantt, Calendar, Deploy, Graph" },
-  { icon:"📚", label:"Knowledge",      desc:"Docs, Decisions, Meetings, SOPs" },
-  { icon:"📈", label:"Insights",       desc:"Analytics, KPIs, ROI, Portfolio, Reports, Scenarios, Time" },
-  { icon:"🔀", label:"Automate",       desc:"BPM Studio, Automations, Integrations, Import" },
-  { icon:"💬", label:"Collaborate",    desc:"Channels" },
-  { icon:"👥", label:"Team",           desc:"Members, Activity Log" },
-  { icon:"⚙️", label:"Configure",     desc:"Categories, Custom Fields, Workspace, Admin, Developer" },
-  { icon:"🤖", label:"AI",            desc:"AI Assistant, AI Intelligence, AI Settings" },
-  { icon:"🔍", label:"Topbar",        desc:"Search, Design Switcher, Font Switcher, Dark Mode, Notifications" },
+  { icon:<IcHouse size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Dashboard",      desc:"Command center, charts, AI insight" },
+  { icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Work",           desc:"Projects, Tasks, Goals, Kanban, Sprints, Gantt, Calendar, Deploy, Graph" },
+  { icon:<IcLibrary size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Knowledge",      desc:"Docs, Decisions, Meetings, SOPs" },
+  { icon:<IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Insights",       desc:"Analytics, KPIs, ROI, Portfolio, Reports, Scenarios, Time" },
+  { icon:<IcShuffle size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Automate",       desc:"BPM Studio, Automations, Integrations, Import" },
+  { icon:<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Collaborate",    desc:"Channels" },
+  { icon:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Team",           desc:"Members, Activity Log" },
+  { icon:<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Configure",     desc:"Categories, Custom Fields, Workspace, Admin, Developer" },
+  { icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, label:"AI",            desc:"AI Assistant, AI Intelligence, AI Settings" },
+  { icon:<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Topbar",        desc:"Search, Design Switcher, Font Switcher, Dark Mode, Notifications" },
 ];
 
 export default function HelpGuide() {
@@ -82,7 +83,7 @@ export default function HelpGuide() {
 
           {/* PDF preview banner */}
           <div className="hg-pdf-banner">
-            <div className="hg-pdf-icon">📄</div>
+            <div className="hg-pdf-icon"><IcFileText size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <div className="hg-pdf-info">
               <div className="hg-pdf-name">Prowosma_Help_Guide.pdf</div>
               <div className="hg-pdf-meta">All {SECTIONS.length} sections · Detailed how-to guides · Tips & tricks</div>

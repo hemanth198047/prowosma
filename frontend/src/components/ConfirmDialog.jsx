@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ConfirmContext } from "../hooks/useConfirm";
+import { CircleHelp as IcCircleHelp, Trash2 as IcTrash2 } from "lucide-react";
 
 /**
  * Usage:
@@ -97,14 +98,14 @@ export function ConfirmProvider({ children }) {
               lineHeight:   1,
               marginBottom: "4px",
             }}>
-              {dialog.danger ? "🗑️" : "❓"}
+              {dialog.danger ? <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcCircleHelp size={16} strokeWidth={1.5} aria-hidden="true" />}
             </div>
 
             {/* Title */}
             <h3 id="confirm-dialog-title" style={{
               margin:     0,
               fontSize:   "18px",
-              fontWeight: 700,
+              fontWeight: 600,
               color:      "#0f172a",
             }}>
               {dialog.title}

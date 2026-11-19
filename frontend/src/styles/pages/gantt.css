@@ -30,10 +30,9 @@
   background: var(--gray-50);
   border-bottom: 2px solid var(--border);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   position: sticky;
   top: 0;
   z-index: 5;
@@ -79,7 +78,7 @@
 
 .gantt-status-badge {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: var(--radius-full);
   white-space: nowrap;
@@ -241,7 +240,7 @@
   background: var(--bg-card);
   color: var(--gray-600);
   border-right: 1px solid var(--border);
-  transition: all 0.15s;
+  transition: color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.15s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.15s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .gantt-zoom-btn:last-child {

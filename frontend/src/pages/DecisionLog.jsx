@@ -8,6 +8,7 @@ import {
   aiAnalyseDecision as aiAnalyse,
 } from "../api/decisions";
 import "../styles/pages/decisions.css";
+import { Brain as IcBrain, Lock as IcLock, Pencil as IcPencil, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 // Was a locally-duplicated copy of these same 5 calls, redefined inline
 // instead of reusing api/decisions.js (which Decisions.jsx and Docs.jsx
@@ -28,8 +29,8 @@ const STATUS_META = {
 };
 const REV_META = {
   REVERSIBLE:   { icon:"↩️", label:"Reversible",   color:"var(--success)" },
-  PARTIALLY:    { icon:"⚠️", label:"Partly Rev.",  color:"var(--warning)" },
-  IRREVERSIBLE: { icon:"🔒", label:"Irreversible", color:"var(--danger)" },
+  PARTIALLY:    { icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Partly Rev.",  color:"var(--warning)" },
+  IRREVERSIBLE: { icon:<IcLock size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Irreversible", color:"var(--danger)" },
 };
 
 function DecisionForm({ initial, onSave, onCancel }) {
@@ -60,11 +61,11 @@ function DecisionForm({ initial, onSave, onCancel }) {
       <div className="form-row">
         <div className="form-group"><label htmlFor={"decision-log-impact"}>Impact</label>
           <select value={form.impact} onChange={e=>set("impact",e.target.value)} id={"decision-log-impact"}>
-            <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+            <option>High</option><option>Medium</option><option>LOW</option>
           </select></div>
         <div className="form-group"><label htmlFor={"decision-log-category"}>Category</label>
           <select value={form.category} onChange={e=>set("category",e.target.value)} id={"decision-log-category"}>
-            <option>TECHNICAL</option><option>PRODUCT</option><option>RESOURCE</option><option>STRATEGIC</option>
+            <option>Technical</option><option>Product</option><option>Resource</option><option>Strategic</option>
           </select></div>
         <div className="form-group"><label htmlFor={"decision-log-reversibility"}>Reversibility</label>
           <select value={form.reversibility} onChange={e=>set("reversibility",e.target.value)} id={"decision-log-reversibility"}>
@@ -127,8 +128,8 @@ function DecisionCard({ d, onEdit, onDelete, onAI }) {
         </div>
         <div className="decision-card-right" onClick={e=>e.stopPropagation()} role="presentation">
           <span className="decision-status" style={{color:sm.color}}>{sm.label}</span>
-          <button className="btn-icon" onClick={()=>onEdit(d)}>✏️</button>
-          <button className="btn-icon" onClick={()=>onDelete(d.id)}>🗑️</button>
+          <button className="btn-icon" onClick={()=>onEdit(d)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+          <button className="btn-icon" onClick={()=>onDelete(d.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           <span className="decision-expand-icon">{expanded?"▲":"▼"}</span>
         </div>
       </div>
@@ -224,7 +225,7 @@ export default function DecisionLog() {
 
   return (
     <div>
-      <PageHeader icon="🧠" title="Decision Intelligence"
+      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="Decision Intelligence"
         description="Log, analyse, and learn from important decisions"
         action={<button className="btn-primary" onClick={()=>{setEditing(null);setShowForm(true);}}>
           + Log Decision

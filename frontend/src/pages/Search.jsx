@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/search.css";
 import { statusText } from "../utils/statusText";
+import { Search as IcSearch } from "lucide-react";
 export default function Search() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState({
@@ -83,7 +84,7 @@ export default function Search() {
   return (
     <div>
       <PageHeader
-        icon="🔍"
+        icon={<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Global Search"
         description="Search across all projects, tasks and goals"
         action={
@@ -95,7 +96,7 @@ export default function Search() {
 
       {/* Search Input */}
       <div className="search-input-wrapper">
-        <span className="search-input-icon">🔍</span>
+        <span className="search-input-icon"><IcSearch size={16} strokeWidth={1.5} aria-hidden="true" /></span>
         <input
           ref={inputRef}
           className="search-input-large"
@@ -320,7 +321,7 @@ export default function Search() {
       {/* Empty state */}
       {!searched && !loading && (
         <div className="search-empty-state">
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}><IcSearch size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           <p
             style={{
               fontSize: "16px",

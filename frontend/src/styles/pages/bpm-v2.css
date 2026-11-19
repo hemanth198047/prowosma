@@ -20,7 +20,7 @@
 .bpm-card-icon--sm { width: 30px; height: 30px; }
 .bpm-card-body { flex: 1; min-width: 0; }
 .bpm-card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.bpm-card-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.bpm-card-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .bpm-chip { font-size: 12px; color: var(--text-secondary); padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; }
 .bpm-card-desc { margin: 4px 0 0; font-size: 13.5px; color: var(--text-secondary); line-height: 1.45; }
 .bpm-card-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 12.5px; color: var(--text-muted); }
@@ -67,7 +67,7 @@
 .bpm-tpl { padding: 14px 16px; background: var(--bg-card, #fff); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .bpm-tpl:hover { border-color: var(--border-strong); }
 .bpm-tpl-head { display: flex; gap: 10px; align-items: flex-start; }
-.bpm-tpl-head h3 { margin: 0 0 3px; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.bpm-tpl-head h3 { margin: 0 0 3px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .bpm-tpl-head p { margin: 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
 .bpm-tpl-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
 

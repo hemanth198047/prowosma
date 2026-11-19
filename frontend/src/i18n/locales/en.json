@@ -22,9 +22,9 @@
       "integrations": "Integrations",
       "selfHosted": "Self-hosted"
     },
-    "welcomeBack": "Welcome back",
+    "welcomeBack": "Sign in to Prowosma",
     "createAccountHeading": "Create account",
-    "signInSubtitle": "Sign in to your workspace.",
+    "signInSubtitle": "Projects, goals, tasks and meetings for your team",
     "registerSubtitle": "Get started with Prowosma for free.",
     "signInTab": "Sign In",
     "createAccountTab": "Create account",

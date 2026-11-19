@@ -15,7 +15,7 @@
 
 .sop-pending-banner button {
   background: none; border: none; cursor: pointer;
-  color: #b45309; font-weight: 700; font-size: 13px;
+  color: #b45309; font-weight: 600; font-size: 13px;
   text-decoration: underline;
 }
 
@@ -25,7 +25,7 @@
 
 .sop-stat-icon            { font-size: 14px; }
 
-.sop-stat-count           { font-size: 16px; font-weight: 800; }
+.sop-stat-count           { font-size: 16px; font-weight: 600; }
 
 .sop-stat-label           { font-size: 12px; }
 
@@ -57,7 +57,7 @@
 
 .sop-empty-icon { font-size: 48px; margin-bottom: 16px; }
 
-.sop-empty h3   { font-size: 20px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+.sop-empty h3   { font-size: 20px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px; }
 
 .sop-empty p    { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; max-width: 420px; }
 
@@ -82,7 +82,7 @@
 
 .sop-card-info    { flex: 1; min-width: 0; }
 
-.sop-card-title   { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 3px; }
+.sop-card-title   { font-size: 14px; font-weight: 600; color: var(--gray-800); margin-bottom: 3px; }
 
 .sop-card-meta    { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--gray-400); flex-wrap: wrap; }
 
@@ -94,11 +94,11 @@
 
 .sop-card-right   { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 
-.sop-status-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.sop-status-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
 
 .sop-action-btn   {
   padding: 4px 12px; border: 1px solid; border-radius: var(--radius-sm);
-  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .sop-publish-btn  { background: rgba(6,95,70,0.12); color: var(--success); border-color: var(--success); }
@@ -124,8 +124,8 @@
 .sop-section      { margin-top: 14px; }
 
 .sop-section-label{
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--gray-400); margin-bottom: 8px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0; color: var(--gray-400); margin-bottom: 8px;
   display: flex; align-items: center; gap: 8px;
 }
 
@@ -192,7 +192,7 @@
   border-radius: var(--radius-sm);
 }
 
-.sop-history-v    { font-weight: 700; color: var(--brand-600); min-width: 28px; }
+.sop-history-v    { font-weight: 600; color: var(--brand-600); min-width: 28px; }
 
 .sop-history-note { flex: 1; color: var(--gray-600); }
 
@@ -207,7 +207,7 @@
   margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
 }
 
-.sop-modal-header h2  { font-size: 17px; font-weight: 700; color: var(--gray-900); margin:0; }
+.sop-modal-header h2  { font-size: 17px; font-weight: 600; color: var(--gray-900); margin:0; }
 
 .sop-modal-header button{
   background:none; border:none; cursor:pointer; font-size:20px;

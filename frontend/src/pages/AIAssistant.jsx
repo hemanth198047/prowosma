@@ -29,6 +29,7 @@ import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/ai.css";
 import { apiErrorMessage } from "../utils/apiError";
+import { Bot as IcBot, ClipboardList as IcClipboardList, Settings as IcSettings } from "lucide-react";
 const PANELS = [
   {
     key: "chat",
@@ -154,7 +155,7 @@ function AIDisabledBanner({
   if (!aiEnabled) {
     return (
       <div className="ai-disabled-banner">
-        <div className="ai-disabled-icon">🤖</div>
+        <div className="ai-disabled-icon"><IcBot size={16} strokeWidth={1.5} aria-hidden="true" /></div>
         <div className="ai-disabled-content">
           <div className="ai-disabled-title">AI is turned off</div>
           <div className="ai-disabled-desc">
@@ -182,7 +183,7 @@ function AIDisabledBanner({
         className="ai-disabled-banner"
         style={{ borderColor: "var(--warning)", background: "#fffbeb" }}
       >
-        <div className="ai-disabled-icon">⚙️</div>
+        <div className="ai-disabled-icon"><IcSettings size={16} strokeWidth={1.5} aria-hidden="true" /></div>
         <div className="ai-disabled-content">
           <div className="ai-disabled-title" style={{ color: "var(--warning)" }}>
             This feature is disabled
@@ -228,7 +229,7 @@ function ResultCard({ data, onClose }) {
   return (
     <div className="ai-result-card">
       <div className="ai-result-header">
-        <span style={{ fontWeight: 700 }}>AI Response</span>
+        <span style={{ fontWeight: 600 }}>AI Response</span>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             className="btn-icon"
@@ -253,7 +254,7 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hi ${user?.name || "there"}! 👋 I'm your AI assistant. Ask me anything about your projects, tasks, and goals! 🤖`,
+      content: `Hi ${user?.name || "there"}, I'm your AI assistant. Ask me anything about your projects, tasks, and goals `,
     },
   ]);
   const [input, setInput] = useState("");
@@ -322,7 +323,7 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
                 onClick={() => navigator.clipboard.writeText(m.content)}
                 title="Copy message"
               >
-                📋
+                <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -818,7 +819,7 @@ export default function AIAssistant() {
   return (
     <div className="ai-assistant-root">
       <PageHeader
-        icon="🤖"
+        icon={<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="AI Assistant"
         description="Your intelligent project management companion"
         action={

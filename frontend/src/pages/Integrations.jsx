@@ -7,17 +7,18 @@ import client from "../api/client";
 import PageHeader from "../components/PageHeader";
 import InboundUrlPanel from "../components/InboundUrlPanel";
 import { apiErrorMessage } from "../utils/apiError";
+import { AppWindow as IcAppWindow, Book as IcBook, BookOpen as IcBookOpen, Bot as IcBot, Building as IcBuilding, Building2 as IcBuilding2, ChartColumn as IcChartColumn, Circle as IcCircle, CircleCheck as IcCircleCheck, Cloud as IcCloud, Coins as IcCoins, Database as IcDatabase, Diamond as IcDiamond, Dog as IcDog, Folder as IcFolder, Globe as IcGlobe, Heart as IcHeart, Hourglass as IcHourglass, KeyRound as IcKeyRound, Leaf as IcLeaf, Library as IcLibrary, MessageSquare as IcMessageSquare, Package as IcPackage, Plug as IcPlug, Radio as IcRadio, RefreshCw as IcRefreshCw, Rocket as IcRocket, Search as IcSearch, Settings as IcSettings, Shield as IcShield, Square as IcSquare, StickyNote as IcStickyNote, Target as IcTarget, Telescope as IcTelescope, TriangleAlert as IcTriangleAlert, Users as IcUsers, Video as IcVideo, Waves as IcWaves } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTEGRATION CATALOGUE — 5 Tiers
 // ═══════════════════════════════════════════════════════════════════════════
 const TIERS = [
   {
-    id: "identity", label: "Identity & Access", icon: "🔐",
+    id: "identity", label: "Identity & Access", icon: <IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "SSO, user provisioning, and enterprise authentication",
     color:"#5B5FEE", badge: "MUST-HAVE",
     integrations: [
-      { key:"OKTA",       name:"Okta",              icon:"🔵", color:"#007DC1", tagline:"Enterprise SSO and lifecycle management",
+      { key:"OKTA",       name:"Okta",              icon:<span className="emo-dot emo-dot--blue" aria-hidden="true" />, color:"#007DC1", tagline:"Enterprise SSO and lifecycle management",
         status:"available", effort:"oauth",
         fields:[
           {key:"domain",      label:"Okta Domain",    type:"text",    placeholder:"yourorg.okta.com",
@@ -29,22 +30,22 @@ const TIERS = [
         ],
         capabilities:["Single Sign-On (SAML 2.0)","Automatic user provisioning (SCIM)","Group-based access control","MFA enforcement"],
         docsUrl:"https://developer.okta.com/docs/guides/implement-oauth-for-okta/", docsLabel:"Okta Developer Docs →" },
-      { key:"AZURE_AD",   name:"Microsoft Entra ID",icon:"🪟", color:"#0078D4", tagline:"Azure AD SSO + Microsoft 365 identity",
+      { key:"AZURE_AD",   name:"Microsoft Entra ID",icon:<IcAppWindow size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0078D4", tagline:"Azure AD SSO + Microsoft 365 identity",
         status:"available", effort:"oauth",
         fields:[{key:"tenantId",label:"Tenant ID",type:"text",placeholder:"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"},{key:"clientId",label:"Application (Client) ID",type:"text",placeholder:"App registration client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"App registration secret"}],
         capabilities:["Azure AD Single Sign-On","Conditional access policies","Entra ID group sync","Microsoft 365 user directory"],
         docsUrl:"https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps", docsLabel:"Azure Portal →" },
-      { key:"GOOGLE_WORKSPACE", name:"Google Workspace",icon:"🔴", color:"#4285F4", tagline:"Google OAuth and Workspace directory",
+      { key:"GOOGLE_WORKSPACE", name:"Google Workspace",icon:<span className="emo-dot emo-dot--red" aria-hidden="true" />, color:"#4285F4", tagline:"Google OAuth and Workspace directory",
         status:"available", effort:"oauth",
         fields:[{key:"clientId",label:"Client ID",type:"text",placeholder:"xxx.apps.googleusercontent.com"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Google OAuth secret"},{key:"domain",label:"Workspace Domain",type:"text",placeholder:"yourcompany.com"}],
         capabilities:["Google OAuth 2.0 SSO","Workspace user directory sync","Google Drive integration","Calendar sync"],
         docsUrl:"https://console.cloud.google.com/apis/credentials", docsLabel:"Google Cloud Console →" },
-      { key:"SAML",       name:"SAML 2.0",           icon:"🛡", color:"#334155", tagline:"Generic SAML 2.0 for any IdP",
+      { key:"SAML",       name:"SAML 2.0",           icon:<IcShield size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#334155", tagline:"Generic SAML 2.0 for any IdP",
         status:"available", effort:"config",
         fields:[{key:"idpMetadata",label:"IdP Metadata URL",type:"text",placeholder:"https://idp.company.com/saml/metadata"},{key:"entityId",label:"Service Provider Entity ID",type:"text",placeholder:"https://app.prowosma.com/saml"}],
         capabilities:["Standard SAML 2.0 SP","Works with Ping, ADFS, OneLogin","Attribute mapping","Just-in-time provisioning"],
         docsUrl:"https://docs.prowosma.com/saml", docsLabel:"Setup Guide →" },
-      { key:"SCIM",       name:"SCIM 2.0",            icon:"👥", color:"#1E8E5A", tagline:"Automated user lifecycle management",
+      { key:"SCIM",       name:"SCIM 2.0",            icon:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#1E8E5A", tagline:"Automated user lifecycle management",
         status:"available", effort:"config",
         fields:[{key:"scimToken",label:"SCIM Bearer Token",type:"password",placeholder:"Auto-generated — click Generate"},{key:"scimEndpoint",label:"SCIM Endpoint",type:"text",placeholder:"Read-only — your SCIM URL"}],
         capabilities:["Auto-create users on hire","Auto-deactivate on departure","Role sync from IdP groups","Bulk user import"],
@@ -52,11 +53,11 @@ const TIERS = [
     ],
   },
   {
-    id: "devops", label: "Source Code & DevOps", icon: "⚙️",
+    id: "devops", label: "Source Code & DevOps", icon: <IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Connect your engineering workflow — PRs, builds, deployments, code quality",
     color: "#0ea5e9", badge: "ENGINEERING",
     integrations: [
-      { key:"GITHUB",      name:"GitHub",       icon:"🐙", color:"#24292e", tagline:"PRs, issues, and CI status linked to tasks",
+      { key:"GITHUB",      name:"GitHub",       icon:<IcDatabase size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#24292e", tagline:"PRs, issues, and CI status linked to tasks",
         status:"available", effort:"token",
         fields:[
           {key:"token",label:"Personal Access Token",type:"password",placeholder:"ghp_xxxx",
@@ -66,7 +67,7 @@ const TIERS = [
         ],
         capabilities:["Link PRs to tasks","Auto-close tasks on merge","CI/CD status in task cards","Commit activity timeline"],
         docsUrl:"https://github.com/settings/tokens", docsLabel:"Create Token →" },
-      { key:"GITLAB",      name:"GitLab",       icon:"🦊", color:"#fc6d26", tagline:"Open issues and merge requests, synced as tasks",
+      { key:"GITLAB",      name:"GitLab",       icon:<IcDatabase size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#fc6d26", tagline:"Open issues and merge requests, synced as tasks",
         status:"available", effort:"token",
         fields:[
           {key:"token",label:"Access Token",type:"password",placeholder:"glpat-xxxx",
@@ -78,7 +79,7 @@ const TIERS = [
         ],
         capabilities:["Open issues become tasks","Open merge requests become tasks","Self-managed GitLab supported","Re-sync any time, no duplicates"],
         docsUrl:"https://gitlab.com/-/profile/personal_access_tokens", docsLabel:"Create Token ->" },
-      { key:"BITBUCKET",   name:"Bitbucket",    icon:"🪣", color:"#0052CC", tagline:"Atlassian repos and pipelines",
+      { key:"BITBUCKET",   name:"Bitbucket",    icon:<IcDatabase size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0052CC", tagline:"Atlassian repos and pipelines",
         status:"available", effort:"oauth",
         fields:[{key:"workspaceSlug",label:"Workspace Slug",type:"text",placeholder:"my-workspace",
            help:"The part after bitbucket.org/ in your workspace URL"},
@@ -90,22 +91,22 @@ const TIERS = [
            help:"Bitbucket → Personal settings → App passwords → grant Repositories: Read + Pull requests: Read"}],
         capabilities:["PR to task linking","Pipeline triggers","Branch policies","Code review stats"],
         docsUrl:"https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/", docsLabel:"App Passwords →" },
-      { key:"AZURE_DEVOPS", name:"Azure DevOps", icon:"🔷", color:"#0078D4", tagline:"Work items, pipelines, and repos",
+      { key:"AZURE_DEVOPS", name:"Azure DevOps", icon:<IcDiamond size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0078D4", tagline:"Work items, pipelines, and repos",
         status:"coming_soon", effort:"token",
         fields:[{key:"org",label:"Organisation",type:"text",placeholder:"dev.azure.com/yourorg"},{key:"pat",label:"Personal Access Token",type:"password",placeholder:"Azure DevOps PAT"},{key:"project",label:"Project",type:"text",placeholder:"My Project"}],
         capabilities:["Work item ↔ task sync","Build pipeline status","Release tracking","Board mirroring"],
         docsUrl:"https://dev.azure.com", docsLabel:"Azure DevOps →" },
-      { key:"JENKINS",     name:"Jenkins",      icon:"🏗", color:"#d33833", tagline:"A failed build opens a task; the next good build closes it",
+      { key:"JENKINS",     name:"Jenkins",      icon:<IcBuilding2 size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#d33833", tagline:"A failed build opens a task; the next good build closes it",
         status:"available", effort:"webhook", inbound:true,
         fields:[],
         capabilities:["Failed build opens a bug task","Next good build closes it","One task per failing job","Unstable builds at medium priority"],
         docsUrl:"https://plugins.jenkins.io/notification/", docsLabel:"Notification plugin ->" },
-      { key:"CIRCLECI",    name:"CircleCI",     icon:"⭕", color:"#343434", tagline:"CI pipeline visibility",
+      { key:"CIRCLECI",    name:"CircleCI",     icon:<IcCircle size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#343434", tagline:"CI pipeline visibility",
         status:"coming_soon", effort:"token",
         fields:[{key:"token",label:"Personal API Token",type:"password",placeholder:"CircleCI token"},{key:"orgSlug",label:"Org Slug",type:"text",placeholder:"gh/YourOrg"}],
         capabilities:["Pipeline status","Workflow triggers","Test result summaries","Deployment tracking"],
         docsUrl:"https://circleci.com/docs/api-developers-guide/", docsLabel:"CircleCI API →" },
-      { key:"SONARQUBE",   name:"SonarQube",    icon:"🔍", color:"#4E9BCD", tagline:"Code quality and security gates",
+      { key:"SONARQUBE",   name:"SonarQube",    icon:<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#4E9BCD", tagline:"Code quality and security gates",
         status:"coming_soon", effort:"token",
         fields:[{key:"url",label:"SonarQube URL",type:"text",placeholder:"https://sonarqube.company.com"},{key:"token",label:"User Token",type:"password",placeholder:"squ_xxxx"},{key:"projectKey",label:"Project Key",type:"text",placeholder:"my-project"}],
         capabilities:["Quality gate in PR cards","Tech debt tracking","Security vulnerability tasks","Coverage trends"],
@@ -113,11 +114,11 @@ const TIERS = [
     ],
   },
   {
-    id: "knowledge", label: "Docs & Knowledge", icon: "📚",
+    id: "knowledge", label: "Docs & Knowledge", icon: <IcLibrary size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Link tasks to documents, SOPs, PRDs, and meeting notes",
     color:"#7C5CBF", badge: "PRODUCTIVITY",
     integrations: [
-      { key:"CONFLUENCE", name:"Confluence",    icon:"📘", color:"#0052CC", tagline:"Link tasks to Confluence pages and spaces",
+      { key:"CONFLUENCE", name:"Confluence",    icon:<IcBook size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0052CC", tagline:"Link tasks to Confluence pages and spaces",
         status:"coming_soon", effort:"oauth",
         fields:[
           {key:"baseUrl",   label:"Confluence URL", type:"text",     placeholder:"https://yourorg.atlassian.net/wiki",
@@ -129,7 +130,7 @@ const TIERS = [
         ],
         capabilities:["Attach Confluence pages to tasks","Create pages from task templates","Bi-directional linking","Space-level project mapping"],
         docsUrl:"https://id.atlassian.com/manage-profile/security/api-tokens", docsLabel:"Get API Token →" },
-      { key:"NOTION",     name:"Notion",        icon:"🗒", color:"#000000", tagline:"Sync Notion databases with projects",
+      { key:"NOTION",     name:"Notion",        icon:<IcStickyNote size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#000000", tagline:"Sync Notion databases with projects",
         status:"coming_soon", effort:"token",
         fields:[
           {key:"integrationToken",label:"Integration Token",type:"password",placeholder:"secret_xxxx",
@@ -139,17 +140,17 @@ const TIERS = [
         ],
         capabilities:["Notion DB ↔ project sync","Page linking in tasks","Template-based doc creation","Knowledge base bridging"],
         docsUrl:"https://www.notion.so/my-integrations", docsLabel:"Create Integration →" },
-      { key:"SHAREPOINT", name:"SharePoint",    icon:"📂", color:"#0078D4", tagline:"Microsoft 365 document management",
+      { key:"SHAREPOINT", name:"SharePoint",    icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0078D4", tagline:"Microsoft 365 document management",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"tenantId",label:"Tenant ID",type:"text",placeholder:"Azure tenant ID"},{key:"siteUrl",label:"SharePoint Site URL",type:"text",placeholder:"https://org.sharepoint.com/sites/projects"}],
         capabilities:["Attach SharePoint files to tasks","Document approval workflows","Version control sync","Teams-integrated notifications"],
         docsUrl:"https://docs.microsoft.com/en-us/sharepoint/dev/", docsLabel:"SharePoint Dev →" },
-      { key:"GOOGLE_DRIVE", name:"Google Drive", icon:"📁", color:"#4285F4", tagline:"Attach Drive files directly to tasks",
+      { key:"GOOGLE_DRIVE", name:"Google Drive", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#4285F4", tagline:"Attach Drive files directly to tasks",
         status:"available", effort:"oauth",
         fields:[{key:"clientId",label:"OAuth Client ID",type:"text",placeholder:"xxx.apps.googleusercontent.com"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Google OAuth secret"}],
         capabilities:["Attach Docs/Sheets/Slides to tasks","Create Drive folders per project","Comment sync","Shared drive support"],
         docsUrl:"https://console.cloud.google.com/apis/credentials", docsLabel:"Google Console →" },
-      { key:"ONEDRIVE",   name:"OneDrive",      icon:"☁️", color:"#0078D4", tagline:"Microsoft file storage for project docs",
+      { key:"ONEDRIVE",   name:"OneDrive",      icon:<IcCloud size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0078D4", tagline:"Microsoft file storage for project docs",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"tenantId",label:"Tenant ID",type:"text",placeholder:"Azure tenant ID"},{key:"clientId",label:"Client ID",type:"text",placeholder:"Azure app client ID"}],
         capabilities:["File attachment from OneDrive","Real-time file collaboration","Folder per project","Office 365 preview"],
@@ -157,11 +158,11 @@ const TIERS = [
     ],
   },
   {
-    id: "crm_hr", label: "CRM & HR Systems", icon: "🏢",
+    id: "crm_hr", label: "CRM & HR Systems", icon: <IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Auto-create projects from deals; sync headcount, onboarding, and capacity",
     color:"#C17D22", badge: "HIGH VALUE",
     integrations: [
-      { key:"SALESFORCE",  name:"Salesforce",    icon:"☁️", color:"#00A1E0", tagline:"Deal closed → project created automatically",
+      { key:"SALESFORCE",  name:"Salesforce",    icon:<IcCloud size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#00A1E0", tagline:"Deal closed → project created automatically",
         status:"coming_soon", effort:"oauth",
         fields:[
           {key:"instanceUrl",   label:"Salesforce URL",    type:"text",     placeholder:"https://yourorg.my.salesforce.com",
@@ -173,27 +174,27 @@ const TIERS = [
         ],
         capabilities:["Opportunity → Project auto-creation","Account-level project portfolio","Revenue tracking per project","CRM contact linking in tasks"],
         docsUrl:"https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/", docsLabel:"Salesforce API →" },
-      { key:"HUBSPOT",     name:"HubSpot",       icon:"🟠", color:"#FF7A59", tagline:"Pipeline deals trigger project workflow",
+      { key:"HUBSPOT",     name:"HubSpot",       icon:<span className="emo-dot emo-dot--orange" aria-hidden="true" />, color:"#FF7A59", tagline:"Pipeline deals trigger project workflow",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"apiKey",label:"Private App Access Token",type:"password",placeholder:"pat-na1-xxxx"},{key:"portalId",label:"Portal ID",type:"text",placeholder:"Your HubSpot portal ID"}],
         capabilities:["Deal stage → project status sync","Contact tasks in HubSpot","Revenue attribution","Campaign project tracking"],
         docsUrl:"https://developers.hubspot.com/docs/api/overview", docsLabel:"HubSpot API →" },
-      { key:"ZOHO_CRM",    name:"Zoho CRM",      icon:"🔶", color:"#E42527", tagline:"Zoho deal pipeline to project bridge",
+      { key:"ZOHO_CRM",    name:"Zoho CRM",      icon:<IcDiamond size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#E42527", tagline:"Zoho deal pipeline to project bridge",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"clientId",label:"Client ID",type:"text",placeholder:"Zoho OAuth client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Zoho OAuth secret"}],
         capabilities:["Lead → project creation","CRM module linking","Custom field mapping","Zoho Flow triggers"],
         docsUrl:"https://www.zoho.com/crm/developer/docs/api/v6/", docsLabel:"Zoho API →" },
-      { key:"WORKDAY",     name:"Workday",       icon:"🟢", color:"#F5821F", tagline:"Employee onboarding, offboarding, and capacity",
+      { key:"WORKDAY",     name:"Workday",       icon:<span className="emo-dot emo-dot--green" aria-hidden="true" />, color:"#F5821F", tagline:"Employee onboarding, offboarding, and capacity",
         status:"coming_soon", effort:"config",
         fields:[{key:"tenantUrl",label:"Workday Tenant URL",type:"text",placeholder:"https://wd2-impl-services1.workday.com/ccx/..."},{key:"username",label:"Integration System User",type:"text",placeholder:"ISU username"},{key:"password",label:"Password",type:"password",placeholder:"ISU password"}],
         capabilities:["New hire → onboarding project","Offboarding workflow trigger","Resource allocation sync","Org chart for capacity planning"],
         docsUrl:"https://developer.workday.com/", docsLabel:"Workday Dev →" },
-      { key:"BAMBOOHR",    name:"BambooHR",      icon:"🎋", color:"#73AC42", tagline:"HR events trigger project workflows",
+      { key:"BAMBOOHR",    name:"BambooHR",      icon:<IcLeaf size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#73AC42", tagline:"HR events trigger project workflows",
         status:"coming_soon", effort:"token",
         fields:[{key:"subdomain",label:"BambooHR Subdomain",type:"text",placeholder:"yourcompany"},{key:"apiKey",label:"API Key",type:"password",placeholder:"BambooHR API key"}],
         capabilities:["Hire date → project creation","Team capacity from headcount","PTO impact on sprint planning","Role-based permission sync"],
         docsUrl:"https://documentation.bamboohr.com/reference/", docsLabel:"BambooHR API →" },
-      { key:"SERVICENOW",  name:"ServiceNow",    icon:"🌐", color:"#81B5A1", tagline:"Incidents automatically become project work",
+      { key:"SERVICENOW",  name:"ServiceNow",    icon:<IcGlobe size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#81B5A1", tagline:"Incidents automatically become project work",
         status:"coming_soon", effort:"config",
         fields:[{key:"instanceUrl",label:"Instance URL",type:"text",placeholder:"https://yourorg.service-now.com"},{key:"username",label:"Username",type:"text",placeholder:"ServiceNow user"},{key:"password",label:"Password",type:"password",placeholder:"ServiceNow password"}],
         capabilities:["Incident → project auto-creation","Change request workflows","SLA tracking in tasks","Escalation rule engine"],
@@ -201,26 +202,26 @@ const TIERS = [
     ],
   },
   {
-    id: "financial", label: "Financial Systems", icon: "💰",
+    id: "financial", label: "Financial Systems", icon: <IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Project budget, actual spend, resource cost, and profitability — in one place",
     color:"#1E8E5A", badge: "DIFFERENTIATOR",
     integrations: [
-      { key:"QUICKBOOKS",  name:"QuickBooks",    icon:"💚", color:"#2CA01C", tagline:"Project budget vs actuals from QuickBooks",
+      { key:"QUICKBOOKS",  name:"QuickBooks",    icon:<IcHeart size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#2CA01C", tagline:"Project budget vs actuals from QuickBooks",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"clientId",label:"Client ID",type:"text",placeholder:"QuickBooks OAuth client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"QuickBooks OAuth secret"},{key:"realmId",label:"Company ID (Realm ID)",type:"text",placeholder:"Your QuickBooks company ID"}],
         capabilities:["Budget tracking per project","Invoice linkage","Expense categorisation","Margin and burn rate"],
         docsUrl:"https://developer.intuit.com/app/developer/qbo/docs/get-started", docsLabel:"QuickBooks Dev →" },
-      { key:"XERO",        name:"Xero",          icon:"💙", color:"#13B5EA", tagline:"Xero invoices and budgets in project view",
+      { key:"XERO",        name:"Xero",          icon:<IcHeart size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#13B5EA", tagline:"Xero invoices and budgets in project view",
         status:"coming_soon", effort:"oauth",
         fields:[{key:"clientId",label:"Client ID",type:"text",placeholder:"Xero OAuth client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Xero OAuth secret"}],
         capabilities:["Real-time budget vs spend","Invoice → project tagging","Cost per resource","Forecasted margin"],
         docsUrl:"https://developer.xero.com/documentation/api/", docsLabel:"Xero API →" },
-      { key:"SAP_ERP",     name:"SAP ERP",       icon:"🔷", color:"#0070F2", tagline:"Enterprise finance and resource management",
+      { key:"SAP_ERP",     name:"SAP ERP",       icon:<IcDiamond size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#0070F2", tagline:"Enterprise finance and resource management",
         status:"coming_soon", effort:"config",
         fields:[{key:"host",label:"SAP Host",type:"text",placeholder:"https://sap.company.com"},{key:"client",label:"SAP Client",type:"text",placeholder:"100"},{key:"username",label:"Username",type:"text",placeholder:"SAP username"},{key:"password",label:"Password",type:"password",placeholder:"SAP password"}],
         capabilities:["WBS element sync","Cost centre mapping","Project accounting","ERP budget import"],
         docsUrl:"https://api.sap.com/", docsLabel:"SAP API Hub →" },
-      { key:"NETSUITE",    name:"Oracle NetSuite",icon:"🟠", color:"#F80000", tagline:"NetSuite project financials and resources",
+      { key:"NETSUITE",    name:"Oracle NetSuite",icon:<span className="emo-dot emo-dot--orange" aria-hidden="true" />, color:"#F80000", tagline:"NetSuite project financials and resources",
         status:"coming_soon", effort:"config",
         fields:[{key:"accountId",label:"Account ID",type:"text",placeholder:"123456"},{key:"consumerKey",label:"Consumer Key",type:"text",placeholder:"TBA OAuth consumer key"},{key:"consumerSecret",label:"Consumer Secret",type:"password",placeholder:"TBA OAuth consumer secret"}],
         capabilities:["Revenue recognition per project","Resource cost tracking","Budget approval workflow","P&L per project"],
@@ -228,16 +229,16 @@ const TIERS = [
     ],
   },
   {
-    id: "monitoring", label: "Monitoring & Operations", icon: "📡",
+    id: "monitoring", label: "Monitoring & Operations", icon: <IcRadio size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Production incidents, alerts, and SLOs feed directly into project work",
     color:"#D64545", badge: "ENGINEERING",
     integrations: [
-      { key:"DATADOG",    name:"Datadog",        icon:"🐶", color:"#632CA6", tagline:"Monitor alerts open tasks; recoveries close them",
+      { key:"DATADOG",    name:"Datadog",        icon:<IcDog size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#632CA6", tagline:"Monitor alerts open tasks; recoveries close them",
         status:"available", effort:"webhook", inbound:true,
         fields:[],
         capabilities:["Alert opens an incident task","Repeat alerts do not duplicate","Recovery closes the task","Priority from the monitor's priority"],
         docsUrl:"https://docs.datadoghq.com/integrations/webhooks/", docsLabel:"Datadog Webhooks ->" },
-      { key:"SENTRY",     name:"Sentry",         icon:"🔭", color:"#362D59", tagline:"New errors open bug tasks; resolving them closes the task",
+      { key:"SENTRY",     name:"Sentry",         icon:<IcTelescope size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#362D59", tagline:"New errors open bug tasks; resolving them closes the task",
         status:"available", effort:"webhook", inbound:true,
         fields:[
           {key:"clientSecret",label:"Client Secret (recommended)",type:"password",placeholder:"From your Sentry internal integration",
@@ -245,12 +246,12 @@ const TIERS = [
         ],
         capabilities:["New issue opens a bug task","Resolving in Sentry closes it","A regression reopens it","Issue alerts and metric alerts"],
         docsUrl:"https://docs.sentry.io/", docsLabel:"Sentry docs ->" },
-      { key:"NEWRELIC",   name:"New Relic",      icon:"🟢", color:"#00838F", tagline:"APM alerts feed into project incidents",
+      { key:"NEWRELIC",   name:"New Relic",      icon:<span className="emo-dot emo-dot--green" aria-hidden="true" />, color:"#00838F", tagline:"APM alerts feed into project incidents",
         status:"coming_soon", effort:"token",
         fields:[{key:"apiKey",label:"User API Key",type:"password",placeholder:"NRAK-xxxx"},{key:"accountId",label:"Account ID",type:"text",placeholder:"New Relic account ID"}],
         capabilities:["APM alert → task creation","Deployment markers","Performance SLOs in goals","Error budget tracking"],
         docsUrl:"https://docs.newrelic.com/docs/apis/rest-api-v2/", docsLabel:"New Relic API →" },
-      { key:"GRAFANA",    name:"Grafana",        icon:"📊", color:"#F46800", tagline:"Dashboard panels embedded in project views",
+      { key:"GRAFANA",    name:"Grafana",        icon:<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#F46800", tagline:"Dashboard panels embedded in project views",
         status:"coming_soon", effort:"token",
         fields:[{key:"url",label:"Grafana URL",type:"text",placeholder:"https://grafana.company.com"},{key:"apiKey",label:"Service Account Token",type:"password",placeholder:"Grafana API token"}],
         capabilities:["Embed panels in project cards","Alert rule → task creation","SLO dashboards in goals","Oncall schedule sync"],
@@ -258,29 +259,29 @@ const TIERS = [
     ],
   },
   {
-    id: "ai", label: "AI & LLM Providers", icon: "🤖",
+    id: "ai", label: "AI & LLM Providers", icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Power every AI feature with the model of your choice",
     color:"#5B5FEE", badge: "ALREADY BUILT",
     integrations: [
-      { key:"ANTHROPIC",  name:"Anthropic Claude",icon:"🟣", color:"#6B3FA0", tagline:"Claude Sonnet and Opus for all AI features",
+      { key:"ANTHROPIC",  name:"Anthropic Claude",icon:<span className="emo-dot emo-dot--violet" aria-hidden="true" />, color:"#6B3FA0", tagline:"Claude Sonnet and Opus for all AI features",
         status:"available", effort:"token",
         fields:[{key:"apiKey",label:"API Key",type:"password",placeholder:"sk-ant-xxxx"}],
         capabilities:["Task generation","Risk prediction","Sprint summaries","Meeting summaries","Executive reports"],
         docsUrl:"https://console.anthropic.com/settings/keys", docsLabel:"Get API Key →",
         settingsLink:"/ai-settings" },
-      { key:"OPENAI",     name:"OpenAI GPT-4",    icon:"🟢", color:"#10A37F", tagline:"GPT-4o and GPT-4 Turbo for AI features",
+      { key:"OPENAI",     name:"OpenAI GPT-4",    icon:<span className="emo-dot emo-dot--green" aria-hidden="true" />, color:"#10A37F", tagline:"GPT-4o and GPT-4 Turbo for AI features",
         status:"available", effort:"token",
         fields:[{key:"apiKey",label:"API Key",type:"password",placeholder:"sk-xxxx"}],
         capabilities:["Natural language tasks","Code review summaries","Standup generation","Goal coaching","Risk detection"],
         docsUrl:"https://platform.openai.com/api-keys", docsLabel:"Get API Key →",
         settingsLink:"/ai-settings" },
-      { key:"GEMINI",     name:"Google Gemini",   icon:"🔵", color:"#4285F4", tagline:"Gemini 1.5 Pro with free tier",
+      { key:"GEMINI",     name:"Google Gemini",   icon:<span className="emo-dot emo-dot--blue" aria-hidden="true" />, color:"#4285F4", tagline:"Gemini 1.5 Pro with free tier",
         status:"available", effort:"token",
         fields:[{key:"apiKey",label:"API Key",type:"password",placeholder:"AIzaSy-xxxx"}],
         capabilities:["Multimodal task input","Document summarisation","Project health analysis","OKR recommendations"],
         docsUrl:"https://aistudio.google.com/app/apikey", docsLabel:"Get API Key →",
         settingsLink:"/ai-settings" },
-      { key:"MISTRAL",    name:"Mistral AI",      icon:"🌊", color:"#FF7000", tagline:"Open-weight models, EU data residency",
+      { key:"MISTRAL",    name:"Mistral AI",      icon:<IcWaves size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#FF7000", tagline:"Open-weight models, EU data residency",
         status:"coming_soon", effort:"token",
         fields:[{key:"apiKey",label:"API Key",type:"password",placeholder:"Mistral API key"}],
         capabilities:["GDPR-compliant AI","French/European language support","On-prem deployment","Cost-efficient inference"],
@@ -288,11 +289,11 @@ const TIERS = [
     ],
   },
   {
-    id: "comms", label: "Communication", icon: "💬",
+    id: "comms", label: "Communication", icon: <IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc: "Keep your team updated across every channel they already use",
     color: "#0ea5e9", badge: "COLLABORATION",
     integrations: [
-      { key:"SLACK",      name:"Slack",           icon:"💬", color:"#4A154B", tagline:"Task updates, alerts, and standup reports to Slack",
+      { key:"SLACK",      name:"Slack",           icon:<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#4A154B", tagline:"Task updates, alerts, and standup reports to Slack",
         status:"available", effort:"webhook",
         fields:[
           {key:"webhookUrl",label:"Webhook URL",    type:"text",placeholder:"https://hooks.slack.com/services/T.../B.../...",
@@ -302,24 +303,24 @@ const TIERS = [
         ],
         capabilities:["Task status notifications","Daily standup reports","Sprint completion alerts","Mention-based task creation"],
         docsUrl:"https://api.slack.com/messaging/webhooks", docsLabel:"Create Webhook →" },
-      { key:"MICROSOFT_TEAMS", name:"Microsoft Teams",icon:"🟦", color:"#6264A7", tagline:"Project and task notifications in Teams channels",
+      { key:"MICROSOFT_TEAMS", name:"Microsoft Teams",icon:<IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#6264A7", tagline:"Project and task notifications in Teams channels",
         status:"available", effort:"webhook",
         fields:[{key:"webhookUrl",label:"Incoming Webhook URL",type:"text",placeholder:"https://outlook.office.com/webhook/..."},{key:"channel",label:"Channel (reference)",type:"text",placeholder:"#general"}],
         capabilities:["Channel notifications","Adaptive card summaries","Meeting task creation","Teams bot (coming soon)"],
         docsUrl:"https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook", docsLabel:"Setup Guide →" },
-      { key:"GOOGLE_MEET", name:"Google Meet", icon:"🟢", color:"#00897B",
+      { key:"GOOGLE_MEET", name:"Google Meet", icon:<span className="emo-dot emo-dot--green" aria-hidden="true" />, color:"#00897B",
         tagline:"Meeting Assistant — register meetings and import transcripts for notes and tasks",
         status:"available", effort:"oauth", route:"/integrations/meeting-platforms",
         fields:[],
         capabilities:["Register meetings by link","Import the transcript after the meeting","Upload or paste a transcript","Live joining not available"],
         docsUrl:"https://developers.google.com/workspace/meet/api/guides/overview", docsLabel:"Meet API Overview →" },
-      { key:"MS_TEAMS_MEETINGS", name:"Microsoft Teams Meetings", icon:"🟪", color:"#464EB8",
+      { key:"MS_TEAMS_MEETINGS", name:"Microsoft Teams Meetings", icon:<IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#464EB8",
         tagline:"Meeting Assistant — register Teams meetings and add transcripts for notes and tasks",
         status:"available", effort:"oauth", route:"/integrations/meeting-platforms",
         fields:[],
         capabilities:["Register meetings by link","Upload or paste a transcript","Automatic transcript import coming later","Live joining not available"],
         docsUrl:"https://learn.microsoft.com/en-us/graph/api/resources/calltranscript", docsLabel:"Transcript API →" },
-      { key:"ZOOM",       name:"Zoom",            icon:"📹", color:"#2D8CFF", tagline:"Meeting transcripts → tasks automatically",
+      { key:"ZOOM",       name:"Zoom",            icon:<IcVideo size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#2D8CFF", tagline:"Meeting transcripts → tasks automatically",
         status:"available", effort:"oauth",
         fields:[{key:"accountId",label:"Account ID",type:"text",placeholder:"Zoom Account ID"},{key:"clientId",label:"Client ID",type:"text",placeholder:"Zoom OAuth client ID"},{key:"clientSecret",label:"Client Secret",type:"password",placeholder:"Zoom OAuth client secret"}],
         capabilities:["Meeting transcript → task extraction","Auto-schedule from tasks","Recording links in tasks","Meeting notes to docs"],
@@ -415,13 +416,13 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
         }}>{intg.icon}</div>
 
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:800, fontSize:"13px", color:"#0f172a",
+          <div style={{ fontWeight: 600, fontSize:"13px", color:"#0f172a",
             marginBottom:"2px", display:"flex", alignItems:"center", gap:"5px", flexWrap:"wrap" }}>
             {intg.name}
             {isConnected && (
-              <span style={{ fontSize:"9px", fontWeight:800, padding:"1px 6px",
+              <span style={{ fontSize:"9px", fontWeight: 600, padding:"1px 6px",
                 borderRadius:"999px", background:"#dcfce7", color:"#1E8E5A" }}>
-                ✓ CONNECTED
+                ✓ Connected
               </span>
             )}
           </div>
@@ -430,14 +431,14 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
 
         <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end",
           gap:"3px", flexShrink:0 }}>
-          <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 7px",
+          <span style={{ fontSize:"9px", fontWeight: 600, padding:"2px 7px",
             borderRadius:"999px", background:sl.bg, color:sl.color,
             display:"flex", alignItems:"center", gap:"3px" }}>
             <span style={{ width:5, height:5, borderRadius:"50%",
               background:sl.dot, display:"inline-block" }} />
             {sl.label}
           </span>
-          <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 7px",
+          <span style={{ fontSize:"9px", fontWeight: 600, padding:"2px 7px",
             borderRadius:"999px", background:`${ef.color}15`, color:ef.color }}>
             {ef.label}
           </span>
@@ -464,7 +465,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
         {intg.settingsLink ? (
           <a href={intg.settingsLink}
             style={{ flex:1, padding:"8px 14px", borderRadius:"8px",
-              textAlign:"center", fontSize:"12px", fontWeight:700,
+              textAlign:"center", fontSize:"12px", fontWeight: 600,
               background:intg.color,
               color:"#fff", textDecoration:"none", display:"block",
               boxSizing:"border-box" }}>
@@ -475,12 +476,10 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onConfigure(intg); }}
-              style={{ flex:1, padding:"8px 14px", borderRadius:"8px", border:"none",
-                fontSize:"12px", fontWeight:700, cursor:"pointer",
-                background: isConnected
-                  ? "var(--gray-100)"
-                  : intg.color,
-                color: isConnected ? "var(--gray-700)" : "#fff",
+              style={{ flex:1, padding:"8px 14px", borderRadius:"8px", border:"1px solid var(--border-strong)",
+                fontSize:"12px", fontWeight: 500, cursor:"pointer",
+                background: isConnected ? "var(--gray-100)" : "var(--bg-card)",
+                color: "var(--text-primary)",
                 transition:"opacity .13s" }}
               onMouseEnter={e => e.currentTarget.style.opacity=".9"}
               onMouseLeave={e => e.currentTarget.style.opacity="1"}>
@@ -495,9 +494,9 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
                 title={syncAction.label}
                 style={{ padding:"8px 12px", borderRadius:"8px", cursor: syncState === "syncing" ? "default" : "pointer",
                   border:`1px solid ${intg.color}33`, background:"#fff",
-                  fontSize:"11px", fontWeight:700, color:intg.color, flexShrink:0,
+                  fontSize:"11px", fontWeight: 600, color:intg.color, flexShrink:0,
                   opacity: syncState === "syncing" ? 0.6 : 1 }}>
-                {syncState === "syncing" ? "⏳" : "🔄"} {syncAction.label}
+                {syncState === "syncing" ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />} {syncAction.label}
               </button>
             )}
 
@@ -507,7 +506,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
                 onClick={(e) => { e.stopPropagation(); onToggle(intg.key); }}
                 style={{ padding:"8px 12px", borderRadius:"8px", cursor:"pointer",
                   border:"1px solid #fee2e2", background:"#fff",
-                  fontSize:"11px", fontWeight:700, color:"#D64545", flexShrink:0 }}>
+                  fontSize:"11px", fontWeight: 600, color:"#D64545", flexShrink:0 }}>
                 Disconnect
               </button>
             )}
@@ -521,7 +520,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
             style={{ padding:"8px 10px", borderRadius:"8px", border:"1px solid var(--border)",
               background:"#fff", fontSize:"13px", color:"#5B5FEE",
               textDecoration:"none", flexShrink:0, lineHeight:1 }}>
-            📖
+            <IcBookOpen size={16} strokeWidth={1.5} aria-hidden="true" />
           </a>
         )}
       </div>
@@ -531,7 +530,7 @@ function IntegrationCard({ intg, savedConfig, onConfigure, onToggle }) {
           background: syncState.ok ? "#f0fdf4" : "#fff1f2",
           border: `1px solid ${syncState.ok ? "#86efac" : "#fca5a5"}`,
           color: syncState.ok ? "#15803d" : "#b91c1c" }}>
-          {syncState.ok ? "✓" : "⚠️"} {syncState.message}
+          {syncState.ok ? "✓" : <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />} {syncState.message}
         </div>
       )}
     </div>
@@ -615,7 +614,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
             {intg.icon}
           </div>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:800, fontSize:"16px", color:"#0f172a" }}>
+            <div style={{ fontWeight: 600, fontSize:"16px", color:"#0f172a" }}>
               Configure {intg.name}
             </div>
             <div style={{ fontSize:"12px", color:"#64748b", marginTop:"2px" }}>
@@ -650,17 +649,17 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
               <div key={i} style={{ display:"flex", gap:"12px", padding:"10px 14px",
                 borderBottom: i < 2 ? "1px solid var(--gray-100)" : "none" }}>
                 <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0,
-                  background:intg.color, color:"#fff", fontSize:"11px", fontWeight:800,
+                  background:intg.color, color:"#fff", fontSize:"11px", fontWeight: 600,
                   display:"flex", alignItems:"center", justifyContent:"center", marginTop:"1px" }}>
                   {step.n}
                 </div>
                 <div>
-                  <div style={{ fontSize:"12px", fontWeight:700, color:"#1e293b",
+                  <div style={{ fontSize:"12px", fontWeight: 600, color:"#1e293b",
                     marginBottom:"2px" }}>{step.title}</div>
                   <div style={{ fontSize:"11px", color:"#64748b", lineHeight:1.5 }}>
                     {i === 0 && intg.docsUrl
                       ? <>{step.body}{" "}<a href={intg.docsUrl} target="_blank"
-                          rel="noreferrer" style={{ color:intg.color, fontWeight:700 }}>
+                          rel="noreferrer" style={{ color:intg.color, fontWeight: 600 }}>
                           {intg.docsLabel || "Open docs →"}
                         </a></>
                       : step.body}
@@ -673,7 +672,7 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           {/* Fields */}
           {(intg.fields || []).map(field => (
             <div key={field.key}>
-              <label style={{ fontSize:"12px", fontWeight:700, color:"#334155",
+              <label style={{ fontSize:"12px", fontWeight: 600, color:"#334155",
                 display:"block", marginBottom:"5px" }}>
                 {field.label}
               </label>
@@ -707,15 +706,15 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           {(intg.capabilities||[]).length > 0 && (
             <div style={{ background:"#f0fdf4", borderRadius:"10px",
               border:"1px solid #bbf7d0", padding:"12px 14px" }}>
-              <div style={{ fontSize:"11px", fontWeight:700, color:"#15803d",
-                marginBottom:"8px", textTransform:"uppercase", letterSpacing:".05em" }}>
+              <div style={{ fontSize:"11px", fontWeight: 600, color:"#15803d",
+                marginBottom:"8px", }}>
                 What this unlocks
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px" }}>
                 {intg.capabilities.map((cap,i) => (
                   <div key={i} style={{ fontSize:"11px", color:"#334155",
                     display:"flex", gap:"5px", alignItems:"flex-start" }}>
-                    <span style={{ color:"#1E8E5A", fontWeight:700, flexShrink:0 }}>✓</span>
+                    <span style={{ color:"#1E8E5A", fontWeight: 600, flexShrink:0 }}>✓</span>
                     {cap}
                   </div>
                 ))}
@@ -734,8 +733,8 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
           {saved && (
             <div style={{ padding:"10px 14px", borderRadius:"9px",
               background:"#f0fdf4", border:"1px solid #86efac",
-              fontSize:"12px", color:"#15803d", fontWeight:700 }}>
-              ✓ Connected successfully!
+              fontSize:"12px", color:"#15803d", fontWeight: 600 }}>
+              ✓ Connected successfully
             </div>
           )}
         </div>
@@ -754,11 +753,11 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
               background: saved
                 ? "var(--success)"
                 : intg.color,
-              color:"#fff", fontSize:"13px", fontWeight:800, cursor:"pointer",
+              color:"#fff", fontSize:"13px", fontWeight: 600, cursor:"pointer",
               opacity: (saving||saved) ? 0.85 : 1,
               boxShadow:"var(--elevation-2)",
-              transition:"all .15s" }}>
-            {saved ? "✓ Saved!" : saving ? "Saving…" : "Save & Connect"}
+              transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s" }}>
+            {saved ? "✓ Saved" : saving ? "Saving…" : "Save & Connect"}
           </button>
         </div>
       </div>
@@ -773,13 +772,13 @@ function ConfigureModal({ intg, existing, onSave, onClose }) {
 // ═══════════════════════════════════════════════════════════════════════════
 function UnifiedLayerBanner({ navigate }) {
   const steps = [
-    { icon:"📹", label:"Meeting",    desc:"Zoom / Teams call", color:"#2D8CFF" },
-    { icon:"🤖", label:"AI Extract", desc:"Decisions & actions", color:"#5B5FEE" },
-    { icon:"✅", label:"Tasks",      desc:"Auto-created",      color:"#C17D22" },
-    { icon:"📁", label:"Projects",   desc:"Sprint updated",    color:"#3b82f6" },
-    { icon:"🎯", label:"Goals/OKRs", desc:"Progress tracked",  color:"#1E8E5A" },
-    { icon:"💰", label:"Budgets",    desc:"Spend updated",     color:"#1E8E5A" },
-    { icon:"📊", label:"Dashboard",  desc:"Exec view refreshed",color:"#7C5CBF" },
+    { icon:<IcVideo size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Meeting",    desc:"Zoom / Teams call", color:"#2D8CFF" },
+    { icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, label:"AI Extract", desc:"Decisions & actions", color:"#5B5FEE" },
+    { icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Tasks",      desc:"Auto-created",      color:"#C17D22" },
+    { icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Projects",   desc:"Sprint updated",    color:"#3b82f6" },
+    { icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Goals/OKRs", desc:"Progress tracked",  color:"#1E8E5A" },
+    { icon:<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Budgets",    desc:"Spend updated",     color:"#1E8E5A" },
+    { icon:<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Dashboard",  desc:"Exec view refreshed",color:"#7C5CBF" },
   ];
   return (
     <div style={{ background:"#0F1729",
@@ -790,25 +789,24 @@ function UnifiedLayerBanner({ navigate }) {
 
       <div style={{ display:"flex", alignItems:"flex-start", gap:"24px", flexWrap:"wrap" }}>
         <div style={{ flex:1, minWidth:240 }}>
-          <div style={{ fontSize:"12px", fontWeight:700, color:"#38bdf8",
-            letterSpacing:".06em", textTransform:"uppercase", marginBottom:"8px" }}>
-            Enterprise Integration Vision
+          <div style={{ fontSize:"12px", fontWeight: 600, color:"#94a3b8",
+            marginBottom:"8px" }}>
+            How it connects
           </div>
-          <div style={{ fontSize:"20px", fontWeight:800, color:"#fff",
+          <div style={{ fontSize:"20px", fontWeight: 600, color:"#fff",
             lineHeight:1.3, marginBottom:"8px" }}>
-            Unified Operating Layer
+            From meeting to dashboard
           </div>
           <div style={{ fontSize:"13px", color:"#94a3b8", lineHeight:1.7, marginBottom:"16px" }}>
-            No major product does this end-to-end. A Zoom meeting happens → AI extracts decisions
-            → tasks auto-created → sprint updated → OKRs tracked → executive dashboard refreshed.
-            All automatically.
+            A Zoom meeting ends, decisions are extracted, tasks are created, the sprint updates,
+            OKRs move and the executive dashboard refreshes.
           </div>
           <button onClick={()=>navigate("/bpm")}
             style={{ padding:"10px 22px", borderRadius:"10px", border:"none",
               background:"var(--brand-600)", color:"#fff",
-              fontSize:"13px", fontWeight:800, cursor:"pointer",
+              fontSize:"13px", fontWeight: 600, cursor:"pointer",
               boxShadow:"var(--elevation-2)" }}>
-            Build a Workflow →
+            Build a workflow
           </button>
         </div>
 
@@ -822,7 +820,7 @@ function UnifiedLayerBanner({ navigate }) {
                   background:`${s.color}22`, border:`1.5px solid ${s.color}44`,
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:"20px" }}>{s.icon}</div>
-                <div style={{ fontSize:"11px", fontWeight:700, color:"var(--border)",
+                <div style={{ fontSize:"11px", fontWeight: 600, color:"var(--border)",
                   textAlign:"center", lineHeight:1.2 }}>{s.label}</div>
                 <div style={{ fontSize:"9px", color:"#64748b", textAlign:"center",
                   lineHeight:1.2 }}>{s.desc}</div>
@@ -904,7 +902,7 @@ export default function Integrations() {
 
   return (
     <div>
-      <PageHeader icon="🔌" title="Integrations"
+      <PageHeader icon={<IcPlug size={16} strokeWidth={1.5} aria-hidden="true" />} title="Integrations"
         description="Connect Prowosma to your entire organisation's tech stack — from SSO and CRM to ERP and monitoring" />
 
       {/* Unified Layer Banner */}
@@ -916,9 +914,9 @@ export default function Integrations() {
         marginBottom:"20px" }}>
         {[
           { label:"Connected",    value:connectedCount,     color:"#1E8E5A", icon:"✓" },
-          { label:"Available",    value:availableCount,     color:"#5B5FEE", icon:"🔌" },
-          { label:"Coming Soon",  value:comingSoonCount,    color:"#C17D22", icon:"🚀" },
-          { label:"Total",        value:ALL_INTEGRATIONS.length, color:"#0ea5e9", icon:"📦" },
+          { label:"Available",    value:availableCount,     color:"#5B5FEE", icon:<IcPlug size={16} strokeWidth={1.5} aria-hidden="true" /> },
+          { label:"Coming Soon",  value:comingSoonCount,    color:"#C17D22", icon:<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" /> },
+          { label:"Total",        value:ALL_INTEGRATIONS.length, color:"#0ea5e9", icon:<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" /> },
         ].map(s => (
           <div key={s.label} style={{ background:"var(--surface-1)", border:`1.5px solid ${s.color}22`,
             borderRadius:"12px", padding:"12px 14px", display:"flex", alignItems:"center",
@@ -927,7 +925,7 @@ export default function Integrations() {
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"16px", flexShrink:0 }}>{s.icon}</div>
             <div>
-              <div style={{ fontSize:"20px", fontWeight:800, color:s.color, lineHeight:1 }}>{s.value}</div>
+              <div style={{ fontSize:"20px", fontWeight: 600, color:s.color, lineHeight:1 }}>{s.value}</div>
               <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600 }}>{s.label}</div>
             </div>
           </div>
@@ -948,7 +946,7 @@ export default function Integrations() {
           ].map(t => (
             <button key={t.id} onClick={()=>setActiveTier(t.id)}
               style={{ padding:"6px 12px", borderRadius:"8px", border:"none",
-                cursor:"pointer", fontSize:"11px", fontWeight:700, transition:"all .13s",
+                cursor:"pointer", fontSize:"11px", fontWeight: 600, transition: "color .13s, background-color .13s, border-color .13s, opacity .13s, transform .13s",
                 background: activeTier===t.id ? (t.color||"var(--gray-800)") : "var(--gray-100)",
                 color: activeTier===t.id ? "#fff" : "var(--gray-500)" }}>
               {t.icon&&<span style={{ marginRight:4 }}>{t.icon}</span>}{t.label}
@@ -976,10 +974,9 @@ export default function Integrations() {
                 <span style={{ fontSize:"20px" }}>{tier.icon}</span>
                 <div>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <span style={{ fontWeight:800, fontSize:"16px", color:"#0f172a" }}>{tier.label}</span>
-                    <span style={{ fontSize:"10px", fontWeight:800, padding:"2px 9px",
-                      borderRadius:"999px", letterSpacing:".05em",
-                      background:`${tier.color}18`, color:tier.color }}>{tier.badge}</span>
+                    <span style={{ fontWeight: 600, fontSize:"16px", color:"#0f172a" }}>{tier.label}</span>
+                    <span style={{ fontSize:"10px", fontWeight: 600, padding:"2px 9px",
+                      borderRadius:"999px", background:`${tier.color}18`, color:tier.color }}>{tier.badge}</span>
                   </div>
                   <div style={{ fontSize:"12px", color:"#64748b", marginTop:"2px" }}>{tier.desc}</div>
                 </div>

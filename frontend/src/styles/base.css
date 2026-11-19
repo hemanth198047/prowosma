@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 /* =========================================================
    PROWOSMA — PROFESSIONAL DESIGN SYSTEM
@@ -162,6 +162,14 @@
      sturdy at 12-14px in dense tables, and less ubiquitous than Inter. */
   --font-sans:
     "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Mono partner for figures and meta: dates, durations, counts, keycaps.
+     The due-date tag is the product's one signature detail. */
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* One easing curve and three durations across the app. */
+  --ease: cubic-bezier(.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-enter: 240ms;
 
   /* Type scale — intentional steps, not ad-hoc px values per component.
      Weight discipline: 800 reserved for hero numbers/greetings only,
@@ -237,7 +245,7 @@ button {
   font-size: 14px;
   font-family: var(--font-sans);
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -435,7 +443,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .card-hover:hover {
-  transform: translateY(-2px);
+  
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 
@@ -455,7 +463,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 }
 .empty-state-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-700, #334155);
 }
 .empty-state-sub {
@@ -472,14 +480,14 @@ button:active:not(:disabled) { transform: scale(0.97); }
   border: none;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.14s;
+  transition: color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.14s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.14s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.14s var(--ease, cubic-bezier(.2,0,0,1));
 }
 .empty-state-cta:hover {
   background: #4f46e5;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+  box-shadow: none;
 }
 
 /*  Loading spinner (used where skeleton isn't suitable)  */
@@ -534,3 +542,14 @@ button:active:not(:disabled) { transform: scale(0.97); }
   white-space: nowrap;
   border: 0;
 }
+
+/* Status dots that replaced coloured-circle emoji. Tones are the muted
+   semantic colours, so a dot carries meaning without shouting. */
+.emo-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gray-400); vertical-align: middle; flex-shrink: 0; }
+.emo-dot--green  { background: var(--success); }
+.emo-dot--red    { background: var(--danger); }
+.emo-dot--blue   { background: var(--brand-500); }
+.emo-dot--yellow { background: var(--warning); }
+.emo-dot--orange { background: var(--warning); }
+.emo-dot--violet { background: var(--purple); }
+.emo-dot--grey   { background: var(--gray-400); }

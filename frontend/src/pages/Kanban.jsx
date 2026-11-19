@@ -14,23 +14,24 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/kanban.css";
-import { AlertTriangle } from "lucide-react";
-import { isTaskOverdue, OVERDUE_COLOR } from "../utils/overdue";
+import DueTag from "../components/ui/DueTag";
+import PriorityTag from "../components/ui/PriorityTag";
+import { isTaskOverdue } from "../utils/overdue";
+import { FolderKanban as IcFolderKanban } from "lucide-react";
 // C-4: WIP limits per column
 const COLUMNS = [
-  { id:"TODO",        label:"To Do",       color:"var(--brand-500)", bg:"var(--brand-50)", wipLimit:null },
-  { id:"IN_PROGRESS", label:"In Progress", color:"var(--warning)", bg:"color-mix(in srgb, var(--warning) 12%, transparent)",  wipLimit:5    },
+  { id:"TODO",        label:"To do",       color:"var(--brand-500)", bg:"var(--brand-50)", wipLimit:null },
+  { id:"IN_PROGRESS", label:"In progress", color:"var(--warning)", bg:"color-mix(in srgb, var(--warning) 12%, transparent)",  wipLimit:5    },
   { id:"DONE",        label:"Done",        color:"var(--success)", bg:"color-mix(in srgb, var(--success) 12%, transparent)",  wipLimit:null },
 ];
 
-const PRIORITY_COLOR = { LOW:"var(--success)", MEDIUM:"var(--warning)", HIGH:"var(--danger)" };
 
 // C-4: Swimlane grouping options
 const SWIMLANE_OPTIONS = [
   { value:"none",      label:"No swimlanes" },
-  { value:"project",   label:"By Project" },
-  { value:"priority",  label:"By Priority" },
-  { value:"assignee",  label:"By Assignee" },
+  { value:"project",   label:"By project" },
+  { value:"priority",  label:"By priority" },
+  { value:"assignee",  label:"By assignee" },
 ];
 
 function TaskCard({ task, getProjectName, isDragging }) {
@@ -44,18 +45,11 @@ function TaskCard({ task, getProjectName, isDragging }) {
       {task.description && <div className="kanban-card-desc">{task.description}</div>}
       <div className="kanban-card-meta">
         {task.projectId && <span className="kanban-card-project">{getProjectName(task.projectId)}</span>}
-        {task.dueDate && (isTaskOverdue(task)
-          ? <span className="kanban-card-date" style={{ color: OVERDUE_COLOR, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <AlertTriangle size={11} aria-hidden="true" /><span className="sr-only">Overdue: </span>{new Date(task.dueDate).toLocaleDateString()}
-            </span>
-          : <span className="kanban-card-date">{new Date(task.dueDate).toLocaleDateString()}</span>)}
+        {task.dueDate && <DueTag date={task.dueDate} overdue={isTaskOverdue(task)} className="kanban-card-date" />}
         {task.storyPoints && <span className="kanban-card-points">{task.storyPoints}pt</span>}
       </div>
       <div className="kanban-card-footer">
-        <span className="badge"
-          style={{ background:PRIORITY_COLOR[task.priority], color:"#fff", fontSize:"10px" }}>
-          {task.priority}
-        </span>
+        <PriorityTag priority={task.priority} />
         {task.tags?.slice(0,2).map(tag => (
           <span key={tag} className="task-tag" style={{ fontSize:"10px" }}>{tag}</span>
         ))}
@@ -71,13 +65,11 @@ function KanbanColumn({ column, tasks, getProjectName, activeId }) {
 
   return (
     <div className={`kanban-column${isOverWip ? " kanban-column-over-wip" : ""}`}>
-      <div className="kanban-column-header" style={{ borderTop:`3px solid ${column.color}` }}>
+      <div className="kanban-column-header">
         <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-          <span style={{ color:column.color, fontWeight:700 }}>{column.label}</span>
-          <span className="kanban-count"
-            style={{ background:column.bg, color:column.color }}>
-            {tasks.length}
-          </span>
+          <span className="emo-dot" style={{ background: column.color }} aria-hidden="true" />
+          <span className="kanban-column-title">{column.label}</span>
+          <span className="kanban-count">{tasks.length}</span>
           {/* WIP limit badge */}
           {column.wipLimit && (
             <span className="kanban-wip-badge"
@@ -217,13 +209,13 @@ export default function Kanban() {
   return (
     <div>
       <PageHeader
-        icon="🗂️"
-        title="Kanban Board"
+        icon={<IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />}
+        title="Kanban board"
         description="Drag-and-drop with WIP limits and swimlanes"
         action={
           <div style={{ display:"flex", gap:"8px" }}>
             <button className="btn-secondary" onClick={() => navigate("/sprints")}>Sprints</button>
-            <button className="btn-secondary" onClick={() => navigate("/tasks")}>List View</button>
+            <button className="btn-secondary" onClick={() => navigate("/tasks")}>List view</button>
           </div>
         }
       />
@@ -231,7 +223,7 @@ export default function Kanban() {
       {/* Toolbar */}
       <div className="kanban-toolbar">
         <select aria-label="Filter by project" value={filterProject} onChange={e => setFilterProject(e.target.value)}>
-          <option value="">All Projects</option>
+          <option value="">All projects</option>
           {projects.filter(p => !p.parentProjectId).map(p => (
             <optgroup key={p.id} label={p.name}>
               <option value={p.id}>{p.name}</option>
@@ -267,7 +259,7 @@ export default function Kanban() {
           <span className="kanban-toolbar-label">WIP Limits per column (blank = unlimited):</span>
           {columns.map(col => (
             <div key={col.id} className="kanban-wip-field">
-              <label style={{ fontSize:"12px", color:col.color, fontWeight:700 }}>{col.label}</label>
+              <label style={{ fontSize:"12px", color:col.color, fontWeight: 600 }}>{col.label}</label>
               <input type="number" min={0} placeholder="∞"
                 value={wipLimits[col.id] || ""}
                 onChange={e => setWipLimits(v => ({

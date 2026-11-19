@@ -12,6 +12,7 @@ import {
   LineChart, Line,
   Tooltip, ResponsiveContainer,
 } from "recharts";
+import { ChartColumn as IcChartColumn, Hourglass as IcHourglass, Pencil as IcPencil, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 const CATEGORIES = ["REVENUE","GROWTH","QUALITY","PRODUCTIVITY","CUSTOM"];
 const PERIODS    = ["DAILY","WEEKLY","MONTHLY","QUARTERLY"];
@@ -22,10 +23,10 @@ const STATUS_META = {
   ACHIEVED: { label:"Achieved", color:"var(--brand-500)", bg:"rgba(99,102,241,0.1)" },
 };
 const PREDICT_META = {
-  HIGH:    { label:"High likelihood",  color:"var(--success)", icon:"🟢" },
-  MEDIUM:  { label:"Moderate",         color:"var(--warning)", icon:"🟡" },
-  LOW:     { label:"At risk",          color:"var(--danger)", icon:"🔴" },
-  UNKNOWN: { label:"Not enough data",  color:"var(--gray-500)", icon:"⚪" },
+  HIGH:    { label:"High likelihood",  color:"var(--success)", icon:<span className="emo-dot emo-dot--green" aria-hidden="true" /> },
+  MEDIUM:  { label:"Moderate",         color:"var(--warning)", icon:<span className="emo-dot emo-dot--yellow" aria-hidden="true" /> },
+  LOW:     { label:"At risk",          color:"var(--danger)", icon:<span className="emo-dot emo-dot--red" aria-hidden="true" /> },
+  UNKNOWN: { label:"Not enough data",  color:"var(--gray-500)", icon:<span className="emo-dot emo-dot--grey" aria-hidden="true" /> },
 };
 
 // ── KPI Form ──────────────────────────────────────────────────
@@ -200,10 +201,10 @@ function KpiCard({ kpi, goals, onEdit, onDelete, onRefresh }) {
             {sm.label}
           </span>
           {kpi.alertTriggered && (
-            <span className="kpi-alert-badge" title="Alert threshold breached">⚠️</span>
+            <span className="kpi-alert-badge" title="Alert threshold breached"><IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" /></span>
           )}
-          <button className="btn-icon" onClick={() => onEdit(kpi)}>✏️</button>
-          <button className="btn-icon" onClick={() => onDelete(kpi.id)}>🗑️</button>
+          <button className="btn-icon" onClick={() => onEdit(kpi)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+          <button className="btn-icon" onClick={() => onDelete(kpi.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -261,7 +262,7 @@ function KpiCard({ kpi, goals, onEdit, onDelete, onRefresh }) {
             style={{ fontSize:"11px", padding:"4px 10px" }}
             disabled={forecasting}
             onClick={handleForecast}>
-            {forecasting ? "⏳" : "Forecast"}
+            {forecasting ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Forecast"}
           </button>
         )}
       </div>
@@ -397,7 +398,7 @@ export default function KpiTracker() {
   return (
     <div>
       <PageHeader
-        icon="📊"
+        icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="KPI Tracker"
         description="Track key performance indicators with threshold alerts and goal forecasting"
         action={
@@ -434,7 +435,7 @@ export default function KpiTracker() {
       {/* Alert banner */}
       {alerts.length > 0 && (
         <div className="kpi-alert-banner">
-          ⚠️ <strong>{alerts.length} KPI{alerts.length > 1 ? "s" : ""}</strong> {alerts.length > 1 ? "have" : "has"} breached the alert threshold:
+          <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" /> <strong>{alerts.length} KPI{alerts.length > 1 ? "s" : ""}</strong> {alerts.length > 1 ? "have" : "has"} breached the alert threshold:
           {alerts.map(k => <span key={k.id} className="kpi-alert-name">{k.name}</span>)}
         </div>
       )}

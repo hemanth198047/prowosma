@@ -11,6 +11,7 @@ import {
 } from "../config/workspaceRecommendation";
 
 import "../styles/pages/workspace.css";
+import { Building as IcBuilding, PartyPopper as IcPartyPopper, Rocket as IcRocket } from "lucide-react";
 const TIMEZONES = [
   "UTC","America/New_York","America/Chicago","America/Denver","America/Los_Angeles",
   "Europe/London","Europe/Paris","Europe/Berlin","Asia/Kolkata","Asia/Tokyo",
@@ -41,7 +42,7 @@ export default function WorkspaceSetup() {
   const [userRole, setUserRole] = useState("");
   const recommendation = industry && userRole ? recommendTemplate(industry, userRole) : null;
 
-  const EMPTY = { name:"", timezone:"Asia/Kolkata", avatar:"🚀",
+  const EMPTY = { name:"", timezone:"Asia/Kolkata", avatar:<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />,
     logoUrl:"", dateFormat:"DD/MM/YYYY", description:"", template:"" };
   const [form, setForm] = useState(EMPTY);
   const set = (k,v) => setForm(p => ({...p,[k]:v}));
@@ -57,7 +58,7 @@ export default function WorkspaceSetup() {
           if (cur) {
             setForm({
               name: cur.name||"", timezone: cur.timezone||"Asia/Kolkata",
-              avatar: cur.avatar||"🚀", logoUrl: cur.logoUrl||"",
+              avatar: cur.avatar||<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />, logoUrl: cur.logoUrl||"",
               dateFormat: cur.dateFormat||"DD/MM/YYYY",
               description: cur.description||"", template:"",
             });
@@ -184,7 +185,7 @@ export default function WorkspaceSetup() {
             <div style={{display:"flex",flexDirection:"column",gap:10,margin:"20px 0"}}>
               {workspaces.map(ws => (
                 <div key={ws.id} className={"ws-item"+(activeWorkspace?.id===ws.id?" ws-item-active":"")}>
-                  <div className="ws-item-icon">{ws.avatar||"🏢"}</div>
+                  <div className="ws-item-icon">{ws.avatar||<IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />}</div>
                   <div className="ws-item-info">
                     <div className="ws-item-name">{ws.name}</div>
                     <div className="ws-item-meta">{ws.timezone||"UTC"}</div>
@@ -410,8 +411,8 @@ export default function WorkspaceSetup() {
       {mode === "create" && step === 3 && (
         <div className="ws-center">
           <div className="ws-card" style={{maxWidth:480,textAlign:"center"}}>
-            <div style={{fontSize:56,marginBottom:16}}>🎉</div>
-            <h2 className="ws-title">Workspace ready!</h2>
+            <div style={{fontSize:56,marginBottom:16}}><IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+            <h2 className="ws-title">Workspace ready</h2>
             <p className="ws-sub" style={{margin:"8px 0 24px"}}>
               Your workspace has been created
               {selectedTemplate && ` and set up for ${industryByKey(industry)?.label || "your team"}`}.

@@ -106,6 +106,7 @@ import Meetings  from "./pages/Meetings";
 import Sops      from "./pages/Sops";
 
 import { usePWA } from "./hooks/usePWA";
+import { Gem as IcGem } from "lucide-react";
 
 
 /* ── Upgrade / Licensing CTA — always visible in topbar ────────── */
@@ -117,7 +118,7 @@ function UpgradeCTA() {
       onClick={() => navigate("/licensing")}
       title="View plans & pricing"
     >
-      <span className="upgrade-cta-icon">💎</span>
+      <span className="upgrade-cta-icon"><IcGem size={16} strokeWidth={1.5} aria-hidden="true" /></span>
       <span className="upgrade-cta-label">Upgrade</span>
     </button>
   );
@@ -168,7 +169,7 @@ function UserMenu() {
             className="user-menu-item"
             onClick={() => { navigate("/profile"); setOpen(false); }}
           >
-            👤 Profile & Security
+            Profile & Security
           </button>
           {!isInstalled && (
             <button
@@ -178,12 +179,12 @@ function UserMenu() {
                 window.dispatchEvent(new CustomEvent('prowosma:show-install'));
               }}
             >
-              📱 Install App
+              Install App
             </button>
           )}
           {isInstalled && (
             <div className="user-menu-item" style={{ color: "#10b981", cursor: "default" }}>
-              ✅ App Installed
+              App Installed
             </div>
           )}
           <div className="user-menu-divider" />
@@ -191,7 +192,7 @@ function UserMenu() {
             className="user-menu-item"
             onClick={() => { logoutUser(); navigate("/login"); setOpen(false); }}
           >
-            🚪 Sign Out
+            Sign Out
           </button>
         </div>
       )}
@@ -208,20 +209,20 @@ function PageSkeleton() {
       background:"var(--bg-page,#f8fafc)"
     }}>
       <div style={{height:28,width:"35%",borderRadius:8,
-        background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        background:"#e2e8f0",
         backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite"}}/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         {[1,2,3,4].map(i=>(
           <div key={i} style={{height:80,borderRadius:12,
-            background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+            background:"#e2e8f0",
             backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite",
             animationDelay:`${i*0.1}s`}}/>
         ))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:16,flex:1}}>
-        <div style={{borderRadius:16,background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        <div style={{borderRadius:16,background:"#e2e8f0",
           backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite", minHeight:320}}/>
-        <div style={{borderRadius:16,background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        <div style={{borderRadius:16,background:"#e2e8f0",
           backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite"}}/>
       </div>
       <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>

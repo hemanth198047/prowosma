@@ -16,7 +16,7 @@
 .pg-title-text h1 {
   margin: 0;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--text-primary);
@@ -114,17 +114,16 @@
   border-radius: var(--radius-lg);
 }
 .pg-stat { display: flex; align-items: baseline; gap: 8px; }
-.pg-stat-num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); line-height: 1.1; }
+.pg-stat-num { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); line-height: 1.1; }
 .pg-stat-label { color: var(--text-secondary); font-size: 13px; }
 .pg-stat--late .pg-stat-num { color: var(--danger-text); }
 
 .pg-section-title {
   margin: 0 0 12px;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 .pg-section-title span { font-weight: 500; }
 

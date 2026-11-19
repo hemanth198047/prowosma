@@ -2,6 +2,7 @@ import { Clock } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { addTimeLog, deleteTimeLog } from "../api/tasks";
 import { useConfirm } from "../hooks/useConfirm";
+import { Timer as IcTimer, Trash2 as IcTrash2 } from "lucide-react";
 
 function formatTime(minutes) {
   if (minutes < 60) return `${minutes}m`;
@@ -114,7 +115,7 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
           {/* Total */}
           <div className="time-tracker-total">
             <span>Total logged:</span>
-            <span style={{ fontWeight: 700, color: "#6366f1" }}>
+            <span style={{ fontWeight: 600, color: "#6366f1" }}>
               {formatTime(totalMinutes)}
             </span>
           </div>
@@ -126,7 +127,7 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
                 style={{ display: "flex", alignItems: "center", gap: "8px" }}
               >
                 <span className="time-tracker-elapsed">
-                  ⏱️{" "}
+                  <IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />{" "}
                   {Math.floor(elapsed / 3600)
                     .toString()
                     .padStart(2, "0")}
@@ -164,10 +165,9 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
             <div
               style={{
                 fontSize: "11px",
-                fontWeight: 700,
+                fontWeight: 600,
                 color: "#aaa",
                 marginBottom: "6px",
-                textTransform: "uppercase",
               }}
             >
               Manual Entry
@@ -207,10 +207,9 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
               <div
                 style={{
                   fontSize: "11px",
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: "#aaa",
                   marginBottom: "6px",
-                  textTransform: "uppercase",
                 }}
               >
                 History
@@ -247,7 +246,7 @@ export default function TimeTracker({ task, onRefresh, compact = false }) {
                     style={{ fontSize: "11px" }}
                     onClick={() => handleDelete(log.id)}
                   >
-                    🗑️
+                    <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                   </button>
                 </div>
               ))}

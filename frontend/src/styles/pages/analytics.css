@@ -53,7 +53,7 @@
 
 .analytics-kpi-value {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.5px;
   /* KPI values are usually short ("0%", "1 days") but can also be a
@@ -73,8 +73,7 @@
   font-weight: 600;
   color: var(--gray-600);
   margin-top: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .analytics-kpi-sub {
@@ -119,7 +118,7 @@
   background: var(--brand-100);
   color: var(--brand-700);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,10 +181,9 @@
 }
 
 .analytics-health-badge {
-  font-size: 9px; font-weight: 700;
+  font-size: 9px; font-weight: 600;
   padding: 1px 6px;
   border-radius: 3px;
-  text-transform: uppercase;
 }
 
 .analytics-health-bar-wrap { display: flex; align-items: center; gap: 8px; }
@@ -204,7 +202,7 @@
   transition: width 0.4s ease;
 }
 
-.analytics-health-score { font-size: 11px; font-weight: 700; color: var(--gray-600); width: 24px; text-align: right; }
+.analytics-health-score { font-size: 11px; font-weight: 600; color: var(--gray-600); width: 24px; text-align: right; }
 
 .analytics-health-meta  { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
 /* Dark mode */
@@ -233,7 +231,7 @@
 
 .portfolio-kpi:last-child { border-right:none; }
 
-.portfolio-kpi-num   { font-size:22px; font-weight:800; color:var(--gray-800); line-height:1; margin-bottom:3px; }
+.portfolio-kpi-num   { font-size:22px; font-weight: 600; color:var(--gray-800); line-height:1; margin-bottom:3px; }
 
 .portfolio-kpi-label { font-size:11px; color:var(--gray-400); font-weight:500; }
 
@@ -250,8 +248,8 @@
   display:flex; align-items:center; gap:12px; padding:8px 14px;
   background:var(--gray-50); border:1px solid var(--border);
   border-bottom:none; border-radius:var(--radius-md) var(--radius-md) 0 0;
-  font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--gray-400);
+  font-size:10px; font-weight: 600;
+  letter-spacing:0; color:var(--gray-400);
 }
 
 .portfolio-table-body {
@@ -273,7 +271,7 @@
 
 .portfolio-row-name  { flex:2; min-width:0; }
 
-.portfolio-row-title { font-size:13px; font-weight:700; color:var(--gray-700);
+.portfolio-row-title { font-size:13px; font-weight: 600; color:var(--gray-700);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 .portfolio-row-sub   { font-size:11px; color:var(--gray-400); }
@@ -284,7 +282,7 @@
 
 .portfolio-progress-fill { height:100%; border-radius: var(--radius-full); transition:width .4s; }
 
-.portfolio-progress-pct  { font-size:11px; font-weight:700; color:var(--gray-500); min-width:30px; text-align:right; }
+.portfolio-progress-pct  { font-size:11px; font-weight: 600; color:var(--gray-500); min-width:30px; text-align:right; }
 
 .portfolio-row-stats { flex:1.5; display:flex; flex-direction:column; gap:3px; }
 
@@ -315,7 +313,7 @@
   background:var(--gray-50);
 }
 
-.portfolio-detail-title { font-size:15px; font-weight:800; color:var(--gray-800); }
+.portfolio-detail-title { font-size:15px; font-weight: 600; color:var(--gray-800); }
 
 .portfolio-detail-body  { padding:16px; display:flex; flex-direction:column; gap:14px; }
 
@@ -325,15 +323,15 @@
 
 .portfolio-detail-stat { padding:10px; background:var(--gray-50); border-radius:var(--radius-sm); text-align:center; }
 
-.portfolio-detail-stat-num   { font-size:20px; font-weight:800; line-height:1; margin-bottom:2px; }
+.portfolio-detail-stat-num   { font-size:20px; font-weight: 600; line-height:1; margin-bottom:2px; }
 
 .portfolio-detail-stat-label { font-size:10px; color:var(--gray-400); }
 
 .portfolio-detail-section { display:flex; flex-direction:column; gap:6px; }
 
 .portfolio-detail-section-label {
-  font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--gray-400);
+  font-size:10px; font-weight: 600;
+  letter-spacing:0; color:var(--gray-400);
 }
 
 .portfolio-health-chart-card { padding:16px; }
@@ -372,18 +370,18 @@
 
 .workload-avatar {
   width:36px; height:36px; border-radius:50%;
-  background:linear-gradient(135deg,var(--brand-500),var(--purple));
+  background:var(--brand-500);
   display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:800; color:#fff; flex-shrink:0;
+  font-size:13px; font-weight: 600; color:#fff; flex-shrink:0;
 }
 
 .workload-member-info { flex:1; }
 
-.workload-member-name { font-size:13px; font-weight:700; color:var(--gray-700); }
+.workload-member-name { font-size:13px; font-weight: 600; color:var(--gray-700); }
 
 .workload-member-role { font-size:11px; color:var(--gray-400); }
 
-.workload-load-badge  { font-size:10px; font-weight:700; padding:2px 7px; border-radius: var(--radius-full); white-space:nowrap; }
+.workload-load-badge  { font-size:10px; font-weight: 600; padding:2px 7px; border-radius: var(--radius-full); white-space:nowrap; }
 
 .workload-stats {
   display:grid; grid-template-columns:repeat(4,1fr); gap:4px;
@@ -392,7 +390,7 @@
 
 .workload-stat { text-align:center; }
 
-.workload-stat-num   { display:block; font-size:16px; font-weight:800; line-height:1; }
+.workload-stat-num   { display:block; font-size:16px; font-weight: 600; line-height:1; }
 
 .workload-stat-label { display:block; font-size:10px; color:var(--gray-400); margin-top:2px; }
 
@@ -410,7 +408,7 @@
 }
 
 .analytics-widget-config-title {
-  font-size:12px; font-weight:700; color:var(--gray-700); margin-bottom:10px;
+  font-size:12px; font-weight: 600; color:var(--gray-700); margin-bottom:10px;
 }
 
 .analytics-widget-config-grid {
@@ -435,7 +433,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-.cp-title { font-size: 14px; font-weight: 800; color: var(--gray-800); }
+.cp-title { font-size: 14px; font-weight: 600; color: var(--gray-800); }
 
 .cp-meta  { display: block; font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 

@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { fetchChangeRequests, createChangeRequest, updateChangeRequest, deleteChangeRequest } from "../api/changeRequests";
 import { fetchProjects } from "../api/projects";
 import "../styles/pages/change-requests.css";
+import { Pencil as IcPencil, Trash2 as IcTrash2, Wrench as IcWrench } from "lucide-react";
 
 const IMPACT_META = {
   HIGH:   { color: "var(--danger)", bg: "rgba(239,68,68,.1)" },
@@ -53,8 +54,8 @@ function ChangeRequestForm({ initial, projects, onSave, onCancel }) {
           </select></div>
         <div className="form-group"><label htmlFor={"change-requests-impact"}>Impact</label>
           <select value={form.impact} onChange={(e) => set("impact", e.target.value)} id={"change-requests-impact"}>
-            <option value="HIGH">HIGH</option>
-            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
             <option value="LOW">LOW</option>
           </select></div>
         <div className="form-group"><label htmlFor={"change-requests-project"}>Project</label>
@@ -126,9 +127,9 @@ function ChangeRequestCard({ c, currentEmail, onEdit, onDelete, onStatusChange, 
         <div className="cr-card-right" onClick={(e) => e.stopPropagation()} role="presentation">
           <span className="cr-status" style={{ color: sm.color, background: sm.bg }}>{sm.label}</span>
           {c.status === "DRAFT" && isRequester && (
-            <button className="btn-icon" title="Edit" onClick={() => onEdit(c)}>✏️</button>
+            <button className="btn-icon" title="Edit" onClick={() => onEdit(c)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           )}
-          <button className="btn-icon" title="Delete" onClick={() => onDelete(c.id)}>🗑️</button>
+          <button className="btn-icon" title="Delete" onClick={() => onDelete(c.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           <span className="cr-expand-icon">{expanded ? "▲" : "▼"}</span>
         </div>
       </div>
@@ -273,7 +274,7 @@ export default function ChangeRequests() {
 
   return (
     <div>
-      <PageHeader icon="🔧" title="Change Requests"
+      <PageHeader icon={<IcWrench size={16} strokeWidth={1.5} aria-hidden="true" />} title="Change Requests"
         description="Propose, review, and approve changes to scope, budget, or timeline"
         action={<button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
           + New Change Request
@@ -307,7 +308,7 @@ export default function ChangeRequests() {
         <div className="cr-empty">Loading…</div>
       ) : filtered.length === 0 ? (
         <div className="cr-empty">
-          <div className="cr-empty-icon">🔧</div>
+          <div className="cr-empty-icon"><IcWrench size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           No change requests {filter ? `match "${filter}"` : "yet"}. Create the first one above.
         </div>
       ) : (

@@ -24,7 +24,7 @@
 
 .kanban-count {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: var(--radius-full);
 }
@@ -118,14 +118,14 @@
 }
 
 .kanban-toolbar-label {
-  font-size:11px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.08em; color:var(--gray-400); white-space:nowrap;
+  font-size:11px; font-weight: 600;
+  letter-spacing:0; color:var(--gray-400); white-space:nowrap;
 }
 
 .kanban-swimlane-picker { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
 .kanban-wip-badge {
-  font-size:10px; font-weight:700; padding:2px 6px;
+  font-size:10px; font-weight: 600; padding:2px 6px;
   border-radius: var(--radius-full); white-space:nowrap;
 }
 
@@ -155,7 +155,7 @@
 
 .kanban-swimlane-chevron { font-size:10px; color:var(--gray-400); }
 
-.kanban-swimlane-label   { font-size:13px; font-weight:700; color:var(--gray-700); }
+.kanban-swimlane-label   { font-size:13px; font-weight: 600; color:var(--gray-700); }
 
 .kanban-swimlane-body    { padding:10px; }
 
@@ -164,7 +164,7 @@
 }
 
 .kanban-card-points {
-  font-size:10px; font-weight:700; padding:1px 5px;
+  font-size:10px; font-weight: 600; padding:1px 5px;
   background:rgba(99,102,241,0.1); color:var(--brand-400);
   border-radius:4px;
 }

@@ -5,6 +5,7 @@ import { getProjects } from "../api/projects";
 import { useEffect } from "react";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../components/ToastContext";
+import { CircleCheck as IcCircleCheck, Inbox as IcInbox } from "lucide-react";
 
 // Field mappings for Asana CSV format
 const NOTION_MAP = {
@@ -153,7 +154,7 @@ export default function Importer() {
   return (
     <div>
       <PageHeader
-        icon="📥"
+        icon={<IcInbox size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Import Tasks"
         description="Import tasks from Asana, ClickUp, Notion, Monday.com, or any CSV/JSON file"
       />
@@ -296,7 +297,7 @@ export default function Importer() {
       {/* Step 3: Done */}
       {step === "done" && result && (
         <div className="importer-card importer-done-card">
-          <div className="importer-done-icon">✅</div>
+          <div className="importer-done-icon"><IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           <h2 className="importer-done-title">Import Complete</h2>
           <div className="importer-done-stats">
             <div className="importer-done-stat">

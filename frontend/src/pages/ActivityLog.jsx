@@ -12,6 +12,7 @@ import {
   exportActivityTXT,
   exportActivityPDF, exportActivityDOCX,
 } from "../utils/activityExport";
+import { Book as IcBook, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, FileText as IcFileText, Folder as IcFolder, Hourglass as IcHourglass, Lock as IcLock, Target as IcTarget, Timer as IcTimer, Users as IcUsers } from "lucide-react";
 
 /* ─── constants ───────────────────────────────────────────────── */
 const ACTION_META = {
@@ -61,7 +62,7 @@ const ACTION_META = {
   PROGRESS_UPDATED:         { label: "Progress Updated",  cls: "progress", group: "OTHER" },
 };
 
-const ENTITY_ICON  = { PROJECT:"📁", TASK:"✅", GOAL:"🎯", TEAM:"👥", TIME:"⏱️", SECURITY:"🔒" };
+const ENTITY_ICON  = { PROJECT:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, TASK:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, GOAL:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, TEAM:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, TIME:<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />, SECURITY:<IcLock size={16} strokeWidth={1.5} aria-hidden="true" /> };
 const SEVERITY_CLS = { INFO:"sev-info", WARNING:"sev-warning", CRITICAL:"sev-critical" };
 
 /* ─── sub-components ──────────────────────────────────────────── */
@@ -316,7 +317,7 @@ function EventGroupSection({ group, icon, count, isGroupActive, filterAction,
         onClick={() => { setOpen(o => !o); onGroupClick(); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => { setOpen(o => !o); onGroupClick(); })?.(e); } }}
       >
         <span className="al-event-group-icon">{icon}</span>
-        <span className="al-event-group-name">{group} EVENTS</span>
+        <span className="al-event-group-name">{group} Events</span>
         <span className="al-opt-count">{count}</span>
         <span className="al-event-group-caret">{open ? "▾" : "▸"}</span>
       </div>
@@ -526,7 +527,7 @@ export default function ActivityLog() {
       key = new Date(log.createdAt).toLocaleDateString("en-US", {
         weekday:"long", year:"numeric", month:"long", day:"numeric" });
     } else if (groupBy === "entity") {
-      key = `${ENTITY_ICON[log.entityType]||"•"} ${log.entityType} — ${log.entityName||"Unknown"}`;
+      key = `${log.entityType} — ${log.entityName||"Unknown"}`;
     } else {
       key = log.performedBy || "System";
     }
@@ -553,7 +554,7 @@ export default function ActivityLog() {
   return (
     <div>
       <PageHeader
-        icon="📋"
+        icon={<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Audit Log"
         description="Operational intelligence — complete compliance-grade activity trail"
         action={
@@ -569,15 +570,15 @@ export default function ActivityLog() {
               <button className="btn-secondary"
                 style={{ fontSize:"12px", padding:"7px 12px", display:"flex", alignItems:"center", gap:"5px" }}
                 disabled={exporting} onClick={() => setExportOpen(o => !o)}>
-                {exporting ? "⏳" : "↓ Export"} <span style={{ fontSize:"9px", opacity:0.6 }}>▼</span>
+                {exporting ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "↓ Export"} <span style={{ fontSize:"9px", opacity:0.6 }}>▼</span>
               </button>
               {exportOpen && (
                 <div className="al-export-dropdown">
                   {[
-                    { fmt:"csv",  icon:"📊", label:"CSV Spreadsheet",       sub:"Comma-separated values" },
-                    { fmt:"txt",  icon:"📄", label:"Plain Text (.txt)",     sub:"Human-readable log"     },
-                    { fmt:"pdf",  icon:"📕", label:"PDF Document",          sub:"Formatted, printable"   },
-                    { fmt:"docx", icon:"📘", label:"Word Document (.docx)", sub:"Editable in MS Word"    },
+                    { fmt:"csv",  icon:<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, label:"CSV Spreadsheet",       sub:"Comma-separated values" },
+                    { fmt:"txt",  icon:<IcFileText size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Plain Text (.txt)",     sub:"Human-readable log"     },
+                    { fmt:"pdf",  icon:<IcBook size={16} strokeWidth={1.5} aria-hidden="true" />, label:"PDF Document",          sub:"Formatted, printable"   },
+                    { fmt:"docx", icon:<IcBook size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Word Document (.docx)", sub:"Editable in MS Word"    },
                   ].map(({ fmt, icon, label, sub }) => (
                     <button key={fmt} className="al-export-item" onClick={() => handleExport(fmt)}>
                       <span className="al-export-icon">{icon}</span>
@@ -752,7 +753,7 @@ export default function ActivityLog() {
             <p className="empty-state">Loading…</p>
           ) : (viewMode === "grouped" ? filteredGrouped : Object.keys(flatGrouped)).length === 0 ? (
             <div className="al-empty">
-              <div style={{ fontSize:"36px", marginBottom:"8px" }}>📋</div>
+              <div style={{ fontSize:"36px", marginBottom:"8px" }}><IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /></div>
               <p style={{ fontWeight:600, color:"var(--gray-600)" }}>No activity found</p>
               {hasFilters && (
                 <button className="btn-secondary" style={{ marginTop:"12px", fontSize:"12px" }}
