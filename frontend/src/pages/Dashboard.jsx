@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -170,7 +170,24 @@ function WorkOverview({ projects, goals, dashTasks, navigate, onExpand }) {
   const tt = taskTab || firstTaskTab;
   const openTasks = dashTasks.active.length + dashTasks.overdue.length + dashTasks.today.length;
   const TABS = [["projects", "Projects", projects.length], ["goals", "Goals", goals.length], ["tasks", "Tasks", openTasks]];
-  const LIMIT = 6;
+  // As many rows as fit in the space the card has (the dashboard doesn't scroll); the rest are behind "Show all".
+  const panelRef = useRef(null);
+  const [fit, setFit] = useState(6);
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => {
+      const h = el.clientHeight;
+      if (!h) return;
+      const reserved = 34 + (tab === "tasks" ? 38 : 0);          // the "Show all" line, and the task filter
+      setFit(Math.max(2, Math.floor((h - reserved) / 40)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [tab]);
+  const LIMIT = fit;
   const more = (n, what) => n > LIMIT && <li><button type="button" className="dz-more" onClick={() => onExpand(what, tt)}>Show all {n}</button></li>;
   return (
     <section className="dz-card dz-work" aria-label="Work overview">
@@ -190,7 +207,7 @@ function WorkOverview({ projects, goals, dashTasks, navigate, onExpand }) {
         </Tip>
       </header>
 
-      <div id="dz-work-panel" role="tabpanel" aria-labelledby={`dz-tab-${tab}`}>
+      <div id="dz-work-panel" ref={panelRef} className="dz-work-panel" role="tabpanel" aria-labelledby={`dz-tab-${tab}`}>
         {tab === "projects" && (projects.length ? (
           <ul className="dz-ov-list">
             {projects.slice(0, LIMIT).map(p => (
@@ -389,10 +406,10 @@ function ChartsPanel({ summary, navigate }) {
       {tab === "tasks" && (summary.totalTasks > 0 ? (
         <div className="dz-taskchart">
           <div className="dz-donut">
-            <ResponsiveContainer width="100%" height={150}>
+            <ResponsiveContainer width="100%" height={124}>
               <PieChart>
-                <Pie data={[{ value: 1 }]} cx="50%" cy="50%" innerRadius={52} outerRadius={64} dataKey="value" isAnimationActive={false} stroke="none"><Cell fill={track} /></Pie>
-                <Pie data={nonZero} cx="50%" cy="50%" innerRadius={52} outerRadius={64} paddingAngle={nonZero.length > 1 ? 2 : 0} dataKey="value" isAnimationActive={false} stroke="none">
+                <Pie data={[{ value: 1 }]} cx="50%" cy="50%" innerRadius={44} outerRadius={55} dataKey="value" isAnimationActive={false} stroke="none"><Cell fill={track} /></Pie>
+                <Pie data={nonZero} cx="50%" cy="50%" innerRadius={44} outerRadius={55} paddingAngle={nonZero.length > 1 ? 2 : 0} dataKey="value" isAnimationActive={false} stroke="none">
                   {nonZero.map((e) => <Cell key={e.name} fill={e.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={(v, n) => [`${v} tasks`, n]} />

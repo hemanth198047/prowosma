@@ -219,3 +219,40 @@
   .dz-ov-row { min-height: 48px; }
   .dz-bar { width: 56px; }
 }
+
+/* ── No scrolling on laptop and desktop screens ─────────────────────────────
+   The page is exactly the height of the window: header, chips, then two columns that share the rest.
+   The work list shows as many rows as fit (the rest are behind "Show all"); other cards are compact.
+   Phones and very short windows keep normal scrolling - there is no honest way to fit it all there. */
+@media (min-width: 1101px) and (min-height: 680px) {
+  .db-root.dz {
+    height: 100%; max-height: 100%; overflow: hidden;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; padding: 18px 24px 18px;
+  }
+  .dz-cols { height: 100%; min-height: 0; align-items: stretch; }
+  .dz-col { min-height: 0; }
+  .dz-col:first-child { grid-template-rows: minmax(0, 1fr) auto; }
+  .dz-col:last-child { grid-template-rows: auto auto minmax(0, 1fr); }
+  .dz-work { min-height: 0; overflow: hidden; }
+  .dz-work-panel { flex: 1; min-height: 0; overflow: hidden; }
+  .dz-pulse { min-height: 0; overflow: hidden; }
+  .dz-pulse > .db-card { height: 100%; overflow: hidden; }
+  .dz-hero-text h1 { font-size: 22px; }
+  .dz-card { padding: 14px 16px; gap: 10px; }
+  .dz-launch { padding: 2px 16px; }
+  .dz-rail { min-height: 48px; }
+  .dz-icon { width: 34px; height: 34px; }
+  .dz-legend-row { min-height: 26px; }
+  .dz-ai { gap: 8px; }
+  .dz-ai-text { font-size: 13px; }
+}
+/* Shorter laptop windows (e.g. 768px tall): tighter still. */
+@media (min-width: 1101px) and (min-height: 680px) and (max-height: 820px) {
+  .db-root.dz { gap: 10px; padding-top: 14px; padding-bottom: 14px; }
+  .dz-hero-text p { display: none; }
+  .dz-rail { min-height: 42px; }
+  .dz-icon { width: 32px; height: 32px; }
+  .dz-chip { height: 28px; }
+  .dz-btn { height: 34px; }
+  .dz-ai-links { display: none; }
+}
