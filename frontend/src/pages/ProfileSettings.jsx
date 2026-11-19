@@ -8,6 +8,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import BackupCodesPanel from "../components/BackupCodesPanel";
 import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
+import PushNotificationToggle from "../components/PushNotificationToggle";
 
 export default function ProfileSettings() {
   const confirm = useConfirm();
@@ -150,12 +151,20 @@ export default function ProfileSettings() {
       <div className="tab-bar" style={{ marginBottom: "24px" }}>
         <button className={"tab-btn" + (section === "profile"  ? " tab-active" : "")} onClick={() => { setSection("profile");  setError(""); setSuccess(""); }}>Profile</button>
         <button className={"tab-btn" + (section === "security" ? " tab-active" : "")} onClick={() => { setSection("security"); setError(""); setSuccess(""); }}>Security</button>
+        <button className={"tab-btn" + (section === "notifications" ? " tab-active" : "")} onClick={() => { setSection("notifications"); setError(""); setSuccess(""); }}>Notifications</button>
         <button className={"tab-btn" + (section === "gdpr"     ? " tab-active" : "")} onClick={() => { setSection("gdpr");     setError(""); setSuccess(""); }}>Privacy & GDPR</button>
         <button className={"tab-btn" + (section === "danger"   ? " tab-active" : "")} onClick={() => { setSection("danger");   setError(""); setSuccess(""); }}>Delete Account</button>
       </div>
 
       {error   && <div className="settings-error-banner"  style={{ marginBottom: "16px" }}>{error}</div>}
       {success && <div className="settings-success-banner" style={{ marginBottom: "16px" }}>{success}</div>}
+
+      {section === "notifications" && (
+        <div className="settings-section">
+          <div className="settings-section-title">Desktop & phone notifications</div>
+          <PushNotificationToggle />
+        </div>
+      )}
 
       {/* ── Profile ── */}
       {section === "profile" && (

@@ -633,6 +633,52 @@ public class AttendanceService {
         return switch (status) { case "WORKING" -> 0; case "ON_BREAK" -> 1; case "LATE_NOT_IN" -> 2; case "NOT_IN" -> 3; case "DONE" -> 4; case "ON_LEAVE" -> 5; default -> 6; };
     }
 
+    /** A nudge for one person: CLOCK_IN (their start time passed and they haven't clocked in) or CLOCK_OUT (well past their end, still in). */
+    public record Reminder(String email, String kind, String date, String title, String body) {}
+
+    /**
+     * Who should be nudged right now. CLOCK_IN: a working day, no leave, nothing punched, and the start (shift or call time) plus its
+     * grace has passed - for up to 3 hours. CLOCK_OUT: still clocked in, and the shift end plus the workspace's end-of-day reminder
+     * minutes has passed - for up to 3 hours. The caller sends each one once.
+     */
+    public List<Reminder> reminders(String org, Instant now) {
+        List<Reminder> out = new ArrayList<>();
+        AttendanceSettings s = settings(org);
+        ZoneId zone = zone(org);
+        LocalDate today = LocalDate.ofInstant(now, zone);
+        Workspace ws = workspaces.findById(org).orElse(null);
+        boolean holidayToday = holiday(ws, today) != null;
+        Duration window = Duration.ofHours(3);
+        for (Person p : people(org)) {
+            AttendanceShift shift = shiftFor(org, p.email());
+            AttendanceLog active = active(org, p.email());
+            if (active != null && "WORKING".equals(active.getState())) {
+                AttendanceLog plan = new AttendanceLog();
+                LocalDate d = LocalDate.parse(active.getDate());
+                plan(plan, d, zone, shift, ws);
+                if (plan.getExpectedEnd() != null) {
+                    Instant due = plan.getExpectedEnd().plus(Duration.ofMinutes(Math.max(0, s.getEndOfDayReminderMinutes())));
+                    if (now.isAfter(due) && now.isBefore(due.plus(window)))
+                        out.add(new Reminder(p.email(), "CLOCK_OUT", active.getDate(), "Still clocked in",
+                                "Your day was due to end at " + plan.getExpectedEnd().atZone(zone).toLocalTime() + ". Clock out if you've finished."));
+                }
+                continue;
+            }
+            if (holidayToday || !shift.getDays().contains(day(today)) || leaveOn(org, p.email(), today) != null) continue;
+            AttendanceLog log = logFor(org, p.email(), today.toString());
+            if (log != null && (!log.getSessions().isEmpty() || !"OFF".equals(log.getState()))) continue;   // already punched today
+            AttendanceLog plan = new AttendanceLog();
+            plan(plan, today, zone, shift, ws);
+            applyCallTime(plan, org, p.email(), today);
+            if (plan.getExpectedStart() == null) continue;
+            Instant due = plan.getExpectedStart().plus(Duration.ofMinutes(plan.getGraceMinutes()));
+            if (now.isAfter(due) && now.isBefore(due.plus(window)))
+                out.add(new Reminder(p.email(), "CLOCK_IN", today.toString(), "You haven't clocked in",
+                        "Your day started at " + plan.getExpectedStart().atZone(zone).toLocalTime() + ". Open Prowosma to clock in."));
+        }
+        return out;
+    }
+
     /** How many people are clocked in right now (for the dashboard's "online" number). */
     public long clockedInCount(String org) {
         return mongo.count(new Query(Criteria.where("organizationId").is(org).and("state").in("WORKING", "ON_BREAK")), AttendanceLog.class);

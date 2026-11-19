@@ -50,6 +50,7 @@ import NotificationBell from "./components/NotificationBell";
 import LiveClock from "./components/LiveClock";
 import ClockWidget from "./components/ClockWidget";
 import LiveActivityFeed from "./components/LiveActivityFeed";
+import NotificationPrompt from "./components/NotificationPrompt";
 import ConnectionStatus from "./components/ConnectionStatus";
 import AIStatus from "./components/AIStatus";
 import PWAInstallBanner from "./components/PWAInstallBanner";
@@ -289,14 +290,7 @@ function AppShell() {
   // ── Register service worker (prod) / unregister (dev) ───────
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    if (window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1') {
-      // Unregister any stale SW on localhost
-      navigator.serviceWorker.getRegistrations().then(regs =>
-        regs.forEach(r => r.unregister())
-      );
-      return;
-    }
+    // Registered on localhost too: there it caches nothing (see public/sw.js) and only shows desktop notifications.
     navigator.serviceWorker.register('/sw.js')
       .then(reg => console.log('[PWA] SW registered:', reg.scope))
       .catch(err => console.warn('[PWA] SW failed:', err));
@@ -485,6 +479,7 @@ function AppShell() {
               )}
               <main className={`main-content${isDocs ? " no-padding" : isDashboard ? " no-padding db-shell" : " page-scrollable"}`}>
                 <Breadcrumb />
+                {!isDocs && <NotificationPrompt />}
                 <Suspense fallback={<PageSkeleton />}>
               {restricted && location.pathname !== "/" && !isPathAllowedForRestricted(location.pathname, accessCapabilities) ? (
                 <div className="empty-state" role="status">

@@ -1,0 +1,16 @@
+/* Desktop notifications settings + one-time prompt. Theme tokens only. */
+.dn { display: grid; gap: 10px; max-width: 640px; }
+.dn-status { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.dn-status--on { color: var(--success-text, #047857); }
+.dn-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dn-actions .btn { min-height: 40px; }
+.dn-msg { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.dn-muted { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
+.dn-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--text-secondary); display: grid; gap: 3px; }
+.np { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--brand-200, var(--border)); background: var(--brand-50); border-radius: 12px; }
+.np-icon { flex: none; color: var(--brand-600); }
+.np-text { flex: 1; margin: 0; font-size: 13.5px; color: var(--text-primary); }
+.np-btn { flex: none; min-height: 36px; }
+.np-x { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.np-x:hover { background: rgba(0,0,0,.06); }
+@media (max-width: 640px) { .np { flex-wrap: wrap; } .np-text { flex-basis: calc(100% - 70px); } .np-btn { margin-left: 28px; } }

@@ -27,6 +27,7 @@ public class ChannelController {
     private final TeamMemberRepository     members;
     private final WorkspaceRepository      workspaces;
     private final UserRepository           users;
+    private final com.prowosma.backend.service.PersonalAlertService alerts;
 
     private static String low(String e) { return e == null ? null : e.trim().toLowerCase(Locale.ROOT); }
     private static List<String> peopleOf(Channel x) {
@@ -233,6 +234,17 @@ public class ChannelController {
         ChannelMessage saved = messageRepo.save(msg);
         c.setLastMessageAt(saved.getCreatedAt());
         channelRepo.save(c);
+        // Private channels and direct messages: everyone else in it gets a desktop/phone notification.
+        if (c.isPrivate()) {
+            String from = saved.getAuthorName() == null ? saved.getAuthorEmail() : saved.getAuthorName();
+            String title = "DM".equalsIgnoreCase(c.getType()) ? from : from + " in " + c.getName();
+            String body = saved.getContent().length() > 140 ? saved.getContent().substring(0, 140) + "…" : saved.getContent();
+            Set<String> to = new LinkedHashSet<>();
+            if (c.getCreatedBy() != null) to.add(low(c.getCreatedBy()));
+            c.getMemberEmails().forEach(e -> to.add(low(e)));
+            to.remove(low(auth.getName()));
+            to.forEach(e -> alerts.tell(e, title, body, "/channels"));
+        }
         return saved;
     }
 

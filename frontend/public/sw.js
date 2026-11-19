@@ -7,13 +7,10 @@
 const IS_DEV = self.location.hostname === 'localhost' ||
                self.location.hostname === '127.0.0.1';
 
-// In development — self-destruct and let Vite handle everything
+// In development: no caching (Vite serves everything), but stay installed so desktop notifications work locally too.
 if (IS_DEV) {
   self.addEventListener('install',  () => self.skipWaiting());
-  self.addEventListener('activate', () => {
-    self.registration.unregister();
-    self.clients.claim();
-  });
+  self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 } else {
   // ── Production only ─────────────────────────────────────────
   const STATIC = 'prowosma-static-v1';
@@ -103,26 +100,31 @@ if (IS_DEV) {
     );
   });
 
-  // Push notifications
-  self.addEventListener('push', (e) => {
-    let data = { title: 'Prowosma', body: 'You have a new notification' };
-    try { data = e.data?.json() || data; } catch { /* malformed push payload, use default */ }
-    e.waitUntil(self.registration.showNotification(data.title, {
-      body: data.body, icon: '/icons/icon-192.png', badge: '/icons/icon-72.png',
-      data: { url: data.url || '/' },
-      actions: [{ action: 'open', title: '📂 Open' }, { action: 'dismiss', title: '✕ Dismiss' }],
-    }));
-  });
-
-  self.addEventListener('notificationclick', (e) => {
-    e.notification.close();
-    if (e.action === 'dismiss') return;
-    const url = e.notification.data?.url || '/';
-    e.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
-        const match = wins.find(c => c.url.includes(url));
-        return match ? match.focus() : clients.openWindow(url);
-      })
-    );
-  });
 }
+
+// Desktop notifications (Web Push) - in development and production alike.
+self.addEventListener('push', (e) => {
+  let data = { title: 'Prowosma', body: 'You have a new notification' };
+  try { data = e.data?.json() || data; } catch { /* malformed push payload, use default */ }
+  e.waitUntil(self.registration.showNotification(data.title, {
+    body: data.body, icon: '/icons/icon-192.png', badge: '/icons/icon-72.png',
+    data: { url: data.url || '/' },
+    tag: data.tag, renotify: !!data.tag,
+    actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }],
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  if (e.action === 'dismiss') return;
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (wins) => {
+      // Prowosma already open: bring it forward on the right page. Otherwise open it.
+      const win = wins.find(c => c.url.includes(url)) || wins[0];
+      if (!win) return clients.openWindow(url);
+      await win.focus();
+      if (!win.url.includes(url) && 'navigate' in win) { try { await win.navigate(url); } catch { return clients.openWindow(url); } }
+    })
+  );
+});

@@ -30,6 +30,9 @@ import java.util.Map;
 public class TaskController {
 
     private final TaskService taskService;
+    private final com.prowosma.backend.service.PersonalAlertService alerts;
+    private final com.prowosma.backend.repository.TeamMemberRepository teamMembers;
+    private final com.prowosma.backend.repository.WorkspaceRepository workspaceRepository;
 
     // ── Paginated list (default) ──────────────────────────────
     @GetMapping
@@ -148,7 +151,24 @@ public class TaskController {
                             @RequestBody Comment comment,
                             Authentication auth) {
         if (auth != null) comment.setAuthor(auth.getName());
-        return taskService.addComment(id, comment);
+        Task saved = taskService.addComment(id, comment);
+        tellMentioned(saved, comment, auth == null ? null : auth.getName());
+        return saved;
+    }
+
+    /** People @mentioned in a comment get a desktop/phone notification - only people of this task's workspace, never the author. */
+    private void tellMentioned(Task t, Comment c, String author) {
+        if (t == null || c.getMentions() == null || c.getMentions().isEmpty()) return;
+        java.util.Set<String> inWorkspace = new java.util.HashSet<>();
+        teamMembers.findByOrganizationId(t.getOrganizationId()).forEach(m -> { if (m.getEmail() != null) inWorkspace.add(m.getEmail().toLowerCase()); });
+        workspaceRepository.findById(t.getOrganizationId()).ifPresent(w -> { if (w.getOwnerEmail() != null) inWorkspace.add(w.getOwnerEmail().toLowerCase()); });
+        String text = c.getText() == null ? "" : c.getText();
+        for (String raw : new java.util.LinkedHashSet<>(c.getMentions())) {
+            String e = raw == null ? "" : raw.trim().toLowerCase();
+            if (!inWorkspace.contains(e) || e.equalsIgnoreCase(author)) continue;
+            alerts.tell(e, (author == null ? "Someone" : author) + " mentioned you", t.getTitle() + ": " + (text.length() > 120 ? text.substring(0, 120) + "…" : text),
+                    "/tasks?highlight=" + t.getId());
+        }
     }
 
     @DeleteMapping("/{id}/comments/{commentId}")

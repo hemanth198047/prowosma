@@ -68,3 +68,29 @@ export async function sendTestPush() {
   const res = await client.post("/push/test");
   return res.data.sent; // number of subscriptions actually notified
 }
+
+/**
+ * Where this browser stands: supported, the permission, whether it's subscribed, and whether the server can send at all.
+ * serverReady is false when the server has no VAPID keys (an admin sets them - see the deployment guide).
+ */
+export async function getPushState() {
+  if (!(await isPushSupported())) return { supported: false };
+  let serverReady = true;
+  try { await client.get("/push/vapid-public-key"); } catch { serverReady = false; }
+  let subscribed = false;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    subscribed = !!(reg && (await reg.pushManager.getSubscription()));
+  } catch { /* no worker yet */ }
+  return { supported: true, permission: Notification.permission, subscribed, serverReady };
+}
+
+/** After signing in: if this browser already has a subscription, make sure it's linked to the person now signed in. */
+export async function relinkPushSubscription() {
+  try {
+    if (!(await isPushSupported()) || Notification.permission !== "granted") return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && (await reg.pushManager.getSubscription());
+    if (sub) await client.post("/push/subscribe", sub.toJSON());
+  } catch { /* best effort */ }
+}
