@@ -32,6 +32,9 @@ public class UmaAccess {
     public record Caller(String email, String role, boolean restricted) {
         public boolean admin() { return ("OWNER".equals(role) || "ADMIN".equals(role)) && !restricted; }
         public boolean viewer() { return "VIEWER".equals(role); }
+        /** Editors change existing work but don't create: for meetings they read, like viewers. */
+        public boolean editor() { return "EDITOR".equals(role); }
+        public boolean readOnly() { return viewer() || editor(); }
     }
 
     public Caller caller(String workspaceId, String email) {
@@ -54,7 +57,7 @@ public class UmaAccess {
 
     /** Change content, approve actions, delete, share: the person who added it, or an admin. Viewers never. */
     public boolean canManage(UmaMeeting m, Caller c) {
-        if (c.viewer()) return false;
+        if (c.readOnly()) return false;
         return c.admin() || (c.email() != null && c.email().equalsIgnoreCase(m.getCreatedBy()));
     }
 
@@ -67,7 +70,7 @@ public class UmaAccess {
     }
 
     public void requireCanCreate(Caller c) {
-        if (c.viewer() || "NONE".equals(c.role()))
-            throw new UmaException(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Viewers can read meetings shared with them but can't add meetings.");
+        if (c.readOnly() || "NONE".equals(c.role()))
+            throw new UmaException(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Viewers and editors can read meetings shared with them but can't add meetings.");
     }
 }

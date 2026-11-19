@@ -163,7 +163,7 @@ public final class InsightValidator {
             if (before != null && (before.isEdited() || !"PENDING".equals(before.getStatus()))) actions.put(fresh.getId(), before);
         }
         for (UmaInsights.ActionItem before : prior.values()) {
-            if (!actions.containsKey(before.getId()) && ("CREATED".equals(before.getStatus()) || before.isEdited()))
+            if (!actions.containsKey(before.getId()) && ("CREATED".equals(before.getStatus()) || "LINKED".equals(before.getStatus()) || before.isEdited()))
                 actions.put(before.getId(), before);                       // never lose the link to a task that exists
         }
         out.setActions(new ArrayList<>(actions.values()));

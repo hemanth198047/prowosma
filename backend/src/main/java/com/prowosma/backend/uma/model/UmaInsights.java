@@ -36,6 +36,10 @@ public class UmaInsights {
     private Automation automation;                 // what was done automatically after the analysis (from saved records)
     private int droppedForMissingEvidence;         // statements the model made without valid line references
     private List<String> warnings = new ArrayList<>();
+    private boolean summaryEdited;                 // a person rewrote the summary: regenerating keeps theirs
+    private String summaryEditedBy;
+    private Instant summaryEditedAt;
+    private List<SummaryVersion> summaryHistory = new ArrayList<>();
 
     @Data
     public static class Topic {
@@ -55,6 +59,7 @@ public class UmaInsights {
         private String text;
         private String decidedBy;                  // only as stated; null when not said
         private List<Integer> evidence = new ArrayList<>();
+        private String loggedDecisionId;           // set once added to the workspace Decision log
     }
 
     @Data
@@ -63,6 +68,16 @@ public class UmaInsights {
         private String text;
         private String kind;                       // RISK | BLOCKER | DEPENDENCY | QUESTION | FOLLOW_UP
         private List<Integer> evidence = new ArrayList<>();
+        private String raidId;                     // set once added to the project's RAID log
+    }
+
+    /** A previous wording of the summary, kept when a person edits it or the AI writes it again. */
+    @Data
+    public static class SummaryVersion {
+        private int number;
+        private String text;
+        private String by;                         // email, or "ai"
+        private Instant at = Instant.now();
     }
 
     @Data
@@ -88,7 +103,7 @@ public class UmaInsights {
         private String projectId;
         private String confidence = "MEDIUM";      // HIGH | MEDIUM | LOW - how clearly it was agreed
         private List<Integer> evidence = new ArrayList<>();
-        private String status = "PENDING";         // PENDING | APPROVED | REJECTED | CREATED | FAILED
+        private String status = "PENDING";         // PENDING | APPROVED | REJECTED | CREATED | LINKED | FAILED
         private boolean edited;                    // a person changed it: regenerating keeps their version
         private String createdTaskId;
         private String decidedBy;

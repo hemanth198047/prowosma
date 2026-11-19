@@ -1,7 +1,10 @@
 package com.prowosma.backend.uma.web;
 
 import com.prowosma.backend.config.WorkspaceContext;
+import com.prowosma.backend.model.Decision;
+import com.prowosma.backend.model.RaidEntry;
 import com.prowosma.backend.uma.app.UmaExporter;
+import com.prowosma.backend.uma.app.UmaFollowThrough;
 import com.prowosma.backend.uma.app.UmaService;
 import com.prowosma.backend.uma.core.UmaException;
 import com.prowosma.backend.uma.model.*;
@@ -26,9 +29,10 @@ public class UmaController {
     private final UmaService service;
     private final WorkspaceContext workspace;
     private final ProviderRegistry providers;
+    private final UmaFollowThrough follow;
 
-    public UmaController(UmaService service, WorkspaceContext workspace, ProviderRegistry providers) {
-        this.service = service; this.workspace = workspace; this.providers = providers;
+    public UmaController(UmaService service, WorkspaceContext workspace, ProviderRegistry providers, UmaFollowThrough follow) {
+        this.service = service; this.workspace = workspace; this.providers = providers; this.follow = follow;
     }
 
     private UmaService.Ctx ctx(Authentication auth) {
@@ -356,6 +360,75 @@ public class UmaController {
 
     @GetMapping("/meetings/{id}/audit")
     public List<UmaAuditEvent> audit(@PathVariable String id, Authentication auth) { return service.audit(ctx(auth), id); }
+
+    // ── Merged from Meetings (notes) and the first Meeting Assistant ──
+
+    public record NotesBody(String title, String meetingAt, String timezone, String projectId, String meetingType,
+                            List<String> attendees, String agenda, String notes) {}
+
+    /** A meeting from notes typed by hand (agenda + notes); summarised like an imported transcript. */
+    @PostMapping("/meetings/notes")
+    public ResponseEntity<UmaMeeting> notes(@RequestBody NotesBody b, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(follow.createFromNotes(ctx(auth), b.title(), instant(b.meetingAt()), b.timezone(),
+                b.projectId(), b.meetingType(), b.attendees(), b.agenda(), b.notes()));
+    }
+
+    public record SummaryBody(String summary) {}
+
+    @PutMapping("/meetings/{id}/summary")
+    public UmaInsights editSummary(@PathVariable String id, @RequestBody SummaryBody b, Authentication auth) {
+        return follow.editSummary(ctx(auth), id, b.summary());
+    }
+
+    @PostMapping("/meetings/{id}/summary/versions/{number}/restore")
+    public UmaInsights restoreSummary(@PathVariable String id, @PathVariable int number, Authentication auth) {
+        return follow.restoreSummary(ctx(auth), id, number);
+    }
+
+    public record LogBody(String projectId, String impact) {}
+
+    @PostMapping("/meetings/{id}/decisions/{decisionId}/log")
+    public Decision logDecision(@PathVariable String id, @PathVariable String decisionId, @RequestBody(required = false) LogBody b, Authentication auth) {
+        return follow.logDecision(ctx(auth), id, decisionId, b == null ? null : b.projectId());
+    }
+
+    @PostMapping("/meetings/{id}/risks/{findingId}/raid")
+    public RaidEntry logRisk(@PathVariable String id, @PathVariable String findingId, @RequestBody(required = false) LogBody b, Authentication auth) {
+        return follow.logRisk(ctx(auth), id, findingId, b == null ? null : b.projectId(), b == null ? null : b.impact());
+    }
+
+    @GetMapping("/meetings/{id}/actions/{actionId}/similar")
+    public List<Map<String, Object>> similar(@PathVariable String id, @PathVariable String actionId, Authentication auth) {
+        return follow.similarTasks(ctx(auth), id, actionId);
+    }
+
+    public record LinkTaskBody(String taskId) {}
+
+    @PostMapping("/meetings/{id}/actions/{actionId}/link")
+    public UmaInsights.ActionItem linkTask(@PathVariable String id, @PathVariable String actionId, @RequestBody LinkTaskBody b, Authentication auth) {
+        return follow.linkToTask(ctx(auth), id, actionId, b.taskId());
+    }
+
+    @GetMapping("/meetings/{id}/continuity")
+    public Map<String, Object> continuity(@PathVariable String id, Authentication auth) { return follow.continuity(ctx(auth), id); }
+
+    /** "Where do we stand" for a project before a meeting. */
+    @GetMapping("/prepare")
+    public Map<String, Object> prepare(@RequestParam(required = false) String projectId, Authentication auth) { return follow.prepare(ctx(auth), projectId); }
+
+    /** Action items that still need someone, across every meeting the person may see. */
+    @GetMapping("/actions")
+    public List<Map<String, Object>> openActions(@RequestParam(required = false) String projectId, @RequestParam(defaultValue = "100") int limit, Authentication auth) {
+        return follow.openActions(ctx(auth), projectId, limit);
+    }
+
+    @GetMapping("/meetings")
+    public List<Map<String, Object>> forProject(@RequestParam String projectId, @RequestParam(defaultValue = "10") int limit, Authentication auth) {
+        return follow.forProject(ctx(auth), projectId, limit);
+    }
+
+    @GetMapping("/trends")
+    public List<Map<String, Object>> trends(@RequestParam(defaultValue = "30") int days, Authentication auth) { return follow.trends(ctx(auth), days); }
 
     @ExceptionHandler(UmaException.class)
     public ResponseEntity<Map<String, Object>> onUma(UmaException e) {

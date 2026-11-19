@@ -44,6 +44,8 @@ public class UmaMeeting {
     private String calendarEventId;           // Google Calendar event this meeting came from or created
     private String calendarLink;              // the event in Google Calendar
     private List<String> attendees = new ArrayList<>();
+    private String meetingType;                    // STANDUP | PLANNING | REVIEW | RETRO | CLIENT | ONE_ON_ONE | OTHER (optional)
+    private String agenda;                         // optional, typed by a person (notes meetings)
     private boolean autoFireflies;            // send the Fireflies notetaker automatically when it starts
     // What Prowosma has seen of the meeting itself (from Google Meet, or from Fireflies being in it)
     private String liveState;                 // null (not seen yet) | IN_PROGRESS | ENDED

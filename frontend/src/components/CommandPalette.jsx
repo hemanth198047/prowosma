@@ -15,7 +15,7 @@ const PAGES = [
   { id: "go-dashboard",   icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Dashboard",        path: "/",               group: "Navigate" },
   { id: "go-tasks",       icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Tasks",            path: "/tasks",           group: "Navigate" },
   { id: "go-projects",    icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Projects",         path: "/projects",        group: "Navigate" },
-  { id: "go-meeting-assistant", icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Meeting Assistant", path: "/meeting-assistant", group: "Navigate", needs: "USE_MEETING_ASSISTANT" },
+  { id: "go-meeting-assistant", icon: <IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Meetings", path: "/meetings", group: "Navigate", needs: "USE_MEETING_ASSISTANT" },
   { id: "go-goals",       icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Goals",            path: "/goals",           group: "Navigate" },
   { id: "go-kanban",      icon: <IcFolderKanban size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Kanban",           path: "/kanban",          group: "Navigate" },
   { id: "go-calendar",    icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Calendar",         path: "/calendar",        group: "Navigate" },
@@ -35,7 +35,7 @@ const ACTIONS = [
   { id: "new-task",    icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Task",    action: "new-task",    group: "Actions" },
   { id: "new-project", icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Project", action: "new-project", group: "Actions" },
   { id: "new-goal",    icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Create New Goal",    action: "new-goal",    group: "Actions" },
-  { id: "new-meeting-summary", icon: <IcMic size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Analyse a Meeting (summary, minutes, tasks)", path: "/meeting-assistant", group: "Actions", needs: "USE_MEETING_ASSISTANT" },
+  { id: "new-meeting-summary", icon: <IcMic size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Write up a meeting (summary, decisions, tasks)", path: "/meetings?add=notes", group: "Actions", needs: "USE_MEETING_ASSISTANT" },
 ];
 
 // ── Fuzzy match ───────────────────────────────────────────────

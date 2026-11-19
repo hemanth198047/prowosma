@@ -91,7 +91,7 @@ a.ai-status:hover { background: var(--gray-100); color: var(--text-secondary); }
 
 /* Role: quiet meta text next to the name */
 .role-badge,
-.role-owner, .role-admin, .role-manager, .role-member, .role-viewer, .role-guest {
+.role-owner, .role-admin, .role-manager, .role-member, .role-editor, .role-viewer, .role-guest {
   background: transparent !important;
   color: var(--text-muted) !important;
   padding: 0;
@@ -414,3 +414,110 @@ a.ai-status:hover { background: var(--gray-100); color: var(--text-secondary); }
 .goal-update-btn { grid-column: 1; grid-row: 1; }
 .goal-card-footer > .card-actions { grid-column: 2; grid-row: 1; }
 .goal-tabs { grid-column: 1 / -1; }
+
+/* ── Meetings: what it took over from the old pages ───────────────── */
+.mft-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--brand-600);
+  font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.mft-link:hover { background: var(--brand-50); }
+.mft-link:disabled { opacity: .5; cursor: default; }
+.mft-link--quiet { color: var(--text-secondary); }
+.mft-tag {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 6px;
+  background: var(--gray-100); color: var(--text-secondary); font-size: 12px; text-decoration: none;
+}
+.mft-tag:hover { color: var(--text-primary); }
+.mft-count { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.mft-item-action { margin-left: 8px; display: inline-flex; vertical-align: middle; }
+.mft-inline-pick { display: inline-flex; align-items: center; gap: 4px; }
+.mft-inline-pick select { height: 26px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); }
+.mft-gap { margin-top: 20px; }
+.mft-fine { font-size: 12px; color: var(--text-muted); }
+.mft-row-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+/* Summary editor */
+.mft-summary { margin-bottom: 16px; }
+.mft-summary-input {
+  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-strong);
+  font: inherit; font-size: 14px; line-height: 1.55; color: var(--text-primary); background: var(--bg-card); resize: vertical;
+}
+.mft-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+.mft-history { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.mft-history li { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--gray-50); }
+.mft-history-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); }
+.mft-history p { margin: 4px 0 0; font-size: 13px; color: var(--text-secondary); white-space: pre-wrap; }
+
+/* Link an action item to an existing task */
+.mft-linktask { position: relative; display: inline-flex; }
+.mft-pop {
+  position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 20; width: 320px; max-width: 80vw;
+  padding: 8px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+}
+.mft-pop-title { margin: 4px 4px 8px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.mft-pop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.mft-pop li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px 6px 8px; border-radius: 8px; }
+.mft-pop li:hover { background: var(--gray-50); }
+.mft-pop-task { display: grid; font-size: 13px; color: var(--text-primary); min-width: 0; }
+.mft-pop-task small { font-size: 11px; color: var(--text-muted); }
+
+/* Continuity, prepare, trends */
+.mft-card, .mft-prepare, .mft-trends {
+  padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card);
+}
+.mft-card { margin-top: 16px; }
+.mft-card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
+.mft-card-head .uma-h3 { margin: 0; }
+.mft-counts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; }
+.mft-counts div { display: grid; gap: 2px; }
+.mft-counts dt { font-size: 12px; color: var(--text-muted); }
+.mft-counts dd { margin: 0; font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.mft-counts .is-late dd { color: var(--danger-text); }
+.mft-since { margin-top: 14px; }
+.mft-since h4 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.mft-since ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.mft-since li { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--text-primary); }
+.mft-since small { color: var(--text-muted); font-size: 12px; }
+.mft-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gray-400); flex-shrink: 0; transform: translateY(-1px); }
+.mft-dot--done { background: var(--success); }
+.mft-dot--risk { background: var(--danger); }
+.mft-home-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; margin: 24px 0; }
+@media (max-width: 900px) { .mft-home-grid { grid-template-columns: 1fr; } }
+.mft-prepare-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.mft-prepare-head .pg-section-title { margin: 0; }
+.mft-prepare-head select { height: 32px; max-width: 60%; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font: inherit; font-size: 13px; }
+.mft-prepare .mft-card { margin-top: 8px; border: 0; padding: 0; }
+.mft-trends .pg-section-title { margin: 0 0 8px; }
+.mft-bars { display: flex; align-items: flex-end; gap: 3px; height: 56px; margin-top: 16px; }
+.mft-bar { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: var(--brand-500); }
+.mft-bar[data-empty] { background: var(--gray-200); }
+.mft-bars-axis { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+/* Earlier meetings banner */
+.earlier-meetings-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--gray-50); border: 1px solid var(--border);
+  font-size: 13px; color: var(--text-secondary);
+}
+.earlier-meetings-tabs { display: flex; gap: 4px; }
+.earlier-meetings-tabs a { padding: 4px 10px; border-radius: 8px; font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+.earlier-meetings-tabs a:hover { background: var(--gray-100); }
+.earlier-meetings-tabs a.is-active { background: var(--bg-card); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--border); }
+
+/* Daily meeting pulse */
+.pulse-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 2px; }
+.pulse-row {
+  display: flex; justify-content: space-between; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px;
+  background: transparent; font: inherit; font-size: 13px; color: var(--text-primary); cursor: pointer; text-align: left;
+}
+.pulse-row:hover { background: var(--gray-50); }
+.pulse-row time { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.pulse-gap { margin-bottom: 10px; }
+.pulse-figures { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; }
+.pulse-figures div { display: flex; align-items: baseline; gap: 6px; flex-direction: row-reverse; }
+.pulse-figures dt { font-size: 12px; color: var(--text-muted); }
+.pulse-figures dd { margin: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.pulse-figures .is-late dd { color: var(--danger-text); }

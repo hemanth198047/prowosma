@@ -219,6 +219,7 @@ public class AuthEnhancementsController {
             String role = "MEMBER";
             if (groupName != null && groupName.toLowerCase().contains("admin")) role = "ADMIN";
             else if (groupName != null && groupName.toLowerCase().contains("viewer")) role = "VIEWER";
+            else if (groupName != null && groupName.toLowerCase().contains("editor")) role = "EDITOR";
             final String finalRole = role;
             for (Map<String, String> m : members) {
                 String email = m.get("value");

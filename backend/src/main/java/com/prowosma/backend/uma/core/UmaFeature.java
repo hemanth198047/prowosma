@@ -6,8 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 /**
- * The {@code universalMeetingAssistant} feature flag. Off unless an admin turns it on for the workspace (Admin Centre → Feature flags),
- * and the server-wide switch {@code app.uma.enabled} (default true) can turn it off everywhere at once.
+ * The {@code universalMeetingAssistant} feature flag. Since the AI Meeting Assistant became the app's one Meetings feature (it took
+ * over Meetings notes and the first Meeting Assistant) it is ON unless an admin turns it off for the workspace (Admin Centre →
+ * Feature flags), and the server-wide switch {@code app.uma.enabled} (default true) can still turn it off everywhere at once.
  */
 @Component
 public class UmaFeature {
@@ -23,8 +24,8 @@ public class UmaFeature {
     public boolean isOn(String workspaceId) {
         if (!serverEnabled || workspaceId == null) return false;
         return configs.findByWorkspaceId(workspaceId)
-                .map(c -> c.getFeatureFlags() != null && Boolean.TRUE.equals(c.getFeatureFlags().get(FLAG)))
-                .orElse(false);
+                .map(c -> c.getFeatureFlags() == null || !Boolean.FALSE.equals(c.getFeatureFlags().get(FLAG)))
+                .orElse(true);
     }
 
     public void require(String workspaceId) {

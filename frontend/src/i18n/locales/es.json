@@ -49,6 +49,7 @@
     "roleOwner": "Gerente",
     "roleAdmin": "Administrador",
     "roleMember": "Miembro",
+    "roleEditor": "Editor",
     "roleViewer": "Observador",
     "newToProwosma": "¿Nuevo en Prowosma?",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",

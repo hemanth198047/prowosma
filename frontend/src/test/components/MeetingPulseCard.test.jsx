@@ -2,32 +2,48 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-const pulse = vi.fn();
-vi.mock("../../api/dashboard", () => ({ getDashboardMeetingPulse: () => pulse() }));
+const dashboard = vi.fn();
+const prepare = vi.fn();
+vi.mock("../../api/aiMeetingAssistant", () => ({ getUmaDashboard: () => dashboard(), getUmaPrepare: () => prepare() }));
 import MeetingPulseCard from "../../components/MeetingPulseCard";
 
 const renderCard = () => render(<MemoryRouter><MeetingPulseCard /></MemoryRouter>);
+const empty = { upcoming: [], inProgress: [], recent: [], awaitingReview: [] };
 
-describe("MeetingPulseCard", () => {
-  beforeEach(() => pulse.mockReset());
+describe("MeetingPulseCard (from Meetings)", () => {
+  beforeEach(() => { dashboard.mockReset(); prepare.mockReset(); });
 
-  it("shows one summary line when there is nothing to report", async () => {
-    pulse.mockResolvedValue({ data: { todaysMeetings: [], carryForwardCounts: {}, recentlyCompleted: [] } });
+  it("says so when there are no meetings today, and shows the open count", async () => {
+    dashboard.mockResolvedValue({ data: empty });
+    prepare.mockResolvedValue({ data: { counts: { openActionItems: 0 } } });
     renderCard();
-    expect(await screen.findByText("No meetings today · 0 open actions")).toBeInTheDocument();
-    expect(screen.queryByText(/Nothing urgent/)).not.toBeInTheDocument();
+    expect(await screen.findByText("No meetings today.")).toBeInTheDocument();
+    expect(screen.getByText("open actions")).toBeInTheDocument();
+    expect(screen.queryByText("overdue")).not.toBeInTheDocument();
   });
 
-  it("keeps the full panel as soon as there is anything to show", async () => {
-    pulse.mockResolvedValue({ data: { todaysMeetings: [], carryForwardCounts: { openActionItems: 3 }, recentlyCompleted: [] } });
+  it("shows overdue items and blockers only when there are some", async () => {
+    dashboard.mockResolvedValue({ data: { ...empty, awaitingReview: [{ id: "r1" }] } });
+    prepare.mockResolvedValue({ data: { counts: { openActionItems: 3, overdueActionItems: 1, activeBlockers: 0 } } });
     renderCard();
-    expect(await screen.findByText("No meetings scheduled today.")).toBeInTheDocument();
-    expect(screen.getByText(/open actions/)).toHaveTextContent("3 open actions");
+    expect(await screen.findByText("overdue")).toBeInTheDocument();
+    expect(screen.getByText("to review")).toBeInTheDocument();
+    expect(screen.queryByText("blockers")).not.toBeInTheDocument();
   });
 
-  it("lists today's meetings when there are some", async () => {
-    pulse.mockResolvedValue({ data: { todaysMeetings: [{ id: "m1", title: "Weekly sync", meetingDate: "2026-11-11T09:00:00Z" }], carryForwardCounts: {}, recentlyCompleted: [] } });
+  it("lists today's meetings, once each", async () => {
+    const today = new Date(); today.setHours(9, 0, 0, 0);
+    const m = { id: "m1", title: "Weekly sync", meetingAt: today.toISOString() };
+    dashboard.mockResolvedValue({ data: { ...empty, upcoming: [m], recent: [m] } });
+    prepare.mockResolvedValue({ data: { counts: {} } });
     renderCard();
-    expect(await screen.findByText("Weekly sync")).toBeInTheDocument();
+    expect(await screen.findAllByText("Weekly sync")).toHaveLength(1);
+  });
+
+  it("explains when meetings can't be loaded", async () => {
+    dashboard.mockRejectedValue(new Error("down"));
+    prepare.mockResolvedValue({ data: { counts: {} } });
+    renderCard();
+    expect(await screen.findByText("Couldn't load meetings right now.")).toBeInTheDocument();
   });
 });

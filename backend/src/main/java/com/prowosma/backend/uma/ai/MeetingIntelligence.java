@@ -122,9 +122,46 @@ public class MeetingIntelligence {
         out.setModel(who[1]);
         out.setInputTokens(tokens[0]);
         out.setOutputTokens(tokens[1]);
+        carryOverPeoplesWork(previous, out);
         if (pieces.size() > 1) out.getWarnings().add("This meeting was long, so it was analysed in " + pieces.size() + " parts.");
         return store.saveInsights(out);
     }
+
+    /**
+     * What people did to the previous version survives a re-run: a rewritten summary stays (the new AI wording goes into the
+     * history so it can be restored), and decisions / risks already added to the Decision or RAID log keep that link.
+     */
+    static void carryOverPeoplesWork(UmaInsights previous, UmaInsights out) {
+        if (previous == null) return;
+        out.setSummaryHistory(new java.util.ArrayList<>(previous.getSummaryHistory() == null ? List.of() : previous.getSummaryHistory()));
+        if (previous.isSummaryEdited()) {
+            UmaInsights.SummaryVersion ai = new UmaInsights.SummaryVersion();
+            ai.setNumber(out.getSummaryHistory().size() + 1);
+            ai.setText(out.getSummary());
+            ai.setBy("ai");
+            out.getSummaryHistory().add(ai);
+            out.setSummary(previous.getSummary());
+            out.setSummaryEdited(true);
+            out.setSummaryEditedBy(previous.getSummaryEditedBy());
+            out.setSummaryEditedAt(previous.getSummaryEditedAt());
+        }
+        java.util.Map<String, String> loggedDecisions = new java.util.HashMap<>();
+        for (UmaInsights.Decision d : previous.getDecisions())
+            if (d.getLoggedDecisionId() != null) { loggedDecisions.put(d.getId(), d.getLoggedDecisionId()); loggedDecisions.put(norm(d.getText()), d.getLoggedDecisionId()); }
+        for (UmaInsights.Decision d : out.getDecisions()) {
+            String id = loggedDecisions.getOrDefault(d.getId(), loggedDecisions.get(norm(d.getText())));
+            if (id != null) d.setLoggedDecisionId(id);
+        }
+        java.util.Map<String, String> raid = new java.util.HashMap<>();
+        for (UmaInsights.Finding f : previous.getRisks())
+            if (f.getRaidId() != null) { raid.put(f.getId(), f.getRaidId()); raid.put(norm(f.getText()), f.getRaidId()); }
+        for (UmaInsights.Finding f : out.getRisks()) {
+            String id = raid.getOrDefault(f.getId(), raid.get(norm(f.getText())));
+            if (id != null) f.setRaidId(id);
+        }
+    }
+
+    private static String norm(String s) { return s == null ? "" : s.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", " ").strip(); }
 
     private MeetingAiModel.Reply call(String org, String system, String user, int[] tokens, String[] who) {
         try {

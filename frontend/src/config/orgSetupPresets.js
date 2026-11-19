@@ -134,7 +134,7 @@ export function buildPlan(state) {
   const members = state.people
     .filter((p) => !p.locked && isEmail(p.email))
     .map((p) => {
-      const m = { name: (p.name || "").trim() || p.email.trim(), email: p.email.trim(), role: p.role === "VIEWER" ? "VIEWER" : "MEMBER" };
+      const m = { name: (p.name || "").trim() || p.email.trim(), email: p.email.trim(), role: ["VIEWER", "EDITOR"].includes(p.role) ? p.role : "MEMBER" };
       if ((p.designation || "").trim()) m.designation = p.designation.trim();
       if (p.level && levelNames.has(p.level)) m.profile = p.level;
       m.departments = (p.departments || []).filter((d) => deptNames.has(d));

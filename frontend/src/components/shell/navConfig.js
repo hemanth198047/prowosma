@@ -14,9 +14,9 @@ import {
 // gate: { can: "<capability>" } (access context) or { cando: "<action>" } (role)
 export const NAV_TOP = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/meeting-assistant", label: "Meeting assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
-  // Universal AI Meeting Assistant: only listed when the workspace's "universalMeetingAssistant" flag is on.
-  { to: "/ai-meeting-assistant", label: "AI meeting assistant", icon: Sparkles, gate: { flag: "aiMeetingAssistant" } },
+  // One place for meetings: notes, recordings, transcripts and links, with summaries, decisions and action items.
+  // (It took over the old Meetings notes page and the first Meeting assistant; an admin can still turn it off.)
+  { to: "/meetings", label: "Meetings", icon: Mic, gate: { can: "USE_MEETING_ASSISTANT", flag: "aiMeetingAssistant" } },
 ];
 
 export const NAV_GROUPS = [
@@ -40,7 +40,6 @@ export const NAV_GROUPS = [
   ] },
   { id: "knowledge", label: "Knowledge", icon: BookOpen, items: [
     { to: "/docs", label: "Docs", icon: FileText },
-    { to: "/meetings", label: "Meetings", icon: Mic },
     { to: "/sops", label: "SOPs", icon: BookOpen },
     { to: "/decisions", label: "Decisions", icon: Lightbulb },
     { to: "/knowledge-graph", label: "Knowledge graph", icon: Network },
@@ -96,7 +95,7 @@ export const NAV_RESTRICTED = [
   { to: "/kanban", label: "Kanban", icon: Columns3 },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
-  { to: "/meeting-assistant", label: "Meeting assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
+  { to: "/meetings", label: "Meetings", icon: Mic, gate: { can: "USE_MEETING_ASSISTANT", flag: "aiMeetingAssistant" } },
   { to: "/gantt", label: "Gantt", icon: GanttChart },
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/sprints", label: "Sprints", icon: Timer },

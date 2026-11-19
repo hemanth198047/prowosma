@@ -35,7 +35,7 @@ import { getGoals, createGoal } from "../api/goals";
 import CustomFieldValues from "../components/CustomFieldValues";
 import EntityActivityTab from "../components/EntityActivityTab";
 import { useAuth } from "../hooks/useAuth";
-import { getMeetingsForProject } from "../api/meetings";
+import { getUmaProjectMeetings } from "../api/aiMeetingAssistant";
 import { apiErrorMessage } from "../utils/apiError";
 import { useAccess } from "../hooks/useAccess";
 import ProjectAccessModal from "../components/ProjectAccessModal";
@@ -644,67 +644,55 @@ function SubProjectCard({
 }
 
 // ── Project-scoped meeting history ───────────────────────────
-// Surfaces the notes/summary carried in each meeting that discussed this
-// project — the backend (GET /meetings/project/{id}) already supported
-// this, it just had no UI consumer anywhere until now. Answers "what was
-// said about this project across meetings" directly from the project card,
-// instead of hunting through the Meetings page.
+// The project's meetings from Meetings (the page that took over the old
+// notes page and the first assistant), newest first, with where each stands.
 function ProjectMeetingsPanel({ projectId, navigate }) {
   const [meetings, setMeetings] = useState(null); // null = loading
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getMeetingsForProject(projectId)
-      .then(r => { if (!cancelled) setMeetings(r.data?.items || r.data?.content || r.data || []); })
+    getUmaProjectMeetings(projectId, 10)
+      .then(r => { if (!cancelled) setMeetings(Array.isArray(r.data) ? r.data : []); })
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
   }, [projectId]);
 
+  const open = (e, id) => { e.stopPropagation(); navigate(`/meetings/${id}`); };
   return (
     <div className="entity-activity-panel">
       <div className="entity-activity-panel-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Project meetings</span>
         <button
           className="btn-secondary"
-          style={{ fontSize: "11px", padding: "4px 10px" }}
-          onClick={(e) => { e.stopPropagation(); navigate(`/meetings?projectId=${projectId}`); }}
+          style={{ fontSize: "12px", padding: "4px 10px" }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/meetings?add=notes&projectId=${encodeURIComponent(projectId)}`); }}
         >
-          + New meeting for this project
+          + Write meeting notes
         </button>
       </div>
       {meetings === null && !error && <p className="empty-state" style={{ fontSize: "12px" }}>Loading…</p>}
       {error && <p className="empty-state" style={{ fontSize: "12px" }}>Couldn't load meetings for this project.</p>}
       {meetings && meetings.length === 0 && (
         <p className="empty-state" style={{ fontSize: "12px" }}>
-          No meetings have discussed this project yet.
+          No meetings for this project yet.
         </p>
       )}
       {meetings && meetings.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {meetings.slice(0, 5).map(m => {
-            const pd = m.projectDiscussions?.find(d => d.projectId === projectId);
-            return (
-              <div key={m.id} className="pending-invite-row" style={{ cursor: "pointer" }} role="link" tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate(`/meetings?open=${m.id}`); } }}>
-                <div className="pending-invite-info">
-                  <div className="pending-invite-email">{m.title}</div>
-                  <div className="pending-invite-meta">
-                    {m.meetingDate ? new Date(m.meetingDate).toLocaleDateString() : "—"}
-                    {pd?.statusSnapshot && <> · {pd.statusSnapshot.replace("_", " ")}</>}
-                    {pd?.discussionNotes && <> · {pd.discussionNotes.slice(0, 80)}{pd.discussionNotes.length > 80 ? "…" : ""}</>}
-                  </div>
+          {meetings.slice(0, 5).map(m => (
+            <div key={m.id} className="pending-invite-row" style={{ cursor: "pointer" }} role="link" tabIndex={0}
+              onClick={(e) => open(e, m.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") open(e, m.id); }}>
+              <div className="pending-invite-info">
+                <div className="pending-invite-email">{m.title}</div>
+                <div className="pending-invite-meta">
+                  {m.meetingAt ? new Date(m.meetingAt).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                  {m.statusLabel && <> · {m.statusLabel}</>}
                 </div>
               </div>
-            );
-          })}
-          {meetings.length > 5 && (
-            <button className="btn-secondary" style={{ fontSize: "11px", alignSelf: "flex-start" }}
-              onClick={(e) => { e.stopPropagation(); navigate(`/meetings?projectId=${projectId}`); }}>
-              View all {meetings.length} meetings →
-            </button>
-          )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -733,8 +721,8 @@ function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive,
     "divider",
     { label: showActivity ? "Hide activity" : "Activity", icon: History, onSelect: () => setShowActivity(a => !a) },
     { label: showMeetings ? "Hide meetings" : "Meetings", icon: CalendarDays, onSelect: () => setShowMeetings(m => !m) },
-    { label: "Analyse a meeting", icon: Bot, hidden: !can("USE_MEETING_ASSISTANT"),
-      onSelect: () => navigate(`/meeting-assistant?project=${encodeURIComponent(p.id)}`) },
+    { label: "Write meeting notes", icon: Bot, hidden: !can("USE_MEETING_ASSISTANT"),
+      onSelect: () => navigate(`/meetings?add=notes&projectId=${encodeURIComponent(p.id)}`) },
     { label: "Who can see this", icon: Lock, hidden: !accessEnabled, onSelect: () => setShowAccess(true) },
     "divider",
     { label: "Clone", icon: Copy, onSelect: () => onClone(p) },

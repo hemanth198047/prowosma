@@ -628,7 +628,7 @@ function SecurityPolicyPanel() {
 const DEFAULT_FLAGS = [
   { key:"ai_assistant",      label:"AI assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
   { key:"ai_prioritization", label:"AI Prioritization",   desc:"Daily AI-ranked task list",               group:"AI" },
-  { key:"universalMeetingAssistant", label:"AI Meeting Assistant (new)", desc:"Summaries, decisions and action items from uploaded recordings, transcripts and meeting links. Off until turned on.", group:"AI", offByDefault:true },
+  { key:"universalMeetingAssistant", label:"Meetings", desc:"Meetings: notes, recordings, transcripts and meeting links turned into summaries, decisions and action items. On unless turned off.", group:"Knowledge" },
   { key:"attendance", label:"Attendance (clock-in)", desc:"Clock in/out in the top bar, breaks, shifts, call times, leave, corrections, overtime and payroll export. Off until turned on.", group:"Work", offByDefault:true },
   { key:"burnout_detection", label:"Burnout Detection",   desc:"Workload pattern analysis alerts",        group:"AI" },
   { key:"collab_editing",    label:"Collaborative Docs",  desc:"Real-time multi-user document editing",   group:"Collaboration" },
@@ -1633,7 +1633,7 @@ function DlpPanel() {
 // security/billing/compliance — these two tabs extend it to cover people
 // and delivery, reusing the same Team/Invitations/Projects APIs the rest
 // of the app already uses (no new backend surface needed for read access).
-const ADMIN_ROLE_COLOR = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
+const ADMIN_ROLE_COLOR = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", EDITOR: "var(--purple)", VIEWER: "var(--success)" };
 
 function WorkspacePeople() {
   const { isOwner } = useRole();
@@ -1787,6 +1787,7 @@ function WorkspacePeople() {
                     onChange={e => handleRoleChange(m, e.target.value)}
                     style={{ fontSize: "12px", padding: "4px 8px" }}>
                     <option value="MEMBER">Member</option>
+                    <option value="EDITOR">Editor</option>
                     <option value="VIEWER">Viewer</option>
                     <option value="ADMIN" disabled={!isOwner && m.role !== "ADMIN"}>Admin{!isOwner ? " (Manager only)" : ""}</option>
                   </select>
@@ -1839,6 +1840,7 @@ function WorkspacePeople() {
               <select id="admin-invite-role" value={inviteForm.role}
                 onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}>
                 <option value="MEMBER">Member — Full access to projects and tasks</option>
+                <option value="EDITOR">Editor — Edit and comment, no create or delete</option>
                 <option value="VIEWER">Viewer — Read-only access</option>
                 <option value="ADMIN" disabled={!isOwner}>
                   {isOwner ? "Admin — Can manage members and settings" : "Admin — Manager only"}

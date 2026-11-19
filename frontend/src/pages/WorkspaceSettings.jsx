@@ -572,6 +572,7 @@ export default function WorkspaceSettings() {
                         style={{ minWidth:"130px" }} id={"workspace-settings-role"}>
                         <option value="MEMBER">Member</option>
                         <option value="ADMIN">Admin</option>
+                        <option value="EDITOR">Editor (edit and comment)</option>
                         <option value="VIEWER">Viewer (read-only)</option>
                       </select>
                     </div>
@@ -615,6 +616,7 @@ export default function WorkspaceSettings() {
                                 Admin{!isOwner ? " (Manager only)" : ""}
                               </option>
                               <option value="MEMBER">Member</option>
+                              <option value="EDITOR">Editor</option>
                               <option value="VIEWER">Viewer</option>
                             </select>
                           ) : (
@@ -842,6 +844,7 @@ export default function WorkspaceSettings() {
                           >
                             <option value="ADMIN">Admin</option>
                             <option value="MEMBER">Member</option>
+                            <option value="EDITOR">Editor</option>
                             <option value="VIEWER">Viewer</option>
                           </select>
                           <button className="btn-danger" style={{ fontSize: "12px", padding: "5px 14px" }}
@@ -1036,6 +1039,7 @@ export default function WorkspaceSettings() {
                 <select value={bulkRole} onChange={e=>setBulkRole(e.target.value)} style={{maxWidth:140}}>
                   <option value="ADMIN">Admin</option>
                   <option value="MEMBER">Member</option>
+                  <option value="EDITOR">Editor</option>
                   <option value="VIEWER">Viewer</option>
                 </select>
                 <button className="btn-primary" disabled={!bulkEmails.trim()} onClick={async()=>{
@@ -1083,7 +1087,8 @@ export default function WorkspaceSettings() {
                   <div style={{fontWeight: 600,fontSize:"13px",marginTop:"16px",marginBottom:"10px"}}>Inheritance Rules</div>
                   {[["OWNER","→","All permissions including delete workspace"],
                     ["ADMIN","→","Inherits all Member permissions + team management"],
-                    ["MEMBER","→","Inherits all Viewer permissions + create/edit"],
+                    ["MEMBER","→","Inherits all Editor permissions + create and delete"],
+                    ["EDITOR","→","Inherits all Viewer permissions + edit existing work"],
                     ["VIEWER","→","Read-only + comment"],
                     ["GUEST","→","View assigned content only"]].map(([r,a,d])=>(
                     <div key={r} style={{display:"flex",gap:"10px",padding:"7px 10px",

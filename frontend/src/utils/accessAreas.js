@@ -11,12 +11,12 @@ const ALLOWED_PREFIXES = [
   "/goals", "/sprints", "/epics", "/releases", "/roadmap", "/change-requests", "/portfolio-plus", "/decisions",
   "/channels", "/sops", "/reports", "/analytics", "/time-tracking", "/ai", "/ai-intelligence",
 ];
-// Needs the USE_MEETING_ASSISTANT capability on the person's access profile.
-const MEETING_PREFIX = "/meeting-assistant";
+// Meetings needs the USE_MEETING_ASSISTANT capability on the person's access profile.
+const MEETING_PREFIXES = ["/meetings", "/meeting-assistant", "/ai-meeting-assistant"];
 
 const under = (pathname, prefix) => pathname === prefix || pathname.startsWith(prefix + "/");
 
 export function isPathAllowedForRestricted(pathname = "/", capabilities = []) {
-  if (under(pathname, MEETING_PREFIX)) return capabilities.includes("USE_MEETING_ASSISTANT");
+  if (MEETING_PREFIXES.some((p) => under(pathname, p))) return capabilities.includes("USE_MEETING_ASSISTANT");
   return ALLOWED_PREFIXES.some((p) => under(pathname, p));
 }

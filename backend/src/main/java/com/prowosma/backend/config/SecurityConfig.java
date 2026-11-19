@@ -19,7 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *     Spring Security's own AuthorizationFilter makes its decision below -
  *     that ordering (via addFilterBefore) is what lets an X-API-Key-only
  *     request satisfy .authenticated() the same way a Bearer JWT does.
- *   - RoleGuardFilter enforces OWNER/ADMIN/MEMBER/VIEWER on top of that,
+ *   - RoleGuardFilter enforces OWNER/ADMIN/MEMBER/EDITOR/VIEWER on top of that,
  *     once Spring Security has already confirmed *someone* is signed in.
  *   - ScimAuthFilter is the sole gate for /scim/v2/** (a different token
  *     type/scope than a normal session or API key), so that prefix is

@@ -1376,14 +1376,14 @@ public class MeetingAssistantService {
 
     public Map<String, Object> googleAuthorize(String email) {
         String role = roleOf(email);
-        if ("NONE".equals(role) || "VIEWER".equals(role))
+        if ("NONE".equals(role) || "VIEWER".equals(role) || "EDITOR".equals(role))
             throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't connect a Google account.");
         return Map.of("url", google.authorizeUrl(orgId(), email));
     }
 
     public Map<String, Object> googleComplete(String code, String state, String email) {
         String role = roleOf(email);
-        if ("NONE".equals(role) || "VIEWER".equals(role))
+        if ("NONE".equals(role) || "VIEWER".equals(role) || "EDITOR".equals(role))
             throw err(HttpStatus.FORBIDDEN, "NOT_ALLOWED", "Your role can't connect a Google account.");
         google.complete(orgId(), email, code, state);
         activityLog.log("MEETING_PLATFORM", "GOOGLE_MEET", "GOOGLE_MEET", "ACCOUNT_CONNECTED", null, null, email);

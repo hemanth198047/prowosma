@@ -259,6 +259,7 @@ public class WorkspaceEnhancementsController {
             "OWNER",  List.of("ALL"),
             "ADMIN",  List.of("CREATE_PROJECT","DELETE_PROJECT","INVITE_MEMBER","MANAGE_TEAM","VIEW_ALL","EDIT_ALL","CREATE_TASK","DELETE_TASK","MANAGE_GOALS"),
             "MEMBER", List.of("VIEW_ALL","CREATE_TASK","EDIT_OWN","COMMENT","CREATE_DOC"),
+            "EDITOR", List.of("VIEW_ALL","EDIT_ALL","COMMENT"),
             "VIEWER", List.of("VIEW_ALL","COMMENT"),
             "GUEST",  List.of("VIEW_ASSIGNED")
         ), "customPermissions", List.of(

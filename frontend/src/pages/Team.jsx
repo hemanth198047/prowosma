@@ -40,7 +40,8 @@ import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
 import { Hourglass as IcHourglass, Pencil as IcPencil, Trash2 as IcTrash2, Users as IcUsers } from "lucide-react";
 
-const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
+const ROLES = ["MEMBER", "EDITOR", "VIEWER", "ADMIN"];
+const ROLE_NAME = { MEMBER: "Member", EDITOR: "Editor — edit and comment, no create or delete", VIEWER: "Viewer — read-only", ADMIN: "Admin" };
 const COLORS = [
   "var(--brand-500)",
   "var(--warning)",
@@ -141,7 +142,7 @@ function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
           >
             {ROLES.map((r) => (
               <option key={r} value={r} disabled={r === "ADMIN" && !canPickAdmin}>
-                {r === "ADMIN" && !canPickAdmin ? "ADMIN (Manager only)" : r}
+                {r === "ADMIN" && !canPickAdmin ? "Admin (Manager only)" : ROLE_NAME[r] || r}
               </option>
             ))}
           </select>
@@ -490,7 +491,7 @@ export default function Team() {
             // reading order of a permissions hierarchy, not alphabetical
             // (which would put Admin before Manager before Member).
             if (memberSort === "role") {
-              const order = { OWNER: 0, ADMIN: 1, MEMBER: 2, VIEWER: 3 };
+              const order = { OWNER: 0, ADMIN: 1, MEMBER: 2, EDITOR: 3, VIEWER: 4 };
               return (order[a.role] ?? 9) - (order[b.role] ?? 9);
             }
             if (memberSort === "load") return getTasksForMember(b.id).length - getTasksForMember(a.id).length;
@@ -845,6 +846,7 @@ export default function Team() {
                 <option value="MEMBER">
                   Member — Full access to projects and tasks
                 </option>
+                <option value="EDITOR">Editor — Edit and comment, no create or delete</option>
                 <option value="VIEWER">Viewer — Read-only access</option>
                 <option value="ADMIN" disabled={!isOwner}>
                   {isOwner

@@ -62,7 +62,6 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { getDashboardSummary } from "./api/dashboard";
 const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
-const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
 const AiMeetingAssistant = lazy(() => import("./pages/AiMeetingAssistant"));
 const AiMeetingGoogleCallback = lazy(() => import("./pages/AiMeetingGoogleCallback"));
 const Attendance = lazy(() => import("./pages/Attendance"));
@@ -102,7 +101,7 @@ import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 import PeopleProvider from "./components/people/PeopleProvider";
 const Docs = lazy(() => import("./pages/Docs"));
-import Meetings  from "./pages/Meetings";
+import EarlierMeetings, { MeetingRedirect, OldAssistantRedirect } from "./pages/EarlierMeetings";
 import Sops      from "./pages/Sops";
 
 import { usePWA } from "./hooks/usePWA";
@@ -351,9 +350,11 @@ function AppShell() {
       "/docs":             "Docs",
       "/decisions":        "Decision Records",
       "/change-requests":  "Change requests",
-      "/meetings":          "Meeting notes",
-      "/meeting-assistant": "Meeting assistant",
-      "/ai-meeting-assistant": "AI meeting assistant",
+      "/meetings":          "Meetings",
+      "/meetings/earlier":  "Earlier meetings",
+      "/meetings/earlier/assistant": "Earlier meetings",
+      "/meeting-assistant": "Meetings",
+      "/ai-meeting-assistant": "Meetings",
       "/attendance": "Attendance",
       "/integrations/meeting-platforms": "Meeting platforms",
       "/sops":              "SOPs",
@@ -495,13 +496,17 @@ function AppShell() {
               ) : (
               <Routes>
                   <Route path="/docs" element={<ProtectedRoute><Docs /></ProtectedRoute>} />
-                  <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
-                  <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
+                  {/* Meetings: one page (the AI meeting assistant, which took over the old notes page and first assistant) */}
+                  <Route path="/meetings" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/meetings/earlier" element={<ProtectedRoute><EarlierMeetings /></ProtectedRoute>} />
+                  <Route path="/meetings/earlier/assistant" element={<ProtectedRoute><EarlierMeetings /></ProtectedRoute>} />
+                  <Route path="/meetings/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/meeting-assistant" element={<OldAssistantRedirect />} />
                   <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
-                  <Route path="/ai-meeting-assistant" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant" element={<MeetingRedirect />} />
                   <Route path="/ai-meeting-assistant/google-callback" element={<ProtectedRoute><AiMeetingGoogleCallback /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/microsoft-callback" element={<ProtectedRoute><AiMeetingGoogleCallback provider="microsoft" /></ProtectedRoute>} />
-                  <Route path="/ai-meeting-assistant/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant/:id" element={<MeetingRedirect />} />
                   <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms/google-callback" element={<ProtectedRoute><GoogleMeetCallback /></ProtectedRoute>} />
                   <Route path="/sops"      element={<ProtectedRoute><Sops      /></ProtectedRoute>} />

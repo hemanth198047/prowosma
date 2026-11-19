@@ -141,7 +141,7 @@ public class UmaService {
         UmaSettings ws = mongo.findById(c.org(), UmaSettings.class);
         out.put("retentionDays", ws == null ? 15 : ws.retentionDays());
         out.put("readiness", readiness(c.org()));
-        out.put("canCreate", !c.caller().viewer() && !"NONE".equals(c.caller().role()));
+        out.put("canCreate", !c.caller().readOnly() && !"NONE".equals(c.caller().role()));
         out.put("isAdmin", c.caller().admin());
         return out;
     }
@@ -160,6 +160,8 @@ public class UmaService {
         r.put("createdAt", m.getCreatedAt());
         r.put("createdBy", m.getCreatedBy());
         r.put("durationMs", m.getRecording() == null ? null : m.getRecording().getDurationMs());
+        r.put("projectId", m.getProjectId());
+        r.put("meetingType", m.getMeetingType());
         return r;
     }
 

@@ -13,7 +13,7 @@ public class TeamMember {
     private String organizationId;
     private String name;
     private String email;
-    private String role = "MEMBER"; // ADMIN, MEMBER, VIEWER (what the person may DO to workspace settings; unrelated to what they may SEE)
+    private String role = "MEMBER"; // ADMIN, MEMBER, EDITOR, VIEWER (what the person may DO to workspace settings; unrelated to what they may SEE)
     /** Which AccessProfile decides what this person may see. Null = the workspace default profile, or (if none) unrestricted. */
     private String accessProfileId;
     private String avatar;

@@ -21,16 +21,16 @@ const show = (access) => render(
 );
 
 describe("Command palette — Meeting Assistant is easy to reach", () => {
-  it("offers 'Go to Meeting Assistant' and 'Analyse a Meeting' straight away, without typing", () => {
+  it("offers 'Go to Meetings' and 'Write up a meeting' straight away, without typing", () => {
     show();
-    expect(screen.getByText("Go to Meeting Assistant")).toBeInTheDocument();
-    expect(screen.getByText(/Analyse a Meeting/)).toBeInTheDocument();
+    expect(screen.getByText("Go to Meetings")).toBeInTheDocument();
+    expect(screen.getByText(/Write up a meeting/)).toBeInTheDocument();
   });
 
   it("does not offer it to someone who is not allowed to use it", () => {
     show({ loading: false, restricted: true, enabled: true, capabilities: [], can: (c) => c !== "USE_MEETING_ASSISTANT" });
-    expect(screen.queryByText("Go to Meeting Assistant")).toBeNull();
-    expect(screen.queryByText(/Analyse a Meeting/)).toBeNull();
+    expect(screen.queryByText("Go to Meetings")).toBeNull();
+    expect(screen.queryByText(/Write up a meeting/)).toBeNull();
     expect(screen.getByText("Go to Projects")).toBeInTheDocument(); // the rest of the palette is unaffected
   });
 });

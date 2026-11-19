@@ -29,7 +29,13 @@ vi.mock("../../api/aiMeetingAssistant", () => ({
     "regenerateUmaMeeting", "cancelUmaMeeting", "completeUmaMeeting", "deleteUmaMeeting", "shareUmaMeeting", "editUmaSegment",
     "rejectUmaAction", "approveUmaActions", "exportUma", "getUmaFirefliesRecent", "importUmaFireflies",
     "startUmaCapture", "uploadUmaPiece", "finishUmaCapture", "saveUmaFirefliesKey", "removeUmaFireflies", "getUmaGoogle",
-    "authorizeUmaGoogle", "disconnectUmaGoogle"].map((k) => [k, vi.fn()])),
+    "authorizeUmaGoogle", "disconnectUmaGoogle", "createUmaNotes", "editUmaSummary", "restoreUmaSummary", "logUmaDecision",
+    "logUmaRisk", "getUmaSimilarTasks", "linkUmaActionToTask", "getUmaProjectMeetings"].map((k) => [k, vi.fn()])),
+  // Read by the parts Meetings took over (open items, prepare, trends, continuity): empty answers by default.
+  getUmaOpenActions: vi.fn(() => Promise.resolve({ data: [] })),
+  getUmaTrends: vi.fn(() => Promise.resolve({ data: [] })),
+  getUmaPrepare: vi.fn(() => Promise.resolve({ data: {} })),
+  getUmaContinuity: vi.fn(() => Promise.resolve({ data: {} })),
   ...api,
 }));
 

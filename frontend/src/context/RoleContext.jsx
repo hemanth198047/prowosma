@@ -79,9 +79,10 @@ export function RoleProvider({ children }) {
   // role="MEMBER" erred the other way, quietly granting write access
   // before/without ever confirming that was correct.
   const resolved          = role !== null;
-  const canCreate         = resolved && role !== "VIEWER";
+  // Editor: changes existing work and comments, but never creates or deletes (the server enforces the same).
+  const canCreate         = resolved && role !== "VIEWER" && role !== "EDITOR";
   const canEdit           = resolved && role !== "VIEWER";
-  const canDelete         = resolved && role !== "VIEWER";
+  const canDelete         = resolved && role !== "VIEWER" && role !== "EDITOR";
   const canView           = true;
   const canManageSettings = role === "OWNER" || role === "ADMIN";
   const canManageMembers  = role === "OWNER" || role === "ADMIN";
