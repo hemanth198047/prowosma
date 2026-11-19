@@ -380,3 +380,34 @@
 .auth-sso-btn:hover { border-color: var(--brand-400); background: rgba(91,95,238,0.05); }
 
 .auth-sso-icon { font-size: 16px; }
+/* ── Sign-in on phones, and the bits every screen size gets (2026-11) ───── */
+.auth-top-row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 8px; }
+.auth-mobile-brand { display: none; align-items: center; gap: 8px; margin-right: auto; color: #fff; font-weight: 700; font-size: 17px; }
+.auth-mobile-brand img { width: 30px; height: 30px; }
+.auth-pw-wrap { position: relative; }
+.auth-pw-wrap .auth-input { padding-right: 46px; }
+.auth-pw-toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 8px; background: transparent; color: rgba(255,255,255,.6); cursor: pointer; }
+.auth-pw-toggle:hover, .auth-pw-toggle:focus-visible { color: #fff; background: rgba(255,255,255,.06); }
+.auth-remember { display: flex; align-items: flex-start; gap: 10px; margin: 2px 0 10px; cursor: pointer; color: rgba(255,255,255,.85); font-size: 13.5px; }
+.auth-remember input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--brand-500); flex: none; }
+.auth-remember span { display: grid; gap: 2px; }
+.auth-remember small { font-size: 12px; color: rgba(255,255,255,.5); }
+.auth-right-footer a { color: rgba(255,255,255,.7); text-decoration: underline; }
+.auth-right-footer a:hover { color: #fff; }
+
+@media (max-width: 768px) {
+  .auth-mobile-brand { display: inline-flex; }
+  .auth-right-inner { padding-top: 8px; }
+  .auth-form-heading { font-size: 26px; }
+  .auth-input { font-size: 16px; min-height: 50px; padding: 12px 14px; }   /* 16px: iPhone doesn't zoom into the field */
+  .auth-pw-wrap .auth-input { padding-right: 52px; }
+  .auth-pw-toggle { width: 44px; height: 44px; }
+  .auth-field-label { font-size: 14px; }
+  .auth-submit { min-height: 52px; font-size: 16px; border-radius: 10px; }
+  .auth-mode-btn { min-height: 44px; font-size: 14.5px; }
+  .auth-sso-btn { min-height: 48px; font-size: 15px; }
+  .auth-remember { font-size: 15px; padding: 6px 0; }
+  .auth-remember input { width: 22px; height: 22px; }
+  .auth-right { flex-direction: column; }
+  .auth-right-footer { position: static; margin: 28px 0 8px; font-size: 12px; color: rgba(255,255,255,.45); }
+}

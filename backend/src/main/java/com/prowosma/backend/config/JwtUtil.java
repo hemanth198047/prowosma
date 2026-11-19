@@ -17,6 +17,18 @@ public class JwtUtil {
     @Value("${jwt.expiration:86400000}")
     private long expiration;
 
+    /** "Keep me signed in on this device": how long that sign-in lasts (default 30 days). Revocable like any session. */
+    @Value("${jwt.remember-expiration:2592000000}")
+    private long rememberExpiration;
+
+    /** Same as generateToken(email, sessionId), lasting rememberExpiration when remember is true. */
+    public String generateToken(String email, String sessionId, boolean remember) {
+        long ttl = remember && rememberExpiration > expiration ? rememberExpiration : expiration;
+        var b = Jwts.builder().subject(email);
+        if (sessionId != null) b = b.claim("sid", sessionId);
+        return b.issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + ttl)).signWith(getKey()).compact();
+    }
+
     /** Local development only: ALLOW_INSECURE_DEV_JWT=true lets the built-in development secret be used. Never set this in a real deployment. */
     @Value("${app.jwt.allow-dev-secret:false}")
     private boolean allowInsecureDevSecret;

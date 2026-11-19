@@ -90,6 +90,12 @@ public class AuthService {
 
     public Map<String, Object> login(String email, String password,
                                       String ipAddress, String userAgent) {
+        return login(email, password, ipAddress, userAgent, false);
+    }
+
+    /** remember: "Keep me signed in on this device" - a longer-lived (still revocable) session. */
+    public Map<String, Object> login(String email, String password,
+                                      String ipAddress, String userAgent, boolean remember) {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             // Log failed attempt
@@ -135,7 +141,7 @@ public class AuthService {
         }
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
-        String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);
+        String token = jwtUtil.generateToken(email, sessionId, remember);
         activityLogService.logFull("SECURITY", user.getId(), email,
                 "LOGIN_SUCCESS", null, null, email,
                 null, null, null, ipAddress, userAgent);
@@ -165,6 +171,11 @@ public class AuthService {
      */
     public Map<String, Object> completeTwoFactorLogin(String email, String code,
                                                         String ipAddress, String userAgent) {
+        return completeTwoFactorLogin(email, code, ipAddress, userAgent, false);
+    }
+
+    public Map<String, Object> completeTwoFactorLogin(String email, String code,
+                                                        String ipAddress, String userAgent, boolean remember) {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null || !user.isTwoFactorEnabled())
             throw new InvalidCredentialsException("Invalid email or code");
@@ -221,7 +232,7 @@ public class AuthService {
         userRepository.save(user);
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
-        String token = sessionId != null ? jwtUtil.generateToken(email, sessionId) : jwtUtil.generateToken(email);
+        String token = jwtUtil.generateToken(email, sessionId, remember);
         activityLogService.logFull("SECURITY", user.getId(), email,
                 "LOGIN_SUCCESS", null, null, email,
                 null, null, null, ipAddress, userAgent);

@@ -31,7 +31,7 @@ public class AuthController {
                                       HttpServletRequest request) {
         return authService.login(
                 body.get("email"), body.get("password"),
-                extractIp(request), request.getHeader("User-Agent"));
+                extractIp(request), request.getHeader("User-Agent"), "true".equalsIgnoreCase(String.valueOf(body.get("remember"))));
     }
 
     // Step 2 of login for a 2FA-enabled account. Called after /login
@@ -45,7 +45,7 @@ public class AuthController {
                                                         HttpServletRequest request) {
         return authService.completeTwoFactorLogin(
                 body.get("email"), body.get("code"),
-                extractIp(request), request.getHeader("User-Agent"));
+                extractIp(request), request.getHeader("User-Agent"), "true".equalsIgnoreCase(String.valueOf(body.get("remember"))));
     }
 
     @GetMapping("/profile")

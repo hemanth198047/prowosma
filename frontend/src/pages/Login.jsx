@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { isAuth0Configured } from "../config/auth0";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { Eye, EyeOff } from "lucide-react";
 
 import "../styles/pages/auth.css";
 const API = (import.meta.env.VITE_API_URL || "http://localhost:9090") + "/api";
+const LAST_EMAIL = "prowosma.lastEmail";
 // The SAML redirect/ACS endpoints live outside the /api prefix (they're
 // Spring Security's own SAML2 filter chain, not a REST controller), so we
 // need the bare backend origin too — derived from API rather than a second
@@ -43,7 +45,17 @@ export default function Login() {
   // Pre-fills when arriving from the "you're already a member — log in"
   // redirect on the Accept Invite page, so the person doesn't have to
   // retype the email they were just shown.
-  const [form, setForm]   = useState({ name: "", email: searchParams.get("email") || "", password: "" });
+  // The last email used on this device is filled in, so people on the job only type their password.
+  const [form, setForm]   = useState(() => {
+    let last = "";
+    try { last = localStorage.getItem(LAST_EMAIL) || ""; } catch { /* private mode */ }
+    return { name: "", email: searchParams.get("email") || last, password: "" };
+  });
+  // "Keep me signed in on this device": on by default on phones and the installed app, off on shared computers.
+  const [remember, setRemember] = useState(() => {
+    try { return window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(display-mode: standalone)").matches; } catch { return false; }
+  });
+  const [showPw, setShowPw] = useState(false);
   const [resetForm, setResetForm] = useState({ newPassword: "", confirmPassword: "" });
   // Step 2 of login for a 2FA-enabled account (see AuthService.login /
   // completeTwoFactorLogin on the backend) — the password already checked
@@ -87,8 +99,9 @@ export default function Login() {
     setLoading(true);
     try {
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
+      if (mode === "login") { try { localStorage.setItem(LAST_EMAIL, form.email.trim()); } catch { /* private mode */ } }
       const payload  = mode === "login"
-        ? { email: form.email, password: form.password }
+        ? { email: form.email, password: form.password, remember }
         : { name: form.name, email: form.email, password: form.password };
       const res = await axios.post(`${API}${endpoint}`, payload);
 
@@ -166,6 +179,7 @@ export default function Login() {
       const res = await axios.post(`${API}/auth/login/2fa`, {
         email: form.email,
         code: twoFactorCode.trim(),
+        remember,
       });
       await completeLogin(res.data, { showWorkspaceConfirmation: true });
     } catch (err) {
@@ -346,7 +360,10 @@ export default function Login() {
       <div className="auth-right">
         <div className="auth-right-inner">
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+          <div className="auth-top-row">
+            <div className="auth-mobile-brand" aria-hidden="true">
+              <img src="/logo-icon.png" alt="" /><span>{t("common.appName")}</span>
+            </div>
             <LanguageSwitcher />
           </div>
 
@@ -391,15 +408,30 @@ export default function Login() {
             <label className="auth-field-label" htmlFor="auth-email">{t("login.emailLabel")}</label>
             <input id="auth-email" className="auth-input" name="email" type="email"
               placeholder={t("login.emailPlaceholder")} value={form.email}
+              autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next"
               onChange={handleChange} onKeyDown={handleKey} />
           </div>
 
           <div className="auth-field">
             <label className="auth-field-label" htmlFor="auth-password">{t("login.passwordLabel")}</label>
-            <input id="auth-password" className="auth-input" name="password" type="password"
-              placeholder="••••••••••" value={form.password}
-              onChange={handleChange} onKeyDown={handleKey} />
+            <div className="auth-pw-wrap">
+              <input id="auth-password" className="auth-input" name="password" type={showPw ? "text" : "password"}
+                placeholder="••••••••••" value={form.password}
+                autoComplete={mode === "login" ? "current-password" : "new-password"} enterKeyHint="go"
+                onChange={handleChange} onKeyDown={handleKey} />
+              <button type="button" className="auth-pw-toggle" onClick={() => setShowPw((v) => !v)}
+                aria-label={showPw ? t("login.hidePassword", "Hide password") : t("login.showPassword", "Show password")} aria-pressed={showPw}>
+                {showPw ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+              </button>
+            </div>
           </div>
+
+          {mode === "login" && (
+            <label className="auth-remember">
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              <span>{t("login.keepSignedIn", "Keep me signed in on this device")}<small>{t("login.keepSignedInHint", "For 30 days. Don't use on a shared computer.")}</small></span>
+            </label>
+          )}
 
           <button className="auth-submit" onClick={handleSubmit} disabled={loading}>
             {loading

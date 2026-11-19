@@ -1,0 +1,24 @@
+/* Phone bottom tab bar. Theme tokens only. */
+.mtb { display: none; }
+@media (max-width: 768px) {
+  .mtb {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+    height: calc(62px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-card); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(15, 23, 42, .06);
+  }
+  .mtb-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 56px; border: 0; background: transparent; color: var(--text-secondary); text-decoration: none;
+    font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .mtb-item.on { color: var(--brand-600); }
+  .mtb-item.on svg { stroke-width: 2.4; }
+  .mtb-item:active { background: var(--gray-50, var(--bg-hover)); }
+  /* Room for the bar: page content, the floating assistant button and toasts sit above it. */
+  .main-content { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
+  .main-content.db-shell, .main-content.no-padding { padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* The floating assistant covered buttons and the chat box on phones; it's under Menu -> AI Assistant. */
+  .cb-fab { display: none !important; }
+  /* Chat fits between the page title and the tab bar, so the message box is always visible. */
+  .channel-layout { height: calc(100dvh - 330px - env(safe-area-inset-bottom, 0px)) !important; min-height: 340px !important; }
+}

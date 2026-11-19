@@ -52,6 +52,7 @@ import ClockWidget from "./components/ClockWidget";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import NotificationPrompt from "./components/NotificationPrompt";
 import { TimerOrClock, WorkTimerStrip } from "./components/WorkTimer";
+import MobileTabBar from "./components/shell/MobileTabBar";
 import ConnectionStatus from "./components/ConnectionStatus";
 import AIStatus from "./components/AIStatus";
 import PWAInstallBanner from "./components/PWAInstallBanner";
@@ -466,6 +467,7 @@ function AppShell() {
               {!restricted && <ChatBot />}
               {!restricted && <LiveActivityFeed />}
               <PWAInstallBanner />
+              {!isStandalonePage && !menuOpen && <MobileTabBar onMenu={() => setMenuOpen(true)} restricted={restricted} />}
               {showPalette && (
                 <CommandPalette
                   onClose={() => setShowPalette(false)}
