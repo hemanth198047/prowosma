@@ -55,7 +55,7 @@ const SEV_COLOR = { HIGH:"var(--danger)", MEDIUM:"var(--warning)", LOW:"var(--su
 export default function AIIntelligence() {
   return (
     <div>
-      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="AI Intelligence"
+      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="AI intelligence"
         description="Predictive analytics, burnout detection, process mining, and autonomous insights" />
 
       <div className="intel-section-label">Predictive Insights</div>
@@ -337,7 +337,7 @@ export default function AIIntelligence() {
         {[
           { icon:<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Enterprise Memory",  desc:"AI remembers past decisions and lessons learned" },
           { icon:<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Semantic Search",     desc:"Vector embeddings for intelligent search across all content" },
-          { icon:<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Knowledge Graph",     desc:"Who knows what — expert recommendation engine" },
+          { icon:<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Knowledge graph",     desc:"Who knows what — expert recommendation engine" },
           { icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Autonomous Agents",   desc:"PM Agent, Risk Agent, Goal Agent running in background" },
           { icon:<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />, title:"White-Label Module",  desc:"Custom domain, branding, remove Prowosma branding" },
           { icon:<IcShoppingBag size={16} strokeWidth={1.5} aria-hidden="true" />, title:"Integration Marketplace", desc:"Partner app ecosystem with install/uninstall flow" },

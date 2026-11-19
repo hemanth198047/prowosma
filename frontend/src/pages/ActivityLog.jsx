@@ -555,7 +555,7 @@ export default function ActivityLog() {
     <div>
       <PageHeader
         icon={<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Audit Log"
+        title="Audit log"
         description="Operational intelligence — complete compliance-grade activity trail"
         action={
           <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>

@@ -60,7 +60,7 @@ export default function CustomFieldValues({ entityType, values = {}, onChange })
   return (
     <div style={{ borderTop:"1px dashed #eee", marginTop:"8px", paddingTop:"12px" }}>
       <div style={{ fontSize:"11px", fontWeight: 600, color:"#aaa", marginBottom:"10px" }}>
-        Custom Fields
+        Custom fields
       </div>
       {visibleFields.map(field => {
         const required = isFieldRequired(field);

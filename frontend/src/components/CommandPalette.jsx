@@ -26,7 +26,7 @@ const PAGES = [
   { id: "go-activity",    icon: <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Activity Log",     path: "/activity",        group: "Navigate" },
   { id: "go-time",        icon: <IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Time & Billing",   path: "/time-tracking",   group: "Navigate" },
   { id: "go-developer",   icon: <IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Go to Developer Portal", path: "/developer",       group: "Navigate" },
-  { id: "go-ws-settings", icon: <IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Workspace Settings",     path: "/workspace-settings", group: "Navigate" },
+  { id: "go-ws-settings", icon: <IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Workspace settings",     path: "/workspace-settings", group: "Navigate" },
   { id: "go-profile",     icon: <IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Profile & Security",     path: "/profile",         group: "Navigate" },
   { id: "go-search",      icon: <IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />, label: "Search",                 path: "/search",          group: "Navigate" },
 ];

@@ -626,14 +626,14 @@ function SecurityPolicyPanel() {
 }
 
 const DEFAULT_FLAGS = [
-  { key:"ai_assistant",      label:"AI Assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
+  { key:"ai_assistant",      label:"AI assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
   { key:"ai_prioritization", label:"AI Prioritization",   desc:"Daily AI-ranked task list",               group:"AI" },
   { key:"universalMeetingAssistant", label:"AI Meeting Assistant (new)", desc:"Summaries, decisions and action items from uploaded recordings, transcripts and meeting links. Off until turned on.", group:"AI", offByDefault:true },
   { key:"attendance", label:"Attendance (clock-in)", desc:"Clock in/out in the top bar, breaks, shifts, call times, leave, corrections, overtime and payroll export. Off until turned on.", group:"Work", offByDefault:true },
   { key:"burnout_detection", label:"Burnout Detection",   desc:"Workload pattern analysis alerts",        group:"AI" },
   { key:"collab_editing",    label:"Collaborative Docs",  desc:"Real-time multi-user document editing",   group:"Collaboration" },
   { key:"sprint_module",     label:"Sprint / Agile",      desc:"Sprint planning and burndown charts",     group:"Work" },
-  { key:"kpi_tracker",       label:"KPI Tracker",         desc:"Standalone KPI metrics and forecasting",  group:"Insights" },
+  { key:"kpi_tracker",       label:"KPI tracker",         desc:"Standalone KPI metrics and forecasting",  group:"Insights" },
   { key:"automations",       label:"Automations",         desc:"No-code workflow automation builder",     group:"Automate" },
   { key:"approval_workflows",label:"Approval Workflows",  desc:"Multi-step approval chains",              group:"Automate" },
   { key:"sop_management",    label:"SOP Management",      desc:"Standard operating procedures lifecycle", group:"Knowledge" },
@@ -1958,7 +1958,7 @@ export default function AdminCenter() {
 
   return (
     <div>
-      <PageHeader title="Admin Centre"
+      <PageHeader title="Admin centre"
         description="Users, projects, security, compliance, feature flags, and billing — all in one place" />
 
       <div className="ws-settings-layout admin-layout">

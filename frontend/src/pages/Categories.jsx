@@ -150,7 +150,7 @@ export default function Categories() {
     <div>
       <PageHeader
         icon={<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Project Categories"
+        title="Project categories"
         description="Organize projects into categories"
         action={
           <CanDo action="create">

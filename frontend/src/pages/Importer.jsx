@@ -155,7 +155,7 @@ export default function Importer() {
     <div>
       <PageHeader
         icon={<IcInbox size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Import Tasks"
+        title="Import tasks"
         description="Import tasks from Asana, ClickUp, Notion, Monday.com, or any CSV/JSON file"
       />
 

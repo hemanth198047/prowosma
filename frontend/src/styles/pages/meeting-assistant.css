@@ -34,7 +34,7 @@
 .ma-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
 .ma-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.ma-chip.info { background: rgba(14,165,233,.12); color: #0369a1; }
+.ma-chip.info { background: rgba(14,165,233,.12); color: var(--brand-600); }
 .ma-chip.progress { background: rgba(217,119,6,.12); color: #92400e; }
 .ma-chip.success { background: rgba(5,150,105,.12); color: #047857; }
 .ma-chip.danger { background: rgba(220,38,38,.12); color: #b91c1c; }

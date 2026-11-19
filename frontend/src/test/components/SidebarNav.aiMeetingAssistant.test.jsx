@@ -17,21 +17,21 @@ describe("sidebar: AI Meeting Assistant item", () => {
     render(<MemoryRouter><SidebarNav /></MemoryRouter>);
     expect(await screen.findByText("Dashboard")).toBeInTheDocument();
     await Promise.resolve();
-    expect(screen.queryByText("AI Meeting Assistant")).not.toBeInTheDocument();
-    expect(screen.getByText("Meeting Assistant")).toBeInTheDocument();   // the existing feature is untouched
+    expect(screen.queryByText("AI meeting assistant")).not.toBeInTheDocument();
+    expect(screen.getByText("Meeting assistant")).toBeInTheDocument();   // the existing feature is untouched
   });
 
   it("appears when the flag is on", async () => {
     status.mockResolvedValue({ data: { enabled: true } });
     render(<MemoryRouter><SidebarNav /></MemoryRouter>);
-    expect(await screen.findByText("AI Meeting Assistant")).toBeInTheDocument();
+    expect(await screen.findByText("AI meeting assistant")).toBeInTheDocument();
   });
 
   it("stays hidden if the status check fails", async () => {
     status.mockRejectedValue(new Error("network"));
     render(<MemoryRouter><SidebarNav /></MemoryRouter>);
     expect(await screen.findByText("Dashboard")).toBeInTheDocument();
-    expect(screen.queryByText("AI Meeting Assistant")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI meeting assistant")).not.toBeInTheDocument();
   });
 });
 
@@ -51,13 +51,13 @@ describe("sidebar: AI Meeting Assistant item across sign-out and sign-in (no pag
     status.mockResolvedValue({ data: { enabled: true } });
     const ws = { id: "w1" };
     const { rerender } = render(withAuth({ email: "a@x.com" }, ws));
-    expect(await screen.findByText("AI Meeting Assistant")).toBeInTheDocument();
+    expect(await screen.findByText("AI meeting assistant")).toBeInTheDocument();
 
     rerender(withAuth(null, null));                         // signed out
-    expect(screen.queryByText("AI Meeting Assistant")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI meeting assistant")).not.toBeInTheDocument();
 
     rerender(withAuth({ email: "a@x.com" }, ws));           // signed in again, same page
-    expect(await screen.findByText("AI Meeting Assistant")).toBeInTheDocument();
+    expect(await screen.findByText("AI meeting assistant")).toBeInTheDocument();
   });
 
   it("doesn't ask before a workspace is chosen, and doesn't remember a failed check", async () => {
@@ -67,17 +67,17 @@ describe("sidebar: AI Meeting Assistant item across sign-out and sign-in (no pag
     expect(status).not.toHaveBeenCalled();
     rerender(withAuth({ email: "a@x.com" }, { id: "w1" }));
     await act(async () => {});
-    expect(screen.queryByText("AI Meeting Assistant")).not.toBeInTheDocument();   // the first check failed
+    expect(screen.queryByText("AI meeting assistant")).not.toBeInTheDocument();   // the first check failed
     rerender(withAuth({ email: "a@x.com" }, { id: "w2" }));                       // any later render asks again
-    expect(await screen.findByText("AI Meeting Assistant")).toBeInTheDocument();
+    expect(await screen.findByText("AI meeting assistant")).toBeInTheDocument();
   });
 
   it("shows up straight after an admin turns the flag on", async () => {
     status.mockResolvedValueOnce({ data: { enabled: false } }).mockResolvedValue({ data: { enabled: true } });
     render(withAuth({ email: "a@x.com" }, { id: "w1" }));
     await act(async () => {});
-    expect(screen.queryByText("AI Meeting Assistant")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI meeting assistant")).not.toBeInTheDocument();
     act(() => { resetAiMeetingAssistantEnabled(); });       // what Admin Centre calls after saving the flag
-    expect(await screen.findByText("AI Meeting Assistant")).toBeInTheDocument();
+    expect(await screen.findByText("AI meeting assistant")).toBeInTheDocument();
   });
 });

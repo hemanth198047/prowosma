@@ -612,7 +612,7 @@ export default function ScenarioPlanning() {
 
   return (
     <div>
-      <PageHeader icon={<IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" />} title="Scenario Planning"
+      <PageHeader icon={<IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" />} title="Scenario planning"
         description="Model what-if changes and simulate their impact on delivery, goals, and team health"
         action={
           <div style={{display:"flex",gap:"8px"}}>

@@ -301,7 +301,7 @@
 }
 .page-header-breadcrumb {
   font-size: 11px;
-  color: #0284c7;
+  color: var(--brand-600);
   font-weight: 600;
   letter-spacing: 0;
   opacity: 0.85;
@@ -454,7 +454,7 @@
 }
 .badge-active {
   background: #e0f2fe;
-  color: #0369a1;
+  color: var(--brand-600);
 }
 .badge-done {
   background: #d1fae5;
@@ -541,7 +541,7 @@
   color: var(--gray-500);
 }
 .task-project {
-  color: #0369a1;
+  color: var(--brand-600);
   font-weight: 500;
   background: #e0f2fe;
   padding: 1px 8px;
@@ -805,7 +805,7 @@
 }
 .breadcrumb-link {
   background: transparent;
-  color: #0284c7;
+  color: var(--brand-600);
   font-size: 12px;
   font-weight: 500;
   padding: 2px 6px;
@@ -911,7 +911,7 @@
 .user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: #0ea5e9;
+  background: var(--brand-500);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -1131,7 +1131,7 @@
   gap: 10px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-left: 4px solid #0ea5e9;
+  border-left: 4px solid var(--brand-500);
   border-radius: var(--radius-lg);
   padding: 12px 14px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);

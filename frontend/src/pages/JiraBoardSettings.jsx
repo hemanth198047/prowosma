@@ -143,7 +143,7 @@ export default function JiraBoardSettings() {
         <div>
           <div className="jbs-breadcrumb">
             <span onClick={()=>navigate("/jira-board")} className="jbs-bc-link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>navigate("/jira-board"))?.(e); } }}>
-              Jira Board
+              Jira board
             </span>
             <span className="jbs-bc-sep">›</span>
             <span>Settings</span>

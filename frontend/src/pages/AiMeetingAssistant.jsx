@@ -1642,7 +1642,7 @@ export default function AiMeetingAssistant() {
       {!id && (
         <header className="pg-title-row">
           <div className="pg-title-text">
-            <h1>AI Meeting Assistant</h1>
+            <h1>AI meeting assistant</h1>
             <p>Start or schedule a Google Meet or Teams meeting; afterwards the notes are written and agreed tasks are created for you.</p>
           </div>
           {canCreate && (

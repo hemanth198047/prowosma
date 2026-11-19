@@ -567,7 +567,7 @@ export default function Dashboard() {
     { Icon:ICONS.sops,      tint:"rgba(16,185,129,.1)", color:"#10b981", label:"SOPs",      to:"/sops" },
   ];
   const automateTiles = [
-    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM Studio",  to:"/bpm" },
+    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM studio",  to:"/bpm" },
     { Icon:ICONS.automations,  tint:"rgba(245,158,11,.1)", color:"#f59e0b", label:"Automations", to:"/automations" },
     { Icon:ICONS.integrations, tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Integrations",to:"/integrations" },
     { Icon:ICONS.import,       tint:"rgba(16,185,129,.1)", color:"#10b981", label:"Import",      to:"/import" },

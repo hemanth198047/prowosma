@@ -85,7 +85,7 @@ export default function Search() {
     <div>
       <PageHeader
         icon={<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Global Search"
+        title="Global search"
         description="Search across all projects, tasks and goals"
         action={
           <button className="btn-secondary" onClick={() => navigate(-1)}>

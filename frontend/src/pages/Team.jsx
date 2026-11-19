@@ -52,7 +52,6 @@ const COLORS = [
   "#14b8a6",
   "#f97316",
 ];
-const roleColor = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
 // Display-only relabel: the underlying role value is still "OWNER"
 // everywhere it matters (DB, RoleGuardFilter, isOwner checks) — this just
 // changes what the word looks like on screen, per feedback that "Owner"
@@ -511,16 +510,7 @@ export default function Team() {
                   <div className="team-member-info">
                     <div className="team-member-name">{m.name}</div>
                     <div className="team-member-email">{m.email}</div>
-                    <span
-                      className="badge"
-                      style={{
-                        background: roleColor[m.role] + "22",
-                        color: roleColor[m.role],
-                        fontSize: "10px",
-                      }}
-                    >
-                      {roleLabel(m.role)}
-                    </span>
+                    <span className="team-role">{statusText(roleLabel(m.role))}</span>
                   </div>
                   <div className="card-actions">
                     {m.role !== "OWNER" && (
@@ -558,16 +548,16 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color:"#C17D22" }}
+
                     >
                       {inProgressTasks}
                     </span>
-                    <span className="team-stat-label">In Progress</span>
+                    <span className="team-stat-label">In progress</span>
                   </div>
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color:"#1E8E5A" }}
+
                     >
                       {doneTasks}
                     </span>

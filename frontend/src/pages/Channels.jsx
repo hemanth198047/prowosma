@@ -416,7 +416,7 @@ export default function Channels() {
 
   return (
     <div>
-      <PageHeader icon={<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />} title="Channels & Standup"
+      <PageHeader icon={<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />} title="Channels & standup"
         description="Talk with your team: open channels, private groups and direct messages" />
 
       <div className="admin-tab-bar">

@@ -559,7 +559,7 @@
   display: flex;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #0284c7;
+  background: var(--brand-600);
   color: #fff;
   font-size: 13px;
 }

@@ -19,7 +19,7 @@
   color: #fff;
   font-size: 17px;
   font-weight: 600;
-  background: #38bdf8;
+  background: var(--brand-400);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2386,7 +2386,7 @@
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 2px;
-  background: #38bdf8;
+  background: var(--brand-400);
 }
 .cb-header-left { display:flex; align-items:center; gap:10px; }
 .cb-header-avatar {
@@ -2777,7 +2777,7 @@
 .cb-action-nav {
   background: rgba(8,145,178,0.07);
   border-color: rgba(8,145,178,0.22);
-  color: #0891b2;
+  color: var(--brand-500);
 }
 .cb-action-nav:hover {
   background: rgba(8,145,178,0.15);

@@ -74,7 +74,7 @@ export default function DeploymentAnalytics() {
 
   return (
     <div>
-      <PageHeader icon={<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />} title="Deployment Analytics"
+      <PageHeader icon={<IcRocket size={16} strokeWidth={1.5} aria-hidden="true" />} title="Deployment analytics"
         description="DORA metrics, deployment frequency, and failure rate tracking"
         action={<button className="btn-primary" onClick={()=>setShowAdd(v=>!v)}>
           + Log Deployment

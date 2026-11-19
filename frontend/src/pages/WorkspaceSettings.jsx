@@ -283,7 +283,7 @@ export default function WorkspaceSettings() {
   if (loading) {
     return (
       <div>
-        <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Workspace Settings" description="Configure your workspace" />
+        <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Workspace settings" description="Configure your workspace" />
         <div className="empty-state">Loading settings...</div>
       </div>
     );
@@ -310,7 +310,7 @@ export default function WorkspaceSettings() {
     <div>
       <PageHeader
         icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Workspace Settings"
+        title="Workspace settings"
         description="Configure your workspace"
         action={
           (activeNav === "general" || activeNav === "preferences") && (

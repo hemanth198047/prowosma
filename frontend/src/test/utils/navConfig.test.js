@@ -86,7 +86,7 @@ describe("locate (top bar trail)", () => {
     expect(locate("/")).toEqual({ section: null, label: "Dashboard" });
   });
   it("prefers the most specific route", () => {
-    expect(locate("/jira-board/settings")).toEqual({ section: "Settings", label: "Jira Settings" });
+    expect(locate("/jira-board/settings")).toEqual({ section: "Settings", label: "Jira settings" });
     expect(locate("/integrations/meeting-platforms")).toEqual({ section: "Automate", label: "Integrations" });
   });
   it("falls back to a readable name for unlisted pages", () => {

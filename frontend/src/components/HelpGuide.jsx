@@ -74,7 +74,7 @@ export default function HelpGuide() {
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               <div>
-                <div className="hg-title">Prowosma Help Guide</div>
+                <div className="hg-title">Prowosma help guide</div>
                 <div className="hg-subtitle">Complete feature reference · {SECTIONS.length} sections</div>
               </div>
             </div>

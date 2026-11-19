@@ -17,7 +17,7 @@ const SHORTCUTS = [
   { keys: ["G", "A"],   desc: "Analytics" },
   { keys: ["G", "R"],   desc: "Reports" },
   { keys: ["G", "C"],   desc: "Calendar" },
-  { keys: ["G", "L"],   desc: "Activity Log" },
+  { keys: ["G", "L"],   desc: "Activity log" },
   { keys: ["G", "M"],   desc: "Team" },
 ];
 

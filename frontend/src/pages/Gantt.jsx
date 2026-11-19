@@ -466,7 +466,7 @@ export default function Gantt() {
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 160px)", userSelect:"none" }}>
       <PageHeader
         icon={<IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Gantt Chart"
+        title="Gantt chart"
         description="Timeline view of project tasks and goals — drag bars to reschedule, drag edge to resize"
         action={<button className="btn-secondary" style={{ fontSize:"12px" }} onClick={load}>Refresh</button>}
       />

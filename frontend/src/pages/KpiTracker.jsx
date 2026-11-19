@@ -399,7 +399,7 @@ export default function KpiTracker() {
     <div>
       <PageHeader
         icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="KPI Tracker"
+        title="KPI tracker"
         description="Track key performance indicators with threshold alerts and goal forecasting"
         action={
           <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>

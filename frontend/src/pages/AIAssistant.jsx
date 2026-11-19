@@ -69,7 +69,7 @@ const PANELS = [
   },
   {
     key: "meeting",
-    label: "Meeting Notes",
+    label: "Meeting notes",
     desc: "Notes to tasks",
     feature: "meeting_notes",
   },
@@ -556,7 +556,7 @@ export default function AIAssistant() {
               Paste meeting notes and AI extracts action items.
             </p>
             <div className="form-group">
-              <label htmlFor={"aiassistant-meeting-notes"}>Meeting Notes</label>
+              <label htmlFor={"aiassistant-meeting-notes"}>Meeting notes</label>
               <textarea
                 value={inputs.meetingNotes || ""}
                 onChange={(e) => set("meetingNotes", e.target.value)}
@@ -820,7 +820,7 @@ export default function AIAssistant() {
     <div className="ai-assistant-root">
       <PageHeader
         icon={<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="AI Assistant"
+        title="AI assistant"
         description="Your intelligent project management companion"
         action={
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

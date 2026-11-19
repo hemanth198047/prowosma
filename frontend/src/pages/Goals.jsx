@@ -1665,7 +1665,7 @@ function GoalCard({
 
       {/* Overall Progress */}
       <div className="goal-progress-label">
-        <span>Overall Progress</span>
+        <span>Overall progress</span>
         <span>{goal.progress || 0}%</span>
       </div>
       <div className="progress-bar">
@@ -1688,43 +1688,38 @@ function GoalCard({
 
       {/* Actions */}
       <div className="goal-card-footer">
-        <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-          <button className="btn-secondary" style={{ fontSize:"12px", padding:"6px 10px" }}
-            onClick={onUpdateProgress}>Update Progress</button>
-          <button className={`btn-secondary${isExpanded ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={onToggleExpand}>
-            {isExpanded ? "▲" : "▼"} {subGoals.length > 0 ? `${subGoals.length} Sub-Goals` : "Sub-Goals"}
-          </button>
-          <button className={`btn-secondary${activePanel==="kr" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("kr")}>
-            KRs {goal.keyResults?.length > 0 ? `(${goal.keyResults.length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="checkin" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("checkin")}>
-            Check-ins {goal.checkIns?.length > 0 ? `(${goal.checkIns.length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="children" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("children")}>
-            Children {(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length > 0 ? `(${(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="contribution" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("contribution")}>
-            Contribution
-          </button>
-          <button className={`btn-secondary${activePanel==="deps" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("deps")}>
-            Dependencies
-          </button>
-          <button className={`btn-secondary ${showActivity ? "btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }}
-            onClick={() => setShowActivity(a => !a)}>Activity</button>
+        <div className="goal-card-tools">
+          <button type="button" className="btn-secondary goal-update-btn" onClick={onUpdateProgress}>Update progress</button>
+          <div className="goal-tabs" role="group" aria-label="Goal details">
+            <button type="button" className={`goal-tab${isExpanded ? " is-active" : ""}`} aria-pressed={isExpanded} onClick={onToggleExpand}>
+              Sub-goals{subGoals.length > 0 && <span className="goal-tab-count">{subGoals.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="kr" ? " is-active" : ""}`} aria-pressed={activePanel==="kr"} onClick={() => togglePanel("kr")}>
+              Key results{goal.keyResults?.length > 0 && <span className="goal-tab-count">{goal.keyResults.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="checkin" ? " is-active" : ""}`} aria-pressed={activePanel==="checkin"} onClick={() => togglePanel("checkin")}>
+              Check-ins{goal.checkIns?.length > 0 && <span className="goal-tab-count">{goal.checkIns.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="children" ? " is-active" : ""}`} aria-pressed={activePanel==="children"} onClick={() => togglePanel("children")}>
+              Children{(allGoals||[]).some(g=>g.parentGoalId===goal.id) && <span className="goal-tab-count">{(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="contribution" ? " is-active" : ""}`} aria-pressed={activePanel==="contribution"} onClick={() => togglePanel("contribution")}>
+              Contribution
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="deps" ? " is-active" : ""}`} aria-pressed={activePanel==="deps"} onClick={() => togglePanel("deps")}>
+              Dependencies
+            </button>
+            <button type="button" className={`goal-tab${showActivity ? " is-active" : ""}`} aria-pressed={showActivity} onClick={() => setShowActivity(a => !a)}>
+              Activity
+            </button>
+          </div>
         </div>
         <div className="card-actions">
           <CanDo action="edit">
-            <button className="btn-icon" onClick={() => onEdit(goal)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+            <button type="button" className="btn-icon" aria-label="Edit goal" title="Edit" onClick={() => onEdit(goal)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </CanDo>
           <CanDo action="delete">
-            <button className="btn-icon" onClick={() => onDelete(goal.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+            <button type="button" className="btn-icon" aria-label="Delete goal" title="Delete" onClick={() => onDelete(goal.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </CanDo>
         </div>
       </div>

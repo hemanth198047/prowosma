@@ -261,7 +261,7 @@ export default function DeveloperPortal() {
 
   return (
     <div>
-      <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Developer Portal"
+      <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Developer portal"
         description="Webhooks, API keys, and REST API documentation"
         action={<a href={SWAGGER_URL} target="_blank" rel="noreferrer"
           className="btn-secondary" style={{ fontSize: "12px", textDecoration: "none" }}>

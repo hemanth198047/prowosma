@@ -128,7 +128,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
     <div className="modal-overlay" onClick={onCancel} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onCancel)?.(e); } }}>
       <div className="modal meet-modal" onClick={e => e.stopPropagation()} role="presentation">
         <div className="meet-modal-header">
-          <h2>{initial ? "Edit Meeting" : "New Meeting Notes"}</h2>
+          <h2>{initial ? "Edit meeting" : "New meeting notes"}</h2>
           <button className="meet-modal-close" onClick={onCancel}>✕</button>
         </div>
 
@@ -731,13 +731,13 @@ export default function Meetings() {
   return (
     <div>
       <PageHeader
-        title="Meeting Notes"
+        title="Meeting notes"
         description="Record meetings, extract action items with AI, and convert them to tasks."
         icon={<IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />}
         action={can("USE_MEETING_ASSISTANT") && (
-          <button className="btn-primary" onClick={() => navigate("/meeting-assistant")}
+          <button className="btn-secondary" onClick={() => navigate("/meeting-assistant")}
             title="Get a summary, minutes and tasks from a transcript, recording or notetaker">
-            Try the Meeting Assistant
+            Open meeting assistant
           </button>
         )}
       />
@@ -791,7 +791,7 @@ export default function Meetings() {
         </select>
         <div style={{flex:1}} />
         <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
-          + New Meeting
+          + New meeting
         </button>
       </div>
 

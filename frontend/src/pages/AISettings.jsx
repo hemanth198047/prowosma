@@ -311,7 +311,7 @@ export default function AISettings() {
     <div className="ai-page-root">
       <PageHeader
         icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="AI Settings"
+        title="AI settings"
         description="Configure AI — you control which features are on and what API key to use"
       />
 

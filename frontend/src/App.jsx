@@ -169,7 +169,7 @@ function UserMenu() {
             className="user-menu-item"
             onClick={() => { navigate("/profile"); setOpen(false); }}
           >
-            Profile & Security
+            Profile & security
           </button>
           {!isInstalled && (
             <button
@@ -179,7 +179,7 @@ function UserMenu() {
                 window.dispatchEvent(new CustomEvent('prowosma:show-install'));
               }}
             >
-              Install App
+              Install app
             </button>
           )}
           {isInstalled && (
@@ -192,7 +192,7 @@ function UserMenu() {
             className="user-menu-item"
             onClick={() => { logoutUser(); navigate("/login"); setOpen(false); }}
           >
-            Sign Out
+            Sign out
           </button>
         </div>
       )}
@@ -350,37 +350,37 @@ function AppShell() {
     const titles = {
       "/docs":             "Docs",
       "/decisions":        "Decision Records",
-      "/change-requests":  "Change Requests",
-      "/meetings":          "Meeting Notes",
-      "/meeting-assistant": "Meeting Assistant",
-      "/ai-meeting-assistant": "AI Meeting Assistant",
+      "/change-requests":  "Change requests",
+      "/meetings":          "Meeting notes",
+      "/meeting-assistant": "Meeting assistant",
+      "/ai-meeting-assistant": "AI meeting assistant",
       "/attendance": "Attendance",
-      "/integrations/meeting-platforms": "Meeting Platforms",
+      "/integrations/meeting-platforms": "Meeting platforms",
       "/sops":              "SOPs",
       "/":                  "Dashboard",
       "/tasks":             "Tasks",
       "/projects":          "Projects",
       "/goals":             "Goals",
-      "/kanban":      "Kanban Board",
-      "/jira-board":          "Jira Board",
+      "/kanban":      "Kanban board",
+      "/jira-board":          "Jira board",
       "/jira-board/settings": "Jira Board Settings",
       "/sprints":           "Sprints",
       "/portfolio":         "Portfolio",
-      "/import":            "Import Tasks",
+      "/import":            "Import tasks",
       "/automations":       "Automations",
       "/calendar":          "Calendar",
-      "/gantt":             "Gantt Chart",
+      "/gantt":             "Gantt chart",
       "/analytics":         "Analytics",
       "/reports":           "Reports",
       "/search":            "Search",
       "/team":              "Team",
       "/org-chart":         "Org chart",
-      "/activity":          "Activity Log",
-      "/ai-assistant":      "AI Assistant",
-      "/time-tracking":     "Time & Billing",
-      "/developer":         "Developer Portal",
-      "/workspace-settings":"Workspace Settings",
-      "/profile":           "Profile & Security",
+      "/activity":          "Activity log",
+      "/ai-assistant":      "AI assistant",
+      "/time-tracking":     "Time & billing",
+      "/developer":         "Developer portal",
+      "/workspace-settings":"Workspace settings",
+      "/profile":           "Profile & security",
       "/login":             "Sign In",
     };
     const path = location.pathname;

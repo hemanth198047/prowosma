@@ -274,7 +274,7 @@ export default function ChangeRequests() {
 
   return (
     <div>
-      <PageHeader icon={<IcWrench size={16} strokeWidth={1.5} aria-hidden="true" />} title="Change Requests"
+      <PageHeader icon={<IcWrench size={16} strokeWidth={1.5} aria-hidden="true" />} title="Change requests"
         description="Propose, review, and approve changes to scope, budget, or timeline"
         action={<button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
           + New Change Request

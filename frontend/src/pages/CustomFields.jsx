@@ -268,7 +268,7 @@ export default function CustomFields() {
     <div>
       <PageHeader
         icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Custom Fields"
+        title="Custom fields"
         description="Add custom fields to tasks, projects and goals"
         action={
           <button

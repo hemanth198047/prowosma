@@ -147,7 +147,7 @@ export default function ProfileSettings() {
 
   return (
     <div>
-      <PageHeader icon={<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />} title="Profile & Settings" description="Manage your account, security and privacy" />
+      <PageHeader icon={<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />} title="Profile & settings" description="Manage your account, security and privacy" />
 
       <div className="tab-bar" style={{ marginBottom: "24px" }}>
         <button className={"tab-btn" + (section === "profile"  ? " tab-active" : "")} onClick={() => { setSection("profile");  setError(""); setSuccess(""); }}>Profile</button>

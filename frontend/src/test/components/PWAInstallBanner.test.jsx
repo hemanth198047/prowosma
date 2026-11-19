@@ -19,7 +19,7 @@ describe("PWAInstallBanner", () => {
     expect(screen.queryByRole("heading", { name: "Install Prowosma" })).toBeNull();
   });
 
-  it("opens when someone chooses Install App from the user menu", () => {
+  it("opens when someone chooses Install app from the user menu", () => {
     render(<PWAInstallBanner />);
     act(() => { window.dispatchEvent(new CustomEvent("prowosma:show-install")); });
     expect(screen.getByRole("heading", { name: "Install Prowosma" })).toBeInTheDocument();

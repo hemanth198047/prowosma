@@ -149,7 +149,7 @@ const WORKFLOWS = [
     tagline: "Get the full picture without the noise",
     steps: [
       {
-        step: 1, icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Executive Dashboard",
+        step: 1, icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, title: "Executive dashboard",
         desc: "See KPIs, portfolio health, goal progress, and delivery metrics in one view.",
         action: "Open dashboard", to: "/executive",
         tip: "Bookmark this page — it refreshes automatically every 30 seconds.",
@@ -167,9 +167,9 @@ const WORKFLOWS = [
         tip: "Set quarterly goals (OKRs) and review progress monthly.",
       },
       {
-        step: 4, icon: <IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />, title: "ROI Engine",
+        step: 4, icon: <IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />, title: "ROI engine",
         desc: "Track investment, revenue, and return on investment per project.",
-        action: "ROI Engine", to: "/roi",
+        action: "ROI engine", to: "/roi",
         tip: "Projects with negative ROI after 6 months should be reviewed for scope changes.",
       },
       {
@@ -258,7 +258,7 @@ export default function WorkflowGuide() {
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px 40px" }}>
       <PageHeader
         icon={<IcMap size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Workflow Guide"
+        title="Workflow guide"
         description="Choose your role to see how to use Prowosma as your execution operating system"
       />
 

@@ -220,7 +220,7 @@ export default function RoiEngine() {
 
   return (
     <div>
-      <PageHeader icon={<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />} title="ROI Engine"
+      <PageHeader icon={<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />} title="ROI engine"
         description="Track return on investment, revenue, and payback period across all projects" />
 
       {/* Portfolio summary */}

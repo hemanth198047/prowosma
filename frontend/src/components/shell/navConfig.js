@@ -14,9 +14,9 @@ import {
 // gate: { can: "<capability>" } (access context) or { cando: "<action>" } (role)
 export const NAV_TOP = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/meeting-assistant", label: "Meeting Assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
+  { to: "/meeting-assistant", label: "Meeting assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
   // Universal AI Meeting Assistant: only listed when the workspace's "universalMeetingAssistant" flag is on.
-  { to: "/ai-meeting-assistant", label: "AI Meeting Assistant", icon: Sparkles, gate: { flag: "aiMeetingAssistant" } },
+  { to: "/ai-meeting-assistant", label: "AI meeting assistant", icon: Sparkles, gate: { flag: "aiMeetingAssistant" } },
 ];
 
 export const NAV_GROUPS = [
@@ -26,7 +26,7 @@ export const NAV_GROUPS = [
     { to: "/kanban", label: "Kanban", icon: Columns3 },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/gantt", label: "Gantt", icon: GanttChart },
-    { to: "/jira-board", label: "Jira Board", icon: ClipboardList, end: true },
+    { to: "/jira-board", label: "Jira board", icon: ClipboardList, end: true },
     { to: "/deployments", label: "Deployments", icon: Rocket },
   ] },
   { id: "plan", label: "Plan", icon: Target, items: [
@@ -36,23 +36,23 @@ export const NAV_GROUPS = [
     { to: "/roadmap", label: "Roadmap & RAID", icon: Map },
     { to: "/portfolio", label: "Portfolio", icon: Briefcase },
     { to: "/portfolio-plus", label: "Portfolio+", icon: Briefcase },
-    { to: "/change-requests", label: "Change Requests", icon: GitPullRequest },
+    { to: "/change-requests", label: "Change requests", icon: GitPullRequest },
   ] },
   { id: "knowledge", label: "Knowledge", icon: BookOpen, items: [
     { to: "/docs", label: "Docs", icon: FileText },
     { to: "/meetings", label: "Meetings", icon: Mic },
     { to: "/sops", label: "SOPs", icon: BookOpen },
     { to: "/decisions", label: "Decisions", icon: Lightbulb },
-    { to: "/knowledge-graph", label: "Knowledge Graph", icon: Network },
+    { to: "/knowledge-graph", label: "Knowledge graph", icon: Network },
   ] },
   { id: "insights", label: "Insights", icon: LineChart, items: [
     { to: "/analytics", label: "Analytics", icon: LineChart },
     { to: "/reports", label: "Reports", icon: FileStack },
-    { to: "/kpis", label: "KPI Tracker", icon: Gauge },
+    { to: "/kpis", label: "KPI tracker", icon: Gauge },
     { to: "/executive", label: "Executive", icon: Presentation },
-    { to: "/roi", label: "ROI Engine", icon: PiggyBank },
+    { to: "/roi", label: "ROI engine", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: Shuffle },
-    { to: "/time-tracking", label: "Time & Billing", icon: Clock },
+    { to: "/time-tracking", label: "Time & billing", icon: Clock },
   ] },
   { id: "people", label: "People", icon: Users, items: [
     { to: "/team", label: "Members", icon: Users },
@@ -60,28 +60,28 @@ export const NAV_GROUPS = [
     { to: "/attendance", label: "Attendance", icon: AlarmClock, gate: { flag: "attendance" } },
     { to: "/org-chart", label: "Org chart", icon: Building2 },
     { to: "/channels", label: "Channels", icon: MessageSquare },
-    { to: "/activity", label: "Activity Log", icon: History },
+    { to: "/activity", label: "Activity log", icon: History },
   ] },
   { id: "automate", label: "Automate", icon: Workflow, items: [
-    { to: "/bpm", label: "BPM Studio", icon: Workflow },
+    { to: "/bpm", label: "BPM studio", icon: Workflow },
     { to: "/automations", label: "Automations", icon: Zap },
     { to: "/import-export", label: "Import / Export", icon: ArrowLeftRight },
     { to: "/integrations", label: "Integrations", icon: Plug },
     { to: "/import", label: "Import", icon: Download, end: true },
   ] },
   { id: "ai", label: "AI", icon: Sparkles, items: [
-    { to: "/ai", label: "AI Assistant", icon: Sparkles, end: true },
-    { to: "/ai-intelligence", label: "AI Intelligence", icon: Brain },
-    { to: "/ai-settings", label: "AI Settings", icon: Wand2 },
+    { to: "/ai", label: "AI assistant", icon: Sparkles, end: true },
+    { to: "/ai-intelligence", label: "AI intelligence", icon: Brain },
+    { to: "/ai-settings", label: "AI settings", icon: Wand2 },
   ] },
   { id: "settings", label: "Settings", icon: Settings, items: [
     { to: "/categories", label: "Categories", icon: Tag },
-    { to: "/custom-fields", label: "Custom Fields", icon: SlidersHorizontal },
+    { to: "/custom-fields", label: "Custom fields", icon: SlidersHorizontal },
     { to: "/workspace-settings", label: "Workspace", icon: Building, gate: { cando: "manageSettings" } },
-    { to: "/admin", label: "Admin Centre", icon: ShieldCheck, gate: { cando: "adminOnly" } },
-    { to: "/access-control", label: "Access Control", icon: KeyRound, gate: { cando: "adminOnly" } },
+    { to: "/admin", label: "Admin centre", icon: ShieldCheck, gate: { cando: "adminOnly" } },
+    { to: "/access-control", label: "Access control", icon: KeyRound, gate: { cando: "adminOnly" } },
     { to: "/white-label", label: "White-label", icon: Palette },
-    { to: "/jira-board/settings", label: "Jira Settings", icon: Wrench },
+    { to: "/jira-board/settings", label: "Jira settings", icon: Wrench },
     { to: "/developer", label: "Developer", icon: Code2 },
   ] },
 ];
@@ -92,17 +92,17 @@ export const NAV_BOTTOM = [
 
 // Restricted (department / assigned-work) access: the same short list as before.
 export const NAV_RESTRICTED = [
-  { to: "/tasks", label: "My Tasks", icon: SquareCheckBig },
+  { to: "/tasks", label: "My tasks", icon: SquareCheckBig },
   { to: "/kanban", label: "Kanban", icon: Columns3 },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/projects", label: "Projects", icon: FolderKanban },
-  { to: "/meeting-assistant", label: "Meeting Assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
+  { to: "/meeting-assistant", label: "Meeting assistant", icon: Bot, gate: { can: "USE_MEETING_ASSISTANT" } },
   { to: "/gantt", label: "Gantt", icon: GanttChart },
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/sprints", label: "Sprints", icon: Timer },
   { to: "/epics", label: "Epics", icon: Layers },
   { to: "/roadmap", label: "Roadmap & RAID", icon: Map },
-  { to: "/change-requests", label: "Change Requests", icon: GitPullRequest },
+  { to: "/change-requests", label: "Change requests", icon: GitPullRequest },
   { to: "/portfolio-plus", label: "Portfolio+", icon: Briefcase },
   { to: "/docs", label: "Docs", icon: FileText },
   { to: "/sops", label: "SOPs", icon: BookOpen },
@@ -111,7 +111,7 @@ export const NAV_RESTRICTED = [
   { to: "/reports", label: "Reports", icon: FileStack },
   { to: "/analytics", label: "Analytics", icon: LineChart },
   { to: "/time-tracking", label: "Time", icon: Clock },
-  { to: "/ai", label: "AI Assistant", icon: Sparkles, end: true },
+  { to: "/ai", label: "AI assistant", icon: Sparkles, end: true },
   { to: "/team", label: "Members", icon: Users },
   { to: "/org-chart", label: "Org chart", icon: Building2 },
   { to: "/attendance", label: "Attendance", icon: AlarmClock, gate: { flag: "attendance" } },
@@ -126,7 +126,7 @@ export function matchesPath(item, pathname) {
 // Pages reached from inside other pages, so they have no sidebar link of their own.
 const EXTRA_TITLES = {
   "/search": "Search",
-  "/integrations/meeting-platforms": "Meeting Platforms",
+  "/integrations/meeting-platforms": "Meeting platforms",
   "/workspace-setup": "Workspace setup",
   "/workflow-guide": "Workflow guide",
 };

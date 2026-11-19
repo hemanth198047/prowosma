@@ -6,7 +6,7 @@ const routeMap = {
   "/projects": { label: "Projects", icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /> },
   "/tasks": { label: "Tasks", icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> },
   "/goals": { label: "Goals", icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /> },
-  "/categories": { label: "Project Categories", icon: <IcTag size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/categories": { label: "Project categories", icon: <IcTag size={16} strokeWidth={1.5} aria-hidden="true" /> },
   "/credits": { label: "Credits", icon: <IcHand size={16} strokeWidth={1.5} aria-hidden="true" /> },
 };
 

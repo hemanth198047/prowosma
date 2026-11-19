@@ -96,7 +96,7 @@ export default function ExecutiveDashboard() {
 
   return (
     <div>
-      <PageHeader icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} title="Executive Dashboard"
+      <PageHeader icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} title="Executive dashboard"
         description="One-screen strategic view: portfolio health, goals, KPIs, risks, and AI narrative"
         action={
           <button className="btn-primary" onClick={loadAISummary} disabled={aiLoading}>

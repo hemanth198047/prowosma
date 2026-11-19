@@ -211,7 +211,7 @@ export default function TimeTracking() {
     <div>
       <PageHeader
         icon={<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />}
-        title="Time Tracking & Billing"
+        title="Time tracking & billing"
         description="Workspace-wide time reports and client invoicing"
         action={
           <button className="btn-primary" style={{ fontSize: "13px" }}

@@ -498,7 +498,7 @@ export default function AccessControl() {
   return (
     <div className="page">
       <PageHeader
-        icon={<IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />} title="Access Control"
+        icon={<IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />} title="Access control"
         description="Decide who sees which projects and tasks: departments, access profiles and project responsibilities."
       />
       {loadError && <p role="alert" style={{ color: "var(--danger)" }}>{loadError}</p>}

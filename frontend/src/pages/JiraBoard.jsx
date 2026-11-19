@@ -1110,7 +1110,7 @@ export default function JiraBoard() {
 
   return (
     <div className="jb-root">
-      <PageHeader title="Jira Board" subtitle="Sprint board · Backlog · Agile metrics"/>
+      <PageHeader title="Jira board" subtitle="Sprint board · Backlog · Agile metrics"/>
 
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <div className="jb-toolbar">

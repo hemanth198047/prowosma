@@ -11,15 +11,15 @@ import PageHeader from "../../components/PageHeader";
  */
 describe("PageHeader", () => {
   it("renders the title", () => {
-    render(<PageHeader title="Change Requests" />);
-    expect(screen.getByRole("heading", { name: "Change Requests" })).toBeInTheDocument();
+    render(<PageHeader title="Change requests" />);
+    expect(screen.getByRole("heading", { name: "Change requests" })).toBeInTheDocument();
   });
 
   it("renders the description, and no longer shows an emoji icon beside the title", () => {
-    render(<PageHeader icon="🔧" title="Change Requests" description="Propose and review changes" />);
+    render(<PageHeader icon="🔧" title="Change requests" description="Propose and review changes" />);
     expect(screen.getByText("Propose and review changes")).toBeInTheDocument();
     expect(screen.queryByText("🔧")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Change Requests" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Change requests" })).toBeInTheDocument();
   });
 
   it("omits the description block entirely when none is given, rather than rendering an empty <p>", () => {
@@ -28,7 +28,7 @@ describe("PageHeader", () => {
   });
 
   it("renders the action slot (e.g. a 'New' button) when provided", () => {
-    render(<PageHeader title="Change Requests" action={<button>+ New Change Request</button>} />);
+    render(<PageHeader title="Change requests" action={<button>+ New Change Request</button>} />);
     expect(screen.getByRole("button", { name: "+ New Change Request" })).toBeInTheDocument();
   });
 
@@ -42,7 +42,7 @@ describe("PageHeader", () => {
     // not a replacement — see docs/ACCESSIBILITY.md for an empirically
     // verified limitation of running axe-core inside jsdom.
     const { container } = render(
-      <PageHeader icon="🔧" title="Change Requests" description="Propose and review changes"
+      <PageHeader icon="🔧" title="Change requests" description="Propose and review changes"
         action={<button>+ New Change Request</button>} />
     );
     const results = await axe(container);

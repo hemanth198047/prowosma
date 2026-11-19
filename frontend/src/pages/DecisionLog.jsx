@@ -180,7 +180,7 @@ function DecisionCard({ d, onEdit, onDelete, onAI }) {
           <div className="decision-actions">
             <button className="btn-secondary" style={{fontSize:"11px"}}
               disabled={aiLoading} onClick={handleAI}>
-              {aiLoading ? "Analysing…" : "AI Intelligence"}
+              {aiLoading ? "Analysing…" : "AI intelligence"}
             </button>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function DecisionLog() {
 
   return (
     <div>
-      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="Decision Intelligence"
+      <PageHeader icon={<IcBrain size={16} strokeWidth={1.5} aria-hidden="true" />} title="Decision intelligence"
         description="Log, analyse, and learn from important decisions"
         action={<button className="btn-primary" onClick={()=>{setEditing(null);setShowForm(true);}}>
           + Log Decision

@@ -47,7 +47,7 @@
 
 .dev-event-tag.dev-event-all { background: var(--brand-100); color: var(--brand-700); }
 
-.dev-scope-read  { background: #e0f2fe; color: #0369a1; }
+.dev-scope-read  { background: #e0f2fe; color: var(--brand-600); }
 
 .dev-scope-write { background: rgba(217,119,6,0.12); color: var(--warning); }
 

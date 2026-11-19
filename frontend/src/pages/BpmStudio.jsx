@@ -911,7 +911,7 @@ export default function BpmStudio() {
   ];
   return (
     <div className="bpm-page">
-      <PageHeader title="Workflow Studio"
+      <PageHeader title="Workflow studio"
         description="Design, automate, and run business processes with AI steps and human decisions"
         action={
           <button type="button" className="btn-primary pg-btn" onClick={newProcess}>

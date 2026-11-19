@@ -1357,9 +1357,9 @@ const TEMPLATES = [
     ],
   },
   {
-    key:"meeting", emoji:"📝", label:"Meeting Notes",
+    key:"meeting", emoji:"📝", label:"Meeting notes",
     blocks: () => [
-      newBlock("heading1","Meeting Notes"),
+      newBlock("heading1","Meeting notes"),
       newBlock("paragraph",`${new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}`),
       newBlock("heading2","Attendees"),
       newBlock("bulletList",""),

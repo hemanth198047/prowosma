@@ -386,7 +386,7 @@ export default function KnowledgeGraph() {
 
   if (loading) return (
     <div>
-      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge graph" />
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px", color:"var(--gray-400)", gap:"12px" }}>
         <div style={{ width:"24px", height:"24px", border:"3px solid var(--border)", borderTopColor:"var(--brand-500)", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
         Building knowledge graph…
@@ -400,7 +400,7 @@ export default function KnowledgeGraph() {
 
   if (!graph || graph.nodes.length === 0) return (
     <div>
-      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
         {Object.entries(META).map(([type,m])=>(
           <StatCard key={type} icon={m.icon} label={m.label+"s"} value={0} color={m.color} />
@@ -427,7 +427,7 @@ export default function KnowledgeGraph() {
 
   return (
     <div>
-      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
+      <PageHeader icon={<IcNetwork size={16} strokeWidth={1.5} aria-hidden="true" />} title="Knowledge graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
 
       {/* Stats row */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
