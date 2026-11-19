@@ -53,7 +53,7 @@ the page tells you; the organiser can remove it in Meet (**People → Fireflies 
 **Why "Getting transcript" for a few minutes after the end?** Google and Fireflies need a few minutes to write the transcript. Prowosma picks
 it up as soon as it exists. *Check now* asks again immediately.
 
-**Do I have to send Fireflies?** No. It joins by itself at the start time (one minute after you click *Meet now*). The only thing you may need to
+**Do I have to send Fireflies?** No. It joins by itself as soon as the first person is in the meeting (Prowosma checks with Google every few seconds), so it never waits in an empty call and you don't wait for it. The only thing you may need to
 do is click **Admit** in Google Meet. If it didn't arrive, the meeting page shows *Fireflies didn't arrive? Send it now* during the meeting.
 
 **When do I use Record meeting?** Only when Fireflies isn't available: start it before the meeting, choose the meeting tab, tick

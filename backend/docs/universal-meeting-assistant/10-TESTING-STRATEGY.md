@@ -61,7 +61,7 @@ cases, Fireflies connected. "A" = automated (covered in §3), "M" = manual (§6)
 
 | ID | Scenario | Steps | Expected | Type |
 |---|---|---|---|---|
-| IM-01 | Happy path | Meet now → invite one colleague → Start meeting | New tab opens on the Meet link; event in your Google Calendar starting now, 30 min; colleague receives Google's invitation; Prowosma shows the meeting as "Waiting for transcript" with "Open the meeting now. Fireflies' notetaker asks to join in about a minute - admit it." | A + M |
+| IM-01 | Happy path | Meet now → invite one colleague → Start meeting | New tab opens on the Meet link; event in your Google Calendar starting now, 30 min; colleague receives Google's invitation; Prowosma shows the meeting as "Waiting for transcript" with "Open the meeting now. Fireflies' notetaker asks to join as soon as you're in - admit it." Fireflies asks to join within about 10-15 seconds of you joining | A + M |
 | IM-02 | Fireflies joins | Stay in the Meet ~1 minute | Fireflies asks to join; you admit it; in Prowosma the note changes to "Fireflies is in the meeting…" within ~5 min | M |
 | IM-03 | Summary arrives | Talk 3–5 min, include a decision and "<name> will <do X> by <day>"; leave | Within ~5–10 min after the end: "Your meeting summary is ready."; decision listed; action with owner suggested and date resolved; each with line references | A + M |
 | IM-04 | Ends early | Choose 60 min, end after 5 | Picked up a few minutes after the real end (not after 60 min); "Check now" fetches immediately | A + M |

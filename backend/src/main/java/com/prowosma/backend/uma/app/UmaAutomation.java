@@ -28,6 +28,8 @@ import java.util.List;
 @Slf4j
 public class UmaAutomation {
     static final Duration JOIN_PATIENCE = Duration.ofMinutes(20);
+    /** While waiting for the first person (or for Fireflies to accept), look this often. */
+    static final Duration JOIN_CHECK_EVERY = Duration.ofSeconds(10);
     public static final Duration FIRST_LOOK = Duration.ofMinutes(1);
     static final Duration CALENDAR_EVERY = Duration.ofMinutes(10);
     static final Duration CALENDAR_AHEAD = Duration.ofDays(7);
@@ -88,6 +90,20 @@ public class UmaAutomation {
             return;
         }
         Instant start = m.getMeetingAt() == null ? m.getCreatedAt() : m.getMeetingAt();
+        // Google Meet: send it the moment the first person is in the call (they can admit it), not at a fixed time.
+        java.util.Optional<Boolean> someone = googleMeet.someoneInTheCall(m);
+        if (someone.isPresent() && !someone.get()) {
+            if (Instant.now().isBefore(start.plus(JOIN_PATIENCE))) {
+                if (!"Fireflies' notetaker joins as soon as the first person is in the meeting.".equals(m.getStatusDetail()))
+                    note(m, "Fireflies' notetaker joins as soon as the first person is in the meeting.");
+                queue.pollAgain(job, JOIN_CHECK_EVERY);
+                return;
+            }
+            note(m, "Nobody joined the meeting within " + JOIN_PATIENCE.toMinutes() + " minutes of its start, so Fireflies wasn't sent. "
+                    + "If the meeting is happening, use \"Send Fireflies now\" on this page.");
+            queue.dead(job, "NOBODY_JOINED");
+            return;
+        }
         try {
             fireflies.sendNotetaker(org, m.getMeetingUrl(), m.getTitle());
         } catch (UmaException e) {
@@ -95,7 +111,7 @@ public class UmaAutomation {
                     || e.getStatus() == HttpStatus.TOO_MANY_REQUESTS;
             if (early && Instant.now().isBefore(start.plus(JOIN_PATIENCE))) {
                 note(m, "Waiting for the meeting to start before Fireflies joins…");
-                queue.pollAgain(job, Duration.ofMinutes(1));
+                queue.pollAgain(job, JOIN_CHECK_EVERY);
                 return;
             }
             note(m, "Fireflies' notetaker couldn't join: " + e.getMessage());

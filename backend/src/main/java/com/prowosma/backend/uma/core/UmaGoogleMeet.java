@@ -100,6 +100,26 @@ public class UmaGoogleMeet {
         static Check fail(String code, String note, String recovery) { return new Check("FAIL", note, null, code, recovery, null, null, null); }
     }
 
+    /**
+     * Is anyone in this Meet call right now? Empty when it can't be told (not connected, Google unreachable) - then callers don't wait on it.
+     * Used to send the notetaker the moment the first person joins, so it never waits in an empty call and nobody waits for it.
+     */
+    public Optional<Boolean> someoneInTheCall(UmaMeeting m) {
+        String code = meetingCode(m.getMeetingUrl());
+        if (code == null) return Optional.empty();
+        String who = m.getGoogle() != null && m.getGoogle().getRequestedBy() != null ? m.getGoogle().getRequestedBy() : m.getCreatedBy();
+        if (!connected(m.getOrganizationId(), who)) return Optional.empty();
+        try {
+            String token = token(m.getOrganizationId(), who);
+            Instant anchor = m.getMeetingAt() == null ? m.getCreatedAt() : m.getMeetingAt();
+            Optional<ConferenceSelector.Conference> pick = ConferenceSelector.select(api.listConferenceRecords(token, code), anchor, false,
+                    name -> claimed(m.getOrganizationId(), m.getId(), name));
+            return Optional.of(pick.isPresent() && pick.get().end() == null);
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
     public Check fetch(UmaMeeting m) {
         String org = m.getOrganizationId();
         String code = meetingCode(m.getMeetingUrl());

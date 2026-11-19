@@ -13,9 +13,10 @@ class UmaGoogleFake implements GoogleHttp {
     volatile Instant start = Instant.now();
     volatile Instant end = null;                 // null = meeting still running
     volatile String transcriptState = "FILE_GENERATED";
-    volatile String participants = null;         // JSON "participants" array; null = two signed-in people, no times
+    volatile String participants = null;
+    volatile boolean nobodyYet = false;           // true = Google has no conference for the code yet (nobody has joined)         // JSON "participants" array; null = two signed-in people, no times
 
-    void reset() { urls.clear(); start = Instant.now(); end = null; transcriptState = "FILE_GENERATED"; participants = null; }
+    void reset() { urls.clear(); start = Instant.now(); end = null; transcriptState = "FILE_GENERATED"; participants = null; nobodyYet = false; }
 
     static String person(String id, String name, Instant joined, Instant left) {
         return "{\"name\":\"conferenceRecords/c1/participants/" + id + "\",\"signedinUser\":{\"displayName\":\"" + name + "\"},\"earliestStartTime\":\"" + joined + "\""
@@ -44,6 +45,7 @@ class UmaGoogleFake implements GoogleHttp {
         if (url.contains("/transcripts")) return new Result(200, """
                 {"transcripts":[{"name":"conferenceRecords/c1/transcripts/t1","state":"%s","startTime":"%s"%s}]}"""
                 .formatted(transcriptState, start, end == null ? "" : ",\"endTime\":\"" + end + "\""));
+        if (url.contains("conferenceRecords?") && nobodyYet) return new Result(200, "{\"conferenceRecords\":[]}");
         if (url.contains("conferenceRecords?")) return new Result(200, """
                 {"conferenceRecords":[{"name":"conferenceRecords/c1","startTime":"%s"%s}]}"""
                 .formatted(start, end == null ? "" : ",\"endTime\":\"" + end + "\""));

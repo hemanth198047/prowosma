@@ -564,7 +564,7 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
           {ff?.connected ? (
             <label className="uma-check">
               <input type="checkbox" checked={autoFf} onChange={(e) => setAutoFf(e.target.checked)} />
-              <span>Bring the Fireflies notetaker (it asks to join about a minute after you start - admit it)</span>
+              <span>Bring the Fireflies notetaker (it asks to join as soon as you're in the meeting - admit it)</span>
             </label>
           ) : <p className="uma-fine">Connect Fireflies (Connections) to have its notetaker join, or use Record meeting to record this tab.</p>}
           {error && <p className="uma-error" role="alert">{error}</p>}

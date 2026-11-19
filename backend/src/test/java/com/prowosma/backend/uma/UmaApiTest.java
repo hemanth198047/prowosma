@@ -621,7 +621,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     }
 
     @Test
-    void instantMeeting_startsNow_invites_firefliesJoinsAfterAMinute_andTheSummaryArrives() throws Exception {
+    void instantMeeting_startsNow_invites_firefliesJoinsWhenTheFirstPersonIsIn_andTheSummaryArrives() throws Exception {
         enable(ownerToken(), workspaceId);
         signInGoogle();
         connectFireflies();
@@ -641,11 +641,19 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(created.body()).contains("priya@acme.test").contains("hangoutsMeet");
 
         org.bson.Document join = mongoTemplate.getCollection("uma_jobs").find(new org.bson.Document("type", "FIREFLIES_JOIN")).first();
-        assertThat(join.getDate("runAfter").toInstant()).as("a minute to open Meet first").isAfter(before.plusSeconds(45));
-        pipeline.drain();
-        assertThat(ff().requests.stream().noneMatch(b -> b.contains("addToLiveMeeting"))).as("not yet").isTrue();
+        assertThat(join.getDate("runAfter").toInstant()).as("no fixed wait").isBefore(java.time.Instant.now().plusSeconds(1));
 
-        ff().refuseJoins = 1;                                                // nobody in the meeting yet at the first try
+        // nobody has opened the meeting yet: Fireflies isn't sent into an empty call, and it looks again every few seconds
+        gg().nobodyYet = true;
+        dueNow(); pipeline.drain();
+        assertThat(ff().requests.stream().noneMatch(b -> b.contains("addToLiveMeeting"))).as("not into an empty call").isTrue();
+        assertThat(detail(id).at("/meeting/statusDetail").asText()).contains("as soon as the first person is in the meeting");
+        org.bson.Document again = mongoTemplate.getCollection("uma_jobs").find(new org.bson.Document("type", "FIREFLIES_JOIN")).first();
+        assertThat(again.getDate("runAfter").toInstant()).isBefore(java.time.Instant.now().plusSeconds(15));
+
+        // the first person is in: it's sent right away
+        gg().nobodyYet = false;
+        ff().refuseJoins = 1;                                                // Fireflies still says no at the first try
         ff().date = java.time.Instant.now().toString();
         dueNow(); pipeline.drain();
         assertThat(ff().requests.stream().filter(b -> b.contains("addToLiveMeeting")).count()).as("one refused try").isEqualTo(1);

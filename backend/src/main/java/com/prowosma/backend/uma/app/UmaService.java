@@ -624,11 +624,9 @@ public class UmaService {
 
     /**
      * "Meet now": a Google Meet that starts right away, in the person's Google Calendar (so invitations go out and it is on record), with the
-     * same automation as a scheduled meeting - Fireflies is sent immediately and keeps trying until the meeting is running, then the
+     * same automation as a scheduled meeting - Fireflies is sent as soon as the first person is in the call, then the
      * transcript is fetched and summarised.
      */
-    public static final java.time.Duration INSTANT_JOIN_DELAY = java.time.Duration.ofMinutes(1);
-
     public UmaMeeting instantMeeting(Ctx c, String title, Integer durationMinutes, String timezone, List<String> attendees,
                                      String projectId, boolean autoFireflies) {
         return instantMeeting(c, title, durationMinutes, timezone, attendees, projectId, autoFireflies, null);
@@ -642,9 +640,8 @@ public class UmaService {
         Instant start = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
         UmaMeeting m = scheduleMeeting(c, t, start, durationMinutes == null ? 30 : durationMinutes, zone, attendees, null, projectId, autoFireflies, platform);
         if (m.isAutoFireflies() && m.getStatus() == UmaStatus.CREATED) {
-            // Give the person a minute to open Meet, so someone is there to admit the notetaker when it asks to join.
-            queue.enqueueAt(c.org(), m.getId(), UmaPipeline.FIREFLIES_JOIN, c.caller().email(), Instant.now().plus(INSTANT_JOIN_DELAY));
-            m.setStatusDetail("Open the meeting now. Fireflies' notetaker asks to join in about a minute - admit it" + ("MS_TEAMS".equals(m.getProvider()) ? " from the lobby. " : ". ")
+            // Fireflies is sent the moment the first person is in the call (Google Meet tells us; Teams' lobby holds it), so nobody waits for it.
+            m.setStatusDetail("Open the meeting now. Fireflies' notetaker asks to join as soon as you're in - admit it" + ("MS_TEAMS".equals(m.getProvider()) ? " from the lobby. " : ". ")
                     + "The summary is ready a few minutes after the meeting ends.");
             m = store.save(m);
         }
