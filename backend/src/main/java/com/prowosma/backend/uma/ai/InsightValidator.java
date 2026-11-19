@@ -82,12 +82,27 @@ public final class InsightValidator {
         if (previous != null) for (UmaInsights.ActionItem a : previous.getActions()) prior.put(a.getId(), a);
 
         Map<String, UmaInsights.ActionItem> actions = new LinkedHashMap<>();
-        int ownersRemoved = 0, deadlinesRemoved = 0;
+        int ownersRemoved = 0, deadlinesRemoved = 0, metaDropped = 0;
+        // Lines already cited by a real (non "create a task") action: a recovered task never duplicates one of them.
+        Set<Integer> citedByWork = new HashSet<>();
+        for (JsonNode a : iter(root.path("actions"))) {
+            String t = clean(a.path("title").asText(""), 200);
+            if (!t.isEmpty() && !META_ACTION.matcher(t.strip()).matches())
+                citedByWork.addAll(ground(t + " " + a.path("description").asText(""), evidence(a.path("evidence"), lines), lines));
+        }
         for (JsonNode a : iter(root.path("actions"))) {
             String title = clean(a.path("title").asText(""), 200);
             List<Integer> ev = ground(title + " " + a.path("description").asText(""), evidence(a.path("evidence"), lines), lines);
             if (title.isEmpty()) continue;
             if (ev.isEmpty()) { dropped[0]++; continue; }
+            if (META_ACTION.matcher(title.strip()).matches()) {           // "Create project" isn't work: the project is listed under projects
+                // "...a task that explains the feature": the task is the work the line describes.
+                String work = null;
+                if (title.toLowerCase(Locale.ROOT).contains("task") && Collections.disjoint(ev, citedByWork))
+                    for (int seq : ev) { work = taskFromLine(lines.get(seq)); if (work != null) break; }
+                if (work == null) { metaDropped++; continue; }
+                title = work;
+            }
             String id = "a" + hash(norm(title));
             UmaInsights.ActionItem existing = actions.get(id);
             if (existing != null) {                                        // the same action twice (e.g. from two parts): merge evidence
@@ -163,7 +178,20 @@ public final class InsightValidator {
             List<Integer> ev = ground(name + " " + p.path("description").asText(""), evidence(p.path("evidence"), lines), lines);
             if (ev.isEmpty()) { dropped[0]++; continue; }
             String intent = oneOf(p.path("intent").asText(""), "PROPOSAL", "CREATE", "PROPOSAL", "EXISTING");
-            if ("CREATE".equals(intent) && !nameSaid(name, ev, lines)) intent = "PROPOSAL";   // the name itself must have been said
+            boolean asked = askedToCreate(ev, lines);                 // "let's create a project", "I'm going to create a project" (not "maybe")
+            if (!asked && !"EXISTING".equals(intent) && root.path("projects").size() == 1) {
+                // Only one project came up and the model cited a neighbouring line: the clear "create a project" line is the evidence.
+                List<Integer> said = new ArrayList<>();
+                for (Map.Entry<Integer, Line> e : lines.entrySet()) if (askedToCreate(List.of(e.getKey()), lines)) said.add(e.getKey());
+                if (!said.isEmpty()) {
+                    asked = true;
+                    TreeSet<Integer> all = new TreeSet<>(ev); all.addAll(said); ev = new ArrayList<>(all);
+                }
+            }
+            if ("PROPOSAL".equals(intent) && asked) intent = "CREATE";
+            // A created project's name must come from the meeting: said in the cited lines, or - when someone clearly asked for a project
+            // without naming it - made only of words used in the meeting. Otherwise a person decides.
+            if ("CREATE".equals(intent) && !nameSaid(name, ev, lines) && !(asked && wordsUsed(name, lines))) intent = "PROPOSAL";
             String id = "p" + hash(norm(name));
             if (projects.containsKey(id)) continue;
             UmaInsights.ProjectItem item = new UmaInsights.ProjectItem();
@@ -181,6 +209,7 @@ public final class InsightValidator {
 
         out.setDroppedForMissingEvidence(dropped[0]);
         if (dropped[0] > 0) out.getWarnings().add(dropped[0] + " statement(s) were left out because they didn't point to the transcript.");
+        if (metaDropped > 0) out.getWarnings().add(metaDropped + " \"create a project/task\" item(s) weren't kept as tasks - the project is listed under projects.");
         if (ownersRemoved > 0) out.getWarnings().add(ownersRemoved + " owner name(s) weren't in the cited lines, so those actions are unassigned.");
         if (deadlinesRemoved > 0) out.getWarnings().add(deadlinesRemoved + " deadline(s) weren't in the cited lines, so they are unspecified.");
         return out;
@@ -351,6 +380,49 @@ public final class InsightValidator {
         String who = l.speaker().strip();
         if (who.matches("(?i)(unknown( speaker)?|speaker( [0-9]+)?( \\(part [0-9]+\\))?|you|me)")) return null;
         return SELF_COMMIT.matcher(l.text().replace('’', '\'')).find() ? who : null;
+    }
+
+    static final Pattern META_ACTION = Pattern.compile("(?i)(create|set up|setup|open|start|make|add)( a| the| new| a new)? (project|task)s?( in prowosma)?\\.?");
+    private static final Pattern CREATE_PROJECT = Pattern.compile("(?i)\\b(create|set up|setup|start|open|make|kick off)\\b[^.?!]{0,40}\\bproject\\b");
+    private static final Pattern TENTATIVE = Pattern.compile("(?i)\\b(maybe|might|should we|could we|do we need|not sure|perhaps|if we)\\b");
+
+    private static final Pattern TASK_THAT = Pattern.compile("(?i)\\ba task (?:that|which|to) ([a-z]+)((?: [a-z0-9'-]+){1,8})");
+
+    /** "a task that explains the feature" -> "Explain the feature"; "a task to update the docs" -> "Update the docs". Null if the line has none. */
+    static String taskFromLine(Line l) {
+        if (l == null) return null;
+        java.util.regex.Matcher mt = TASK_THAT.matcher(l.text());
+        if (!mt.find()) return null;
+        String verb = mt.group(1).toLowerCase(Locale.ROOT);
+        if (Set.of("is", "was", "will", "would", "should", "can", "could", "we", "i", "you", "they", "has", "have").contains(verb)) return null;
+        if (verb.matches(".*(sh|ch|x|ss|z)es")) verb = verb.substring(0, verb.length() - 2);
+        else if (verb.endsWith("ies")) verb = verb.substring(0, verb.length() - 3) + "y";
+        else if (verb.endsWith("s") && !verb.endsWith("ss")) verb = verb.substring(0, verb.length() - 1);
+        String rest = mt.group(2).replaceAll("(?i) (and|but|so|once|when|then)( .*)?$", "");
+        String t = verb + rest;
+        return Character.toUpperCase(t.charAt(0)) + t.substring(1);
+    }
+
+    /** The cited lines clearly say a project will be created (not a question or a maybe). */
+    static boolean askedToCreate(List<Integer> evidence, Map<Integer, Line> lines) {
+        for (int seq : evidence) {
+            Line l = lines.get(seq);
+            if (l != null && CREATE_PROJECT.matcher(l.text()).find() && !TENTATIVE.matcher(l.text()).find()) return true;
+        }
+        return false;
+    }
+
+    private static String stem(String w) { return w.length() > 5 ? w.substring(0, 5) : w; }
+
+    /** Every meaningful word of the name was used somewhere in the meeting (compared on the first 5 letters: "explanation" counts for "explaining"). */
+    static boolean wordsUsed(String name, Map<Integer, Line> lines) {
+        Set<String> stems = new HashSet<>();
+        for (Line l : lines.values()) for (String w : norm(l.text()).split(" ")) if (w.length() >= 3) stems.add(stem(w));
+        for (String w : norm(name).split(" ")) {
+            if (w.length() < 3 || Set.of("the", "and", "for", "project", "new").contains(w)) continue;
+            if (!stems.contains(stem(w))) return false;
+        }
+        return true;
     }
 
     private static final Pattern HEDGE = Pattern.compile("\\b(if i can|if possible|if i get time|maybe|might|try to|i'll try|hopefully|probably|not sure|i think|perhaps)\\b",

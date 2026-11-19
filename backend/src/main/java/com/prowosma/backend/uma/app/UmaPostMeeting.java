@@ -195,6 +195,8 @@ public class UmaPostMeeting {
      * Marks each action's owner as verified or not. Verified = the person the meeting named is a workspace member who was INVITED to
      * this meeting by email (or organised it). A spoken first name counts only when exactly one invited member has that first name.
      */
+    private static final java.util.regex.Pattern NEUTRAL_SPEAKER = java.util.regex.Pattern.compile("(?i)(unknown )?speaker( [0-9]+)?( \\(part [0-9]+\\))?");
+
     void verifyOwners(UmaMeeting m, UmaInsights ins) {
         String org = m.getOrganizationId();
         Set<String> invited = new HashSet<>();
@@ -206,12 +208,37 @@ public class UmaPostMeeting {
             byId.put(t.getId(), t);
             if (t.getEmail() != null && invited.contains(t.getEmail().toLowerCase(Locale.ROOT)) && !"VIEWER".equalsIgnoreCase(t.getRole())) invitedMembers.add(t);
         }
+        // A meeting with nobody invited but the organiser, where exactly one named person spoke: that person is the organiser
+        // (e.g. a solo "Meet now" test, where the recording carries the organiser's display name, not their email).
+        TeamMember organiser = null;
+        String soloSpeaker = null, soloName = null;
+        boolean nobodyElseInvited = m.getCreatedBy() != null && invited.size() == 1;
+        if (nobodyElseInvited) {
+            organiser = members.findByOrganizationId(org).stream()
+                    .filter(t -> t.getEmail() != null && t.getEmail().equalsIgnoreCase(m.getCreatedBy())).findFirst().orElse(null);
+            Set<String> speakers = new HashSet<>();
+            for (UmaSegment seg : store.segments(org, m.getId())) {
+                String sp = seg.getSpeaker() == null ? "" : seg.getSpeaker().trim();
+                if (sp.isEmpty() || NEUTRAL_SPEAKER.matcher(sp).matches() || com.prowosma.backend.uma.core.UmaGoogleMeet.isNotetakerName(sp)) continue;
+                if (speakers.add(NameMatcher.norm(sp)) && soloName == null) soloName = sp;
+            }
+            if (speakers.size() == 1) soloSpeaker = speakers.iterator().next();
+        }
         for (UmaInsights.ActionItem a : ins.getActions()) {
             if (!"PENDING".equals(a.getStatus()) && !"FAILED".equals(a.getStatus())) continue;
             if (a.isEdited()) continue;                                         // a person chose the owner: leave it alone
             a.setOwnerVerified(false);
+            // Nobody named: in a meeting where only the organiser spoke and nobody else was invited, there is nobody else it could be.
+            if (organiser != null && soloSpeaker != null && a.getOwnerSpoken() == null) a.setOwnerSpoken(soloName);
+            if (organiser != null && soloSpeaker != null && a.getOwnerSpoken() != null
+                    && soloSpeaker.equals(NameMatcher.norm(a.getOwnerSpoken())) && !"VIEWER".equalsIgnoreCase(organiser.getRole())) {
+                a.setOwnerMemberId(organiser.getId()); a.setOwnerState("MATCHED"); a.setOwnerVerified(true);
+                a.setOwnerBasis("\"" + a.getOwnerSpoken() + "\" was the only person speaking in a meeting with nobody else invited: the organiser ("
+                        + organiser.getEmail().toLowerCase(Locale.ROOT) + ").");
+                continue;
+            }
             if (a.getOwnerSpoken() == null) { a.setOwnerBasis(null); continue; }
-            if (a.getOwnerSpoken().matches("(?i)(unknown )?speaker( [0-9]+)?( \\(part [0-9]+\\))?")) {
+            if (NEUTRAL_SPEAKER.matcher(a.getOwnerSpoken()).matches()) {
                 a.setOwnerBasis("Said by \"" + a.getOwnerSpoken() + "\": the recording doesn't say who that is. Choose the owner.");
                 continue;
             }

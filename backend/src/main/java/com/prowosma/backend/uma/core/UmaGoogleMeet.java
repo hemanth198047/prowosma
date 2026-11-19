@@ -37,6 +37,9 @@ public class UmaGoogleMeet {
     static final Pattern NOTETAKER = Pattern.compile("(?i)(fireflies|notetaker|note[- ]?taker|otter\\.?ai|\\botter\\b|read\\.ai|fathom|tl;?dv|meetgeek|avoma|"
             + "fellow\\.app|grain|krisp|circleback|bluedot|jamie|tactiq|recorder|\\bbot\\b)");
 
+    /** A notetaker bot's name ("Fireflies.ai Notetaker", "Read.ai", ...). */
+    public static boolean isNotetakerName(String name) { return name != null && NOTETAKER.matcher(name).find(); }
+
     static boolean isNotetaker(GoogleMeetApi.Attendee a) { return a.displayName() != null && NOTETAKER.matcher(a.displayName()).find(); }
 
     private final GoogleOAuthService oauth;          // the existing assistant's sign-in: used only as a fallback for reading transcripts

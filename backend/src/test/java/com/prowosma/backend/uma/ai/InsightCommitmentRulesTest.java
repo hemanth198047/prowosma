@@ -33,4 +33,28 @@ class InsightCommitmentRulesTest {
         assertThat(InsightValidator.hedged(List.of(1), line("Priya Sharma", "Maybe I'll look at it."))).isTrue();
         assertThat(InsightValidator.hedged(List.of(1), line("Suresh Rao", "I'll implement the backend APIs by Thursday."))).isFalse();
     }
+
+    static InsightValidator.Line l(String text) { return new InsightValidator.Line(1, "ManuAbhi", text); }
+
+    @Test
+    void createTaskIsntWork_butTheTaskItDescribesIs() {
+        assertThat(InsightValidator.META_ACTION.matcher("Create Task").matches()).isTrue();
+        assertThat(InsightValidator.META_ACTION.matcher("Create a new project").matches()).isTrue();
+        assertThat(InsightValidator.META_ACTION.matcher("Create the onboarding guide").matches()).isFalse();
+        assertThat(InsightValidator.taskFromLine(l("I am going to create a project for this, and in that project a task that explains the feature.")))
+                .isEqualTo("Explain the feature");
+        assertThat(InsightValidator.taskFromLine(l("Add a task to update the docs and then we are done."))).isEqualTo("Update the docs");
+        assertThat(InsightValidator.taskFromLine(l("Add a task that fixes the login bug."))).isEqualTo("Fix the login bug");
+        assertThat(InsightValidator.taskFromLine(l("We need a task that is quick."))).isNull();
+        assertThat(InsightValidator.taskFromLine(l("Let's create a task."))).isNull();
+    }
+
+    @Test
+    void aClearCreateProjectRequest_versusAMaybe() {
+        assertThat(InsightValidator.askedToCreate(List.of(1), Map.of(1, l("I am going to create a project for this.")))).isTrue();
+        assertThat(InsightValidator.askedToCreate(List.of(1), Map.of(1, l("Maybe we should create a project for this?")))).isFalse();
+        Map<Integer, InsightValidator.Line> lines = Map.of(1, l("A test of the Google Meet instant meeting feature."), 2, l("The explanation comes later."));
+        assertThat(InsightValidator.wordsUsed("Project for explaining Google Meet instant meeting feature", lines)).isTrue();
+        assertThat(InsightValidator.wordsUsed("Customer onboarding revamp", lines)).isFalse();
+    }
 }

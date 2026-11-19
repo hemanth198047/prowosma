@@ -113,9 +113,11 @@ class UmaAutomationTest extends TwoWorkspaceTestBase {
     }
 
     /** Imports the transcript; the invited people are set as a calendar import would, before the analysis runs. */
-    String meeting(List<String> invited) throws Exception {
+    String meeting(List<String> invited) throws Exception { return meeting(invited, TRANSCRIPT); }
+
+    String meeting(List<String> invited, String transcript) throws Exception {
         MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(Map.of("text", TRANSCRIPT, "title", "Customer Portal Project Kickoff",
+                .content(om.writeValueAsString(Map.of("text", transcript, "title", "Customer Portal Project Kickoff",
                         "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
         assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
         String id = json(r).get("id").asText();
@@ -258,7 +260,7 @@ class UmaAutomationTest extends TwoWorkspaceTestBase {
     void aSuggestedProjectWaits_andAPersonCreatesOrDismissesIt() throws Exception {
         enable();
         ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM) ? MODEL_REPLY.replace("\"intent\": \"CREATE\"", "\"intent\": \"PROPOSAL\"") : "{}";
-        String id = meeting(EVERYONE);
+        String id = meeting(EVERYONE, TRANSCRIPT.replace("Let's create a project", "Maybe we should create a project"));
         assertThat(mongoTemplate.count(new Query(Criteria.where("sourceMeetingId").is(id)), Project.class)).isZero();
         String itemId = detail(id).at("/insights/projects/0/id").asText();
 
@@ -324,5 +326,90 @@ class UmaAutomationTest extends TwoWorkspaceTestBase {
                 : "{}";
         String id = meeting(EVERYONE);
         assertThat(tasksOf(id)).extracting(Task::getTitle).contains("Prepare test cases");
+    }
+
+    /** The reported case: a solo "Meet now" test. The recording names the organiser by their display name, nobody else was invited. */
+    static final String SOLO = String.join("\n",
+            "ManuAbhi: Hi, this is a test of the Google Meet instant meeting feature in Prowosma.",
+            "ManuAbhi: I am going to create a project for this, and in that project a task that explains the feature.",
+            "ManuAbhi: Once the testing and the explanation are done, we will close the project and the task.",
+            "ManuAbhi: That's all for this test.");
+
+    /** What the real local model returned for it: the instruction itself as tasks, and a project with a made-up name marked PROPOSAL. */
+    static final String SOLO_REPLY = """
+            {"summary": "A test of the instant meeting feature.", "notes": [], "decisions": [],
+             "actions": [
+               {"title": "Create Project", "description": "", "owner": "ManuAbhi", "due": null, "priority": "MEDIUM", "confidence": "HIGH", "evidence": [2]},
+               {"title": "Create Task", "description": "", "owner": "ManuAbhi", "due": null, "priority": "MEDIUM", "confidence": "HIGH", "evidence": [2]},
+               {"title": "Explain the instant meeting feature", "description": "", "owner": "ManuAbhi", "due": null, "priority": "MEDIUM", "confidence": "HIGH", "evidence": [2]}
+             ],
+             "projects": [{"name": "Project for explaining Google Meet instant meeting feature", "description": "", "intent": "PROPOSAL", "requestedBy": "ManuAbhi", "evidence": [2]}],
+             "risks": [], "questions": [], "followUps": []}
+            """;
+
+    @Test
+    void aSoloMeetNowTest_createsTheProjectAndATaskForTheOrganiser() throws Exception {
+        enable();
+        String me = member(ownerEmail, "Test Owner");
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM) ? SOLO_REPLY : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", SOLO, "title", "Instant meeting", "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+
+        List<Project> created = mongoTemplate.find(new Query(Criteria.where("sourceMeetingId").is(id)), Project.class);
+        assertThat(created).extracting(Project::getName).containsExactly("Project for explaining Google Meet instant meeting feature");
+        List<Task> tasks = tasksOf(id);
+        assertThat(tasks).extracting(Task::getTitle).containsExactly("Explain the instant meeting feature");   // "Create Project/Task" aren't tasks
+        assertThat(tasks.get(0).getAssigneeIds()).containsExactly(me);
+        assertThat(tasks.get(0).getProjectId()).isEqualTo(created.get(0).getId());
+        assertThat(action(detail(id), "Explain the instant meeting feature").get("ownerBasis").asText()).contains("only person speaking");
+    }
+
+    @Test
+    void aSoloTest_stillWorksWhenTheModelLeavesTheOwnerOutAndCitesTheWrongLineForTheProject() throws Exception {
+        enable();
+        String me = member(ownerEmail, "Test Owner");
+        // Another real run: no owner on the task, and the project cited line 1 instead of the "create a project" line.
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM)
+                ? SOLO_REPLY.replace("\"owner\": \"ManuAbhi\"", "\"owner\": null").replace("\"requestedBy\": \"ManuAbhi\", \"evidence\": [2]", "\"requestedBy\": null, \"evidence\": [1]")
+                : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", SOLO, "title", "Instant meeting", "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+        assertThat(mongoTemplate.count(new Query(Criteria.where("sourceMeetingId").is(id)), Project.class)).isEqualTo(1);
+        assertThat(tasksOf(id)).singleElement().satisfies(t -> assertThat(t.getAssigneeIds()).containsExactly(me));
+    }
+
+    @Test
+    void whenTheModelOnlySays_CreateTask_theTaskIsTakenFromTheSentence() throws Exception {
+        enable();
+        String me = member(ownerEmail, "Test Owner");
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM)
+                ? SOLO_REPLY.replaceAll(",\\s*\\{\"title\": \"Explain the instant[^}]*\\}", "")
+                : "{}";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", SOLO, "title", "Instant meeting", "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+        assertThat(tasksOf(id)).singleElement().satisfies(t -> {
+            assertThat(t.getTitle()).isEqualTo("Explain the feature");
+            assertThat(t.getAssigneeIds()).containsExactly(me);
+        });
+    }
+
+    @Test
+    void aMaybeIsntARequest_andTwoSpeakersArentGuessed() throws Exception {
+        enable();
+        member(ownerEmail, "Test Owner");
+        ai.responder = call -> call.system().equals(InsightPrompts.EXTRACT_SYSTEM) ? SOLO_REPLY : "{}";
+        String text = SOLO.replace("I am going to create a project", "Maybe we should create a project") + "\nPriya Sharma: Sure.\nPriya Sharma: Bye.";
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), ownerToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", text, "title", "Instant meeting", "meetingAt", "2026-11-18T10:00:00Z", "timezone", "UTC")))).andReturn();
+        String id = json(r).get("id").asText();
+        pipeline.drain();
+        assertThat(mongoTemplate.count(new Query(Criteria.where("sourceMeetingId").is(id)), Project.class)).isZero();
+        assertThat(tasksOf(id)).isEmpty();
     }
 }

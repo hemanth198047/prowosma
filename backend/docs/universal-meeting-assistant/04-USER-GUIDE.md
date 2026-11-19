@@ -20,10 +20,13 @@ Turn a meeting into a summary, the decisions, and action items you can approve a
 
 What is created on its own:
 - **Tasks** that were clearly agreed, with the cited transcript lines. Assigned only when the person was **invited to the meeting** (a first
-  name counts only if just one invited person has it). Deadlines are turned into dates only when clear: "Thursday" yes, "next Friday" no
+  name counts only if just one invited person has it). In a meeting where you are the only person invited and the only one speaking
+  (a solo **Meet now** test), what you take on is assigned to you. Deadlines are turned into dates only when clear: "Thursday" yes, "next Friday" no
   (the task is created without a date and you're told the likely one).
-- **Projects** when someone clearly asks for one by name ("Let's create a project called Customer Portal Development"). A project that
-  already exists with that name is linked instead.
+- **Projects** when someone clearly says one will be created ("Let's create a project called Customer Portal Development", "I'm going
+  to create a project for this"). If no name is said, it gets a short name made only of words used in the meeting. "Maybe we should..."
+  only suggests one - it waits for you. A project that already exists with that name is linked instead. "Create a project" / "create a
+  task" are never tasks themselves: "a task that explains the feature" becomes the task "Explain the feature".
 - Never: changes to existing tasks or projects, reassignments or deletions - whatever is said in the meeting.
 
 No Fireflies? Click **Record meeting** before you start and share the meeting tab (Chrome or Edge).
