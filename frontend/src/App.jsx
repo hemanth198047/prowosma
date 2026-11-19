@@ -51,6 +51,7 @@ import LiveClock from "./components/LiveClock";
 import ClockWidget from "./components/ClockWidget";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import NotificationPrompt from "./components/NotificationPrompt";
+import { TimerOrClock, WorkTimerStrip } from "./components/WorkTimer";
 import ConnectionStatus from "./components/ConnectionStatus";
 import AIStatus from "./components/AIStatus";
 import PWAInstallBanner from "./components/PWAInstallBanner";
@@ -432,6 +433,7 @@ function AppShell() {
                 </div>
                 <div className="mobile-clock"><ClockWidget mobile /></div>
               </div>}
+              {!isLoginPage && <WorkTimerStrip />}
               {!isLoginPage && <div className="topbar">
                 {/* Left: menu button (narrow screens) + where you are */}
                 <button className="topbar-sidebar-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="Toggle sidebar">
@@ -448,7 +450,7 @@ function AppShell() {
                 </div>
                 {/* Right cluster */}
                 <div className="topbar-right-cluster">
-                  <LiveClock />
+                  <TimerOrClock><LiveClock /></TimerOrClock>
                   <ClockWidget />
                   <ConnectionStatus />
                   {!restricted && <AIStatus />}

@@ -152,6 +152,9 @@ class AccessScopeTest {
         assertTrue(AccessGatePolicy.isAllowed("/api/projects/abc", "GET", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/team", "GET", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/access/me", "GET", editor));
+        // a restricted person may turn on their own desktop notifications and time their own work
+        assertTrue(AccessGatePolicy.isAllowed("/api/push/subscribe", "POST", editor));
+        assertTrue(AccessGatePolicy.isAllowed("/api/work-sessions/start", "POST", editor));
         assertTrue(AccessGatePolicy.isAllowed("/api/access/options", "GET", editor));
         assertFalse(AccessGatePolicy.isAllowed("/api/admin/access/settings", "GET", editor));
         assertFalse(AccessGatePolicy.isAllowed("/api/admin/access/org-setup", "POST", editor));
@@ -160,7 +163,7 @@ class AccessScopeTest {
         assertFalse(AccessGatePolicy.isAllowed("/api/workspaces/w1/members", "GET", editor));
         for (String p : List.of("/api/dashboard/sprints", "/api/dashboard/meeting-pulse",
                 "/api/meeting-assistant/sessions", "/api/kpis", "/api/user-groups", "/api/import", "/api/import-export", "/api/tasksX",
-                "/api/push/subscribe", "/api/meetings", "/api/meeting-action-items", "/api/roi", "/api/scenarios", "/api/automations",
+                "/api/meetings", "/api/meeting-action-items", "/api/roi", "/api/scenarios", "/api/automations",
                 "/api/integrations", "/api/bpm", "/api/deployments", "/api/expertise", "/api/api-keys", "/api/webhooks", "/api/billing",
                 "/api/security/sessions/all", "/api/admin/access/settings", "/api/reminders/send-now", "/api/dlp", "/api/risk",
                 "/api/searchX", "/api/ganttX", "/api/time/invoices", "/api/time/invoices/generate", "/api/workspaces/w1/stats",

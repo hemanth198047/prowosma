@@ -38,11 +38,13 @@ public class AttendanceService {
     private final ProjectRepository projects;
     private final SprintRepository sprints;
     private final VisibilityService visibility;
+    private final com.prowosma.backend.service.WorkSessionService workSessions;
 
     public AttendanceService(MongoTemplate mongo, WorkspaceRepository workspaces, TeamMemberRepository members, UserRepository users,
-                             ProjectRepository projects, SprintRepository sprints, VisibilityService visibility) {
+                             ProjectRepository projects, SprintRepository sprints, VisibilityService visibility,
+                             com.prowosma.backend.service.WorkSessionService workSessions) {
         this.mongo = mongo; this.workspaces = workspaces; this.members = members; this.users = users;
-        this.projects = projects; this.sprints = sprints; this.visibility = visibility;
+        this.projects = projects; this.sprints = sprints; this.visibility = visibility; this.workSessions = workSessions;
     }
 
     // ── who is asking ───────────────────────────────────────────────────
@@ -242,6 +244,7 @@ public class AttendanceService {
         }
         log.setState("OFF");
         save(log, c);
+        workSessions.stop(c.org(), c.email(), null, now, "CLOCKED_OUT");     // clocking out of the day also stops the project timer
         return me(c);
     }
 

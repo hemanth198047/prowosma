@@ -1,0 +1,47 @@
+/* Project work timer: top-bar chip, Start/Stop button, time panel. Theme tokens only. */
+.wt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success, #10b981); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success, #10b981) 25%, transparent); flex: none; animation: wt-pulse 2s ease-in-out infinite; }
+@keyframes wt-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .wt-dot { animation: none; } }
+.wt-chip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 4px 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); max-width: 300px; }
+.wt-chip-name { font-size: 13px; font-weight: 600; color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.wt-chip-name:hover { text-decoration: underline; }
+.wt-chip-time { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.wt-stop { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--danger-bg, #fee2e2); color: var(--danger-text, #b91c1c); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.wt-chip--compact { gap: 6px; padding-left: 8px; height: 32px; max-width: 210px; }
+.wt-chip--compact .wt-chip-name { max-width: 90px; font-size: 12.5px; }
+.wt-chip--compact .wt-stop { width: 28px; padding: 0; justify-content: center; }
+.wt-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--brand-500); border-radius: 8px; background: var(--brand-50); color: var(--brand-700, var(--brand-600)); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.wt-btn:hover { background: var(--brand-100, var(--brand-50)); }
+.wt-btn--on { border-color: var(--danger-text, #b91c1c); background: var(--danger-bg, #fee2e2); color: var(--danger-text, #b91c1c); }
+.wt-btn-time { font-variant-numeric: tabular-nums; font-weight: 500; }
+.wt-panel { margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--gray-50, var(--bg-hover)); display: grid; gap: 8px; }
+.wt-panel-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wt-panel-title { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text-primary); margin-right: auto; }
+.wt-range { font: inherit; font-size: 12.5px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text-primary); }
+.wt-link { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--brand-600); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px; }
+.wt-people { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.wt-people li { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.wt-people li:last-child { border-bottom: 0; }
+.wt-person { font-size: 13.5px; font-weight: 600; color: var(--text-primary); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wt-now { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--success-text, #047857); }
+.wt-hours { font-size: 13.5px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wt-sub { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); }
+.wt-total { margin: 0; font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
+.wt-muted { margin: 0; font-size: 12.5px; color: var(--text-muted); }
+.wt-error { margin: 0; font-size: 12.5px; color: var(--danger-text, #b91c1c); }
+.pj-work { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.pj-row-actions { display: inline-flex; align-items: center; gap: 6px; }
+.wt-strip { display: none; }
+@media (max-width: 768px) {
+  .wt-strip { display: block; position: sticky; top: 0; z-index: 40; padding: 6px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+  .wt-strip .wt-chip { display: flex; max-width: none; width: 100%; height: 40px; border-radius: 10px; }
+  .wt-strip .wt-chip-name { max-width: none; flex: 1; font-size: 14px; }
+  .wt-strip .wt-stop { height: 32px; padding: 0 14px; font-size: 13.5px; }
+  .wt-btn { min-height: 42px; padding: 0 16px; font-size: 14px; }
+}
+
+/* The top bar is full on laptop screens: below 1600px the clock drops its date line, and the
+   top bar can never make the page wider than the window. */
+.content-wrapper { min-width: 0; }
+.topbar { min-width: 0; }
+@media (max-width: 1600px) { .topbar .live-clock-date { display: none; } }

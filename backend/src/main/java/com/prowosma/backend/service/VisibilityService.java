@@ -172,6 +172,11 @@ public class VisibilityService {
         if (!current().canManageProject(facts(p))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the project's creator, a department admin of its departments, or a workspace admin can do that.");
     }
 
+    /** May this person manage the project (its creator, a department admin of its departments, or a workspace admin)? */
+    public boolean canManageProject(Project p) {
+        return p != null && canSeeProject(p) && current().canManageProject(facts(p));
+    }
+
     public void requireCapability(String capability) {
         if (!current().has(capability)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your access profile doesn't allow this (" + capability + ").");
     }

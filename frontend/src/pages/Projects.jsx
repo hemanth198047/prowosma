@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle, Archive, ArchiveRestore, Bot, CalendarDays, ChevronRight, Copy, Download, FileSpreadsheet,
-  FileText, FolderPlus, History, LayoutGrid, List, ListChecks, Lock, Pencil, Plus, Search, Target, Trash2, Users,
+  FileText, FolderPlus, History, LayoutGrid, List, ListChecks, Lock, Pencil, Plus, Search, Target, Timer, Trash2, Users,
 } from "lucide-react";
 import { unwrapList } from "../api/client";
 import IntegrationPanel from "../components/IntegrationPanel";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PeoplePicker from "../components/PeoplePicker";
+import { ProjectWorkButton, ProjectTimePanel } from "../components/WorkTimer";
 import { updateProjectTeam } from "../api/org";
 import {
   getProjects,
@@ -715,6 +716,7 @@ function ProjectMeetingsPanel({ projectId, navigate }) {
 function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive, onClone }) {
   const [showActivity, setShowActivity] = useState(false);
   const [showMeetings, setShowMeetings] = useState(false);
+  const [showTime, setShowTime] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
   const [teamSaved, setTeamSaved] = useState(null);
@@ -725,6 +727,7 @@ function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive,
     { label: "Edit project", icon: Pencil, onSelect: () => onEdit(p) },
     { label: "Open tasks", icon: ListChecks, onSelect: () => navigate(`/tasks?projectId=${p.id}`) },
     { label: "Team", icon: Users, onSelect: () => setShowTeam(true) },
+    { label: showTime ? "Hide time" : "Time spent", icon: Timer, onSelect: () => setShowTime(t => !t) },
     { label: "Add sub-project", icon: FolderPlus, onSelect: () => onAddSub(p) },
     "divider",
     { label: showActivity ? "Hide activity" : "Activity", icon: History, onSelect: () => setShowActivity(a => !a) },
@@ -760,10 +763,11 @@ function useProjectActions(p, { navigate, onEdit, onDelete, onAddSub, onArchive,
         </div>
       )}
       {showMeetings && <ProjectMeetingsPanel projectId={p.id} navigate={navigate} />}
+      {showTime && <ProjectTimePanel project={p} />}
     </>
   );
 
-  return { items, modals, panels, team, openTeam: () => setShowTeam(true), hasPanel: showActivity || showMeetings };
+  return { items, modals, panels, team, openTeam: () => setShowTeam(true), hasPanel: showActivity || showMeetings || showTime };
 }
 
 function highlightProps(p, highlightId, highlightColor) {
@@ -898,6 +902,7 @@ function ProjectCard({
       </div>
       <ProgressBar value={progress} color={color} name={p.name} />
       <TeamLine emails={team.memberEmails || []} onOpen={openTeam} projectName={p.name} />
+      <div className="pj-work"><ProjectWorkButton project={p} /></div>
       <SubProjects subProjects={subProjects} subProgress={subProgress} navigate={navigate}
         onEditSub={onEditSub} onDeleteSub={onDeleteSub} onAddSubTask={onAddSubTask} />
       {panels}
@@ -940,7 +945,7 @@ function ProjectRow({
             <button type="button" className="pj-team-btn" onClick={openTeam}>Add team</button>
           )}
         </td>
-        <td className="pj-cell-actions"><ActionMenu items={items} label={`More actions for ${p.name}`} />{modals}</td>
+        <td className="pj-cell-actions"><span className="pj-row-actions"><ProjectWorkButton project={p} /><ActionMenu items={items} label={`More actions for ${p.name}`} /></span>{modals}</td>
       </tr>
       {(hasPanel || subProjects.length > 0) && (
         <tr className="pj-row-extra">
