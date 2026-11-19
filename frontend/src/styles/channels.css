@@ -66,3 +66,61 @@
 .channel-standup-date   { font-size:11px; color:var(--gray-400); }
 .channel-standup-mood   { margin-left:6px; }
 .channel-standup-item { display:flex; gap:8px; font-size:12px; color:var(--gray-600); padding:4px 0; line-height:1.5; }
+
+/* === Private channels, DMs, dialogs (2026-11) ================= */
+.ch-side-actions { display:grid; gap:6px; padding:10px; border-bottom:1px solid var(--border); }
+.ch-side-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:38px; font-size:13px; }
+.ch-group { padding:4px 0 8px; }
+.ch-group-title { padding:8px 14px 4px; font-size:11px; }
+.channel-list-item { min-height:36px; }
+.channel-list-hash { display:inline-flex; }
+.channel-list-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.channel-view-icon { display:inline-flex; }
+.ch-view-titles { flex:1; min-width:0; }
+.ch-view-titles .channel-view-desc { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ch-members-btn { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:4px 10px; font-size:13px; }
+.ch-icon-btn { display:inline-grid; place-items:center; width:34px; height:34px; border:0; border-radius:8px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.ch-icon-btn:hover { background:var(--gray-100); color:var(--text-primary); }
+.ch-back { display:none; }
+.ch-send-error { margin:0; padding:4px 16px; }
+
+.ch-overlay { position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,.45); display:flex; align-items:flex-start; justify-content:center; padding:10vh 16px 16px; overflow-y:auto; }
+.ch-dialog { width:100%; max-width:500px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-xl, 0 20px 40px rgba(0,0,0,.2)); padding:18px 20px; }
+.ch-dialog-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.ch-dialog-head h2 { margin:0; font-size:17px; font-weight:700; }
+.ch-dialog-head p { margin:2px 0 0; font-size:13px; color:var(--text-secondary); }
+.ch-x { background:none; border:0; padding:4px; border-radius:6px; color:var(--text-secondary); cursor:pointer; display:inline-flex; }
+.ch-dialog-body { display:grid; gap:8px; }
+.ch-dialog-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+.ch-leave { margin-right:auto; display:inline-flex; align-items:center; gap:6px; }
+.ch-field { font-size:13px; font-weight:600; color:var(--text-secondary); }
+.ch-opt { font-weight:400; color:var(--text-muted); }
+.ch-input { font:inherit; font-size:14px; color:var(--text-primary); background:var(--input-bg, var(--bg-card)); border:1px solid var(--input-border, var(--border)); border-radius:8px; padding:9px 11px; min-height:42px; width:100%; }
+.ch-error { margin:0; font-size:13px; color:var(--danger-text, #b91c1c); }
+.ch-vis { border:0; margin:4px 0 0; padding:0; display:grid; gap:6px; }
+.ch-vis-opt { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; }
+.ch-vis-opt.on { border-color:var(--brand-500); background:var(--brand-50); }
+.ch-vis-opt input { margin-top:3px; }
+.ch-vis-opt > svg { flex:none; margin-top:2px; color:var(--text-secondary); }
+.ch-vis-opt span { display:grid; gap:2px; font-size:14px; }
+.ch-vis-opt small { font-size:12.5px; color:var(--text-secondary); }
+.ch-members { list-style:none; margin:6px 0 0; padding:0; display:grid; gap:2px; max-height:320px; overflow-y:auto; }
+.ch-members li { display:flex; align-items:center; gap:10px; padding:6px 4px; border-radius:8px; }
+.ch-av { flex:none; width:30px; height:30px; border-radius:50%; display:inline-grid; place-items:center; background:var(--brand-500); color:#fff; font-size:11px; font-weight:700; }
+.ch-member-text { flex:1; display:grid; min-width:0; font-size:14px; }
+.ch-member-text small { font-size:12px; color:var(--text-muted); }
+
+/* Phones: one pane at a time - the list, or the open conversation with a back button. */
+@media (max-width: 768px) {
+  .channel-layout { grid-template-columns:1fr !important; height:calc(100dvh - 210px) !important; min-height:420px !important; }
+  .channel-layout .channel-main { display:none; }
+  .channel-layout.ch-show-chat .channel-sidebar { display:none; }
+  .channel-layout.ch-show-chat .channel-main { display:flex; }
+  .ch-back { display:inline-grid; }
+  .channel-sidebar { border-right:0; }
+  .channel-list-item { min-height:48px; font-size:15px; }
+  .channel-input { font-size:16px; min-height:44px; }
+  .channel-send-btn { min-width:48px; }
+  .ch-overlay { padding-top:4vh; }
+  .ch-dialog-foot .btn { flex:1; }
+}

@@ -16,7 +16,14 @@ public class Channel {
     private String type = "PROJECT";  // PROJECT | TEAM | DM | ANNOUNCEMENT
     private String projectId;         // for project channels
     private List<String> memberEmails = new ArrayList<>();
+    /** PUBLIC: everyone who can see its project (or the workspace) sees it. PRIVATE: only its members, like a Teams private channel. DMs are always private. */
+    private String visibility = "PUBLIC";
+    /** Who can add/remove people, rename or delete a private channel. The creator always can. */
+    private List<String> ownerEmails = new ArrayList<>();
     private boolean archived = false;
     private String createdBy;
+    private LocalDateTime lastMessageAt;
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public boolean isPrivate() { return "PRIVATE".equalsIgnoreCase(visibility) || "DM".equalsIgnoreCase(type); }
 }
