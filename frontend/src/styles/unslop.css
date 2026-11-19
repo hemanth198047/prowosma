@@ -521,3 +521,14 @@ a.ai-status:hover { background: var(--gray-100); color: var(--text-secondary); }
 .pulse-figures dt { font-size: 12px; color: var(--text-muted); }
 .pulse-figures dd { margin: 0; font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-primary); }
 .pulse-figures .is-late dd { color: var(--danger-text); }
+
+/* ── Design switch (user menu) — styled the same in both designs ── */
+.design-choice { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; }
+.design-choice-label { font-size: 13px; color: var(--text-secondary); }
+.design-choice-options { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--gray-100); }
+.design-choice-btn {
+  height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
+  font: inherit; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+}
+.design-choice-btn.is-active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+.design-choice-btn:disabled { cursor: progress; }

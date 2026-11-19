@@ -106,7 +106,31 @@ import Sops      from "./pages/Sops";
 
 import { usePWA } from "./hooks/usePWA";
 import { Gem as IcGem } from "lucide-react";
+import { applyDesign, activeDesign, DESIGNS, DESIGN_CHANGED_EVENT } from "./utils/design";
 
+
+/* ── Classic / New design, in the user menu ─────────────────────── */
+function DesignChoice() {
+  const [design, setDesign] = useState(activeDesign());
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const on = (e) => setDesign(e.detail);
+    window.addEventListener(DESIGN_CHANGED_EVENT, on);
+    return () => window.removeEventListener(DESIGN_CHANGED_EVENT, on);
+  }, []);
+  const pick = async (d) => { if (d === design || busy) return; setBusy(true); await applyDesign(d); setBusy(false); };
+  return (
+    <div className="design-choice" role="group" aria-label="Design">
+      <span className="design-choice-label">Design</span>
+      <div className="design-choice-options">
+        {[[DESIGNS.NEW, "New"], [DESIGNS.CLASSIC, "Classic"]].map(([d, label]) => (
+          <button key={d} type="button" aria-pressed={design === d} disabled={busy}
+            className={`design-choice-btn${design === d ? " is-active" : ""}`} onClick={() => pick(d)}>{label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Upgrade / Licensing CTA — always visible in topbar ────────── */
 function UpgradeCTA() {
@@ -183,9 +207,11 @@ function UserMenu() {
           )}
           {isInstalled && (
             <div className="user-menu-item" style={{ color: "#10b981", cursor: "default" }}>
-              App Installed
+              App installed
             </div>
           )}
+          <div className="user-menu-divider" />
+          <DesignChoice />
           <div className="user-menu-divider" />
           <button
             className="user-menu-item"
