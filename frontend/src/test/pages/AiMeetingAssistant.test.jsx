@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
   getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), startUmaInstantMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
   getUmaMicrosoft: vi.fn(), getUmaAutomationSettings: vi.fn(), saveUmaMyPreferences: vi.fn(), saveUmaWorkspaceAutomation: vi.fn(), decideUmaProject: vi.fn(),
+  deleteUmaMeetings: vi.fn(), previewUmaCleanup: vi.fn(), clearUmaOldMeetings: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
@@ -411,5 +412,54 @@ describe("AI Meeting Assistant (simulated API)", () => {
     await waitFor(() => expect(api.saveUmaMyPreferences).toHaveBeenCalledWith({ defaultPlatform: "MS_TEAMS" }));
     expect(within(dialog).getByRole("checkbox", { name: /Create a project when someone clearly asks/ })).toBeDisabled();
     expect(within(dialog).getByRole("checkbox", { name: /Create clearly agreed tasks from my meetings/ })).toBeEnabled();
+  });
+
+  describe("clearing old meetings", () => {
+    const row = (id, title, canManage = true) => ({ id, title, status: "COMPLETED", statusLabel: "Completed", source: "TRANSCRIPT_IMPORT", meetingAt: "2026-10-01T10:00:00Z", canManage });
+
+    it("selects several meetings and deletes them; meetings the person can't manage can't be selected", async () => {
+      api.getUmaDashboard.mockResolvedValue(dash({ retentionDays: 15, recent: [row("m1", "Kickoff"), row("m2", "Retro"), row("m3", "Board meeting", false)] }));
+      api.deleteUmaMeetings.mockResolvedValue({ data: { deleted: 2, skipped: [] } });
+      at("/ai-meeting-assistant");
+      expect(await screen.findByText(/deleted automatically 15 days after they took place/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select meetings" }));
+      fireEvent.click(screen.getByRole("checkbox", { name: "Select Kickoff" }));
+      fireEvent.click(screen.getByRole("checkbox", { name: "Select Retro" }));
+      expect(screen.queryByRole("checkbox", { name: "Select Board meeting" })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /Delete selected \(2\)/ }));
+      await waitFor(() => expect(api.deleteUmaMeetings).toHaveBeenCalledWith(["m1", "m2"]));
+      expect(toastShow).toHaveBeenCalledWith("2 meetings deleted.", "success");
+    });
+
+    it("clear old meetings: shows how many first, then deletes", async () => {
+      api.getUmaDashboard.mockResolvedValue(dash({ retentionDays: 15, recent: [row("m1", "Kickoff")] }));
+      api.previewUmaCleanup.mockImplementation((days) => Promise.resolve({ data: { count: days === 15 ? 4 : 9 } }));
+      api.clearUmaOldMeetings.mockResolvedValue({ data: { deleted: 9, count: 9 } });
+      at("/ai-meeting-assistant");
+      fireEvent.click(await screen.findByRole("button", { name: /Clear old meetings/ }));
+      const dialog = await screen.findByRole("dialog", { name: "Clear old meetings" });
+      expect(await within(dialog).findByText("4 meetings")).toBeInTheDocument();
+      fireEvent.change(within(dialog).getByLabelText("Delete my meetings"), { target: { value: "7" } });
+      expect(await within(dialog).findByText("9 meetings")).toBeInTheDocument();
+      expect(within(dialog).getByText(/Tasks and projects created from them stay/)).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole("button", { name: /Delete 9 meetings/ }));
+      await waitFor(() => expect(api.clearUmaOldMeetings).toHaveBeenCalledWith(7));
+      expect(toastShow).toHaveBeenCalledWith("9 meetings deleted.", "success");
+    });
+
+    it("admins set how long meetings are kept in Settings", async () => {
+      api.getUmaAutomationSettings.mockResolvedValue({ data: { mine: { defaultPlatform: "GOOGLE_MEET", autoTasks: true },
+        workspace: { autoCreateTasks: true, autoAssign: true, autoCreateProjects: true, maxAutoTasksPerMeeting: 25, meetingRetentionDays: 15 }, canChangeWorkspace: true } });
+      api.saveUmaWorkspaceAutomation.mockResolvedValue({ data: { mine: { defaultPlatform: "GOOGLE_MEET", autoTasks: true },
+        workspace: { autoCreateTasks: true, autoAssign: true, autoCreateProjects: true, maxAutoTasksPerMeeting: 25, meetingRetentionDays: 30 }, canChangeWorkspace: true } });
+      at("/ai-meeting-assistant");
+      fireEvent.click(await screen.findByRole("button", { name: /Settings/ }));
+      const dialog = await screen.findByRole("dialog", { name: "Settings" });
+      const days = await within(dialog).findByLabelText("Days to keep meetings");
+      expect(days).toHaveValue(15);
+      fireEvent.change(days, { target: { value: "30" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+      await waitFor(() => expect(api.saveUmaWorkspaceAutomation).toHaveBeenCalledWith({ meetingRetentionDays: 30 }));
+    });
   });
 });

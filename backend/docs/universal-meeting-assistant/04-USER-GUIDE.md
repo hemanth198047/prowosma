@@ -148,6 +148,18 @@ A meeting is **private** to the person who added it and workspace admins. From t
 
 **Delete meeting** removes the transcript, summary and recording. Tasks already created stay in Tasks.
 
+## Keeping the list tidy
+
+- **Automatically:** meetings are deleted **15 days after they took place** (transcript, notes and recording). An admin changes the number
+  of days in **Settings → Delete meetings automatically after** - `0` keeps meetings until someone deletes them.
+- **Several at once:** on the main page click **Select meetings**, tick them, then **Delete selected**.
+- **Everything older than…:** **Clear old meetings** → choose *older than 15 days*, *a week*, *a day*, or *all that already happened*. It shows
+  how many will go before anything is deleted.
+- **One meeting:** open it → **⋯ → Delete meeting**.
+
+You can delete only your own meetings (admins can delete any). Upcoming meetings, and meetings still being recorded or summarised, are
+never cleared. **Tasks and projects created from a meeting always stay.** Deleting can't be undone.
+
 ## Good to know
 
 - Recordings don't identify speakers; lines show as "Unknown speaker". Imported transcripts keep the names they contain.

@@ -66,6 +66,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
 
     @Autowired ObjectMapper om;
     @Autowired UmaPipeline pipeline;
+    @Autowired com.prowosma.backend.uma.app.UmaService umaService;
     final UmaFakes.Stt stt = Fakes.STT;
     @Autowired com.prowosma.backend.integration.FirefliesHttp firefliesHttp;
     UmaFirefliesFake ff() { return (UmaFirefliesFake) firefliesHttp; }
@@ -979,5 +980,93 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(d.at("/segments/0/speaker").asText()).isEqualTo("Speaker 1");
         assertThat(d.at("/segments/1/speaker").isNull()).as("a name from the speech server is a guess: dropped").isTrue();
         assertThat(d.at("/segments/2/speaker").asText()).isEqualTo("Speaker 2");
+    }
+
+    // ── clearing old meetings ─────────────────────────────────────────────
+
+    String importedMeeting(String token, String title, java.time.Instant at) throws Exception {
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/transcript"), token, workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("text", "Priya: We agreed the plan.\nRavi: Thanks.", "title", title, "meetingAt", at.toString())))).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        return json(r).get("id").asText();
+    }
+
+    boolean exists(String id) { return mongoTemplate.exists(new Query(Criteria.where("_id").is(id)), "uma_meetings"); }
+
+    @Test
+    void meetingsOlderThan15DaysAreDeletedAutomatically_tasksStay_andAdminsCanChangeOrStopIt() throws Exception {
+        enable(ownerToken(), workspaceId);
+        java.time.Instant now = java.time.Instant.now();
+        String old = importedMeeting(ownerToken(), "Old sync", now.minus(java.time.Duration.ofDays(20)));
+        String recent = importedMeeting(ownerToken(), "Recent sync", now.minus(java.time.Duration.ofDays(5)));
+        pipeline.drain();
+        mongoTemplate.save(new Task() {{ setTitle("From the old meeting"); setOrganizationId(workspaceId); setSourceMeetingId(old); setSourceActionKey("uma:" + old + ":x"); }});
+        MvcResult upcoming = mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"meetingAt\":\"" + now.plus(java.time.Duration.ofDays(3)) + "\"}")).andReturn();
+        String future = json(upcoming).get("id").asText();
+        assertThat(json(mvc.perform(as(get(BASE + "/dashboard"), ownerToken(), workspaceId)).andReturn()).get("retentionDays").asInt()).isEqualTo(15);
+
+        assertThat(umaService.purgeOldMeetings()).isEqualTo(1);
+        assertThat(exists(old)).isFalse();
+        assertThat(mongoTemplate.count(new Query(Criteria.where("meetingId").is(old)), "uma_segments")).isZero();
+        assertThat(exists(recent)).isTrue();
+        assertThat(exists(future)).isTrue();
+        assertThat(mongoTemplate.count(new Query(Criteria.where("sourceMeetingId").is(old)), Task.class)).as("tasks stay").isEqualTo(1);
+
+        // a member can't change it; an admin can - shorter, or 0 to keep everything
+        MvcResult denied = mvc.perform(as(put(BASE + "/settings/automation"), memberToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"meetingRetentionDays\":1}")).andReturn();
+        assertThat(denied.getResponse().getStatus()).isEqualTo(403);
+        mvc.perform(as(put(BASE + "/settings/automation"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content("{\"meetingRetentionDays\":0}")).andReturn();
+        String older = importedMeeting(ownerToken(), "Ancient", now.minus(java.time.Duration.ofDays(400)));
+        pipeline.drain();
+        assertThat(umaService.purgeOldMeetings()).isZero();
+        assertThat(exists(older)).isTrue();
+        MvcResult bad = mvc.perform(as(put(BASE + "/settings/automation"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content("{\"meetingRetentionDays\":-3}")).andReturn();
+        assertThat(bad.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void clearOldMeetings_countsThenDeletes_onlyWhatThePersonMayManage_neverUpcomingOrBusy() throws Exception {
+        enable(ownerToken(), workspaceId);
+        java.time.Instant now = java.time.Instant.now();
+        String mine = importedMeeting(memberToken(), "Mine, last month", now.minus(java.time.Duration.ofDays(30)));
+        String theirs = importedMeeting(ownerToken(), "Owner's, last month", now.minus(java.time.Duration.ofDays(30)));
+        String today = importedMeeting(memberToken(), "Mine, today", now.minus(java.time.Duration.ofHours(2)));
+        pipeline.drain();
+        String busy = importedMeeting(memberToken(), "Mine, still being summarised", now.minus(java.time.Duration.ofDays(40)));   // not drained
+
+        JsonNode preview = json(mvc.perform(as(get(BASE + "/meetings/cleanup").param("olderThanDays", "15"), memberToken(), workspaceId)).andReturn());
+        assertThat(preview.get("count").asInt()).isEqualTo(1);
+        assertThat(exists(mine)).as("a preview deletes nothing").isTrue();
+        JsonNode done = json(mvc.perform(as(post(BASE + "/meetings/cleanup").param("olderThanDays", "15"), memberToken(), workspaceId)).andReturn());
+        assertThat(done.get("deleted").asInt()).isEqualTo(1);
+        assertThat(exists(mine)).isFalse();
+        assertThat(exists(theirs)).as("someone else's meeting").isTrue();
+        assertThat(exists(today)).isTrue();
+        assertThat(exists(busy)).as("still being processed").isTrue();
+        // 0 = everything that already happened
+        assertThat(json(mvc.perform(as(post(BASE + "/meetings/cleanup").param("olderThanDays", "0"), memberToken(), workspaceId)).andReturn())
+                .get("deleted").asInt()).isEqualTo(1);
+        assertThat(exists(today)).isFalse();
+    }
+
+    @Test
+    void deleteSeveralAtOnce_skipsWhatThePersonCantDelete() throws Exception {
+        enable(ownerToken(), workspaceId);
+        java.time.Instant now = java.time.Instant.now();
+        String a = importedMeeting(memberToken(), "A", now), b = importedMeeting(memberToken(), "B", now), o = importedMeeting(ownerToken(), "Owner's", now);
+        pipeline.drain();
+        JsonNode r = json(mvc.perform(as(post(BASE + "/meetings/delete"), memberToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("ids", List.of(a, b, o, "nope"))))).andReturn());
+        assertThat(r.get("deleted").asInt()).isEqualTo(2);
+        assertThat(r.get("skipped").size()).isEqualTo(2);
+        assertThat(exists(a) || exists(b)).isFalse();
+        assertThat(exists(o)).isTrue();
+        // another workspace can't touch it
+        MvcResult other = mvc.perform(as(post(BASE + "/meetings/delete"), otherOwnerToken(), otherWorkspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(Map.of("ids", List.of(o))))).andReturn();
+        assertThat(exists(o)).isTrue();
+        assertThat(other.getResponse().getStatus()).isIn(200, 404);
     }
 }

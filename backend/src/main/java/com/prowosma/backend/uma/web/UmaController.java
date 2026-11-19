@@ -324,6 +324,22 @@ public class UmaController {
     @PutMapping("/settings/me")
     public Map<String, Object> saveMine(@RequestBody Map<String, Object> body, Authentication auth) { return service.saveMyPreferences(ctx(auth), body); }
 
+    public record DeleteManyBody(List<String> ids) {}
+
+    @PostMapping("/meetings/delete")
+    public Map<String, Object> deleteMany(@RequestBody DeleteManyBody b, Authentication auth) { return service.deleteMany(ctx(auth), b.ids()); }
+
+    /** GET counts (for the confirmation), POST deletes: the person's meetings older than olderThanDays (0 = all that already happened). */
+    @GetMapping("/meetings/cleanup")
+    public Map<String, Object> cleanupPreview(@RequestParam(defaultValue = "15") int olderThanDays, Authentication auth) {
+        return service.clearOld(ctx(auth), olderThanDays, false);
+    }
+
+    @PostMapping("/meetings/cleanup")
+    public Map<String, Object> cleanup(@RequestParam(defaultValue = "15") int olderThanDays, Authentication auth) {
+        return service.clearOld(ctx(auth), olderThanDays, true);
+    }
+
     @PostMapping("/meetings/{id}/ask")
     public UmaQuestion ask(@PathVariable String id, @RequestBody AskBody b, Authentication auth) {
         return service.ask(ctx(auth), id, b.question());

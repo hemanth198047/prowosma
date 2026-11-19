@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Deletes uploaded recordings once they have been transcribed and the retention window (app.uma.recording-retention-hours) has passed. */
+/**
+ * Hourly: deletes uploaded recordings once transcribed and past app.uma.recording-retention-hours, and whole meetings older than each
+ * workspace's retention (default 15 days; admins change it in Settings, 0 keeps them). Tasks created from meetings are never deleted.
+ */
 @Component
 @Slf4j
 public class UmaRetention {
@@ -20,6 +23,8 @@ public class UmaRetention {
         try {
             int n = service.purgeRecordings();
             if (n > 0) log.info("uma retention: deleted {} recording(s)", n);
+            int old = service.purgeOldMeetings();
+            if (old > 0) log.info("uma retention: deleted {} meeting(s) past their workspace's retention", old);
         } catch (Exception e) {
             log.warn("uma retention failed: {}", e.getClass().getSimpleName());
         }

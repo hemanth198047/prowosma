@@ -46,6 +46,10 @@ export const regenerateUmaMeeting = (id) => client.post(`${BASE}/meetings/${id}/
 export const cancelUmaMeeting     = (id) => client.post(`${BASE}/meetings/${id}/cancel`);
 export const completeUmaMeeting   = (id) => client.post(`${BASE}/meetings/${id}/complete`);
 export const deleteUmaMeeting     = (id) => client.delete(`${BASE}/meetings/${id}`);
+export const deleteUmaMeetings    = (ids) => client.post(`${BASE}/meetings/delete`, { ids });
+/** Meetings older than `olderThanDays` (0 = all that already happened): preview counts, clear deletes. */
+export const previewUmaCleanup    = (olderThanDays) => client.get(`${BASE}/meetings/cleanup`, { params: { olderThanDays }, ...fresh });
+export const clearUmaOldMeetings  = (olderThanDays) => client.post(`${BASE}/meetings/cleanup`, null, { params: { olderThanDays } });
 export const shareUmaMeeting      = (id, data) => client.put(`${BASE}/meetings/${id}/sharing`, data);
 export const editUmaSegment       = (id, seq, data) => client.patch(`${BASE}/meetings/${id}/segments/${seq}`, data);
 

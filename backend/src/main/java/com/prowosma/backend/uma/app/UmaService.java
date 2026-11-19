@@ -118,11 +118,12 @@ public class UmaService {
                 failed = new ArrayList<>(), recent = new ArrayList<>(), pendingActions = new ArrayList<>();
         for (UmaMeeting m : visible) {
             Map<String, Object> row = summary(m);
+            row.put("canManage", access.canManage(m, c.caller()));
             if (m.getStatus() == UmaStatus.CREATED && m.getMeetingAt() != null && m.getMeetingAt().isAfter(now)) upcoming.add(row);
             else if (m.getStatus().isWorking() || Set.of("In progress", "Getting transcript", "Waiting for transcript").contains(String.valueOf(row.get("statusLabel")))) inProgress.add(row);
             else if (m.getStatus() == UmaStatus.FAILED) failed.add(row);
             else if (m.getStatus() == UmaStatus.REVIEW_READY) review.add(row);
-            if (m.getStatus() != UmaStatus.CANCELLED && recent.size() < 20) recent.add(row);
+            if (m.getStatus() != UmaStatus.CANCELLED && recent.size() < 50) recent.add(row);
             if (m.getStatus() == UmaStatus.REVIEW_READY && pendingActions.size() < 25) {
                 store.insights(c.org(), m.getId()).ifPresent(ins -> ins.getActions().stream()
                         .filter(a -> "PENDING".equals(a.getStatus())).limit(25 - pendingActions.size())
@@ -137,6 +138,8 @@ public class UmaService {
         out.put("failed", failed);
         out.put("recent", recent);
         out.put("pendingActions", pendingActions);
+        UmaSettings ws = mongo.findById(c.org(), UmaSettings.class);
+        out.put("retentionDays", ws == null ? 15 : ws.retentionDays());
         out.put("readiness", readiness(c.org()));
         out.put("canCreate", !c.caller().viewer() && !"NONE".equals(c.caller().role()));
         out.put("isAdmin", c.caller().admin());
@@ -758,6 +761,74 @@ public class UmaService {
         store.audit(c.org(), id, c.caller().email(), "DELETED", null);
     }
 
+    // ── clearing old meetings ────────────────────────────────────────────
+
+    /** Busy meetings are never cleared (they are being recorded or processed); neither is a meeting that hasn't happened yet. */
+    static boolean clearable(UmaMeeting m, Instant cutoff, Instant now) {
+        if (m.getStatus() == UmaStatus.CAPTURING || m.getStatus().isWorking()) return false;
+        Instant when = m.getMeetingAt() != null ? m.getMeetingAt() : m.getCreatedAt();
+        if (when == null) return false;
+        if (m.getStatus() == UmaStatus.CREATED && (m.getMeetingEndAt() != null ? m.getMeetingEndAt() : when).isAfter(now)) return false;
+        return !when.isAfter(cutoff);
+    }
+
+    private void wipe(String org, UmaMeeting m, String by, String reason) {
+        queue.cancel(org, m.getId());
+        deleteRecordingFile(m);
+        store.deleteMeeting(org, m.getId());
+        store.audit(org, m.getId(), by, "DELETED", reason);
+    }
+
+    /** Deletes the chosen meetings the person may manage. Tasks already created from them stay in Tasks. */
+    public Map<String, Object> deleteMany(Ctx c, List<String> ids) {
+        if (ids == null || ids.isEmpty()) throw new UmaException(HttpStatus.BAD_REQUEST, "NOTHING_CHOSEN", "Choose the meetings to delete.");
+        if (ids.size() > 200) throw new UmaException(HttpStatus.BAD_REQUEST, "TOO_MANY", "Delete at most 200 meetings at a time.");
+        int deleted = 0;
+        List<Map<String, String>> skipped = new ArrayList<>();
+        for (String id : new LinkedHashSet<>(ids)) {
+            UmaMeeting m = store.meeting(c.org(), id).orElse(null);
+            if (m == null || !access.canRead(m, c.caller())) { skipped.add(Map.of("id", String.valueOf(id), "reason", "Not found.")); continue; }
+            if (!access.canManage(m, c.caller())) { skipped.add(Map.of("id", id, "reason", "Only the person who added it, or an admin, can delete it.")); continue; }
+            wipe(c.org(), m, c.caller().email(), "deleted with others");
+            deleted++;
+        }
+        return Map.of("deleted", deleted, "skipped", skipped);
+    }
+
+    /**
+     * The person's meetings older than {@code olderThanDays} (0 = every meeting that has already happened). Upcoming meetings and ones
+     * being recorded or processed are never included. {@code apply} false only counts them (for the confirmation).
+     */
+    public Map<String, Object> clearOld(Ctx c, int olderThanDays, boolean apply) {
+        if (olderThanDays < 0 || olderThanDays > 3650) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_AGE", "Choose 0 to 3650 days.");
+        Instant now = Instant.now(), cutoff = olderThanDays == 0 ? now : now.minus(java.time.Duration.ofDays(olderThanDays));
+        List<UmaMeeting> due = store.meetings(c.org(), 5000).stream()
+                .filter(m -> access.canManage(m, c.caller()) && clearable(m, cutoff, now)).toList();
+        if (apply) for (UmaMeeting m : due) wipe(c.org(), m, c.caller().email(), "cleared: older than " + olderThanDays + " days");
+        return Map.of("count", due.size(), "deleted", apply ? due.size() : 0);
+    }
+
+    /** Daily: each workspace's meetings older than its retention (default 15 days) are deleted. Returns how many. */
+    public int purgeOldMeetings() {
+        Instant now = Instant.now();
+        int n = 0;
+        for (Object orgId : mongo.getCollection("uma_meetings").distinct("organizationId", String.class)) {
+            String org = (String) orgId;
+            UmaSettings s = mongo.findById(org, UmaSettings.class);
+            int days = s == null ? 15 : s.retentionDays();
+            if (days == 0) continue;                                            // this workspace keeps its meetings
+            Instant cutoff = now.minus(java.time.Duration.ofDays(days));
+            List<UmaMeeting> old = mongo.find(new Query(Criteria.where("organizationId").is(org).orOperator(
+                    Criteria.where("meetingAt").lt(cutoff), Criteria.where("meetingAt").is(null).and("createdAt").lt(cutoff))).limit(500), UmaMeeting.class);
+            for (UmaMeeting m : old) {
+                if (!clearable(m, cutoff, now)) continue;
+                wipe(org, m, "system", "older than " + days + " days (workspace setting)");
+                n++;
+            }
+        }
+        return n;
+    }
+
     private void deleteRecordingFile(UmaMeeting m) {
         if (m.getRecording() == null) return;
         if (m.getRecording().getFileKey() != null) {
@@ -938,7 +1009,8 @@ public class UmaService {
         if (s == null) s = new UmaSettings();
         UmaUserPrefs mine = postMeeting.prefs(c.org(), c.caller().email());
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("workspace", Map.of("autoCreateTasks", s.tasksOn(), "autoAssign", s.assignOn(), "autoCreateProjects", s.projectsOn(), "maxAutoTasksPerMeeting", s.maxTasks()));
+        out.put("workspace", Map.of("autoCreateTasks", s.tasksOn(), "autoAssign", s.assignOn(), "autoCreateProjects", s.projectsOn(),
+                "maxAutoTasksPerMeeting", s.maxTasks(), "meetingRetentionDays", s.retentionDays()));
         out.put("mine", Map.of("defaultPlatform", mine.getDefaultPlatform(), "autoTasks", mine.isAutoTasks()));
         out.put("canChangeWorkspace", c.caller().admin());
         return out;
@@ -952,8 +1024,12 @@ public class UmaService {
         if (body.get("autoAssign") instanceof Boolean b) s.setAutoAssign(b);
         if (body.get("autoCreateProjects") instanceof Boolean b) s.setAutoCreateProjects(b);
         if (body.get("maxAutoTasksPerMeeting") instanceof Number n) s.setMaxAutoTasksPerMeeting(Math.max(0, Math.min(100, n.intValue())));
+        if (body.get("meetingRetentionDays") instanceof Number n) {
+            if (n.intValue() < 0 || n.intValue() > 3650) throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_AGE", "Choose 0 (keep) to 3650 days.");
+            s.setMeetingRetentionDays(n.intValue());
+        }
         mongo.save(s);
-        store.audit(c.org(), "settings", c.caller().email(), "AUTOMATION_SETTINGS_CHANGED", s.tasksOn() + "/" + s.assignOn() + "/" + s.projectsOn() + "/" + s.maxTasks());
+        store.audit(c.org(), "settings", c.caller().email(), "AUTOMATION_SETTINGS_CHANGED", s.tasksOn() + "/" + s.assignOn() + "/" + s.projectsOn() + "/" + s.maxTasks() + "/keep " + s.retentionDays() + "d");
         return automationSettings(c);
     }
 

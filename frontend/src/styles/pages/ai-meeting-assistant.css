@@ -248,3 +248,13 @@
 .uma-projects li > div:first-child { flex: 1 1 260px; min-width: 0; }
 .uma-project-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .uma-project-actions select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); min-height: 34px; }
+
+/* clearing meetings */
+.uma-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; }
+.uma-toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.uma-mrow--pick { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "check title status" "check meta status"; }
+.uma-mrow-check { grid-area: check; align-self: center; margin: 0; width: 16px; height: 16px; accent-color: var(--brand-500); }
+.uma-danger-btn { background: var(--danger, #dc2626); border-color: var(--danger, #dc2626); }
+.uma-danger-btn:hover:not(:disabled) { filter: brightness(.95); }
+.uma-inline { display: flex; gap: 8px; align-items: center; }
+.uma-inline input { width: 110px; }

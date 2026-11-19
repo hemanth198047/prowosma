@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle, ArrowLeft, CalendarPlus, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
-  Plug, Plus, RefreshCw, Send, Settings, Sparkles, Upload, Video, X,
+  Plug, Plus, RefreshCw, Send, Settings, Sparkles, Trash2, Upload, Video, X,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 import { useToast } from "../components/ToastContext";
@@ -18,6 +18,7 @@ import {
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
   getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
   getUmaMicrosoft, getUmaAutomationSettings, saveUmaWorkspaceAutomation, saveUmaMyPreferences, decideUmaProject,
+  deleteUmaMeetings, previewUmaCleanup, clearUmaOldMeetings,
 } from "../api/aiMeetingAssistant";
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
@@ -579,6 +580,22 @@ function InstantDialog({ onClose, onDone, projects, openConnections }) {
   );
 }
 
+function RetentionSetting({ days, canChange, busy, onSave }) {
+  const [value, setValue] = useState(String(days ?? 15));
+  const n = Number(value);
+  const valid = value !== "" && Number.isInteger(n) && n >= 0 && n <= 3650;
+  return (
+    <div className="uma-field">
+      <span>Delete meetings automatically after <em>(days after the meeting; 0 = keep them)</em></span>
+      <span className="uma-inline">
+        <input type="number" min={0} max={3650} value={value} disabled={!canChange || busy} onChange={(e) => setValue(e.target.value)} aria-label="Days to keep meetings" />
+        {canChange && <button type="button" className="btn-secondary pg-btn" disabled={busy || !valid || n === days} onClick={() => onSave(n)}>Save</button>}
+      </span>
+      <small className="uma-fine">Deletes the transcript, notes and recording. Tasks and projects created from meetings stay.</small>
+    </div>
+  );
+}
+
 /** Kept short on purpose: people choose their meeting app and whether tasks are created for them; admins set the workspace's rules. */
 function SettingsDialog({ onClose }) {
   const { show: toast } = useToast();
@@ -618,7 +635,9 @@ function SettingsDialog({ onClose }) {
               <span>{label}</span>
             </label>
           ))}
-          <p className="uma-fine">At most {ws.maxAutoTasksPerMeeting} tasks are created automatically per meeting. Nothing is ever changed or deleted automatically - only created.</p>
+          <p className="uma-fine">At most {ws.maxAutoTasksPerMeeting} tasks are created automatically per meeting. Existing tasks and projects are never changed or deleted automatically.</p>
+          <RetentionSetting days={ws.meetingRetentionDays} canChange={s.canChangeWorkspace} busy={busy}
+            onSave={(d) => save(() => saveUmaWorkspaceAutomation({ meetingRetentionDays: d }), d ? `Meetings will be deleted ${d} days after they took place.` : "Meetings will be kept until someone deletes them.")} />
           {error && <p className="uma-error" role="alert">{error}</p>}
           <div className="uma-dialog-actions"><button type="button" className="btn-primary pg-btn" onClick={onClose} disabled={busy}>Done</button></div>
         </div>
@@ -669,9 +688,11 @@ function FirefliesImportDialog({ onClose, onDone, projects }) {
 
 /* ── dashboard ─────────────────────────────────────────────────────────── */
 
-function MeetingRow({ m }) {
+function MeetingRow({ m, select }) {
+  const pickable = select && m.canManage;
   return (
-    <li className="uma-mrow">
+    <li className={`uma-mrow${pickable ? " uma-mrow--pick" : ""}`}>
+      {pickable && <input type="checkbox" className="uma-mrow-check" checked={select.selected.has(m.id)} onChange={() => select.toggle(m.id)} aria-label={`Select ${m.title}`} />}
       <Link to={`/ai-meeting-assistant/${m.id}`} className="uma-mrow-title">{m.title}</Link>
       <span className="uma-mrow-meta">
         {SOURCE[m.source] || m.source}{m.meetingAt ? ` · ${when(m.meetingAt)}` : ""}{m.durationMs ? ` · ${minutes(m.durationMs)}` : ""}
@@ -684,12 +705,12 @@ function MeetingRow({ m }) {
   );
 }
 
-function Section({ title, items, empty }) {
+function Section({ title, items, empty, select }) {
   if (!items?.length && !empty) return null;
   return (
     <section className="uma-section" aria-label={title}>
       <h2 className="pg-section-title">{title} {items?.length ? <span className="uma-count">{items.length}</span> : null}</h2>
-      {items?.length ? <ul className="uma-mlist">{items.map((m) => <MeetingRow key={m.id} m={m} />)}</ul> : <p className="uma-hint">{empty}</p>}
+      {items?.length ? <ul className="uma-mlist">{items.map((m) => <MeetingRow key={m.id} m={m} select={select} />)}</ul> : <p className="uma-hint">{empty}</p>}
     </section>
   );
 }
@@ -750,9 +771,103 @@ function HowItWorks() {
   );
 }
 
+const CLEAR_CHOICES = [[15, "older than 15 days"], [7, "older than a week"], [1, "older than a day"], [0, "that have already happened (all)"]];
+
+/** "Clear old meetings": counts first, then deletes the person's own meetings (upcoming and busy ones are never included). */
+function ClearOldDialog({ defaultDays, onClose, onDone }) {
+  const { show: toast } = useToast();
+  const [days, setDays] = useState(CLEAR_CHOICES.some(([d]) => d === defaultDays) ? defaultDays : 15);
+  const [count, setCount] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let live = true;
+    previewUmaCleanup(days).then((r) => { if (live) { setCount(r.data.count); setError(""); } })
+      .catch((e) => { if (live) setError(apiErrorMessage(e, "Couldn't count the meetings.")); });
+    return () => { live = false; setCount(null); };
+  }, [days]);
+  const clear = async () => {
+    setBusy(true); setError("");
+    try {
+      const r = await clearUmaOldMeetings(days);
+      toast(`${r.data.deleted} meeting${r.data.deleted === 1 ? "" : "s"} deleted.`, "success");
+      onDone();
+    } catch (e) { setError(apiErrorMessage(e, "The meetings couldn't be deleted.")); setBusy(false); }
+  };
+  return (
+    <Dialog title="Clear old meetings" onClose={busy ? () => {} : onClose}>
+      <div className="uma-form">
+        <label className="uma-field"><span>Delete my meetings</span>
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))} disabled={busy}>
+            {CLEAR_CHOICES.map(([d, label]) => <option key={d} value={d}>{label}</option>)}
+          </select>
+        </label>
+        <p className="uma-hint">
+          {count === null ? <><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Counting…</>
+            : count === 0 ? "Nothing to delete." : <><strong>{count} meeting{count === 1 ? "" : "s"}</strong> will be deleted: transcript, notes and any recording.</>}
+        </p>
+        <p className="uma-fine">Tasks and projects created from them stay. Upcoming meetings and ones still being recorded or summarised are kept. This can't be undone.</p>
+        {error && <p className="uma-error" role="alert">{error}</p>}
+        <div className="uma-dialog-actions">
+          <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="btn-primary pg-btn uma-danger-btn" onClick={clear} disabled={busy || !count}>
+            {busy ? <Loader2 size={14} className="uma-spin" aria-hidden="true" /> : <Trash2 size={14} aria-hidden="true" />}Delete {count || ""} meeting{count === 1 ? "" : "s"}
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Above the lists: how long meetings are kept, and deleting them - several chosen, or all older than an age. */
+function MeetingsToolbar({ data, picking, setPicking, selected, setSelected, onClear, onDeleted }) {
+  const { show: toast } = useToast();
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState(false);
+  const any = [...data.failed, ...data.awaitingReview, ...data.inProgress, ...data.upcoming, ...data.recent].some((m) => m.canManage);
+  if (!any) return null;
+  const removeSelected = async () => {
+    const ok = await confirm({ title: `Delete ${selected.size} meeting${selected.size === 1 ? "" : "s"}?`,
+      message: "Their transcripts, notes and recordings are deleted. Tasks and projects created from them stay. This can't be undone.",
+      confirmText: "Delete", danger: true });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const r = await deleteUmaMeetings([...selected]);
+      toast(`${r.data.deleted} meeting${r.data.deleted === 1 ? "" : "s"} deleted.` + (r.data.skipped?.length ? ` ${r.data.skipped.length} couldn't be deleted.` : ""), "success");
+      setSelected(new Set()); setPicking(false); onDeleted();
+    } catch (e) { toast(apiErrorMessage(e, "The meetings couldn't be deleted."), "error"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="uma-toolbar">
+      <span className="uma-fine">{data.retentionDays ? `Meetings are deleted automatically ${data.retentionDays} days after they took place.` : "Meetings are kept until you delete them."} Tasks always stay.</span>
+      <span className="uma-toolbar-actions">
+        {picking ? (
+          <>
+            <button type="button" className="btn-secondary pg-btn" onClick={() => { setPicking(false); setSelected(new Set()); }} disabled={busy}>Cancel</button>
+            <button type="button" className="btn-primary pg-btn uma-danger-btn" onClick={removeSelected} disabled={busy || selected.size === 0}>
+              <Trash2 size={14} aria-hidden="true" />Delete selected{selected.size ? ` (${selected.size})` : ""}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="btn-secondary pg-btn" onClick={() => setPicking(true)}>Select meetings</button>
+            <button type="button" className="btn-secondary pg-btn" onClick={onClear}><Trash2 size={14} aria-hidden="true" />Clear old meetings</button>
+          </>
+        )}
+      </span>
+    </div>
+  );
+}
+
 function Dashboard({ openDialog }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [picking, setPicking] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+  const [clearing, setClearing] = useState(false);
+  const select = picking ? { selected, toggle: (id) => setSelected((s0) => { const n = new Set(s0); n.has(id) ? n.delete(id) : n.add(id); return n; }) } : null;
   const load = useCallback(() => getUmaDashboard().then((r) => { setData(r.data); setError(""); })
     .catch((e) => setError(apiErrorMessage(e, "The meeting list couldn't be loaded."))), []);
   useEffect(() => { load(); }, [load]);
@@ -809,13 +924,16 @@ function Dashboard({ openDialog }) {
       ) : (
         <div className="uma-columns">
           <div>
-            <Section title="Needs attention" items={data.failed} />
-            <Section title="Ready for review" items={data.awaitingReview} />
-            <Section title="Processing" items={data.inProgress} />
-            <Section title="Upcoming" items={data.upcoming} />
-            <Section title="Recent meetings" empty="No other meetings."
+            <MeetingsToolbar data={data} picking={picking} setPicking={setPicking} selected={selected} setSelected={setSelected}
+              onClear={() => setClearing(true)} onDeleted={load} />
+            <Section title="Needs attention" items={data.failed} select={select} />
+            <Section title="Ready for review" items={data.awaitingReview} select={select} />
+            <Section title="Processing" items={data.inProgress} select={select} />
+            <Section title="Upcoming" items={data.upcoming} select={select} />
+            <Section title="Recent meetings" empty="No other meetings." select={select}
               items={data.recent.filter((m) => !["REVIEW_READY", "FAILED", "QUEUED", "TRANSCRIBING", "ANALYZING"].includes(m.status)
                 && !data.upcoming.some((u) => u.id === m.id))} />
+            {clearing && <ClearOldDialog defaultDays={data.retentionDays || 15} onClose={() => setClearing(false)} onDone={() => { setClearing(false); load(); }} />}
           </div>
           <aside className="uma-side" aria-label="Action items waiting for review">
             <h2 className="pg-section-title">Action items to review</h2>
