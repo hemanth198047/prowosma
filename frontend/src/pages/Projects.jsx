@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle, Archive, ArchiveRestore, Bot, CalendarDays, ChevronRight, Copy, Download, FileSpreadsheet,
@@ -7,6 +7,8 @@ import {
 import { unwrapList } from "../api/client";
 import IntegrationPanel from "../components/IntegrationPanel";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import PeoplePicker from "../components/PeoplePicker";
+import { updateProjectTeam } from "../api/org";
 import {
   getProjects,
   getSubProjects,
@@ -77,6 +79,12 @@ function ProjectForm({
   );
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  // The project team, chosen by name (stored as emails).
+  const { people: directory, ensureLoaded } = usePeople();
+  useEffect(() => { ensureLoaded(); }, [ensureLoaded]);
+  const teamOptions = useMemo(() => directory.filter((p) => p.email)
+    .map((p) => ({ key: p.email.toLowerCase(), name: p.name || p.email, email: p.email })), [directory]);
+  const [team, setTeam] = useState(() => (initial?.memberEmails || []).map((e) => e.toLowerCase()));
 
   // Close on ESC
   useEffect(() => {
@@ -181,6 +189,11 @@ function ProjectForm({
             rows={3}
             placeholder="Optional description" id={"projects-description"}
           />
+        </div>
+        <div className="form-group">
+          <PeoplePicker label="Team" people={teamOptions} value={team} onChange={setTeam}
+            placeholder="Type a name to add someone…" />
+          <small className="pj-form-hint">They can always see this project and are told they were added.</small>
         </div>
         <div className="form-group">
           <label htmlFor={"projects-parent-project-optional"}>Parent Project (optional)</label>
@@ -536,7 +549,7 @@ function ProjectForm({
             onClick={async () => {
               if (saving) return;
               setSaving(true);
-              try { await onSave(form); }
+              try { await onSave(form, team); }
               finally { setSaving(false); }
             }}
           >
@@ -1035,7 +1048,7 @@ export default function Projects() {
     fetchData().catch(() => setLoaded(true));
   }, [activeWorkspace?.id]);
 
-  const handleSave = async (form) => {
+  const handleSave = async (form, team) => {
     try {
       const payload = {
         ...form,
@@ -1045,8 +1058,21 @@ export default function Projects() {
         linkedGoalId:     form.linkedGoalId     || null,
         customFieldValues: form.customFieldValues || {},
       };
-      if (editing) await updateProject(editing.id, payload);
-      else await createProject(payload);
+      delete payload.memberEmails; delete payload.teamDetails;          // the team is saved through its own endpoint below
+      const res = editing ? await updateProject(editing.id, payload) : await createProject(payload);
+      const saved = res?.data || editing;
+      const before = (editing?.memberEmails || []).map((e) => e.toLowerCase());
+      const changed = team && (team.length !== before.length || team.some((e) => !before.includes(e)));
+      if (changed && saved?.id) {
+        const details = new Map((editing?.teamDetails || []).map((t) => [String(t.email).toLowerCase(), t]));
+        try {
+          await updateProjectTeam(saved.id, team.map((email) => ({
+            email, projectRole: details.get(email)?.projectRole || null, allocationPercent: details.get(email)?.allocationPercent ?? null,
+          })));
+        } catch (e) {
+          showToast("The project was saved, but its team wasn't: " + apiErrorMessage(e, "please try again from Team."), "error");
+        }
+      }
       setShowForm(false);
       setEditing(null);
       setParentForNew(null);

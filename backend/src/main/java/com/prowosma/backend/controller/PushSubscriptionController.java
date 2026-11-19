@@ -53,7 +53,7 @@ public class PushSubscriptionController {
         }
 
         PushSubscription sub = subscriptionRepository.findByEndpoint(endpoint).orElseGet(PushSubscription::new);
-        sub.setUserEmail(auth.getName());
+        sub.setUserEmail(auth.getName().trim().toLowerCase(java.util.Locale.ROOT));
         sub.setEndpoint(endpoint);
         sub.setP256dh(keys.get("p256dh"));
         sub.setAuth(keys.get("auth"));

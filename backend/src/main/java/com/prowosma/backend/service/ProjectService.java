@@ -23,6 +23,7 @@ public class ProjectService {
     private final RealtimeService realtimeService;
     private final WorkspaceContext workspaceContext;
     private final VisibilityService visibility;
+    private final PersonalAlertService alerts;
 
     public List<Project> getAll() {
         return visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId()));
@@ -397,6 +398,13 @@ public class ProjectService {
         existing.setTeamDetails(details);
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
+        // Tell the people who were just added (not the person adding them).
+        for (Project.TeamEntry t : details) {
+            String e = t.getEmail();
+            if (e == null || before.containsKey(e.toLowerCase()) || e.equalsIgnoreCase(requesterEmail)) continue;
+            notificationService.createWithCategory("Added to a project", e + " was added to " + saved.getName(), "INFO", "PROJECT", saved.getId(), "ASSIGNMENT");
+            alerts.tell(e, "You were added to " + saved.getName(), "Open the project to see its tasks.", "/projects?highlight=" + saved.getId());
+        }
         activityLogService.logFull("PROJECT", saved.getId(), saved.getName(),
                 "PROJECT_TEAM_CHANGED", null, String.valueOf(details.size()), null,
                 saved.getId(), null, null);
