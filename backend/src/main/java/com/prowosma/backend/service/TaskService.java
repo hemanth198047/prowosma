@@ -26,6 +26,7 @@ public class TaskService {
     private final NotificationService notificationService;
     private final WorkspaceContext workspaceContext;
     private final VisibilityService visibility;
+    private final com.prowosma.backend.repository.TeamMemberRepository teamMembers;
 
     public List<Task> getByProjectId(String projectId) {
         if (visibility.isRestricted()) return visibility.visibleTasks(workspaceContext.getWorkspaceId(), null, projectId);
@@ -135,10 +136,29 @@ public class TaskService {
         stored.setType(patched.getType());
         stored.setSeverity(patched.getSeverity());
         stored.setSlaHours(patched.getSlaHours());
+        java.util.List<String> before = stored.getAssigneeIds() == null ? java.util.List.of() : new java.util.ArrayList<>(stored.getAssigneeIds());
+        java.util.List<String> after = patched.getAssigneeIds() == null ? java.util.List.of() : patched.getAssigneeIds();
         stored.setAssigneeIds(patched.getAssigneeIds());
+        // History: who was added to / taken off the task, by name.
+        java.util.List<String> added = after.stream().filter(x -> !before.contains(x)).toList();
+        java.util.List<String> removed = before.stream().filter(x -> !after.contains(x)).toList();
+        if (!added.isEmpty())
+            activityLogService.logFull("TASK", stored.getId(), stored.getTitle(), "TASK_ASSIGNED", null, names(added), null, stored.getProjectId(), stored.getId(), null);
+        if (!removed.isEmpty())
+            activityLogService.logFull("TASK", stored.getId(), stored.getTitle(), "TASK_UNASSIGNED", names(removed), null, null, stored.getProjectId(), stored.getId(), null);
         stored.setCustomFieldValues(patched.getCustomFieldValues());
         stored.setUpdatedAt(LocalDateTime.now());
         return taskRepository.save(stored);
+    }
+
+    private String names(java.util.List<String> memberIds) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String mid : memberIds) out.add(teamMembers.findById(mid).map(t -> t.getName() != null ? t.getName() : t.getEmail()).orElse("someone"));
+        return String.join(", ", out);
+    }
+
+    private static String day(LocalDateTime d) {
+        return d == null ? null : d.toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.ENGLISH));
     }
 
     public Task update(String id, Task updated) {
@@ -146,6 +166,8 @@ public class TaskService {
         String oldStatus   = existing.getStatus();
         String oldPriority = existing.getPriority();
         String oldTitle    = existing.getTitle();
+        LocalDateTime oldDue = existing.getDueDate();
+        String oldDescription = existing.getDescription();
 
         existing.setTitle(updated.getTitle());
         existing.setDescription(updated.getDescription());
@@ -161,8 +183,9 @@ public class TaskService {
         // successful update into an error response — that's what was
         // letting a confused retry create a duplicate task after a
         // "failed" save that had actually already gone through.
-        String eventType; String message;
-        if (!oldStatus.equals(saved.getStatus())) {
+        // History: one entry per thing that actually changed (an edit that changed none of these isn't logged).
+        String eventType = "TASK_UPDATED"; String message = "\"" + saved.getTitle() + "\" was updated";
+        if (!java.util.Objects.equals(oldStatus, saved.getStatus())) {
             eventType = "DONE".equals(saved.getStatus()) ? "TASK_COMPLETED" : "TASK_STATUS_CHANGED";
             message   = "\"" + saved.getTitle() + "\" → " + saved.getStatus();
             activityLogService.logFull("TASK", saved.getId(), saved.getTitle(),
@@ -173,19 +196,19 @@ public class TaskService {
             } catch (Exception e) {
                 log.warn("notificationService.create failed after updating task {}: {}", saved.getId(), e.getMessage());
             }
-        } else if (!oldPriority.equals(saved.getPriority())) {
-            eventType = "TASK_PRIORITY_CHANGED";
-            message   = "Priority of \"" + saved.getTitle() + "\" changed to " + saved.getPriority();
+        }
+        if (!java.util.Objects.equals(oldPriority, saved.getPriority())) {
+            if ("TASK_UPDATED".equals(eventType)) { eventType = "TASK_PRIORITY_CHANGED"; message = "Priority of \"" + saved.getTitle() + "\" changed to " + saved.getPriority(); }
             activityLogService.logFull("TASK", saved.getId(), saved.getTitle(),
-                    eventType, oldPriority, saved.getPriority(), null,
-                    saved.getProjectId(), saved.getId(), null);
-        } else {
-            eventType = "TASK_UPDATED";
-            message   = "\"" + saved.getTitle() + "\" was updated";
-            activityLogService.logFull("TASK", saved.getId(), saved.getTitle(),
-                    eventType, oldTitle, saved.getTitle(), null,
+                    "TASK_PRIORITY_CHANGED", oldPriority, saved.getPriority(), null,
                     saved.getProjectId(), saved.getId(), null);
         }
+        if (!java.util.Objects.equals(oldTitle, saved.getTitle()))
+            activityLogService.logFull("TASK", saved.getId(), saved.getTitle(), "TASK_RENAMED", oldTitle, saved.getTitle(), null, saved.getProjectId(), saved.getId(), null);
+        if (!java.util.Objects.equals(day(oldDue), day(saved.getDueDate())))
+            activityLogService.logFull("TASK", saved.getId(), saved.getTitle(), "TASK_DUE_CHANGED", day(oldDue), day(saved.getDueDate()), null, saved.getProjectId(), saved.getId(), null);
+        if (!java.util.Objects.equals(blankToNull(oldDescription), blankToNull(saved.getDescription())))
+            activityLogService.logFull("TASK", saved.getId(), saved.getTitle(), "TASK_DESCRIPTION_CHANGED", null, null, null, saved.getProjectId(), saved.getId(), null);
         realtimeService.broadcast(workspaceContext.getWorkspaceId(), eventType,
                 "TASK", saved.getId(), saved.getTitle(), null, message);
 
@@ -200,6 +223,8 @@ public class TaskService {
     }
 
     public List<Task> getByProject(String projectId) { return getByProjectId(projectId); }
+
+    private static String blankToNull(String v) { return v == null || v.isBlank() ? null : v.strip(); }
 
     public Task updateRaw(String id, Task updated) {
         updated.setUpdatedAt(LocalDateTime.now());
@@ -249,7 +274,7 @@ public class TaskService {
         task.getComments().add(comment);
         task.setUpdatedAt(LocalDateTime.now());
         activityLogService.logFull("TASK", task.getId(), task.getTitle(),
-                "TASK_UPDATED", null, "Comment added", null,
+                "TASK_COMMENTED", null, comment.getText() == null ? "" : (comment.getText().length() > 200 ? comment.getText().substring(0, 200) + "…" : comment.getText()), null,
                 task.getProjectId(), task.getId(), null);
         realtimeService.broadcast(workspaceContext.getWorkspaceId(), "TASK_COMMENTED",
                 "TASK", task.getId(), task.getTitle(), null,
@@ -300,7 +325,7 @@ public class TaskService {
         task.getAttachments().add(attachment);
         task.setUpdatedAt(LocalDateTime.now());
         activityLogService.logFull("TASK", task.getId(), task.getTitle(),
-                "TASK_UPDATED", null, "Attachment added: " + file.getOriginalFilename(),
+                "FILE_ATTACHED", null, file.getOriginalFilename(),
                 uploadedBy, task.getProjectId(), task.getId(), null);
         return taskRepository.save(task);
     }
@@ -347,7 +372,7 @@ public class TaskService {
         task.getBlockedByTaskIds().remove(blockedByTaskId);
         task.setUpdatedAt(LocalDateTime.now());
         activityLogService.logFull("TASK", task.getId(), task.getTitle(),
-                "TASK_UNBLOCKED", blockedByTaskId, null, null,
+                "TASK_UNBLOCKED", taskRepository.findById(blockedByTaskId).map(Task::getTitle).orElse("a task"), null, null,
                 task.getProjectId(), task.getId(), null);
         return taskRepository.save(task);
     }

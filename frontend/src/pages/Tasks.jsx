@@ -25,7 +25,7 @@ import { getTeamMembers } from "../api/team";
 import FileAttachments from "../components/FileAttachments";
 import TaskDependencies from "../components/TaskDependencies";
 import CustomFieldValues from "../components/CustomFieldValues";
-import EntityActivityTab from "../components/EntityActivityTab";
+import TaskHistory from "../components/TaskHistory";
 import TaskTable from "../components/TaskTable";
 import TaskDrawer from "../components/TaskDrawer";
 
@@ -506,8 +506,7 @@ export default function Tasks() {
   const chooseGroupBy = (g) => { setGroupBy(g); writePref("tasks.groupBy", g); };
   const [drawerTask, setDrawerTask] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [activityOpenIds, setActivityOpenIds] = useState({});
-  const toggleActivity = (id) => setActivityOpenIds(prev => ({ ...prev, [id]: !prev[id] }));
+  const [historyTask, setHistoryTask] = useState(null);
 
   // ── Bulk actions ────────────────────────────────────────────
   const [selectedIds, setSelectedIds]   = useState(new Set());
@@ -781,16 +780,11 @@ export default function Tasks() {
           <ActionMenu label={`More actions for ${t.title}`} items={[
             { label: "Quick view", icon: PanelRight, onSelect: () => setDrawerTask(t) },
             { label: "Edit in full form", icon: Pencil, onSelect: () => editInForm(t) },
-            { label: activityOpenIds[t.id] ? "Hide activity" : "Activity", icon: History, onSelect: () => toggleActivity(t.id) },
+            { label: "History", icon: History, onSelect: () => setHistoryTask(t) },
             "divider",
             { label: "Delete", icon: Trash2, danger: true, onSelect: () => handleDelete(t.id) },
           ]} />
         </div>
-        {activityOpenIds[t.id] && (
-          <div className="task-activity-inline">
-            <EntityActivityTab entityType="task" entityId={t.id} />
-          </div>
-        )}
         <LinkedDocsPanel taskId={t.id} allDocs={allDocs} />
       </li>
     );
@@ -1037,6 +1031,7 @@ export default function Tasks() {
         />
       )}
 
+      {historyTask && <TaskHistory task={historyTask} onClose={() => setHistoryTask(null)} />}
       <TaskDrawer
         task={drawerTask}
         projects={projects}

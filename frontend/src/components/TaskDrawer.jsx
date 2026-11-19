@@ -5,7 +5,8 @@ import TaskComments from "./TaskComments";
 import TimeTracker from "./TimeTracker";
 import FileAttachments from "./FileAttachments";
 import TaskDependencies from "./TaskDependencies";
-import EntityActivityTab from "./EntityActivityTab";
+import TaskHistory from "./TaskHistory";
+import { History } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
 
 const STATUSES = ["TODO", "IN_PROGRESS", "DONE"];
@@ -35,6 +36,7 @@ const priorityColor = { LOW: "#10b981", MEDIUM: "#f59e0b", HIGH: "#ef4444" };
  *   onDelete    — (taskId) => Promise — delete and close
  */
 export default function TaskDrawer({ task, projects, teamMembers, allTasks, onClose, onUpdate, onDelete, onRefresh }) {
+  const [showHistory, setShowHistory] = useState(false);
   const confirm = useConfirm();
   const [local, setLocal] = useState(task ?? null);
   const [syncedId, setSyncedId] = useState(task?.id ?? null);
@@ -74,10 +76,10 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
   }, [assigneeMenuOpen]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && task) onClose(); };
+    const onKey = (e) => { if (e.key === "Escape" && task && !showHistory) onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [task, onClose]);
+  }, [task, onClose, showHistory]);
 
   if (!task || !local) return null;
 
@@ -152,6 +154,9 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
               <TimeTracker task={local} onRefresh={onRefresh} />
               <FileAttachments task={local} onRefresh={onRefresh} />
               <TaskDependencies task={local} allTasks={allTasks} onRefresh={onRefresh} />
+              <button type="button" className="th-open" onClick={() => setShowHistory(true)}>
+                <History size={14} aria-hidden="true" /> History
+              </button>
             </div>
           </div>
           <button className="btn-icon" onClick={onClose} title="Close" style={{ fontSize: 18 }}>✕</button>
@@ -299,11 +304,6 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
             />
           </div>
 
-          {/* Activity */}
-          <div style={{ marginTop: 24, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-            <span style={fieldLabelStyle}>Activity</span>
-            <EntityActivityTab entityType="task" entityId={task.id} />
-          </div>
         </div>
 
         {/* ── Footer ── */}
@@ -323,6 +323,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
           </button>
         </div>
       </div>
+      {showHistory && <TaskHistory task={local} onClose={() => setShowHistory(false)} />}
     </>
   );
 }
