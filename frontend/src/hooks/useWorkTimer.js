@@ -11,9 +11,15 @@ function publish(next) {
   listeners.forEach((fn) => fn(current));
 }
 
+let retry = null;
 export async function refreshWork() {
-  try { const r = await getMyWork(); publish({ running: r.data?.running || null, todayMinutes: r.data?.todayMinutes || 0 }); }
-  catch { /* signed out or offline: keep what we have */ }
+  try {
+    const r = await getMyWork();
+    publish({ running: r.data?.running || null, todayMinutes: r.data?.todayMinutes || 0 });
+  } catch {
+    // Right after sign-in the workspace may not be chosen yet: try again shortly rather than in a minute.
+    if (!retry && listeners.size) retry = setTimeout(() => { retry = null; refreshWork(); }, 4000);
+  }
   return current;
 }
 
