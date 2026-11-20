@@ -39,14 +39,25 @@ describe("Dashboard", () => {
     for (const gone of ["TEAM", "CONFIGURE", "MEETING ASSISTANT", "WORK HUB", "Loading workspace status…"]) expect(screen.queryByText(gone)).not.toBeInTheDocument();
   });
 
-  it("shortcut icons have names and tooltips; expanding shows the full details in a side panel", async () => {
+  it("shortcuts sit in tabs, each option named (what it is for in a tooltip); expanding shows the full details in a side panel", async () => {
+    try { localStorage.removeItem("prowosma.dashboard.shortcutTab"); } catch { /* storage blocked */ }
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     await screen.findByRole("heading", { name: "Today" });
-    for (const g of ["Work", "Insights", "Knowledge", "Automate", "Quick actions"]) expect(screen.getByRole("group", { name: g })).toBeInTheDocument();
-    const kanban = within(screen.getByRole("group", { name: "Work" })).getByRole("button", { name: /^Kanban/ });
-    fireEvent.mouseEnter(kanban.parentElement);
-    expect(screen.getByRole("tooltip")).toHaveTextContent("Kanban");
-    expect(within(screen.getByRole("group", { name: "Quick actions" })).getByRole("button", { name: "New task" })).toBeInTheDocument();
+    const shortcuts = screen.getByRole("region", { name: "Shortcuts" });
+    for (const g of ["Work", "Insights", "Knowledge", "Automate", "Quick actions"]) expect(within(shortcuts).getByRole("tab", { name: new RegExp(`^${g}`) })).toBeInTheDocument();
+    expect(within(shortcuts).getByRole("tab", { name: /^Work/ })).toHaveAttribute("aria-selected", "true");
+    const work = within(shortcuts).getByRole("group", { name: "Work" });
+    expect(within(work).getByText("Kanban")).toBeVisible();
+    const gantt = within(work).getByRole("button", { name: "Gantt - Timeline of tasks and goals" });
+    fireEvent.mouseEnter(gantt.parentElement);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Timeline of tasks and goals");
+    expect(within(shortcuts).queryByRole("group", { name: "Quick actions" })).not.toBeInTheDocument();
+
+    fireEvent.click(within(shortcuts).getByRole("tab", { name: "Quick actions" }));
+    expect(within(shortcuts).getByRole("tab", { name: "Quick actions" })).toHaveAttribute("aria-selected", "true");
+    expect(within(screen.getByRole("group", { name: "Quick actions" })).getByRole("button", { name: "New task - Add a task" })).toBeInTheDocument();
+    fireEvent.keyDown(within(shortcuts).getByRole("tab", { name: "Quick actions" }), { key: "ArrowRight" });
+    expect(within(shortcuts).getByRole("tab", { name: /^Work/ })).toHaveAttribute("aria-selected", "true");
 
     fireEvent.click(screen.getByRole("button", { name: /Show all projects in detail/ }));
     const panel = screen.getByRole("dialog", { name: "Active projects (6)" });

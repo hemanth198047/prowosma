@@ -130,23 +130,63 @@ function Tip({ text, children }) {
   );
 }
 
-/** A row of icon shortcuts, each with a tooltip naming it (one line; wraps on phones). */
-function IconRail({ label, tiles, navigate }) {
+/**
+ * Shortcuts in one card, one tab per group (like Projects / Goals / Tasks above). Each option shows its icon and
+ * its name, plus a live count where there is one, so nobody has to guess from an icon; what the page is for shows
+ * as a tooltip. The chosen tab is remembered in this browser.
+ */
+const SHORTCUT_TAB_KEY = "prowosma.dashboard.shortcutTab";
+function ShortcutTabs({ groups, navigate }) {
+  const [tab, setTab] = useState(() => {
+    try { const k = localStorage.getItem(SHORTCUT_TAB_KEY); if (groups.some(g => g.key === k)) return k; } catch { /* storage blocked */ }
+    return groups[0].key;
+  });
+  const choose = (k) => { setTab(k); try { localStorage.setItem(SHORTCUT_TAB_KEY, k); } catch { /* storage blocked */ } };
+  const tabRefs = useRef({});
+  const onKey = (e, i) => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = groups[(i + step + groups.length) % groups.length].key;
+    choose(next);
+    tabRefs.current[next]?.focus();
+  };
+  const group = groups.find(g => g.key === tab) || groups[0];
   return (
-    <div className="dz-rail">
-      <span className="dz-rail-label">{label}</span>
-      <div className="dz-rail-icons" role="group" aria-label={label}>
-        {tiles.map((t) => (
-          <Tip key={t.to + t.label} text={t.sub ? `${t.label} · ${t.sub}` : t.label}>
-            <button type="button" className={"dz-icon" + (t.badge ? " dz-icon--alert" : "")} onClick={() => navigate(t.to)}
-              aria-label={t.sub ? `${t.label} - ${t.sub}` : t.label}>
-              <t.Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-              {t.badge ? <span className="dz-icon-badge">{t.badge}</span> : null}
+    <section className="dz-card dz-launch" aria-label="Shortcuts">
+      <div className="dz-tabs" role="tablist" aria-label="Shortcuts">
+        {groups.map((g, i) => {
+          const alert = g.tiles.some(t => t.badge);
+          return (
+            <button key={g.key} ref={el => { tabRefs.current[g.key] = el; }} type="button" role="tab" id={`dz-sc-tab-${g.key}`}
+              aria-selected={tab === g.key} aria-controls="dz-sc-panel" tabIndex={tab === g.key ? 0 : -1}
+              className={"dz-tab" + (tab === g.key ? " on" : "")} onClick={() => choose(g.key)} onKeyDown={(e) => onKey(e, i)}>
+              {g.label}
+              {alert ? <span className="dz-tab-alert" aria-label="needs attention" /> : null}
             </button>
-          </Tip>
-        ))}
+          );
+        })}
       </div>
-    </div>
+      <div id="dz-sc-panel" className="dz-sc-panel" role="tabpanel" aria-labelledby={`dz-sc-tab-${group.key}`}>
+        <ul className="dz-sc-grid" role="group" aria-label={group.label}>
+          {group.tiles.map((t) => {
+            const said = [t.sub, t.desc].filter(Boolean).join(" - ");
+            const tile = (
+              <button type="button" className={"dz-sc" + (t.badge ? " dz-sc--alert" : "")} onClick={() => navigate(t.to)}
+                aria-label={said ? `${t.label} - ${said}` : t.label}>
+                <span className="dz-sc-icon" aria-hidden="true"><t.Icon size={17} strokeWidth={1.75} /></span>
+                <span className="dz-sc-text" aria-hidden="true">
+                  <span className="dz-sc-name">{t.label}</span>
+                  {t.sub ? <span className="dz-sc-line">{t.sub}</span> : null}
+                </span>
+                {t.badge ? <span className="dz-sc-badge" aria-hidden="true">{t.badge}</span> : null}
+              </button>
+            );
+            return <li key={t.to + t.label}>{t.desc ? <Tip text={t.desc}>{tile}</Tip> : tile}</li>;
+          })}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -535,49 +575,49 @@ export default function Dashboard() {
   const goals = summary.activeGoalList || [];
   const projectName = (id) => projects.find(p => p.id === id)?.name;
 
-  /* hub definitions (icons only on the page; names show as tooltips) */
+  /* hub definitions: one Shortcuts tab each (icon, name and a short line) */
   const workTiles = [
     { Icon:ICONS.projects, tint:"rgba(99,102,241,.1)",  color:"#6366f1", label:"Projects",  sub:`${summary.totalProjects||0} active`,  to:"/projects" },
     { Icon:ICONS.tasks,    tint:totalOverdue>0?"rgba(239,68,68,.12)":"rgba(16,185,129,.1)", color:totalOverdue>0?"#ef4444":"#10b981", label:"Tasks", sub:totalOverdue>0?`${totalOverdue} overdue`:`${summary.totalTasks||0} total`, badge: totalOverdue || null, to:"/tasks" },
     { Icon:ICONS.goals,    tint:"rgba(139,92,246,.1)",  color:"#8b5cf6", label:"Goals",     sub:`${goalHealth}% health`,               to:"/goals" },
     { Icon:ICONS.kanban,   tint:"rgba(14,165,233,.1)",  color:"#0ea5e9", label:"Kanban",    sub:`${summary.inProgressTasks||0} active`, to:"/kanban" },
-    { Icon:ICONS.epics,    tint:"rgba(245,158,11,.1)",  color:"#f59e0b", label:"Epics",     to:"/epics" },
-    { Icon:ICONS.sprints,  tint:"rgba(236,72,153,.1)",  color:"#ec4899", label:"Sprints",   to:"/sprints" },
-    { Icon:ICONS.gantt,    tint:"rgba(99,102,241,.1)",  color:"#6366f1", label:"Gantt",     to:"/gantt" },
+    { Icon:ICONS.epics,    tint:"rgba(245,158,11,.1)",  color:"#f59e0b", label:"Epics", desc:"Group stories into features",     to:"/epics" },
+    { Icon:ICONS.sprints,  tint:"rgba(236,72,153,.1)",  color:"#ec4899", label:"Sprints", desc:"Plan, run and review sprints",   to:"/sprints" },
+    { Icon:ICONS.gantt,    tint:"rgba(99,102,241,.1)",  color:"#6366f1", label:"Gantt", desc:"Timeline of tasks and goals",     to:"/gantt" },
     { Icon:ICONS.calendar, tint:"rgba(13,148,136,.1)",  color:"#0d9488", label:"Calendar",  sub:`${summary.todayTasks?.length||0} today`, to:"/calendar" },
-    { Icon:ICONS.deploy,   tint:"rgba(217,70,239,.1)",  color:"#d946ef", label:"Deployments", to:"/deployments" },
-    { Icon:ICONS.graph,    tint:"rgba(100,116,139,.1)", color:"#64748b", label:"Knowledge graph", to:"/knowledge-graph" },
+    { Icon:ICONS.deploy,   tint:"rgba(217,70,239,.1)",  color:"#d946ef", label:"Deployments", desc:"Deploy frequency and failures", to:"/deployments" },
+    { Icon:ICONS.graph,    tint:"rgba(100,116,139,.1)", color:"#64748b", label:"Knowledge graph", desc:"How docs and work connect", to:"/knowledge-graph" },
   ];
   const insightsTiles = [
-    { Icon:ICONS.analytics,     tint:"rgba(99,102,241,.1)",  color:"#6366f1", label:"Analytics",  to:"/analytics" },
-    { Icon:ICONS.kpis,          tint:"rgba(14,165,233,.1)",  color:"#0ea5e9", label:"KPIs",       to:"/kpis" },
-    { Icon:ICONS.roi,           tint:"rgba(13,148,136,.1)",  color:"#0d9488", label:"ROI engine", to:"/roi" },
-    { Icon:ICONS.roadmap,       tint:"rgba(139,92,246,.1)",  color:"#8b5cf6", label:"Roadmap & RAID", to:"/roadmap" },
-    { Icon:ICONS.portfolio,     tint:"rgba(245,158,11,.1)",  color:"#f59e0b", label:"Portfolio",  to:"/portfolio" },
-    { Icon:ICONS.portfolioPlus, tint:"rgba(217,70,239,.1)",  color:"#d946ef", label:"Portfolio+", to:"/portfolio-plus" },
-    { Icon:ICONS.executive,     tint:"rgba(234,179,8,.12)",  color:"#ca8a04", label:"Executive",  to:"/executive" },
-    { Icon:ICONS.scenarios,     tint:"rgba(236,72,153,.1)",  color:"#ec4899", label:"Scenarios",  to:"/scenarios" },
-    { Icon:ICONS.reports,       tint:"rgba(100,116,139,.1)", color:"#64748b", label:"Reports",    to:"/reports" },
-    { Icon:ICONS.time,          tint:"rgba(16,185,129,.1)",  color:"#10b981", label:"Time & billing", to:"/time-tracking" },
+    { Icon:ICONS.analytics,     tint:"rgba(99,102,241,.1)",  color:"#6366f1", label:"Analytics", desc:"Velocity, health, capacity",  to:"/analytics" },
+    { Icon:ICONS.kpis,          tint:"rgba(14,165,233,.1)",  color:"#0ea5e9", label:"KPIs", desc:"Key indicators and alerts",       to:"/kpis" },
+    { Icon:ICONS.roi,           tint:"rgba(13,148,136,.1)",  color:"#0d9488", label:"ROI engine", desc:"Return, revenue, payback", to:"/roi" },
+    { Icon:ICONS.roadmap,       tint:"rgba(139,92,246,.1)",  color:"#8b5cf6", label:"Roadmap & RAID", desc:"Timeline, budget, RAID log", to:"/roadmap" },
+    { Icon:ICONS.portfolio,     tint:"rgba(245,158,11,.1)",  color:"#f59e0b", label:"Portfolio", desc:"Cross-project health",  to:"/portfolio" },
+    { Icon:ICONS.portfolioPlus, tint:"rgba(217,70,239,.1)",  color:"#d946ef", label:"Portfolio+", desc:"Releases and programmes", to:"/portfolio-plus" },
+    { Icon:ICONS.executive,     tint:"rgba(234,179,8,.12)",  color:"#ca8a04", label:"Executive", desc:"One-screen strategic view",  to:"/executive" },
+    { Icon:ICONS.scenarios,     tint:"rgba(236,72,153,.1)",  color:"#ec4899", label:"Scenarios", desc:"Model what-if changes",  to:"/scenarios" },
+    { Icon:ICONS.reports,       tint:"rgba(100,116,139,.1)", color:"#64748b", label:"Reports", desc:"Operational reports",    to:"/reports" },
+    { Icon:ICONS.time,          tint:"rgba(16,185,129,.1)",  color:"#10b981", label:"Time & billing", desc:"Time reports and invoicing", to:"/time-tracking" },
   ];
   const knowledgeTiles = [
-    { Icon:ICONS.docs,      tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"Docs",      to:"/docs" },
-    { Icon:ICONS.meetings,  tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Meetings",  to:"/meetings" },
-    { Icon:ICONS.decisions, tint:"rgba(139,92,246,.1)", color:"#8b5cf6", label:"Decisions", to:"/decisions" },
-    { Icon:ICONS.sops,      tint:"rgba(16,185,129,.1)", color:"#10b981", label:"SOPs",      to:"/sops" },
+    { Icon:ICONS.docs,      tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"Docs", desc:"Docs, wikis and notes",      to:"/docs" },
+    { Icon:ICONS.meetings,  tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Meetings", desc:"Meetings and action items",  to:"/meetings" },
+    { Icon:ICONS.decisions, tint:"rgba(139,92,246,.1)", color:"#8b5cf6", label:"Decisions", desc:"Log and review decisions", to:"/decisions" },
+    { Icon:ICONS.sops,      tint:"rgba(16,185,129,.1)", color:"#10b981", label:"SOPs", desc:"Procedures and sign-offs",      to:"/sops" },
   ];
   const automateTiles = [
-    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM studio",  to:"/bpm" },
-    { Icon:ICONS.automations,  tint:"rgba(245,158,11,.1)", color:"#f59e0b", label:"Automations", to:"/automations" },
-    { Icon:ICONS.integrations, tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Integrations",to:"/integrations" },
-    { Icon:ICONS.import,       tint:"rgba(16,185,129,.1)", color:"#10b981", label:"Import",      to:"/import" },
+    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM studio", desc:"Design and run processes",  to:"/bpm" },
+    { Icon:ICONS.automations,  tint:"rgba(245,158,11,.1)", color:"#f59e0b", label:"Automations", desc:"No-code rules and approvals", to:"/automations" },
+    { Icon:ICONS.integrations, tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Integrations", desc:"Connect your other tools",to:"/integrations" },
+    { Icon:ICONS.import,       tint:"rgba(16,185,129,.1)", color:"#10b981", label:"Import", desc:"Bring in data from Excel",      to:"/import" },
   ];
   const quickTiles = [
-    { Icon:Plus,           tint:"var(--brand-50)", color:"var(--brand-600)", label:"New task",         to:"/tasks?new=true" },
-    { Icon:FolderPlus,     tint:"var(--brand-50)", color:"var(--brand-600)", label:"New project",      to:"/projects?new=true" },
-    { Icon:Target,         tint:"var(--brand-50)", color:"var(--brand-600)", label:"New goal",         to:"/goals?new=true" },
-    { Icon:CalendarPlus,   tint:"var(--brand-50)", color:"var(--brand-600)", label:"Schedule meeting", to:"/meetings" },
-    { Icon:ClipboardList,  tint:"var(--brand-50)", color:"var(--brand-600)", label:"View reports",     to:"/reports" },
+    { Icon:Plus,           tint:"var(--brand-50)", color:"var(--brand-600)", label:"New task", desc:"Add a task",         to:"/tasks?new=true" },
+    { Icon:FolderPlus,     tint:"var(--brand-50)", color:"var(--brand-600)", label:"New project", desc:"Start a project",      to:"/projects?new=true" },
+    { Icon:Target,         tint:"var(--brand-50)", color:"var(--brand-600)", label:"New goal", desc:"Set a goal",         to:"/goals?new=true" },
+    { Icon:CalendarPlus,   tint:"var(--brand-50)", color:"var(--brand-600)", label:"Schedule meeting", desc:"Plan a meeting", to:"/meetings" },
+    { Icon:ClipboardList,  tint:"var(--brand-50)", color:"var(--brand-600)", label:"View reports", desc:"Open reports",     to:"/reports" },
   ];
   const aiTiles = [
     { Icon:ICONS.assistant,    label:"Assistant",    to:"/ai" },
@@ -619,13 +659,13 @@ export default function Dashboard() {
         <div className="dz-col">
           <WorkOverview projects={projects} goals={goals} dashTasks={dashTasks} navigate={navigate}
             onExpand={(what, tt) => { if (what === "tasks") openTasks(tt); else setDetail(what); }} />
-          <section className="dz-card dz-launch" aria-label="Shortcuts">
-            <IconRail label="Work" tiles={workTiles} navigate={navigate} />
-            <IconRail label="Insights" tiles={insightsTiles} navigate={navigate} />
-            <IconRail label="Knowledge" tiles={knowledgeTiles} navigate={navigate} />
-            <IconRail label="Automate" tiles={automateTiles} navigate={navigate} />
-            <IconRail label="Quick actions" tiles={quickTiles} navigate={navigate} />
-          </section>
+          <ShortcutTabs navigate={navigate} groups={[
+            { key: "work", label: "Work", tiles: workTiles },
+            { key: "insights", label: "Insights", tiles: insightsTiles },
+            { key: "knowledge", label: "Knowledge", tiles: knowledgeTiles },
+            { key: "automate", label: "Automate", tiles: automateTiles },
+            { key: "quick", label: "Quick actions", tiles: quickTiles },
+          ]} />
         </div>
         <div className="dz-col">
           <ChartsPanel summary={summary} navigate={navigate} />
