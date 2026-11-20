@@ -9,6 +9,7 @@ PieChart, Pie, Cell,
 } from "recharts";
 import "../styles/pages/analytics.css";
 import { Hourglass as IcHourglass, TrendingUp as IcTrendingUp } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 // ── C-7: No-code Report Builder ───────────────────────────────
 const METRICS = [
@@ -188,10 +189,10 @@ export default function Reports() {
             ))}
             {period === "custom" && (
               <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-                <input type="datetime-local" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
+                <DateInput type="datetime-local" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
                   style={{ fontSize:"12px" }} />
                 <span>to</span>
-                <input type="datetime-local" value={customTo} onChange={e=>setCustomTo(e.target.value)}
+                <DateInput type="datetime-local" value={customTo} onChange={e=>setCustomTo(e.target.value)}
                   style={{ fontSize:"12px" }} />
               </div>
             )}

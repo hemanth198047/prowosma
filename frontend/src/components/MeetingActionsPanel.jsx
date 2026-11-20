@@ -5,6 +5,7 @@ import {
   extractMeetingActions, getMeetingActions, getMeetingActionsPreview, patchMeetingAction, decideMeetingAction, mergeMeetingAction,
   approveValidMeetingActions, resolveMeetingActionsDiff, patchProposedProject, decideProposedProject, getMeetingTranscript, createMeetingRecords,
 } from "../api/meetingAssistant";
+import DateInput from "./DateInput";
 
 const KIND = { COMMITMENT: ["Agreed", "success"], SUGGESTION: ["Suggested, not agreed", "progress"], UNRESOLVED: ["Not settled", "neutral"] };
 const STATE = { PROPOSED: ["Needs review", "info"], APPROVED: ["Approved", "success"], CREATED: ["Created", "success"], REJECTED: ["Rejected", "neutral"], MERGED: ["Merged", "neutral"], WITHDRAWN: ["Withdrawn", "danger"] };
@@ -100,7 +101,7 @@ function ActionCard({ a, all, members, projects, proposals, canManage, busy, sel
 
         <div className="ma-field">
           <label htmlFor={`due-${a.id}`}>Due date{a.deadline.text ? ` (said: “${a.deadline.text}”)` : ""}</label>
-          <input id={`due-${a.id}`} type="date" value={a.deadline.date || ""} disabled={locked || busy}
+          <DateInput saveOnBlur id={`due-${a.id}`} type="date" value={a.deadline.date || ""} disabled={locked || busy}
             onChange={(e) => patch({ deadlineDate: e.target.value || null }, "Due date updated")} />
           {a.deadline.note && <span className="ma-hint">{a.deadline.note}</span>}
         </div>

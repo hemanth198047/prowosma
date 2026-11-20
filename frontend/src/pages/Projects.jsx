@@ -446,6 +446,7 @@ function ProjectForm({
               value={form.dueDate}
               onChange={(val) => set("dueDate", val)}
               disabled={form.noDate || false}
+              label="Due date"
             />
             <label
               style={{

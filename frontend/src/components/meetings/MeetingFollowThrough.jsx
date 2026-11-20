@@ -9,6 +9,7 @@ import { useToast } from "../ToastContext";
 import DueTag from "../ui/DueTag";
 import { statusText } from "../../utils/statusText";
 import { apiErrorMessage } from "../../utils/apiError";
+import DateInput from "../DateInput";
 
 /*
  * What Meetings took over from the old Meetings notes page and the first Meeting assistant:
@@ -71,7 +72,7 @@ export function NotesDialog({ Dialog, projects, initialProjectId = "", onClose, 
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Sprint planning, week 47" />
           </label>
           <label className="uma-field"><span>When</span>
-            <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
+            <DateInput type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
           </label>
         </div>
         <div className="uma-form-row">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "./ToastContext";
+import DateInput from "./DateInput";
 
 /**
  * DateTimePicker — replaces datetime-local input
@@ -18,7 +19,9 @@ import { useToast } from "./ToastContext";
 // target date) is a forward-looking deadline, where a past date doesn't
 // make sense — defaults to blocking them. Set true for any future caller
 // that genuinely needs a historical date (e.g. "started on").
-export default function DateTimePicker({ value, onChange, disabled = false, placeholder = "Select date", allowPastDates = false }) {
+// saveOnBlur: set by callers that save every change (the task panel) - a typed date is saved when the person leaves
+// the field, not on each keystroke. See DateInput.
+export default function DateTimePicker({ value, onChange, disabled = false, placeholder = "Select date", allowPastDates = false, saveOnBlur = false, label = "Date" }) {
   const { show: showToast } = useToast();
   // Parse current value into date + time parts. `value` is a real UTC
   // instant (what buildValue below sends: a local date+time, converted
@@ -75,20 +78,15 @@ export default function DateTimePicker({ value, onChange, disabled = false, plac
     return `${date}T${String(hr).padStart(2, "0")}:${m}`;
   };
 
+  // A date is only checked once it is complete (DateInput holds half-typed years back), so typing works.
+  const pastDateError = (d) => {
+    if (allowPastDates) return null;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return d < todayStr ? "This date can't be in the past" : null;
+  };
   const onDateChange = (e) => {
-    const newDate = e.target.value;
-    // Belt-and-suspenders alongside the input's min= attribute below —
-    // that stops the calendar picker, this catches a manually-typed
-    // past date in browsers that don't enforce min= on typed input.
-    if (newDate && !allowPastDates) {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      if (newDate < todayStr) {
-        showToast("This date can't be in the past", "error");
-        return;
-      }
-    }
-    onChange(buildValue(newDate, hour, minute, period));
+    onChange(buildValue(e.target.value, hour, minute, period));
   };
 
   // While typing: just track the raw digits, up to 2, no padding/clamping
@@ -148,12 +146,16 @@ export default function DateTimePicker({ value, onChange, disabled = false, plac
   return (
     <div className="dtp-container">
       {/* Date picker */}
-      <input
+      <DateInput
         type="date"
         value={datePart}
         onChange={onDateChange}
+        saveOnBlur={saveOnBlur}
+        validate={pastDateError}
+        onInvalid={(msg) => showToast(msg, "error")}
         disabled={disabled}
         placeholder={placeholder}
+        aria-label={label}
         min={allowPastDates ? undefined : todayIso()}
         style={{ flex: 1, opacity: disabled ? 0.4 : 1 }}
       />

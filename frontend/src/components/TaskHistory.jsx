@@ -6,6 +6,7 @@ import client from "../api/client";
 import { apiErrorMessage } from "../utils/apiError";
 import { parseServerDateTime } from "../utils/serverTime";
 import "../styles/task-history.css";
+import DateInput from "./DateInput";
 
 const WHEN = [
   ["any", "Any time"], ["today", "Today"], ["7", "Last 7 days"], ["30", "Last 30 days"], ["custom", "Custom dates"],
@@ -145,8 +146,8 @@ export default function TaskHistory({ task, onClose }) {
             </label>
             {when === "custom" && (
               <>
-                <label className="th-field"><span>From</span><input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
-                <label className="th-field"><span>To</span><input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
+                <label className="th-field"><span>From</span><DateInput type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
+                <label className="th-field"><span>To</span><DateInput type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
               </>
             )}
             <label className="th-field">

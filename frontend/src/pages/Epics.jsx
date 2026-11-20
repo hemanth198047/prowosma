@@ -8,6 +8,7 @@ import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { statusText } from "../utils/statusText";
 import { Pencil as IcPencil, Trash2 as IcTrash2, Zap as IcZap } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 const api = {
   list:   (pid) => client.get(`/epics${pid?`?projectId=${pid}`:""}`),
@@ -80,12 +81,12 @@ function EpicForm({ initial, projects, onSave, onClose }) {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor={"epics-start-date"}>Start Date</label>
-            <input type="date" value={form.startDate?.slice?.(0,10)||""}
+            <DateInput type="date" value={form.startDate?.slice?.(0,10)||""}
               onChange={e=>set("startDate",e.target.value)} id={"epics-start-date"} />
           </div>
           <div className="form-group">
             <label htmlFor={"epics-target-date"}>Target Date</label>
-            <input type="date" value={form.targetDate?.slice?.(0,10)||""}
+            <DateInput type="date" value={form.targetDate?.slice?.(0,10)||""}
               onChange={e=>set("targetDate",e.target.value)} id={"epics-target-date"} />
           </div>
         </div>

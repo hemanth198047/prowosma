@@ -15,6 +15,7 @@ import {
   meetingStart, meetingEnd, parseAttendees, timeOptions,
 } from "../../utils/calendarMeetings";
 import { detectPlatform } from "../../utils/conferenceLink";
+import DateInput from "../DateInput";
 
 const TIME_OPTIONS = timeOptions(15);
 
@@ -316,13 +317,13 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
             <Clock size={16} className="cal-ed-icon" aria-hidden="true" />
             <div className="cal-ed-field">
               <div className="cal-ed-when">
-                <input
+                <DateInput
                   type="date" aria-label="Start date" value={form.startDate}
                   onChange={(e) => moveStart(e.target.value, form.startTime)}
                 />
                 <TimeSelect id="cal-ed-start-time" label="Start time" value={form.startTime} onChange={(v) => moveStart(form.startDate, v)} />
                 <span className="cal-ed-to">to</span>
-                <input
+                <DateInput
                   type="date" aria-label="End date" value={form.endDate}
                   onChange={(e) => set("endDate", e.target.value)}
                 />

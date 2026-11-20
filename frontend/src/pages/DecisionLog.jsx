@@ -9,6 +9,7 @@ import {
 } from "../api/decisions";
 import "../styles/pages/decisions.css";
 import { Brain as IcBrain, Lock as IcLock, Pencil as IcPencil, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 // Was a locally-duplicated copy of these same 5 calls, redefined inline
 // instead of reusing api/decisions.js (which Decisions.jsx and Docs.jsx
@@ -84,7 +85,7 @@ function DecisionForm({ initial, onSave, onCancel }) {
           <input value={form.madeBy} onChange={e=>set("madeBy",e.target.value)}
             placeholder="email or name" id={"decision-log-decision-maker"} /></div>
         <div className="form-group"><label htmlFor={"decision-log-review-date"}>Review date</label>
-          <input type="date" value={form.reviewAt?.slice?.(0,10)||""}
+          <DateInput type="date" value={form.reviewAt?.slice?.(0,10)||""}
             onChange={e=>set("reviewAt",e.target.value)} id={"decision-log-review-date"} /></div>
       </div>
       <div className="form-actions">

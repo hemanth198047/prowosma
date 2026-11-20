@@ -17,6 +17,7 @@ import { statusText } from "../utils/statusText";
 import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
 import { Book as IcBook, Bug as IcBug, CircleCheck as IcCircleCheck, Diamond as IcDiamond, Settings as IcSettings, Zap as IcZap } from "lucide-react";
+import DateInput from "../components/DateInput";
 const getEpics    = () => client.get("/epics").catch(()=>({data:[]}));
 const getMembers  = () => client.get("/team").catch(()=>({data:[]}));
 
@@ -762,7 +763,7 @@ function IssueModal({ task, projects, epics, sprints, members, spScale, onSave, 
                   </div>
                   <div className="jb-form-group">
                     <label htmlFor={"jira-board-due-date"}>Due Date</label>
-                    <input type="date" value={form.dueDate?form.dueDate.slice(0,10):""}
+                    <DateInput type="date" value={form.dueDate?form.dueDate.slice(0,10):""}
                       onChange={e=>set("dueDate",e.target.value?e.target.value+"T00:00:00":null)} id={"jira-board-due-date"}/>
                   </div>
                   <div className="jb-form-group">

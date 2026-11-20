@@ -15,6 +15,7 @@ import {
 } from "../api/portfolio";
 import { statusText } from "../utils/statusText";
 import { Building2 as IcBuilding2, ClipboardList as IcClipboardList, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 // ─────────────────────────────────────────────────────────────
 // RELEASE MANAGEMENT
@@ -61,7 +62,7 @@ function ReleaseForm({ initial, projects, onSave, onCancel }) {
       </div>
       <div className="form-row">
         <div className="form-group"><label htmlFor={"portfolio-plus-release-date"}>Release Date</label>
-          <input type="date" value={form.releaseDate?.slice?.(0,10)||""}
+          <DateInput type="date" value={form.releaseDate?.slice?.(0,10)||""}
             onChange={e=>set("releaseDate",e.target.value)} id={"portfolio-plus-release-date"} /></div>
         <div className="form-group"><label htmlFor={"portfolio-plus-owner"}>Owner</label>
           <input value={form.owner} onChange={e=>set("owner",e.target.value)} id={"portfolio-plus-owner"} /></div>
@@ -472,7 +473,7 @@ function ProgrammesTab({ projects }) {
                     <input value={newMs.title}
                       onChange={e=>setNewMs(v=>({...v,title:e.target.value}))}
                       placeholder="New milestone…" />
-                    <input type="date" value={newMs.dueDate}
+                    <DateInput type="date" value={newMs.dueDate}
                       onChange={e=>setNewMs(v=>({...v,dueDate:e.target.value}))} />
                     <input value={newMs.ownedBy}
                       onChange={e=>setNewMs(v=>({...v,ownedBy:e.target.value}))}

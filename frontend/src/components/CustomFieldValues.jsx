@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getCustomFieldsByEntity } from "../api/customFields";
+import DateInput from "./DateInput";
 
 export default function CustomFieldValues({ entityType, values = {}, onChange }) {
   const [fields, setFields] = useState([]);
@@ -88,7 +89,7 @@ export default function CustomFieldValues({ entityType, values = {}, onChange })
                 placeholder={`Enter ${field.name}`} required={required} />
             )}
             {field.type === "DATE" && (
-              <input type="date" value={values[field.id] || field.defaultValue || ""}
+              <DateInput type="date" value={values[field.id] || field.defaultValue || ""}
                 onChange={e => handleChange(field.id, e.target.value)} required={required} />
             )}
             {field.type === "DROPDOWN" && (

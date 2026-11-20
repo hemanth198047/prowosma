@@ -1,4 +1,5 @@
 import { statusText } from "../utils/statusText";
+import DateInput from "./DateInput";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "./ToastContext";
 import { AlertTriangle, Maximize2 } from "lucide-react";
@@ -294,8 +295,9 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
       <td style={cellStyle}>
         <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
         {isTaskOverdue(task) && <AlertTriangle size={11} color={OVERDUE_COLOR} aria-hidden="true" style={{ flexShrink: 0 }} />}
-        <input
+        <DateInput
           type="date"
+          saveOnBlur
           value={task.dueDate ? task.dueDate.slice(0, 10) : ""}
           // "YYYY-MM-DDT00:00:00" with no timezone suffix is parsed as
           // LOCAL midnight, per the JS spec — .toISOString() then
@@ -307,20 +309,11 @@ function TaskTableRow({ task, projects, teamMembers, selected, highlighted, onTo
           // moment in time, so it's pinned to UTC midnight explicitly
           // (the "Z" suffix) instead — the selected day is then the
           // selected day, in every timezone, full stop.
+          // Typed dates are checked once complete and saved when the person leaves the field (see DateInput).
+          validate={(val) => (val < new Date().toISOString().slice(0, 10) ? "Due date can't be in the past" : null)}
+          onInvalid={(msg) => showToast(msg, "error")}
           onChange={(e) => {
             const val = e.target.value;
-            // The browser's own date picker respects min= below, but
-            // manually typing a date into the field bypasses that in
-            // some browsers — checked here too so it can't slip through
-            // either way, with an actual explanation instead of the
-            // change just silently not happening.
-            if (val) {
-              const todayStr = new Date().toISOString().slice(0, 10);
-              if (val < todayStr) {
-                showToast("Due date can't be in the past", "error");
-                return;
-              }
-            }
             save({ dueDate: val ? new Date(val + "T00:00:00.000Z").toISOString() : null });
           }}
           // Due dates are for work still ahead — a date input with no

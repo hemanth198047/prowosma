@@ -26,6 +26,7 @@ import "../styles/pages/meetings.css";
 import { parseServerDateTime, toLocalInputValue } from "../utils/serverTime";
 import { statusText } from "../utils/statusText";
 import { Hourglass as IcHourglass, NotebookPen as IcNotebookPen, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
+import DateInput from "../components/DateInput";
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return "—";
@@ -145,7 +146,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor={"meetings-date-time"}>Date & time</label>
-                <input type="datetime-local" value={form.meetingDate}
+                <DateInput type="datetime-local" value={form.meetingDate}
                   onChange={e => set("meetingDate", e.target.value)} id={"meetings-date-time"} />
               </div>
               <div className="form-group">
@@ -515,7 +516,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
                       value={newAction[pd.projectId]?.owner || ""}
                       onChange={e => setNewAction(n => ({ ...n, [pd.projectId]: { ...n[pd.projectId], owner: e.target.value } }))}
                       onKeyDown={e => { if (e.key === "Enter") handleAddAction(pd.projectId); }} />
-                    <input type="date" className="meet-inline-add-narrow"
+                    <DateInput type="date" className="meet-inline-add-narrow"
                       value={newAction[pd.projectId]?.dueDate || ""}
                       onChange={e => setNewAction(n => ({ ...n, [pd.projectId]: { ...n[pd.projectId], dueDate: e.target.value } }))} />
                     <button className="cont-btn" onClick={() => handleAddAction(pd.projectId)}>Add</button>

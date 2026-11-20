@@ -160,7 +160,7 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
         <div className="form-group">
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
             <legend style={{ padding: 0 }} className="field-label">Due Date</legend>
-            <DateTimePicker value={form.dueDate} onChange={(val) => set("dueDate", val)} />
+            <DateTimePicker value={form.dueDate} onChange={(val) => set("dueDate", val)} label="Due date" />
           </fieldset>
         </div>
         <div className="form-group">

@@ -28,6 +28,7 @@ import {
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
 import "../styles/pages/ai-meeting-assistant.css";
+import DateInput from "../components/DateInput";
 
 /* ── small helpers ─────────────────────────────────────────────────────── */
 
@@ -144,7 +145,7 @@ function CommonFields({ title, setTitle, at, setAt, projectId, setProjectId, pro
       </label>
       <div className="uma-row2">
         <label className="uma-field"><span>When it happened</span>
-          <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
+          <DateInput type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
         </label>
         <ProjectPicker projectId={projectId} setProjectId={setProjectId} projects={projects} />
       </div>
@@ -462,7 +463,7 @@ function ScheduleDialog({ onClose, onDone, projects, openConnections }) {
           </label>
           <div className="uma-row2">
             <label className="uma-field"><span>Starts</span>
-              <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} required />
+              <DateInput type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} required />
             </label>
             <label className="uma-field"><span>Length</span>
               <select value={minutes} onChange={(e) => setMinutes(e.target.value)}>
@@ -1215,7 +1216,7 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
           {!a.ownerMemberId && ownerHint && <small className={a.ownerState === "UNASSIGNED" ? "" : "warn"}>{a.ownerNote || ownerHint}</small>}
         </label>
         <label><span>Due {a.dueSpoken ? <em>— said: “{a.dueSpoken}”</em> : null}</span>
-          <input type="date" value={a.dueDate || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ dueDate: e.target.value || null })} />
+          <DateInput saveOnBlur type="date" value={a.dueDate || ""} disabled={!canManage || done || busy} onChange={(e) => patch({ dueDate: e.target.value || null })} />
           {!a.dueDate && <small>{a.dueSpoken ? (a.dueSuggested ? `Probably ${a.dueSuggested} — please confirm` : "Couldn't work out the date — please pick it") : "No deadline was said"}</small>}
         </label>
         <label><span>Priority</span>

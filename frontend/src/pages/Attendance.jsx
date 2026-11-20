@@ -14,6 +14,7 @@ import {
 } from "../api/attendance";
 import { BREAK_LABEL, MODE_LABEL, hm, refreshMyAttendance, timeIn, useAttendanceEnabled, useMyAttendance } from "../hooks/useAttendance";
 import "../styles/pages/attendance.css";
+import DateInput from "../components/DateInput";
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const LEAVE_LABEL = { CASUAL: "Casual", SICK: "Sick", EARNED: "Earned", COMP_OFF: "Comp-off", UNPAID: "Unpaid" };
@@ -75,7 +76,7 @@ function CorrectionDialog({ initial, onClose, onSaved }) {
     <Dialog title="Fix a missed punch" onClose={onClose}>
       <p className="att-sub">Give the times you actually started and/or finished. Your manager (or HR) approves it, then your day is updated.</p>
       <div className="att-grid2">
-        <Field label="Date"><input type="date" value={f.date} max={todayIso()} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
+        <Field label="Date"><DateInput type="date" value={f.date} max={todayIso()} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
         <span />
         <Field label="Clock-in time" hint="(leave empty if it was right)"><input type="time" value={f.clockIn} onChange={(e) => setF({ ...f, clockIn: e.target.value })} /></Field>
         <Field label="Clock-out time" hint="(leave empty if it was right)"><input type="time" value={f.clockOut} onChange={(e) => setF({ ...f, clockOut: e.target.value })} /></Field>
@@ -112,8 +113,8 @@ function LeaveDialog({ balances, onClose, onSaved }) {
         </select>
       </Field>
       <div className="att-grid2">
-        <Field label="From"><input type="date" value={f.fromDate} onChange={(e) => setF({ ...f, fromDate: e.target.value, toDate: e.target.value > f.toDate ? e.target.value : f.toDate })} /></Field>
-        <Field label="To"><input type="date" value={f.halfDay ? f.fromDate : f.toDate} min={f.fromDate} disabled={f.halfDay} onChange={(e) => setF({ ...f, toDate: e.target.value })} /></Field>
+        <Field label="From"><DateInput type="date" value={f.fromDate} onChange={(e) => setF({ ...f, fromDate: e.target.value, toDate: e.target.value > f.toDate ? e.target.value : f.toDate })} /></Field>
+        <Field label="To"><DateInput type="date" value={f.halfDay ? f.fromDate : f.toDate} min={f.fromDate} disabled={f.halfDay} onChange={(e) => setF({ ...f, toDate: e.target.value })} /></Field>
       </div>
       <label className="att-check"><input type="checkbox" checked={f.halfDay} onChange={(e) => setF({ ...f, halfDay: e.target.checked })} /> Half a day</label>
       <Field label="Reason" hint="(optional - only your approver sees it)"><textarea rows={2} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
@@ -179,9 +180,9 @@ function MyTime({ me }) {
         <div className="att-row">
           <h2 className="pg-section-title">Time logs</h2>
           <div className="att-range">
-            <input type="date" aria-label="From" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
+            <DateInput type="date" aria-label="From" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
             <span>to</span>
-            <input type="date" aria-label="To" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
+            <DateInput type="date" aria-label="To" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
           </div>
         </div>
         {!logs ? <p className="att-sub">Loading…</p> : logs.length === 0 ? <p className="att-sub">No punches in this range.</p> : (
@@ -388,9 +389,9 @@ function Reports({ canExport, tz }) {
     <>
       <div className="att-row">
         <div className="att-range">
-          <input type="date" aria-label="From" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
+          <DateInput type="date" aria-label="From" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
           <span>to</span>
-          <input type="date" aria-label="To" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
+          <DateInput type="date" aria-label="To" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
           <select aria-label="Person" value={range.email} onChange={(e) => setRange({ ...range, email: e.target.value })}>
             <option value="">Everyone I can see</option>
             {people.filter((p) => p.email).map((p) => <option key={p.id} value={p.email.toLowerCase()}>{p.name || p.email}</option>)}
@@ -468,7 +469,7 @@ function CallTimes({ tz }) {
       <div className="att-card">
         <div className="att-grid3">
           <Field label="Project"><select value={f.projectId} onChange={(e) => setF({ ...f, projectId: e.target.value })}><option value="">No project</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
-          <Field label="Date"><input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
+          <Field label="Date"><DateInput type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
           <Field label="Call time"><input type="time" value={f.callTime} onChange={(e) => setF({ ...f, callTime: e.target.value })} /></Field>
           <Field label="Buffer" hint="(minutes)"><input type="number" min={0} max={240} value={f.bufferMinutes} onChange={(e) => setF({ ...f, bufferMinutes: e.target.value })} /></Field>
           <Field label="Location" hint="(optional)"><input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="e.g. Film City, Stage 4" /></Field>

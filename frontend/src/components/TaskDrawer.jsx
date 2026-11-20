@@ -253,7 +253,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
           <div style={{ marginBottom: 16 }}>
             <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
               <legend style={{ ...fieldLabelStyle, padding: 0 }}>Due Date</legend>
-              <DateTimePicker value={local.dueDate || ""} onChange={(iso) => save({ dueDate: iso || null })} />
+              <DateTimePicker value={local.dueDate || ""} onChange={(iso) => save({ dueDate: iso || null })} saveOnBlur label="Due date" />
             </fieldset>
           </div>
 

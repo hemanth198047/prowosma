@@ -30,6 +30,7 @@ import {
 import "../styles/pages/meeting-assistant.css";
 import "../styles/pages/meeting-assistant-v2.css";
 import { Bot, FileText, Info, Link2, Mic, Plus } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 const TABS = ["Summary", "MOM", "Notes", "Transcript", "Actions", "Projects and Tasks"];
 const DOC_TYPE = { Summary: "SUMMARY", MOM: "MOM", Notes: "NOTES" };
@@ -549,7 +550,7 @@ export default function MeetingAssistant() {
         {when === "later" && (
           <div className="ma-field">
             <label htmlFor="ma-when-at">Start time</label>
-            <input id="ma-when-at" type="datetime-local" min={localInputValue()} value={scheduled}
+            <DateInput id="ma-when-at" type="datetime-local" min={localInputValue()} value={scheduled}
               onChange={(e) => setScheduled(e.target.value)} />
           </div>
         )}

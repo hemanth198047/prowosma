@@ -13,6 +13,7 @@ import {
   exportActivityPDF, exportActivityDOCX,
 } from "../utils/activityExport";
 import { Book as IcBook, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, FileText as IcFileText, Folder as IcFolder, Hourglass as IcHourglass, Lock as IcLock, Target as IcTarget, Timer as IcTimer, Users as IcUsers } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 /* ─── constants ───────────────────────────────────────────────── */
 const ACTION_META = {
@@ -687,8 +688,8 @@ export default function ActivityLog() {
           <div className="al-sidebar-section">
             <div className="al-sidebar-label">Date Range</div>
             <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-              <input type="date" aria-label="From date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="al-date-input" />
-              <input type="date" aria-label="To date" value={toDate}   onChange={e => setToDate(e.target.value)}   className="al-date-input" />
+              <DateInput type="date" aria-label="From date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="al-date-input" />
+              <DateInput type="date" aria-label="To date" value={toDate}   onChange={e => setToDate(e.target.value)}   className="al-date-input" />
               <button className="btn-primary" style={{ fontSize:"12px", padding:"6px" }}
                 disabled={!fromDate || !toDate} onClick={loadAll}>Apply</button>
               {(fromDate || toDate) && (

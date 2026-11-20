@@ -13,6 +13,7 @@ import {
   ResponsiveContainer, Legend,
 } from "recharts";
 import { CircleCheck as IcCircleCheck, Footprints as IcFootprints, Frown as IcFrown, Meh as IcMeh, Pencil as IcPencil, Smile as IcSmile, Trash2 as IcTrash2, Square as IcSquare } from "lucide-react";
+import DateInput from "../components/DateInput";
 
 const STATUS_META = {
   PLANNING:  { label:"Planning",  color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
@@ -156,12 +157,12 @@ function SprintForm({ initial, onSave, onCancel }) {
         <div className="form-row">
           <div className="form-group">
             <label htmlFor={"sprints-start-date"}>Start Date</label>
-            <input type="date" value={form.startDate?.slice(0,10) || ""}
+            <DateInput type="date" value={form.startDate?.slice(0,10) || ""}
               onChange={e => set("startDate", e.target.value)} id={"sprints-start-date"} />
           </div>
           <div className="form-group">
             <label htmlFor={"sprints-end-date"}>End Date</label>
-            <input type="date" value={form.endDate?.slice(0,10) || ""}
+            <DateInput type="date" value={form.endDate?.slice(0,10) || ""}
               onChange={e => set("endDate", e.target.value)} id={"sprints-end-date"} />
           </div>
         </div>

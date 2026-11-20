@@ -144,7 +144,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
         <div className="form-group">
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
             <legend style={{ padding: 0 }}>Target Date</legend>
-            <DateTimePicker value={form.targetDate} onChange={(val) => set("targetDate", val)} />
+            <DateTimePicker value={form.targetDate} onChange={(val) => set("targetDate", val)} label="Target date" />
           </fieldset>
         </div>
 
