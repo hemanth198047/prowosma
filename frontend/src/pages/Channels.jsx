@@ -288,7 +288,11 @@ function ChannelView({ channel, title, me, onDelete, onMembers, onBack }) {
 
   const load = useCallback(() => getMessages(channel.id).then(r=>setMessages(unwrapList(r))).catch(()=>{}), [channel.id]);
   useEffect(()=>{ load(); const t = setInterval(load, 5000); return ()=>clearInterval(t); },[load]);
-  useEffect(()=>{ bottomRef.current?.scrollIntoView?.({behavior:"smooth"}); },[messages]);
+  // Scroll only the message list: scrollIntoView would also scroll the page and push the title out of view.
+  useEffect(()=>{
+    const list = bottomRef.current?.parentElement;
+    if (list) list.scrollTo?.({ top: list.scrollHeight, behavior: "smooth" });
+  },[messages]);
 
   const send = async () => {
     if (!text.trim()) return;

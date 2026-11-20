@@ -11,10 +11,15 @@
  *   node scripts/build-classic-css.mjs            # from the design-classic tag
  *   node scripts/build-classic-css.mjs <git-ref>  # from another ref
  *
+ * Screens and components added after that ref have no Classic styles of their own, and Classic's scoped
+ * reset (`* { padding: 0 }`) and element rules (button, input…) would outrank their unscoped class rules and
+ * collapse them. So the current stylesheets' rules that name a class unknown to the Classic CSS are
+ * appended, scoped the same way: new components keep their layout in Classic, old screens keep the Classic look.
+ *
  * The output is generated: don't edit it by hand. Re-run this when the Classic design itself must change.
  */
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
@@ -29,23 +34,28 @@ const read = (path) => git("show", `${ref}:frontend/${path}`);
 
 // Import order: index.css, then App.css (each @import followed in place), then every other stylesheet
 // (page sheets imported by components), alphabetically.
-const ordered = [];
-const seen = new Set();
 const fontImports = new Set();
-function visit(path) {
-  if (seen.has(path) || !all.includes(path)) return;
-  seen.add(path);
-  const text = read(path);
-  for (const m of text.matchAll(/@import\s+(?:url\()?["']([^"')]+)["']\)?[^;]*;/g)) {
-    const target = m[1];
-    if (/^https?:/.test(target)) { fontImports.add(m[0]); continue; }
-    visit(posix.normalize(posix.join(posix.dirname(path), target)));
+function inImportOrder(files, readFile) {
+  const ordered = [];
+  const seen = new Set();
+  function visit(path) {
+    if (seen.has(path) || !files.includes(path)) return;
+    seen.add(path);
+    const text = readFile(path);
+    for (const m of text.matchAll(/@import\s+(?:url\()?["']([^"')]+)["']\)?[^;]*;/g)) {
+      const target = m[1];
+      if (/^https?:/.test(target)) { fontImports.add(m[0]); continue; }
+      visit(posix.normalize(posix.join(posix.dirname(path), target)));
+    }
+    ordered.push({ path, text });
   }
-  ordered.push({ path, text });
+  visit("src/index.css");
+  visit("src/App.css");
+  for (const f of [...files].sort()) visit(f);
+  return ordered;
 }
-visit("src/index.css");
-visit("src/App.css");
-for (const f of [...all].sort()) visit(f);
+const ordered = inImportOrder(all, read);
+const classicFonts = [...fontImports];
 
 const ROOTISH = /^(:root|html)((?:\[[^\]]+\])*)/;
 function scopeSelector(sel) {
@@ -77,6 +87,39 @@ for (const { path, text } of ordered) {
   const out = postcss([plugin]).process(text, { from: path }).root;
   pieces.push({ path, root: out });
 }
+// Classes the Classic CSS knows (before scoping).
+const CLASS = /\.(-?[_a-zA-Z][\w-]*)/g;
+const classesOf = (sel) => [...sel.matchAll(CLASS)].map((m) => m[1]);
+const classicClasses = new Set();
+for (const { text } of ordered) {
+  postcss.parse(text).walkRules((rule) => {
+    if (rule.parent?.type === "atrule" && /keyframes$/.test(rule.parent.name)) return;
+    for (const sel of rule.selectors) for (const c of classesOf(sel)) classicClasses.add(c);
+  });
+}
+const isNewOnly = (sel) => classesOf(sel).some((c) => !classicClasses.has(c));
+
+// Current stylesheets: keep only rules naming a class Classic never styled (newer markup).
+const frontend = join(here, "..");
+const current = git("ls-files", "src").split("\n").filter((f) => f.endsWith(".css") && f !== "src/styles/classic.css");
+let added = 0;
+const currentPieces = [];
+for (const { path, text } of inImportOrder(current, (p) => readFileSync(join(frontend, p), "utf8"))) {
+  const root = postcss.parse(text, { from: path });
+  root.walkAtRules("import", (a) => a.remove());
+  root.walkAtRules(/keyframes$/, (a) => a.remove());          // the New sheets (always loaded) define them
+  root.walkRules((rule) => {
+    const keep = rule.selectors.filter(isNewOnly);
+    if (!keep.length) { rule.remove(); return; }
+    rule.selectors = keep.map(scopeSelector);
+    added += 1;
+  });
+  root.walkAtRules((a) => { if (a.nodes && !a.nodes.length) a.remove(); });
+  root.walkAtRules((a) => { if (a.nodes && !a.nodes.length) a.remove(); });
+  root.walkComments((c) => c.remove());
+  if (root.nodes.length) currentPieces.push({ path, root });
+}
+
 // Point animations at the renamed keyframes.
 const names = [...keyframes].sort((a, b) => b.length - a.length);
 const renameAnimations = (value) => {
@@ -89,8 +132,10 @@ for (const { path, root } of pieces) {
   root.walkDecls(/^(animation|animation-name)$/, (d) => { d.value = renameAnimations(d.value); });
   css += `\n/* ── ${path} ── */\n${root.toString()}\n`;
 }
+css += "\n/* ════ Components added after the Classic design (current rules naming classes Classic never styled) ════ */\n";
+for (const { path, root } of currentPieces) css += `\n/* ── current ${path} ── */\n${root.toString()}\n`;
 
 const header = `/* GENERATED by scripts/build-classic-css.mjs from ${ref} (${git("rev-parse", "--short", `${ref}^{commit}`).trim()}). Do not edit by hand.
    The Classic design: every rule is scoped under ${SCOPE}; loaded only when someone picks Classic. */\n`;
-writeFileSync(join(here, "..", "src", "styles", "classic.css"), header + [...fontImports].join("\n") + "\n" + css);
-console.log(`classic.css: ${ordered.length} stylesheets, ${keyframes.size} keyframes renamed, ${(css.length / 1024).toFixed(0)} KB`);
+writeFileSync(join(here, "..", "src", "styles", "classic.css"), header + classicFonts.join("\n") + "\n" + css);
+console.log(`classic.css: ${ordered.length} stylesheets, ${keyframes.size} keyframes renamed, ${added} current rules for new components, ${(css.length / 1024).toFixed(0)} KB`);
