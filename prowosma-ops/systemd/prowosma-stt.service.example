@@ -1,0 +1,28 @@
+# Speech-to-text server for the AI Meeting Assistant (tools/stt-server, faster-whisper).
+# Install:  cp prowosma-stt.service.example /etc/systemd/system/prowosma-stt.service
+#           systemctl daemon-reload && systemctl enable --now prowosma-stt
+# It listens on 127.0.0.1 only: the backend on the same server reaches it, the internet doesn't.
+[Unit]
+Description=Prowosma speech-to-text (faster-whisper)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=prowosma
+WorkingDirectory=/opt/prowosma/stt-server
+# small = good balance on CPU (~1.5 GB RAM). base = lighter/faster, less accurate. medium = more accurate, needs more RAM/CPU.
+Environment=STT_MODEL=small
+Environment=STT_DEVICE=cpu
+Environment=HF_HUB_DISABLE_XET=1
+# Where the model is downloaded and kept (about 500 MB for "small"), so restarts don't download it again.
+Environment=HF_HOME=/opt/prowosma/stt-server/models
+# Optional extra settings (e.g. STT_API_KEY=...) without editing this file:
+EnvironmentFile=-/opt/prowosma/stt-server/stt.env
+ExecStart=/opt/prowosma/stt-server/.venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port 8765
+Restart=on-failure
+RestartSec=5
+# Let the web app stay responsive while a recording is being transcribed.
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
