@@ -11,6 +11,7 @@ RadialBarChart, RadialBar, ResponsiveContainer,
 } from "recharts";
 import "../styles/pages/analytics.css";
 import { statusText } from "../utils/statusText";
+import { Package as IcPackage } from "lucide-react";
 
 const HEALTH_META = {
   HEALTHY:  { label:"Healthy",  color:"var(--success)", bg:"rgba(5,150,105,0.12)" },
@@ -21,7 +22,7 @@ const HEALTH_META = {
 function HealthBadge({ health }) {
   const m = HEALTH_META[health] || HEALTH_META.AT_RISK;
   return (
-    <span style={{ fontSize:"11px", fontWeight:700, padding:"2px 8px",
+    <span style={{ fontSize:"11px", fontWeight: 600, padding:"2px 8px",
       borderRadius:"99px", background:m.bg, color:m.color }}>
       {m.label}
     </span>
@@ -66,7 +67,7 @@ function ProjectRow({ project, onOpen, onCriticalPath, cpActive }) {
           <div style={{ width:`${project.healthScore}%`, height:"100%",
             background:m.color, borderRadius:"99px" }} />
         </div>
-        <span style={{ fontSize:"11px", fontWeight:700, color:m.color, minWidth:"28px" }}>
+        <span style={{ fontSize:"11px", fontWeight: 600, color:m.color, minWidth:"28px" }}>
           {project.healthScore}
         </span>
       </div>
@@ -78,7 +79,7 @@ function ProjectRow({ project, onOpen, onCriticalPath, cpActive }) {
         className={`portfolio-cp-btn${cpActive ? " active" : ""}`}
         onClick={e => { e.stopPropagation(); onCriticalPath(project.id); }}
         title="Show critical path">
-        🔴
+        <span className="emo-dot emo-dot--red" aria-hidden="true" />
       </button>
     </div>
   );
@@ -174,7 +175,7 @@ function ProjectDetailPanel({ project, onClose }) {
               <div className="portfolio-progress-fill"
                 style={{ width:`${project.progress}%`, background:project.color, height:"100%" }} />
             </div>
-            <span style={{ fontWeight:800, fontSize:"16px", color:project.color }}>{project.progress}%</span>
+            <span style={{ fontWeight: 600, fontSize:"16px", color:project.color }}>{project.progress}%</span>
           </div>
         </div>
 
@@ -269,16 +270,16 @@ function RiskPlanningPanel({ projects, onClose }) {
                   borderRadius:"var(--radius-sm)",marginBottom:"6px",cursor:"pointer"}}
                   onClick={()=>setDetail(selId===r.projectId?null:r)||setSelId(selId===r.projectId?null:r.projectId)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (()=>setDetail(selId===r.projectId?null:r)||setSelId(selId===r.projectId?null:r.projectId))?.(e); } }}>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:"13px"}}>{r.projectName}</div>
+                    <div style={{fontWeight: 600,fontSize:"13px"}}>{r.projectName}</div>
                     {(r.riskFactors||[]).slice(0,2).map((f,i)=>(
                       <div key={i} style={{fontSize:"11px",color:"var(--gray-400)"}}>• {f}</div>
                     ))}
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontWeight:800,fontSize:"18px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)"}}>
+                    <div style={{fontWeight: 600,fontSize:"18px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)"}}>
                       {r.riskScore}
                     </div>
-                    <div style={{fontSize:"10px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)",fontWeight:700}}>
+                    <div style={{fontSize:"10px",color:RISK_COLOR[r.riskLevel]||"var(--gray-500)",fontWeight: 600}}>
                       {r.riskLevel}
                     </div>
                   </div>
@@ -290,7 +291,7 @@ function RiskPlanningPanel({ projects, onClose }) {
             </div>
 
             {/* Per-project analysis */}
-            <div style={{fontWeight:700,fontSize:"13px",marginBottom:"8px"}}>Analyse specific project</div>
+            <div style={{fontWeight: 600,fontSize:"13px",marginBottom:"8px"}}>Analyse specific project</div>
             <div style={{display:"flex",gap:"6px",marginBottom:"14px"}}>
               <select id="risk-proj-sel" style={{flex:1}}>
                 <option value="">— pick a project —</option>
@@ -306,7 +307,7 @@ function RiskPlanningPanel({ projects, onClose }) {
             {detail && (
               <div style={{background:"rgba(99,102,241,.04)",border:"1px solid rgba(99,102,241,.15)",
                 borderRadius:"var(--radius-lg)",padding:"14px"}}>
-                <div style={{fontWeight:800,fontSize:"14px",marginBottom:"10px"}}>{detail.projectName}</div>
+                <div style={{fontWeight: 600,fontSize:"14px",marginBottom:"10px"}}>{detail.projectName}</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"12px"}}>
                   {[
                     {l:"Risk Score",    v:`${detail.riskScore}/100`,   c:RISK_COLOR[detail.riskLevel]},
@@ -323,14 +324,14 @@ function RiskPlanningPanel({ projects, onClose }) {
                   ].map(m=>(
                     <div key={m.l} style={{background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",padding:"8px 10px"}}>
-                      <div style={{fontSize:"10px",color:"var(--gray-400)",textTransform:"uppercase",letterSpacing:".04em"}}>{m.l}</div>
-                      <div style={{fontWeight:800,fontSize:"14px",color:m.c,marginTop:"2px"}}>{m.v}</div>
+                      <div style={{fontSize:"10px",color:"var(--gray-400)",}}>{m.l}</div>
+                      <div style={{fontWeight: 600,fontSize:"14px",color:m.c,marginTop:"2px"}}>{m.v}</div>
                     </div>
                   ))}
                 </div>
                 {(detail.riskFactors||[]).length>0 && (
                   <div style={{marginBottom:"10px"}}>
-                    <div style={{fontSize:"11px",fontWeight:700,color:"var(--gray-500)",marginBottom:"5px"}}>RISK FACTORS</div>
+                    <div style={{fontSize:"11px",fontWeight: 600,color:"var(--gray-500)",marginBottom:"5px"}}>Risk factors</div>
                     {detail.riskFactors.map((f,i)=>(
                       <div key={i} style={{fontSize:"12px",color:"var(--gray-600)",padding:"3px 0",
                         borderBottom:"1px solid var(--border)"}}>{f}</div>
@@ -344,7 +345,7 @@ function RiskPlanningPanel({ projects, onClose }) {
                 )}
                 {detail.aiNarrative && (
                   <div style={{background:"rgba(99,102,241,.06)",borderRadius:"var(--radius-sm)",padding:"10px"}}>
-                    <div style={{fontSize:"10px",fontWeight:700,color:"var(--brand-500)",marginBottom:"5px"}}>AI ASSESSMENT</div>
+                    <div style={{fontSize:"10px",fontWeight: 600,color:"var(--brand-500)",marginBottom:"5px"}}>AI assessment</div>
                     <div style={{fontSize:"12px",color:"var(--gray-600)",lineHeight:1.6}}>{detail.aiNarrative}</div>
                   </div>
                 )}
@@ -399,14 +400,14 @@ export default function Portfolio() {
 
   if (loading) return (
     <div>
-      <PageHeader icon="📦" title="Portfolio" description="Loading…" />
+      <PageHeader icon={<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />} title="Portfolio" description="Loading…" />
       <div className="analytics-loading"><div className="analytics-spinner" /><p>Loading portfolio…</p></div>
     </div>
   );
 
   if (!data || !data.projects?.length) return (
     <div>
-      <PageHeader icon="📦" title="Portfolio" description="Cross-project portfolio view" />
+      <PageHeader icon={<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />} title="Portfolio" description="Cross-project portfolio view" />
       <div className="empty-state">No projects yet. Create projects to see the portfolio view.</div>
     </div>
   );
@@ -430,7 +431,7 @@ export default function Portfolio() {
   return (
     <div>
       <PageHeader
-        icon="📦"
+        icon={<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Portfolio"
         description="Cross-project health, progress, and resource view"
         action={
@@ -549,7 +550,7 @@ export default function Portfolio() {
                   <div key={d.name} style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:"12px" }}>
                     <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:d.fill }} />
                     <span style={{ flex:1, color:"var(--gray-600)" }}>{d.name}</span>
-                    <span style={{ fontWeight:700, color:d.fill }}>{d.value}</span>
+                    <span style={{ fontWeight: 600, color:d.fill }}>{d.value}</span>
                   </div>
                 ))}
               </div>

@@ -142,7 +142,7 @@ export default function Login() {
           const primary = list[0];
           const roleLabel = {
             OWNER: t("login.roleOwner"), ADMIN: t("login.roleAdmin"),
-            MEMBER: t("login.roleMember"), VIEWER: t("login.roleViewer"),
+            MEMBER: t("login.roleMember"), EDITOR: t("login.roleEditor"), VIEWER: t("login.roleViewer"),
           }[primary.role] || primary.role || t("login.roleMember");
           const extra = list.length > 1 ? ` (+${list.length - 1})` : "";
           setSuccess(t("login.signedInAs", { role: roleLabel, workspace: primary.name }) + extra);

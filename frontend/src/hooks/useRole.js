@@ -3,7 +3,7 @@ import { RoleContext } from "../context/RoleContext";
 
 /**
  * Returns the current user's role in the active workspace.
- * Possible values: "OWNER" | "ADMIN" | "MEMBER" | "VIEWER" | null
+ * Possible values: "OWNER" | "ADMIN" | "MEMBER" | "EDITOR" | "VIEWER" | null
  *
  * Usage:
  *   const { role, isOwner, isAdmin, canEdit, canView } = useRole();

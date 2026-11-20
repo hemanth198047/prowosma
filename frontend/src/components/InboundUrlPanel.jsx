@@ -79,7 +79,7 @@ export default function InboundUrlPanel({ integrationKey, savedId, color = "#636
   if (!savedId) {
     return (
       <div style={box} data-testid="inbound-panel">
-        <div style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b", marginBottom: "4px" }}>Webhook URL</div>
+        <div style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", marginBottom: "4px" }}>Webhook URL</div>
         <div style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.5 }}>
           Click <b>Save &amp; Connect</b> first, then reopen this dialog to generate your webhook URL.
         </div>
@@ -89,12 +89,12 @@ export default function InboundUrlPanel({ integrationKey, savedId, color = "#636
 
   return (
     <div style={box} data-testid="inbound-panel">
-      <div style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b", marginBottom: "8px" }}>Webhook URL</div>
+      <div style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", marginBottom: "8px" }}>Webhook URL</div>
 
       {!url && (
         <button type="button" onClick={generate} disabled={busy}
           style={{ padding: "9px 16px", borderRadius: "8px", border: "none", background: color, color: "#fff",
-            fontSize: "12px", fontWeight: 800, cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
+            fontSize: "12px", fontWeight: 600, cursor: "pointer", opacity: busy ? 0.7 : 1 }}>
           {busy ? "Generating..." : "Generate webhook URL"}
         </button>
       )}
@@ -108,7 +108,7 @@ export default function InboundUrlPanel({ integrationKey, savedId, color = "#636
                 fontSize: "12px", fontFamily: "monospace", boxSizing: "border-box" }} />
             <button type="button" onClick={copy}
               style={{ padding: "9px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#fff",
-                fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
               {copied ? "Copied" : "Copy"}
             </button>
           </div>

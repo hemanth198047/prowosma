@@ -13,7 +13,7 @@ import { buildTree, descendantIds, initials, localTime, managerChain } from "../
 
 const CARD_W = 380;
 const GAP = 10;
-const ROLE_LABEL = { OWNER: "Workspace manager", ADMIN: "Admin", MEMBER: "Member", VIEWER: "Viewer" };
+const ROLE_LABEL = { OWNER: "Workspace manager", ADMIN: "Admin", MEMBER: "Member", EDITOR: "Editor", VIEWER: "Viewer" };
 
 function place(rect, h) {
   const vw = window.innerWidth;

@@ -135,10 +135,10 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={() => { setEditingTitle(false); if (titleDraft.trim() && titleDraft !== local.title) save({ title: titleDraft.trim() }); }}
                 onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { setTitleDraft(local.title); setEditingTitle(false); } }}
-                style={{ width: "100%", fontSize: 18, fontWeight: 700, padding: "4px 6px", border: "1px solid var(--accent-500)", borderRadius: 6 }}
+                style={{ width: "100%", fontSize: 18, fontWeight: 600, padding: "4px 6px", border: "1px solid var(--accent-500)", borderRadius: 6 }}
               />
             ) : (
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, wordBreak: "break-word" }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, wordBreak: "break-word" }}>
                 <button
                   type="button"
                   onClick={() => setEditingTitle(true)}
@@ -238,7 +238,7 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
                 {teamMembers.map((m) => (
                   <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", fontSize: 13 }}>
                     <input type="checkbox" checked={(local.assigneeIds || []).includes(m.id)} onChange={() => toggleAssignee(m.id)} />
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: m.color || "#6366f1", color: "#fff", fontSize: 9, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: m.color || "#6366f1", color: "#fff", fontSize: 9, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       {m.name.slice(0, 2).toUpperCase()}
                     </span>
                     {m.name}
@@ -328,5 +328,5 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
   );
 }
 
-const fieldLabelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--gray-400)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 };
+const fieldLabelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--gray-400)", marginBottom: 4 };
 const selectStyle = { width: "100%", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#fff" };

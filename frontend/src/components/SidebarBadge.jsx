@@ -6,7 +6,7 @@ export default function SidebarBadge({ count, color }) {
         background: color || "#ef4444",
         color: "#fff",
         fontSize: "10px",
-        fontWeight: 700,
+        fontWeight: 600,
         padding: "1px 6px",
         borderRadius: "10px",
         marginLeft: "auto",

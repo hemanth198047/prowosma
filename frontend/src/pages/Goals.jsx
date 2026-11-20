@@ -39,6 +39,7 @@ import { useAuth } from "../hooks/useAuth";
 import "../styles/pages/goals.css";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import { Building as IcBuilding, CalendarDays as IcCalendarDays, CircleCheck as IcCircleCheck, FileText as IcFileText, Hourglass as IcHourglass, Pencil as IcPencil, Target as IcTarget, Trash2 as IcTrash2, User as IcUser, Users as IcUsers, Square as IcSquare } from "lucide-react";
 const STATUSES  = ["ACTIVE", "ACHIEVED", "PAUSED"];
 const LEVELS    = ["COMPANY", "TEAM", "INDIVIDUAL"];
 const QUARTERS  = ["Q1 2025","Q2 2025","Q3 2025","Q4 2025","Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
@@ -55,9 +56,9 @@ const KR_STATUS_META = {
 };
 
 const LEVEL_META = {
-  COMPANY:    { icon:"🏢", label:"Company",    color:"#5B5FEE" },
-  TEAM:       { icon:"👥", label:"Team",       color:"#06b6d4" },
-  INDIVIDUAL: { icon:"👤", label:"Individual", color:"#1E8E5A" },
+  COMPANY:    { icon:<IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Company",    color:"#5B5FEE" },
+  TEAM:       { icon:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Team",       color:"#06b6d4" },
+  INDIVIDUAL: { icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Individual", color:"#1E8E5A" },
 };
 
 function GoalForm({ initial, allGoals, onSave, onCancel }) {
@@ -102,7 +103,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
           <div className="form-group">
             <label htmlFor={"goals-level-b-1"}>Level (B-1)</label>
             <select value={form.level} onChange={(e) => set("level", e.target.value)} id={"goals-level-b-1"}>
-              {LEVELS.map(l => <option key={l} value={l}>{LEVEL_META[l].icon} {LEVEL_META[l].label}</option>)}
+              {LEVELS.map(l => <option key={l} value={l}>{LEVEL_META[l].label}</option>)}
             </select>
           </div>
           <div className="form-group">
@@ -134,7 +135,7 @@ function GoalForm({ initial, allGoals, onSave, onCancel }) {
             <option value="">— Root goal (no parent) —</option>
             {parentCandidates.map(g => (
               <option key={g.id} value={g.id}>
-                {LEVEL_META[g.level]?.icon || "🎯"} {g.title}
+                {LEVEL_META[g.level]?.icon || <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} {g.title}
               </option>
             ))}
           </select>
@@ -362,7 +363,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
                 </span>
               : <span style={{ fontSize:"10px", color:"#94a3b8" }}>deps</span>}
           </button>
-          <button className="btn-icon" style={{ fontSize:"12px" }} onClick={onDelete}>🗑️</button>
+          <button className="btn-icon" style={{ fontSize:"12px" }} onClick={onDelete}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -398,7 +399,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
             ? <p className="step-panel-empty">No files attached</p>
             : step.attachments.map(a => (
               <div key={a.id} className="step-file-row">
-                <span>📄</span>
+                <span><IcFileText size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 <span className="step-file-name">{a.originalName || a.fileName}</span>
                 <span className="step-file-size">{a.fileSize ? `${Math.round(a.fileSize/1024)}KB` : ""}</span>
                 <button className="btn-icon" style={{ fontSize:"11px" }}
@@ -461,7 +462,7 @@ function StepItem({ step, allSteps, goalId, subGoalId, onToggle, onDelete, onRef
           {/* Add new dependencies */}
           {otherSteps.filter(s => !step.blockedByStepIds?.includes(s.id)).length > 0 && (
             <div>
-              <div className="step-panel-label">➕ Block this step until one of these finishes:</div>
+              <div className="step-panel-label">Block this step until one of these finishes:</div>
               <div className="step-dep-add-list">
                 {otherSteps.filter(s => !step.blockedByStepIds?.includes(s.id)).map(s => (
                   <button key={s.id} className="btn-secondary"
@@ -512,7 +513,7 @@ function AddStepInline({ onAdd }) {
         onClick={handleAdd}
         disabled={saving || !title.trim()}
       >
-        {saving ? "⏳" : "+ Add"}
+        {saving ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "+ Add"}
       </button>
     </div>
   );
@@ -578,7 +579,7 @@ function SubGoalCard({ goalId, subGoal, onEdit, onDelete, onUpdateGoal }) {
           <span
             style={{
               fontSize: "11px",
-              fontWeight: 700,
+              fontWeight: 600,
               color: progress === 100 ? "var(--success)" : "var(--brand-500)",
             }}
           >
@@ -593,7 +594,7 @@ function SubGoalCard({ goalId, subGoal, onEdit, onDelete, onUpdateGoal }) {
                 onEdit(subGoal);
               }}
             >
-              ✏️
+              <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />
             </button>
           </CanDo>
           <CanDo action="delete">
@@ -605,7 +606,7 @@ function SubGoalCard({ goalId, subGoal, onEdit, onDelete, onUpdateGoal }) {
                 onDelete(subGoal.id);
               }}
             >
-              🗑️
+              <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
             </button>
           </CanDo>
           <span style={{ color: "#aaa", fontSize: "11px" }}>
@@ -705,7 +706,7 @@ function ConfidenceMeter({ goal, onUpdate }) {
         <span className="goal-confidence-label">Confidence</span>
         <div className="goal-confidence-right">
           {recentDrift && (
-            <span style={{fontSize:"10px",fontWeight:700,
+            <span style={{fontSize:"10px",fontWeight: 600,
               background:`${recentDrift.color}18`,color:recentDrift.color,
               padding:"2px 7px",borderRadius:"99px",marginRight:"4px"}}>
               {recentDrift.label} ({recentDrift.delta > 0 ? "+" : ""}{recentDrift.delta}pts)
@@ -729,7 +730,7 @@ function ConfidenceMeter({ goal, onUpdate }) {
             {goal.confidence ?? 50}%
           </span>
           <button className="goal-confidence-edit-btn" onClick={() => setEditing(v => !v)}>
-            {editing ? "✕" : "✎"}
+            {editing ? "✕" : <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -742,7 +743,7 @@ function ConfidenceMeter({ goal, onUpdate }) {
             <input type="range" min={0} max={100} step={5} value={val}
               onChange={e => setVal(Number(e.target.value))}
               style={{ flex:1 }} />
-            <span style={{ minWidth:"32px", fontWeight:700, color: CONFIDENCE_COLOR(val) }}>{val}%</span>
+            <span style={{ minWidth:"32px", fontWeight: 600, color: CONFIDENCE_COLOR(val) }}>{val}%</span>
           </div>
           <input className="goal-ci-input" value={note}
             onChange={e => setNote(e.target.value)}
@@ -821,8 +822,8 @@ function CheckInPanel({ goal, onUpdate }) {
             <span className="goal-checkin-date">
               {ci.createdAt ? new Date(ci.createdAt).toLocaleDateString([], { day:"numeric", month:"short" }) : ""}
             </span>
-            <span className="goal-checkin-snap">{ci.progressSnapshot}% · 🎯 {ci.confidenceSnapshot}%</span>
-            <button className="goal-ci-delete-btn" onClick={() => handleDelete(ci.id)}>🗑</button>
+            <span className="goal-checkin-snap">{ci.progressSnapshot}% · {ci.confidenceSnapshot}%</span>
+            <button className="goal-ci-delete-btn" onClick={() => handleDelete(ci.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </div>
           <div className="goal-checkin-update">{ci.update}</div>
           {ci.blockers && <div className="goal-checkin-blockers">{ci.blockers}</div>}
@@ -947,7 +948,7 @@ function KeyResultsPanel({ goal, onUpdate }) {
                   onChange={e => handleStatusChange(kr, e.target.value)}>
                   {KR_STATUS.map(s => <option key={s} value={s}>{KR_STATUS_META[s].label}</option>)}
                 </select>
-                <button className="goal-ci-delete-btn" onClick={() => handleDelete(kr.id)}>🗑</button>
+                <button className="goal-ci-delete-btn" onClick={() => handleDelete(kr.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             </div>
             <div className="goal-kr-progress-row">
@@ -974,7 +975,7 @@ function KeyResultsPanel({ goal, onUpdate }) {
                 </div>
               ) : (
                 <span className="goal-kr-current" onClick={() => setEditingValue({ krId:kr.id, value:kr.currentValue })} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setEditingValue({ krId:kr.id, value:kr.currentValue }))?.(e); } }}>
-                  {kr.currentValue}{kr.unit} <span className="goal-kr-edit-hint">✎</span>
+                  {kr.currentValue}{kr.unit} <span className="goal-kr-edit-hint"><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 </span>
               )}
               <span style={{ color:"#94a3b8" }}>/ {kr.targetValue}{kr.unit}</span>
@@ -1018,7 +1019,7 @@ function GoalContributionPanel({ goal, onUpdate }) {
 
   return (
     <div style={{padding:"12px 0"}}>
-      <div style={{fontWeight:800,fontSize:"13px",marginBottom:"10px",color:"#1e293b"}}>
+      <div style={{fontWeight: 600,fontSize:"13px",marginBottom:"10px",color:"#1e293b"}}>
         Task Contribution to Goal
       </div>
 
@@ -1027,8 +1028,8 @@ function GoalContributionPanel({ goal, onUpdate }) {
         <div style={{background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.2)",
           borderRadius:"var(--radius-md)",padding:"10px",marginBottom:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:"12px",marginBottom:"5px"}}>
-            <span style={{fontWeight:700,color:"#5B5FEE"}}>Auto-calculated progress</span>
-            <span style={{fontWeight:800,color:"#5B5FEE"}}>{calculatedProgress}%</span>
+            <span style={{fontWeight: 600,color:"#5B5FEE"}}>Auto-calculated progress</span>
+            <span style={{fontWeight: 600,color:"#5B5FEE"}}>{calculatedProgress}%</span>
           </div>
           <div className="kpi-progress-bar">
             <div className="kpi-progress-fill" style={{width:calculatedProgress+"%",background:"var(--brand-500)"}}/>
@@ -1048,10 +1049,10 @@ function GoalContributionPanel({ goal, onUpdate }) {
         <div key={t.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 0",
           borderBottom:"1px solid var(--border)",fontSize:"12px"}}>
           <span style={{color:t.status==="DONE"?"var(--success)":"var(--warning)"}}>
-            {t.status==="DONE"?"✅":"⬜"}
+            {t.status==="DONE"?<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />:<IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />}
           </span>
           <span style={{flex:1,color:"#334155"}}>{t.title}</span>
-          <span style={{fontSize:"10px",fontWeight:700,color:"#5B5FEE"}}>
+          <span style={{fontSize:"10px",fontWeight: 600,color:"#5B5FEE"}}>
             ×{t.goalContributionWeight||1}
           </span>
         </div>
@@ -1108,7 +1109,7 @@ function ChildGoalsPanel({ goal, allGoals, onRequestAdd }) {
       </div>
       {children.map(child => (
         <div key={child.id} className="goal-child-row">
-          <span className="goal-child-level-icon">{LEVEL_META[child.level]?.icon || "🎯"}</span>
+          <span className="goal-child-level-icon">{LEVEL_META[child.level]?.icon || <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
           <span className="goal-child-title">{child.title}</span>
           <div className="goal-child-progress-bar">
             <div className="goal-child-progress-fill" style={{ width:`${child.progress}%` }} />
@@ -1232,7 +1233,7 @@ function AlignmentMap({ goals }) {
                   {/* Title */}
                   <foreignObject x={n.x+8} y={n.y+6} width={NODE_W-16} height={NODE_H-16}>
                     <div xmlns="http://www.w3.org/1999/xhtml"
-                      style={{ fontSize:"11px", fontWeight:700,
+                      style={{ fontSize:"11px", fontWeight: 600,
                         color:"#334155", lineHeight:1.3,
                         overflow:"hidden", maxHeight:"32px" }}>
                       {n.goal.title}
@@ -1475,7 +1476,7 @@ function ScorecardView({ goals }) {
                       <div className="scorecard-conf-bar">
                         <div style={{ width:`${conf}%`, height:"100%", background:confColor, borderRadius:"99px" }} />
                       </div>
-                      <span style={{ fontSize:"12px", fontWeight:700, color:confColor }}>{conf}%</span>
+                      <span style={{ fontSize:"12px", fontWeight: 600, color:confColor }}>{conf}%</span>
                     </div>
                   </td>
                   <td className="scorecard-meta">{g.keyResults?.length || 0}</td>
@@ -1531,14 +1532,14 @@ function QuarterlyView({ goals, allGoals, onRequestAdd }) {
           <div key={quarter} className="quarterly-group">
             <div className="quarterly-header">
               <div className="quarterly-title">
-                <span className="quarterly-icon">🗓</span>
+                <span className="quarterly-icon"><IcCalendarDays size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                 <span>{quarter}</span>
                 <span className="quarterly-count">{qGoals.length} goal{qGoals.length!==1?"s":""}</span>
               </div>
               <div className="quarterly-meta-row">
-                <span className="quarterly-stat"><span style={{color:"#5B5FEE",fontWeight:700}}>{avgProgress}%</span> avg</span>
-                <span className="quarterly-stat"><span style={{color:"#1E8E5A",fontWeight:700}}>{achieved}</span> achieved</span>
-                {atRisk > 0 && <span className="quarterly-stat"><span style={{color:"#D64545",fontWeight:700}}>{atRisk}</span> at risk</span>}
+                <span className="quarterly-stat"><span style={{color:"#5B5FEE",fontWeight: 600}}>{avgProgress}%</span> avg</span>
+                <span className="quarterly-stat"><span style={{color:"#1E8E5A",fontWeight: 600}}>{achieved}</span> achieved</span>
+                {atRisk > 0 && <span className="quarterly-stat"><span style={{color:"#D64545",fontWeight: 600}}>{atRisk}</span> at risk</span>}
               </div>
               {/* Quarter progress bar */}
               <div className="quarterly-progress-bar">
@@ -1664,7 +1665,7 @@ function GoalCard({
 
       {/* Overall Progress */}
       <div className="goal-progress-label">
-        <span>Overall Progress</span>
+        <span>Overall progress</span>
         <span>{goal.progress || 0}%</span>
       </div>
       <div className="progress-bar">
@@ -1687,43 +1688,38 @@ function GoalCard({
 
       {/* Actions */}
       <div className="goal-card-footer">
-        <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
-          <button className="btn-secondary" style={{ fontSize:"12px", padding:"6px 10px" }}
-            onClick={onUpdateProgress}>Update Progress</button>
-          <button className={`btn-secondary${isExpanded ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={onToggleExpand}>
-            {isExpanded ? "▲" : "▼"} {subGoals.length > 0 ? `${subGoals.length} Sub-Goals` : "Sub-Goals"}
-          </button>
-          <button className={`btn-secondary${activePanel==="kr" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("kr")}>
-            KRs {goal.keyResults?.length > 0 ? `(${goal.keyResults.length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="checkin" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("checkin")}>
-            Check-ins {goal.checkIns?.length > 0 ? `(${goal.checkIns.length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="children" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("children")}>
-            Children {(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length > 0 ? `(${(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length})` : ""}
-          </button>
-          <button className={`btn-secondary${activePanel==="contribution" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("contribution")}>
-            Contribution
-          </button>
-          <button className={`btn-secondary${activePanel==="deps" ? " btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }} onClick={() => togglePanel("deps")}>
-            Dependencies
-          </button>
-          <button className={`btn-secondary ${showActivity ? "btn-active" : ""}`}
-            style={{ fontSize:"12px", padding:"6px 10px" }}
-            onClick={() => setShowActivity(a => !a)}>Activity</button>
+        <div className="goal-card-tools">
+          <button type="button" className="btn-secondary goal-update-btn" onClick={onUpdateProgress}>Update progress</button>
+          <div className="goal-tabs" role="group" aria-label="Goal details">
+            <button type="button" className={`goal-tab${isExpanded ? " is-active" : ""}`} aria-pressed={isExpanded} onClick={onToggleExpand}>
+              Sub-goals{subGoals.length > 0 && <span className="goal-tab-count">{subGoals.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="kr" ? " is-active" : ""}`} aria-pressed={activePanel==="kr"} onClick={() => togglePanel("kr")}>
+              Key results{goal.keyResults?.length > 0 && <span className="goal-tab-count">{goal.keyResults.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="checkin" ? " is-active" : ""}`} aria-pressed={activePanel==="checkin"} onClick={() => togglePanel("checkin")}>
+              Check-ins{goal.checkIns?.length > 0 && <span className="goal-tab-count">{goal.checkIns.length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="children" ? " is-active" : ""}`} aria-pressed={activePanel==="children"} onClick={() => togglePanel("children")}>
+              Children{(allGoals||[]).some(g=>g.parentGoalId===goal.id) && <span className="goal-tab-count">{(allGoals||[]).filter(g=>g.parentGoalId===goal.id).length}</span>}
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="contribution" ? " is-active" : ""}`} aria-pressed={activePanel==="contribution"} onClick={() => togglePanel("contribution")}>
+              Contribution
+            </button>
+            <button type="button" className={`goal-tab${activePanel==="deps" ? " is-active" : ""}`} aria-pressed={activePanel==="deps"} onClick={() => togglePanel("deps")}>
+              Dependencies
+            </button>
+            <button type="button" className={`goal-tab${showActivity ? " is-active" : ""}`} aria-pressed={showActivity} onClick={() => setShowActivity(a => !a)}>
+              Activity
+            </button>
+          </div>
         </div>
         <div className="card-actions">
           <CanDo action="edit">
-            <button className="btn-icon" onClick={() => onEdit(goal)}>✏️</button>
+            <button type="button" className="btn-icon" aria-label="Edit goal" title="Edit" onClick={() => onEdit(goal)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </CanDo>
           <CanDo action="delete">
-            <button className="btn-icon" onClick={() => onDelete(goal.id)}>🗑️</button>
+            <button type="button" className="btn-icon" aria-label="Delete goal" title="Delete" onClick={() => onDelete(goal.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
           </CanDo>
         </div>
       </div>
@@ -1967,7 +1963,7 @@ export default function Goals() {
   return (
     <div>
       <PageHeader
-        icon="🎯"
+        icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Goals"
         description="Set goals, create sub-goals, and track steps to achieve them"
         action={
@@ -2127,7 +2123,7 @@ export default function Goals() {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="empty-state">No goals yet. Set your first goal!</p>
+          <p className="empty-state">No goals yet. Set your first goal</p>
         )}
       </div>}
 

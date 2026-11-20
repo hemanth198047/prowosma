@@ -25,6 +25,7 @@ import MeetingTrendsPanel from "../components/MeetingTrendsPanel";
 import "../styles/pages/meetings.css";
 import { parseServerDateTime, toLocalInputValue } from "../utils/serverTime";
 import { statusText } from "../utils/statusText";
+import { Hourglass as IcHourglass, NotebookPen as IcNotebookPen, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
 // ── Helpers ────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return "—";
@@ -127,7 +128,7 @@ function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }
     <div className="modal-overlay" onClick={onCancel} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (onCancel)?.(e); } }}>
       <div className="modal meet-modal" onClick={e => e.stopPropagation()} role="presentation">
         <div className="meet-modal-header">
-          <h2>{initial ? "Edit Meeting" : "New Meeting Notes"}</h2>
+          <h2>{initial ? "Edit meeting" : "New meeting notes"}</h2>
           <button className="meet-modal-close" onClick={onCancel}>✕</button>
         </div>
 
@@ -434,8 +435,8 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
         </div>
         <div className="meet-card-right" onClick={e => e.stopPropagation()} role="presentation">
           <span className={`meet-status meet-status--${m.status?.toLowerCase()}`}>{statusText(m.status)}</span>
-          <button onClick={() => onEdit(m)} title="Edit">✎</button>
-          <button onClick={() => onDelete(m)} title="Delete" className="meet-delete-btn">🗑</button>
+          <button onClick={() => onEdit(m)} title="Edit"><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+          <button onClick={() => onDelete(m)} title="Delete" className="meet-delete-btn"><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -522,9 +523,9 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
 
                   <div className="meet-add-type-toggles">
                     <button className={`meet-toggle-btn${activeAddType[pd.projectId] === "blocker" ? " active" : ""}`}
-                      onClick={() => toggleAddType(pd.projectId, "blocker")}>🚧 + Blocker</button>
+                      onClick={() => toggleAddType(pd.projectId, "blocker")}>+ Blocker</button>
                     <button className={`meet-toggle-btn${activeAddType[pd.projectId] === "decision" ? " active" : ""}`}
-                      onClick={() => toggleAddType(pd.projectId, "decision")}>⚖️ + Decision</button>
+                      onClick={() => toggleAddType(pd.projectId, "decision")}>+ Decision</button>
                   </div>
 
                   {activeAddType[pd.projectId] === "blocker" && (
@@ -597,7 +598,7 @@ function MeetingCard({ m, projects, onEdit, onDelete, onTaskCreated, onRefresh }
                         className="meet-convert-btn"
                         disabled={converting === a.id}
                         onClick={() => handleConvert(a)}>
-                        {converting === a.id ? "⏳" : "→ Task"}
+                        {converting === a.id ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "→ Task"}
                       </button>
                     ) : (
                       <span className="meet-converted-badge">✓ Task created</span>
@@ -730,13 +731,13 @@ export default function Meetings() {
   return (
     <div>
       <PageHeader
-        title="Meeting Notes"
+        title="Meeting notes"
         description="Record meetings, extract action items with AI, and convert them to tasks."
-        icon="📝"
+        icon={<IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />}
         action={can("USE_MEETING_ASSISTANT") && (
-          <button className="btn-primary" onClick={() => navigate("/meeting-assistant")}
+          <button className="btn-secondary" onClick={() => navigate("/meeting-assistant")}
             title="Get a summary, minutes and tasks from a transcript, recording or notetaker">
-            Try the Meeting Assistant
+            Open meeting assistant
           </button>
         )}
       />
@@ -789,7 +790,7 @@ export default function Meetings() {
         </select>
         <div style={{flex:1}} />
         <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
-          + New Meeting
+          + New meeting
         </button>
       </div>
 
@@ -798,7 +799,7 @@ export default function Meetings() {
         <div className="meet-loading">Loading meetings…</div>
       ) : filtered.length === 0 ? (
         <div className="meet-empty">
-          <div className="meet-empty-icon">📝</div>
+          <div className="meet-empty-icon"><IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           <h3>No meetings yet</h3>
           <p>Record your next meeting and let AI extract action items automatically.</p>
           <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>

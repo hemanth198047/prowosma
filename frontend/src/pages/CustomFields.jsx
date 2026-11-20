@@ -8,17 +8,18 @@ import {
 } from "../api/customFields";
 import PageHeader from "../components/PageHeader";
 import { useConfirm } from "../hooks/useConfirm";
+import { Calendar as IcCalendar, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, Folder as IcFolder, Globe as IcGlobe, Hash as IcHash, NotebookPen as IcNotebookPen, Pencil as IcPencil, Settings as IcSettings, SquareCheck as IcSquareCheck, Target as IcTarget, Trash2 as IcTrash2 } from "lucide-react";
 
 const FIELD_TYPES = ["TEXT", "NUMBER", "DATE", "DROPDOWN", "CHECKBOX"];
 const ENTITY_TYPES = ["TASK", "PROJECT", "GOAL"];
 const typeIcon = {
-  TEXT: "📝",
-  NUMBER: "🔢",
-  DATE: "📅",
-  DROPDOWN: "📋",
-  CHECKBOX: "☑️",
+  TEXT: <IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />,
+  NUMBER: <IcHash size={16} strokeWidth={1.5} aria-hidden="true" />,
+  DATE: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />,
+  DROPDOWN: <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />,
+  CHECKBOX: <IcSquareCheck size={16} strokeWidth={1.5} aria-hidden="true" />,
 };
-const entityIcon = { TASK: "✅", PROJECT: "📁", GOAL: "🎯" };
+const entityIcon = { TASK: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, PROJECT: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, GOAL: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /> };
 
 function CustomFieldForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(
@@ -162,7 +163,7 @@ function CustomFieldForm({ initial, onSave, onCancel }) {
         {/* ── Conditional logic builder ── */}
         <div style={{background:"rgba(99,102,241,.04)",border:"1px solid rgba(99,102,241,.15)",
           borderRadius:"var(--radius-md)",padding:"12px",marginBottom:"12px"}}>
-          <div style={{fontWeight:700,fontSize:"12px",color:"var(--brand-500)",marginBottom:"8px"}}>
+          <div style={{fontWeight: 600,fontSize:"12px",color:"var(--brand-500)",marginBottom:"8px"}}>
             Conditional Logic (optional)
           </div>
           <div className="form-row" style={{marginBottom:"8px"}}>
@@ -266,8 +267,8 @@ export default function CustomFields() {
   return (
     <div>
       <PageHeader
-        icon="⚙️"
-        title="Custom Fields"
+        icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
+        title="Custom fields"
         description="Add custom fields to tasks, projects and goals"
         action={
           <button
@@ -289,7 +290,7 @@ export default function CustomFields() {
             className={`calendar-filter-btn ${filterEntity === t ? "active" : ""}`}
             onClick={() => setFilterEntity(t)}
           >
-            {entityIcon[t] || "🌐"} {t}{" "}
+            {entityIcon[t] || <IcGlobe size={16} strokeWidth={1.5} aria-hidden="true" />} {t}{" "}
             {t !== "ALL" &&
               `(${fields.filter((f) => f.entityType === t).length})`}
           </button>
@@ -374,10 +375,10 @@ function CustomFieldCard({ field, onEdit, onDelete }) {
         </div>
         <div className="card-actions">
           <button className="btn-icon" onClick={onEdit}>
-            ✏️
+            <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
           <button className="btn-icon" onClick={onDelete}>
-            🗑️
+            <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       </div>

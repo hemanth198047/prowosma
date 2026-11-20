@@ -18,22 +18,22 @@
 
 .lic-header-badge {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
   color: var(--brand-500); background: rgba(99,102,241,0.1);
   padding: 5px 14px; border-radius: var(--radius-full); border: 1px solid rgba(99,102,241,0.2);
   margin-bottom: 16px;
 }
 
 .lic-page-title {
-  font-size: 36px; font-weight: 900; letter-spacing: -0.8px;
+  font-size: 36px; font-weight: 600; letter-spacing: -0.8px;
   color: var(--gray-900); margin: 0 0 12px;
-  background: linear-gradient(135deg,var(--brand-700),var(--purple),#0891b2);
+  background: var(--brand-700);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 [data-theme="dark"] .lic-page-title {
-  background: linear-gradient(135deg,var(--brand-400),var(--purple),#38bdf8);
+  background: var(--brand-400);
   -webkit-background-clip: text; background-clip: text;
 }
 
@@ -49,11 +49,11 @@
 .lic-bill-btn {
   padding: 7px 20px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600;
   border: none; cursor: pointer; background: transparent; color: var(--gray-500);
-  transition: all 0.15s; display: flex; align-items: center; gap: 7px;
+  transition: color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.15s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.15s var(--ease, cubic-bezier(.2,0,0,1)); display: flex; align-items: center; gap: 7px;
 }
 
 .lic-save-badge {
-  font-size: 10px; font-weight: 800; background: var(--success); color: #fff;
+  font-size: 10px; font-weight: 600; background: var(--success); color: #fff;
   padding: 2px 6px; border-radius: var(--radius-full);
 }
 /*  Plan cards  */
@@ -65,36 +65,36 @@
 .lic-plan-card {
   background: var(--bg-card); border: 2px solid var(--border);
   border-radius: 20px; padding: 28px 24px;
-  cursor: pointer; transition: all 0.2s; position: relative;
+  cursor: pointer; transition: color 0.2s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.2s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.2s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.2s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.2s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.2s var(--ease, cubic-bezier(.2,0,0,1)); position: relative;
   display: flex; flex-direction: column; gap: 20px;
 }
 
-.lic-plan-card:hover { transform: translateY(-3px); }
+.lic-plan-card:hover {  }
 
 [data-theme="dark"] .lic-plan-card { background: var(--bg-card); }
 
 .lic-plan-badge {
   position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.05em;
+  font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 0.05em;
   padding: 4px 14px; border-radius: var(--radius-full); white-space: nowrap;
   box-shadow: var(--elevation-2);
 }
 /* Plan header */
 .lic-plan-header { }
 
-.lic-plan-name { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+.lic-plan-name { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
 
 .lic-plan-tagline { font-size: 12px; color: var(--gray-500); }
 /* Price */
 .lic-plan-price { display: flex; align-items: baseline; gap: 2px; flex-wrap: wrap; }
 
-.lic-price-free { font-size: 38px; font-weight: 900; color: var(--gray-800); }
+.lic-price-free { font-size: 38px; font-weight: 600; color: var(--gray-800); }
 
 [data-theme="dark"] .lic-price-free { color: rgba(255,255,255,0.9); }
 
-.lic-price-currency { font-size: 20px; font-weight: 700; color: var(--gray-600); align-self: flex-start; margin-top: 6px; }
+.lic-price-currency { font-size: 20px; font-weight: 600; color: var(--gray-600); align-self: flex-start; margin-top: 6px; }
 
-.lic-price-amount { font-size: 44px; font-weight: 900; color: var(--gray-900); letter-spacing: -1px; line-height: 1; }
+.lic-price-amount { font-size: 44px; font-weight: 600; color: var(--gray-900); letter-spacing: -1px; line-height: 1; }
 
 [data-theme="dark"] .lic-price-amount { color: rgba(255,255,255,0.95); }
 
@@ -111,15 +111,15 @@
 
 .lic-limit-item { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: 1; min-width: 48px; }
 
-.lic-limit-val { font-size: 13px; font-weight: 800; color: var(--gray-800); }
+.lic-limit-val { font-size: 13px; font-weight: 600; color: var(--gray-800); }
 
 [data-theme="dark"] .lic-limit-val { color: rgba(255,255,255,0.9); }
 
-.lic-limit-key { font-size: 9px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+.lic-limit-key { font-size: 9px; font-weight: 600; color: var(--gray-400); letter-spacing: 0; text-align: center; }
 
 .lic-feat-item { display: flex; align-items: flex-start; gap: 7px; font-size: 13px; }
 
-.lic-feat-check { font-weight: 800; flex-shrink: 0; margin-top: 0px; }
+.lic-feat-check { font-weight: 600; flex-shrink: 0; margin-top: 0px; }
 
 .lic-feat-label { color: var(--gray-700); line-height: 1.4; }
 
@@ -127,8 +127,8 @@
 /* CTA button */
 .lic-cta-btn {
   width: 100%; padding: 13px; border-radius: 12px;
-  font-size: 14px; font-weight: 800; cursor: pointer;
-  transition: all 0.15s; border: none; letter-spacing: 0.02em;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.15s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.15s var(--ease, cubic-bezier(.2,0,0,1)); border: none; letter-spacing: 0.02em;
 }
 
 .lic-cta-lg { padding: 14px 28px; width: auto; }
@@ -139,7 +139,7 @@
 
 .lic-cta-outline {
   background: transparent; color: var(--gray-700);
-  border: 2px solid var(--border); font-weight: 700;
+  border: 2px solid var(--border); font-weight: 600;
 }
 
 .lic-cta-outline:hover { background: var(--gray-50); border-color: var(--brand-500); color: var(--brand-500); }
@@ -161,9 +161,9 @@
 
 .lic-compare-btn {
   background: transparent; border: 1px solid var(--border);
-  color: var(--brand-500); font-size: 13px; font-weight: 700;
+  color: var(--brand-500); font-size: 13px; font-weight: 600;
   padding: 9px 22px; border-radius: var(--radius-full); cursor: pointer;
-  transition: all 0.14s;
+  transition: color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.14s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.14s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.14s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .lic-compare-btn:hover { background: rgba(99,102,241,0.06); border-color: var(--brand-500); }
@@ -172,7 +172,7 @@
 
 .lic-ct-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; }
 
-.lic-check { color: var(--success); font-weight: 800; font-size: 14px; }
+.lic-check { color: var(--success); font-weight: 600; font-size: 14px; }
 
 .lic-cross { color: var(--gray-300); font-size: 14px; }
 
@@ -184,7 +184,7 @@
 
 .lic-section-head { margin-bottom: 20px; }
 
-.lic-section-title { font-size: 24px; font-weight: 800; color: var(--gray-900); margin: 0 0 6px; }
+.lic-section-title { font-size: 24px; font-weight: 600; color: var(--gray-900); margin: 0 0 6px; }
 
 [data-theme="dark"] .lic-section-title { color: rgba(255,255,255,0.92); }
 
@@ -195,7 +195,7 @@
 .lic-addon-card {
   display: flex; align-items: center; gap: 12px;
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 14px 16px; transition: all 0.14s;
+  border-radius: 12px; padding: 14px 16px; transition: color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.14s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.14s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.14s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.14s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .lic-addon-card:hover { border-color: var(--brand-500); box-shadow: var(--elevation-2); }
@@ -206,7 +206,7 @@
 
 .lic-addon-info { flex: 1; min-width: 0; }
 
-.lic-addon-name { font-size: 13px; font-weight: 700; color: var(--gray-800); }
+.lic-addon-name { font-size: 13px; font-weight: 600; color: var(--gray-800); }
 
 .lic-addon-desc { font-size: 11px; color: var(--gray-500); margin-top: 2px; line-height: 1.4; }
 
@@ -214,7 +214,7 @@
 
 .lic-addon-price { flex-shrink: 0; text-align: right; }
 
-.lic-addon-amount { font-size: 18px; font-weight: 900; color: var(--brand-500); }
+.lic-addon-amount { font-size: 18px; font-weight: 600; color: var(--brand-500); }
 
 .lic-addon-unit { font-size: 11px; color: var(--gray-400); }
 /*  Trust bar  */
@@ -265,11 +265,11 @@
 .lic-cta-banner {
   display: flex; align-items: center; justify-content: space-between;
   gap: 24px; flex-wrap: wrap;
-  background: linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#1e3a5f 100%);
+  background: #1e1b4b;
   border-radius: 20px; padding: 36px 40px; margin: 0 24px;
 }
 
-.lic-cta-banner-title { font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+.lic-cta-banner-title { font-size: 26px; font-weight: 600; color: #fff; margin-bottom: 6px; }
 
 .lic-cta-banner-sub   { font-size: 14px; color: rgba(255,255,255,0.7); }
 
@@ -289,9 +289,8 @@
 
 .lic-feat-group-head {
   font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--color-text-tertiary);
   margin-bottom: 4px;
 }
@@ -300,7 +299,7 @@
   font-size: 10px;
   color: var(--color-text-tertiary);
   padding-left: 14px;
-  font-style: italic;
+  font-style: normal;
 }
 /*  Licensing: feature count summary bar  */
 .lic-feat-summary {
@@ -322,7 +321,7 @@
 
 .lic-feat-summary-name {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   width: 80px;
   flex-shrink: 0;
 }
@@ -396,7 +395,7 @@
 .lic-ct-plan-col {
   padding: 8px 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   border-left: 0.5px solid var(--color-border-tertiary);
 }
@@ -430,13 +429,13 @@
 .lic-addon-card {
   cursor: pointer;
   user-select: none;
-  transition: all 0.15s;
+  transition: color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.15s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.15s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .lic-addon-card:hover {
   border-color: var(--brand-500);
   box-shadow: var(--elevation-2);
-  transform: translateY(-2px);
+  
 }
 
 .lic-addon-card:active { transform: translateY(0); }
@@ -451,14 +450,14 @@
 
 .lic-addon-cta {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--brand-500);
   background: rgba(99,102,241,0.08);
   border: 1px solid rgba(99,102,241,0.2);
   border-radius: 6px;
   padding: 3px 8px;
   white-space: nowrap;
-  transition: all 0.12s;
+  transition: color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.12s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.12s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.12s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .lic-addon-card:hover .lic-addon-cta {
@@ -469,7 +468,7 @@
 
 .lic-addon-added-badge {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--success);
   background: rgba(16,185,129,0.1);
   border: 1px solid rgba(16,185,129,0.25);
@@ -527,7 +526,7 @@
 
 .lic-modal-title {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--gray-900, var(--gray-900));
   letter-spacing: -0.3px;
 }
@@ -543,7 +542,7 @@
   border: none; cursor: pointer;
   font-size: 14px; color: var(--gray-500, var(--gray-500));
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.12s; flex-shrink: 0;
+  transition: color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.12s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.12s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.12s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.12s var(--ease, cubic-bezier(.2,0,0,1)); flex-shrink: 0;
 }
 
 .lic-modal-close:hover { background: var(--gray-200, var(--border)); color: var(--gray-800); }
@@ -561,14 +560,14 @@
   align-items: baseline;
   gap: 6px;
   padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04));
+  background: rgba(99,102,241,0.06);
   border: 1px solid rgba(99,102,241,0.15);
   border-radius: 10px;
 }
 
 .lic-modal-price {
   font-size: 32px;
-  font-weight: 900;
+  font-weight: 600;
   color: var(--brand-500);
   letter-spacing: -0.8px;
   line-height: 1;
@@ -580,9 +579,8 @@
 
 .lic-modal-feat-title {
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--gray-400, var(--gray-400));
   margin-bottom: 2px;
 }
@@ -600,7 +598,7 @@
 
 .lic-modal-feat-check {
   color: var(--success);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 13px;
   flex-shrink: 0;
   margin-top: 1px;
@@ -638,7 +636,7 @@
 .lic-modal-success {
   text-align: center;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--success);
   padding: 10px;
   background: rgba(16,185,129,0.08);
@@ -651,19 +649,19 @@
   width: 100%;
   padding: 13px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand-700), var(--purple));
+  background: var(--brand-700);
   color: #fff;
   border: none;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.15s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.15s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.15s var(--ease, cubic-bezier(.2,0,0,1));
   letter-spacing: 0.02em;
   box-shadow: var(--elevation-2);
 }
 
 .lic-modal-btn-primary:hover {
-  background: linear-gradient(135deg, var(--brand-700), #6d28d9);
+  background: var(--brand-700);
   box-shadow: var(--elevation-3);
   transform: translateY(-1px);
 }
@@ -678,7 +676,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.13s;
+  transition: color 0.13s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.13s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.13s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.13s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.13s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.13s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .lic-modal-btn-secondary:hover {

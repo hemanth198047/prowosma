@@ -20,7 +20,7 @@ function WsAvatar({ name, logoUrl, size = 32, radius = 8, fontSize = 13 }) {
     <div style={{
       width: size, height: size, borderRadius: radius, flexShrink: 0,
       background: wsColor(name), color: "#fff",
-      fontWeight: 700, fontSize, display: "flex",
+      fontWeight: 600, fontSize, display: "flex",
       alignItems: "center", justifyContent: "center",
     }}>{initials}</div>
   );
@@ -99,14 +99,14 @@ export default function WorkspaceSwitcher() {
         <WsAvatar name={activeWorkspace?.name} logoUrl={fullLogo || activeWorkspace?.logoUrl} size={32} />
         <div className="workspace-info">
           <div className="workspace-name">{activeWorkspace?.name || "Select Workspace"}</div>
-          <div className="workspace-label">WORKSPACE</div>
+          <div className="workspace-label">Workspace</div>
         </div>
         <span className="workspace-chevron">{open ? "▲" : "▼"}</span>
       </div>
 
       {open && (
         <div className="workspace-dropdown">
-          <div className="workspace-dropdown-header">YOUR WORKSPACES</div>
+          <div className="workspace-dropdown-header">Your workspaces</div>
 
           {workspaces.length === 0 && (
             <div className="workspace-dropdown-empty">No workspaces found</div>

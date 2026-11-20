@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { getDependencies, addDependency, removeDependency } from "../api/tasks";
 import { statusText } from "../utils/statusText";
 import { useToast } from "./ToastContext";
+import { Link as IcLink, Lock as IcLock } from "lucide-react";
 
 const statusColor = {
   TODO: "#6366f1",
@@ -94,7 +95,7 @@ export default function TaskDependencies({ task, allTasks, onRefresh, compact = 
           setOpen((o) => !o);
         }}
       >
-        {deps.isBlocked ? "🔒" : "🔗"} Deps {total > 0 ? `(${total})` : ""}{" "}
+        {deps.isBlocked ? <IcLock size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcLink size={16} strokeWidth={1.5} aria-hidden="true" />} Deps {total > 0 ? `(${total})` : ""}{" "}
         {open ? "▲" : "▼"}
       </button>
       )}

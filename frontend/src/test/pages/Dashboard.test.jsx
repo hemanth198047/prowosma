@@ -27,7 +27,7 @@ describe("Dashboard", () => {
 
   it("keeps the header and puts projects, goals and tasks in one card with tabs; no Team / Configure / meeting card / status banner", async () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    expect(await screen.findByText(/Bo/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeInTheDocument();
     const work = screen.getByRole("region", { name: "Work overview" });
     expect(within(work).getByRole("tab", { name: /Projects/ })).toHaveAttribute("aria-selected", "true");
     expect(within(work).getByText("Film 1")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("Dashboard", () => {
 
   it("shortcut icons have names and tooltips; expanding shows the full details in a side panel", async () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    await screen.findByText(/Bo/);
+    await screen.findByRole("heading", { name: "Today" });
     for (const g of ["Work", "Insights", "Knowledge", "Automate", "Quick actions"]) expect(screen.getByRole("group", { name: g })).toBeInTheDocument();
     const kanban = within(screen.getByRole("group", { name: "Work" })).getByRole("button", { name: /^Kanban/ });
     fireEvent.mouseEnter(kanban.parentElement);
@@ -56,7 +56,7 @@ describe("Dashboard", () => {
 
   it("charts keep tasks, projects and goals", async () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    await screen.findByText(/Bo/);
+    await screen.findByRole("heading", { name: "Today" });
     const charts = screen.getByRole("region", { name: "Charts" });
     expect(within(charts).getByText("25%")).toBeInTheDocument();          // 1 of 4 done
     fireEvent.click(within(charts).getByRole("tab", { name: "Goals" }));

@@ -170,6 +170,15 @@ public class RoleGuardFilter extends OncePerRequestFilter {
             return;
         }
 
+        // ── EDITOR: changes existing work and comments; never creates or deletes ──
+        // PUT/PATCH continue to the checks below (settings, team and AI settings stay admin-only).
+        if ("EDITOR".equals(role) && ("POST".equals(method) || "DELETE".equals(method)) && !isEditorPost(path, method)) {
+            sendForbidden(response,
+                    "Editors can change existing work and comment, but can't create or delete. " +
+                            "Contact your workspace admin to change your role.");
+            return;
+        }
+
         // ── Presence/ping is allowed for ALL roles ────────────────────────
         if (path.contains("/presence/ping") || path.contains("/presence/")) {
             chain.doFilter(request, response);
@@ -210,6 +219,28 @@ public class RoleGuardFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    /**
+     * The POSTs an Editor may make: commenting (comments, replies, reactions), marking an SOP as reviewed,
+     * and per-person conveniences (presence, push subscriptions, notifications). Everything else that POSTs creates something.
+     */
+    static boolean isEditorPost(String path, String method) {
+        if (!"POST".equals(method) || path == null) return false;
+        return path.contains("/comments")
+                || path.endsWith("/mark-reviewed")
+                || path.contains("/presence/")
+                || path.startsWith("/api/push/")
+                || path.startsWith("/api/notifications")
+                // An editor's own day and own time: clocking in/out, breaks, leave and corrections,
+                // starting/stopping work on a project, logging time on a task they work on.
+                || path.startsWith("/api/attendance/me/")
+                || path.startsWith("/api/work-sessions/start")
+                || path.startsWith("/api/work-sessions/stop")
+                || path.matches("^/api/tasks/[^/]+/timelogs$")
+                // Talking with the team: messages in channels they're in, and direct messages.
+                || path.matches("^/api/channels/[^/]+/messages$")
+                || path.equals("/api/channels/dm");
     }
 
     private String resolveRole(String email, String workspaceId) {

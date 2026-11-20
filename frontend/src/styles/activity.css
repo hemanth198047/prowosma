@@ -36,10 +36,9 @@
 .al-sidebar-section:last-child  { border-bottom: none; padding-bottom: 0; }
 .al-sidebar-label {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-400);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
   margin-bottom: 6px;
 }
 
@@ -98,7 +97,7 @@
   background: var(--gray-200);
   color: var(--gray-600);
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,10 +126,9 @@
 .al-event-group-name {
   flex: 1;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
 }
 .al-event-group-header.active .al-event-group-name { color: var(--brand-600); }
 .al-event-group-caret { font-size: 10px; color: var(--gray-400); }
@@ -165,7 +163,7 @@
   font-size: 12px;
   color: var(--gray-500);
 }
-.al-feed-count strong { color: var(--gray-800); font-weight: 700; }
+.al-feed-count strong { color: var(--gray-800); font-weight: 600; }
 .al-filtered-badge {
   display: inline-block;
   margin-left: 6px;
@@ -175,8 +173,7 @@
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
 }
 
 /* Timeline groups */
@@ -186,10 +183,9 @@
   align-items: center;
   gap: 8px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-400);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
   margin-bottom: 4px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
@@ -215,7 +211,7 @@
   background: var(--gray-200);
   color: var(--gray-600);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,11 +234,10 @@
 /* Action badge */
 .al-badge {
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -277,11 +272,10 @@
   background: var(--gray-100);
   color: var(--gray-500);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
 }
 .al-meta-email {
   color: var(--gray-400);
@@ -413,11 +407,10 @@
 
 .al-severity-pill {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
 }
 .sev-info     { background: #dbeafe; color: #1d4ed8; }
 .sev-warning  { background: #fef3c7; color: var(--warning); }
@@ -428,7 +421,7 @@
   font-size: 12px;
   color: var(--gray-600);
   margin-top: 2px;
-  font-style: italic;
+  font-style: normal;
 }
 
 /* Extra badge classes */
@@ -454,10 +447,9 @@
 }
 .al-health-title {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-400);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
   margin-bottom: 12px;
 }
 .al-health-grid {
@@ -475,7 +467,7 @@
   padding: 12px 14px;
 }
 .al-health-card-alert { border-color: #fecaca; background: #fff5f5; }
-.al-health-num  { font-size: 26px; font-weight: 800; color: var(--gray-800); line-height: 1; }
+.al-health-num  { font-size: 26px; font-weight: 600; color: var(--gray-800); line-height: 1; }
 .al-health-lbl  { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-top: 4px; }
 .al-health-sub  { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
 .al-alerts-list { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 10px; }
@@ -512,7 +504,7 @@
   background: var(--brand-100);
   color: var(--brand-700);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 6px;
   border-radius: 10px;
 }
@@ -580,7 +572,7 @@
 .eat-meta   { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
 .eat-user   { font-size: 11px; font-weight: 600; color: var(--gray-500); }
 .eat-time   { font-size: 11px; color: var(--gray-400); }
-.eat-severity { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+.eat-severity { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
 .eat-sev-warning  { background: #fef3c7; color: var(--warning); }
 .eat-sev-critical { background: #fee2e2; color: var(--danger); }
 .eat-empty { text-align: center; padding: 32px 0; color: var(--gray-400); font-size: 13px; }
@@ -607,10 +599,9 @@
 }
 .entity-activity-panel-title {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--gray-400);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
   margin-bottom: 8px;
 }
 .btn-active {
@@ -654,7 +645,7 @@
 }
 .al-burst-more {
   color: var(--gray-400);
-  font-style: italic;
+  font-style: normal;
   font-size: 11px;
 }
 [data-theme="dark"] .al-burst-bullet  { color: var(--gray-400); }
@@ -725,10 +716,10 @@
   box-shadow: var(--shadow-sm);
 }
 .activity-stat-icon  { font-size: 24px; }
-.activity-stat-value { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
-.activity-stat-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; font-weight: 500; }
+.activity-stat-value { font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
+.activity-stat-label { font-size: 11px; color: var(--gray-500); letter-spacing: 0; margin-top: 2px; font-weight: 500; }
 .activity-timeline   { display: flex; flex-direction: column; gap: 24px; }
-.activity-date-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.activity-date-label { font-size: 11px; font-weight: 600; color: var(--gray-400); letter-spacing: 0; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .activity-item       { display: flex; gap: 12px; padding: 6px 0; }
 .activity-icon-col   { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
 .activity-icon       { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }

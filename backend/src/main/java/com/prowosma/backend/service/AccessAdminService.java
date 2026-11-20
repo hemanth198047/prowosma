@@ -392,7 +392,7 @@ public class AccessAdminService {
             }
             String designation = str(spec.get("designation"));
             String role = str(spec.get("role")) == null ? "MEMBER" : str(spec.get("role")).toUpperCase(Locale.ROOT);
-            if (!role.equals("MEMBER") && !role.equals("VIEWER")) throw bad("Organisation setup only creates MEMBER or VIEWER roles (" + email + "). Make admins by hand.");
+            if (!role.equals("MEMBER") && !role.equals("EDITOR") && !role.equals("VIEWER")) throw bad("Organisation setup only creates MEMBER, EDITOR or VIEWER roles (" + email + "). Make admins by hand.");
 
             TeamMember m = existing.get(norm(email));
             boolean isOwner = wsEmails.containsKey(norm(email)) && m == null;   // workspace owner without a TeamMember row

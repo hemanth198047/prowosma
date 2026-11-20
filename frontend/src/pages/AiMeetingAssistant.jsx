@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  NotesDialog, SummaryEditor, DecisionLogButton, RaidLogButton, LinkTaskControl,
+  MeetingContinuity, WhereWeStand, OpenActionsList, MeetingTrends, meetingTypeLabel,
+} from "../components/meetings/MeetingFollowThrough";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle, ArrowLeft, CalendarPlus, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
   Plug, Plus, RefreshCw, Send, Settings, Sparkles, Trash2, Upload, Video, X,
+  NotebookPen,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 import { useToast } from "../components/ToastContext";
@@ -693,7 +698,7 @@ function MeetingRow({ m, select }) {
   return (
     <li className={`uma-mrow${pickable ? " uma-mrow--pick" : ""}`}>
       {pickable && <input type="checkbox" className="uma-mrow-check" checked={select.selected.has(m.id)} onChange={() => select.toggle(m.id)} aria-label={`Select ${m.title}`} />}
-      <Link to={`/ai-meeting-assistant/${m.id}`} className="uma-mrow-title">{m.title}</Link>
+      <Link to={`/meetings/${m.id}`} className="uma-mrow-title">{m.title}</Link>
       <span className="uma-mrow-meta">
         {SOURCE[m.source] || m.source}{m.meetingAt ? ` · ${when(m.meetingAt)}` : ""}{m.durationMs ? ` · ${minutes(m.durationMs)}` : ""}
       </span>
@@ -861,7 +866,7 @@ function MeetingsToolbar({ data, picking, setPicking, selected, setSelected, onC
   );
 }
 
-function Dashboard({ openDialog }) {
+function Dashboard({ openDialog, projects = [] }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [picking, setPicking] = useState(false);
@@ -918,6 +923,7 @@ function Dashboard({ openDialog }) {
               <button type="button" className="btn-primary pg-btn" onClick={() => openDialog("record")}><Circle size={13} fill="currentColor" aria-hidden="true" />Record meeting</button>
               <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("upload")}><Upload size={15} aria-hidden="true" />Upload recording</button>
               <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("import")}><FileText size={15} aria-hidden="true" />Import transcript</button>
+              <button type="button" className="btn-secondary pg-btn" onClick={() => openDialog("notes")}><NotebookPen size={15} aria-hidden="true" />Write notes</button>
             </div>
           )}
         </div>
@@ -935,21 +941,15 @@ function Dashboard({ openDialog }) {
                 && !data.upcoming.some((u) => u.id === m.id))} />
             {clearing && <ClearOldDialog defaultDays={data.retentionDays || 15} onClose={() => setClearing(false)} onDone={() => { setClearing(false); load(); }} />}
           </div>
-          <aside className="uma-side" aria-label="Action items waiting for review">
-            <h2 className="pg-section-title">Action items to review</h2>
-            {data.pendingActions.length === 0 ? <p className="uma-hint">Nothing waiting.</p> : (
-              <ul className="uma-plist">
-                {data.pendingActions.map(({ meetingId, meetingTitle, action }) => (
-                  <li key={`${meetingId}:${action.id}`}>
-                    <Link to={`/ai-meeting-assistant/${meetingId}?tab=actions`}>{action.title}</Link>
-                    <span>{meetingTitle}{action.ownerSpoken ? ` · ${action.ownerSpoken}` : ""}{action.dueDate ? ` · ${day(action.dueDate)}` : ""}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <aside className="uma-side" aria-label="Open action items">
+            <OpenActionsList />
           </aside>
         </div>
       )}
+      <div className="mft-home-grid">
+        <WhereWeStand projects={projects.filter(OPEN_PROJECT)} />
+        <MeetingTrends />
+      </div>
       <ProviderCards />
     </>
   );
@@ -1049,6 +1049,7 @@ function Overview({ d, openLine, setTab, projects = [], onChanged = () => {} }) 
         <div><dt>Action items</dt><dd><button type="button" className="uma-link" onClick={() => setTab("actions")}>{ins?.actions?.length || 0}{pending ? ` (${pending} to review)` : ""}</button></dd></div>
         <div><dt>Risks</dt><dd>{ins?.risks?.length || 0}</dd></div>
         <div><dt>Open questions</dt><dd>{ins?.questions?.length || 0}</dd></div>
+        {m.meetingType ? <div><dt>Type</dt><dd>{meetingTypeLabel(m.meetingType)}</dd></div> : null}
         <div><dt>Transcript</dt><dd>{m.transcript?.segmentCount || 0} lines{m.transcript?.engine ? ` · ${m.transcript.engine}` : ""}</dd></div>
         {m.recording?.durationMs ? <div><dt>Length</dt><dd>{minutes(m.recording.durationMs)}</dd></div> : null}
         {ins?.model ? <div><dt>Written by</dt><dd>{ins.model}{ins.version > 1 ? ` · version ${ins.version}` : ""}</dd></div> : null}
@@ -1060,6 +1061,7 @@ function Overview({ d, openLine, setTab, projects = [], onChanged = () => {} }) 
         </>
       )}
       <MeetingProjects d={d} projects={projects} onChanged={onChanged} openLine={openLine} />
+      <MeetingContinuity meetingId={m.id} />
       {ins?.warnings?.length > 0 && <p className="uma-fine">{ins.warnings.join(" ")}</p>}
       {ins?.droppedForMissingEvidence > 0 && (
         <p className="uma-fine">{ins.droppedForMissingEvidence} statement(s) from the AI were left out because they weren't backed by the transcript.</p>
@@ -1068,11 +1070,11 @@ function Overview({ d, openLine, setTab, projects = [], onChanged = () => {} }) 
   );
 }
 
-function SummaryTab({ ins, openLine }) {
+function SummaryTab({ ins, openLine, meetingId, canManage, onChanged }) {
   if (!ins) return <p className="uma-hint">Not written yet.</p>;
   return (
     <div>
-      <p className="uma-summary">{ins.summary}</p>
+      <SummaryEditor key={`${ins.summary}|${ins.summaryHistory?.length || 0}`} meetingId={meetingId} ins={ins} canManage={canManage} onChanged={onChanged} />
       {ins.notes?.map((t, i) => (
         <section key={i} className="uma-topic">
           <h3 className="uma-h3">{t.title}</h3>
@@ -1083,13 +1085,13 @@ function SummaryTab({ ins, openLine }) {
   );
 }
 
-function FindingList({ title, items, openLine, empty }) {
+function FindingList({ title, items, openLine, empty, renderAction }) {
   return (
     <section className="uma-topic">
       <h3 className="uma-h3">{title}</h3>
       {items?.length ? (
         <ul className="uma-items">{items.map((x) => (
-          <li key={x.id}>{x.text}{x.decidedBy ? <em> — {x.decidedBy}</em> : null}{x.kind && x.kind !== "RISK" ? <em> ({x.kind.toLowerCase().replace("_", " ")})</em> : null} <Refs evidence={x.evidence} onOpen={openLine} /></li>
+          <li key={x.id}>{x.text}{x.decidedBy ? <em> — {x.decidedBy}</em> : null}{x.kind && x.kind !== "RISK" ? <em> ({x.kind.toLowerCase().replace("_", " ")})</em> : null} <Refs evidence={x.evidence} onOpen={openLine} />{renderAction ? <span className="mft-item-action">{renderAction(x)}</span> : null}</li>
         ))}</ul>
       ) : <p className="uma-hint">{empty}</p>}
     </section>
@@ -1157,7 +1159,7 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
   const { show: toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState(a.title);   // the parent re-keys this card when the saved title changes
-  const done = a.status === "CREATED" || a.status === "REJECTED";
+  const done = a.status === "CREATED" || a.status === "REJECTED" || a.status === "LINKED";
   const patch = async (p) => {
     setBusy(true);
     try { await editUmaAction(meetingId, a.id, p); onChanged(); }
@@ -1194,6 +1196,7 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
             onBlur={() => title.trim() && title !== a.title && patch({ title })} aria-label="Action item title" />
         ) : <span className="uma-action-title uma-action-title--ro">{a.title}</span>}
         {a.status === "CREATED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />{a.automatic ? "Created automatically" : "Task created"}</span>}
+        {a.status === "LINKED" && <span className="uma-pill uma-pill--success"><CheckCircle2 size={12} aria-hidden="true" />Linked to a task</span>}
         {a.status === "REJECTED" && <span className="uma-pill uma-pill--neutral">Dismissed</span>}
         {a.status === "FAILED" && <span className="uma-pill uma-pill--danger" title={a.failureReason || ""}>Not created</span>}
         {a.confidence === "LOW" && a.status === "PENDING" && <span className="uma-pill uma-pill--neutral" title="It was suggested rather than clearly agreed">Tentative</span>}
@@ -1229,10 +1232,11 @@ function ActionCard({ a, meetingId, canManage, team, projects, selected, onSelec
       </div>
       <div className="uma-action-foot">
         <span className="uma-fine">From the transcript <Refs evidence={a.evidence} onOpen={openLine} /></span>
-        {a.status === "CREATED" && a.createdTaskId && <Link to={`/tasks?highlight=${a.createdTaskId}`} className="uma-link">Open task</Link>}
+        {(a.status === "CREATED" || a.status === "LINKED") && a.createdTaskId && <Link to={`/tasks?highlight=${a.createdTaskId}`} className="uma-link">Open task</Link>}
         {canManage && !done && (
           <span className="uma-action-buttons">
             <button type="button" className="btn-secondary pg-btn" onClick={reject} disabled={busy}>Dismiss</button>
+            <LinkTaskControl meetingId={meetingId} action={a} onChanged={onChanged} />
             <button type="button" className="btn-primary pg-btn" onClick={approve} disabled={busy}><Check size={14} aria-hidden="true" />Create task</button>
           </span>
         )}
@@ -1397,7 +1401,7 @@ function Detail({ id, team, projects }) {
 
   if (error) return (
     <div className="pg-empty"><h2>Meeting not found</h2><p>{error}</p>
-      <Link to="/ai-meeting-assistant" className="btn-secondary pg-btn"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link></div>
+      <Link to="/meetings" className="btn-secondary pg-btn"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link></div>
   );
   if (!d) return <p className="uma-hint" role="status"><Loader2 size={14} className="uma-spin" aria-hidden="true" /> Loading…</p>;
   const m = d.meeting;
@@ -1406,7 +1410,7 @@ function Detail({ id, team, projects }) {
 
   return (
     <div className="uma-detail">
-      <Link to="/ai-meeting-assistant" className="uma-back"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link>
+      <Link to="/meetings" className="uma-back"><ArrowLeft size={14} aria-hidden="true" />All meetings</Link>
       <header className="pg-title-row">
         <div className="pg-title-text">
           <h1>{m.title}</h1>
@@ -1437,7 +1441,7 @@ function Detail({ id, team, projects }) {
               "divider",
               { label: "Delete meeting", danger: true, onSelect: async () => {
                 const ok = await confirm({ title: "Delete this meeting?", message: "Its transcript, summary and recording are deleted. Tasks already created stay.", confirmText: "Delete", danger: true });
-                if (ok) { await run(() => deleteUmaMeeting(id), "Meeting deleted."); navigate("/ai-meeting-assistant"); }
+                if (ok) { await run(() => deleteUmaMeeting(id), "Meeting deleted."); navigate("/meetings"); }
               } },
             ]} />
           )}
@@ -1500,12 +1504,15 @@ function Detail({ id, team, projects }) {
           </div>
           <div className="uma-panel" role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]}>
             {tab === "overview" && <Overview d={d} openLine={openLine} setTab={setTab} projects={projects} onChanged={load} />}
-            {tab === "summary" && <SummaryTab ins={d.insights} openLine={openLine} />}
+            {tab === "summary" && <SummaryTab ins={d.insights} openLine={openLine} meetingId={id} canManage={d.canManage} onChanged={load} />}
             {tab === "transcript" && <TranscriptTab d={d} focusLine={focusLine} canManage={d.canManage} onSaved={load} />}
             {tab === "decisions" && (
               <>
-                <FindingList title="Decisions" items={d.insights?.decisions} openLine={openLine} empty="No decisions were recorded." />
-                <FindingList title="Risks and blockers" items={d.insights?.risks} openLine={openLine} empty="None raised." />
+                <FindingList title="Decisions" items={d.insights?.decisions} openLine={openLine} empty="No decisions were recorded."
+                  renderAction={(x) => <DecisionLogButton meetingId={id} decision={x} canManage={d.canManage} onChanged={load} />} />
+                <FindingList title="Risks and blockers" items={d.insights?.risks} openLine={openLine} empty="None raised."
+                  renderAction={(x) => <RaidLogButton meetingId={id} finding={x} meetingProjectId={d.meeting?.projectId} projects={projects}
+                    canManage={d.canManage} onChanged={load} />} />
                 <FindingList title="Open questions" items={d.insights?.questions} openLine={openLine} empty="None left open." />
                 <FindingList title="Follow-ups" items={d.insights?.followUps} openLine={openLine} empty="None." />
               </>
@@ -1622,12 +1629,18 @@ function MeetingPanel({ m, d, id, ffConnected, busy, run, nowTick, onRecord, onA
 export default function AiMeetingAssistant() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [dialog, setDialog] = useState(null);
+  const [search] = useSearchParams();
+  // /meetings?add=notes&projectId=… (from a project, the search palette or the dashboard) opens that form straight away.
+  const [dialog, setDialog] = useState(() => {
+    const add = search.get("add");
+    return !id && ["notes", "schedule", "import", "upload", "record", "link", "instant"].includes(add) ? add : null;
+  });
   const [team, setTeam] = useState([]);
   const [projects, setProjects] = useState([]);
   const [readiness, setReadiness] = useState(null);
   const [canCreate, setCanCreate] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const startProject = search.get("projectId") || "";
 
   useEffect(() => {
     getTeamMembers().then((r) => setTeam(list(r).filter((t) => t.role !== "VIEWER"))).catch(() => {});
@@ -1635,21 +1648,23 @@ export default function AiMeetingAssistant() {
     getUmaDashboard().then((r) => { setReadiness(r.data.readiness); setCanCreate(!!r.data.canCreate); setIsAdmin(!!r.data.isAdmin); }).catch(() => {});
   }, []);
 
-  const done = useMemo(() => (m) => { setDialog(null); window.dispatchEvent(new Event("uma:changed")); if (m?.id) navigate(`/ai-meeting-assistant/${m.id}`); }, [navigate]);
+  const done = useMemo(() => (m) => { setDialog(null); window.dispatchEvent(new Event("uma:changed")); if (m?.id) navigate(`/meetings/${m.id}`); }, [navigate]);
 
   return (
     <div className="uma-page">
       {!id && (
         <header className="pg-title-row">
           <div className="pg-title-text">
-            <h1>AI Meeting Assistant</h1>
-            <p>Start or schedule a Google Meet or Teams meeting; afterwards the notes are written and agreed tasks are created for you.</p>
+            <h1>Meetings</h1>
+            <p>Hold, record or write up a meeting. You get the summary, decisions and action items, and what carries over to the next one.
+              {" "}<Link to="/meetings/earlier" className="uma-link">Earlier meetings</Link></p>
           </div>
           {canCreate && (
             <div className="pg-title-actions">
               <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("connections")}><Plug size={15} aria-hidden="true" />Connections</button>
               <button type="button" className="btn-secondary pg-btn" onClick={() => setDialog("settings")}><Settings size={15} aria-hidden="true" />Settings</button>
               <ActionMenu label="More ways to add a meeting" className="btn-secondary pg-btn" items={[
+                { label: "Write notes", icon: NotebookPen, onSelect: () => setDialog("notes") },
                 { label: "Schedule a meeting", icon: CalendarPlus, onSelect: () => setDialog("schedule") },
                 { label: "Add meeting link", icon: Link2, onSelect: () => setDialog("link") },
                 { label: "Import transcript", icon: FileText, onSelect: () => setDialog("import") },
@@ -1662,7 +1677,7 @@ export default function AiMeetingAssistant() {
           )}
         </header>
       )}
-      {id ? <Detail key={id} id={id} team={team} projects={projects} /> : <Dashboard openDialog={setDialog} />}
+      {id ? <Detail key={id} id={id} team={team} projects={projects} /> : <Dashboard openDialog={setDialog} projects={projects} />}
       {dialog === "upload" && <UploadDialog projects={projects} readiness={readiness} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === "import" && <ImportDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
       {dialog === "instant" && <InstantDialog projects={projects} onClose={() => setDialog(null)} onDone={done}
@@ -1674,6 +1689,8 @@ export default function AiMeetingAssistant() {
       {dialog === "settings" && <SettingsDialog onClose={() => setDialog(null)} />}
       {dialog === "record" && <AiMeetingRecorder onClose={() => setDialog(null)} onFinished={(mid) => done({ id: mid })} />}
       {dialog === "link" && <LinkDialog projects={projects} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === "notes" && <NotesDialog Dialog={Dialog} projects={projects.filter(OPEN_PROJECT)} initialProjectId={startProject}
+        onClose={() => setDialog(null)} onDone={done} />}
     </div>
   );
 }

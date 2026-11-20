@@ -28,14 +28,14 @@ export default function BackupCodesPanel({ codes, onDone }) {
   return (
     <div role="region" aria-label="Backup codes" data-testid="backup-codes"
       style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "16px", margin: "12px 0" }}>
-      <div style={{ fontWeight: 800, fontSize: "14px", marginBottom: "4px" }}>Save your backup codes</div>
+      <div style={{ fontWeight: 600, fontSize: "14px", marginBottom: "4px" }}>Save your backup codes</div>
       <p style={{ fontSize: "12px", color: "#78350f", margin: "0 0 10px", lineHeight: 1.5 }}>
         If you lose access to your authenticator app, each of these codes lets you sign in once. They are shown only now:
         store them somewhere safe, like a password manager.
       </p>
       <ul style={{ listStyle: "none", padding: 0, margin: "0 0 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
         {codes.map((c) => (
-          <li key={c}><code style={{ fontSize: "14px", letterSpacing: "0.05em" }}>{c}</code></li>
+          <li key={c}><code style={{ fontSize: "14px", }}>{c}</code></li>
         ))}
       </ul>
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>

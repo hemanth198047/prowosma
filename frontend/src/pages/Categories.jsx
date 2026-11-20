@@ -11,6 +11,7 @@ import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
 import CanDo from "../components/CanDo";
 import { apiErrorMessage } from "../utils/apiError";
+import { Pencil as IcPencil, Tag as IcTag, Trash2 as IcTrash2 } from "lucide-react";
 
 const COLORS = [
   "var(--brand-500)",
@@ -148,8 +149,8 @@ export default function Categories() {
   return (
     <div>
       <PageHeader
-        icon="🏷️"
-        title="Project Categories"
+        icon={<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />}
+        title="Project categories"
         description="Organize projects into categories"
         action={
           <CanDo action="create">
@@ -179,17 +180,17 @@ export default function Categories() {
                   setShowForm(true);
                 }}
               >
-                ✏️
+                <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />
               </button>
               <button className="btn-icon" onClick={() => handleDelete(c.id)}>
-                🗑️
+                <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
               </button>
             </div>
           </div>
         ))}
         {categories.length === 0 && (
           <p className="empty-state">
-            No categories yet. Create your first one!
+            No categories yet. Create your first one
           </p>
         )}
       </div>

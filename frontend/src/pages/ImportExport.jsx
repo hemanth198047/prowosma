@@ -2,11 +2,12 @@ import { useState, useRef } from "react";
 import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import { apiErrorMessage } from "../utils/apiError";
+import { ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, ClipboardList as IcClipboardList, Folder as IcFolder, Package as IcPackage, PartyPopper as IcPartyPopper, Target as IcTarget, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 const SECTIONS = [
-  { key:"projects", icon:"📁", label:"Projects",  color:"#3b82f6", desc:"Name, status, category, due date, budget, linked goal" },
-  { key:"goals",    icon:"🎯", label:"Goals",     color:"#1E8E5A", desc:"Title, status, progress, level, owner, quarter, confidence" },
-  { key:"tasks",    icon:"✅", label:"Tasks",     color:"#C17D22", desc:"Title, status, priority, project link, due date, story points, tags" },
+  { key:"projects", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Projects",  color:"#3b82f6", desc:"Name, status, category, due date, budget, linked goal" },
+  { key:"goals",    icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Goals",     color:"#1E8E5A", desc:"Title, status, progress, level, owner, quarter, confidence" },
+  { key:"tasks",    icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Tasks",     color:"#C17D22", desc:"Title, status, priority, project link, due date, story points, tags" },
 ];
 
 export default function ImportExport() {
@@ -77,7 +78,7 @@ export default function ImportExport() {
 
   return (
     <div>
-      <PageHeader icon="📦" title="Import / Export"
+      <PageHeader icon={<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />} title="Import / Export"
         description="Bulk-import projects, goals and tasks from Excel — or export your entire workspace for backup and migration" />
 
       {/* Tab switcher */}
@@ -86,7 +87,7 @@ export default function ImportExport() {
         {["import","export"].map(t => (
           <button key={t} onClick={() => { setTab(t); setResult(null); setError(null); setFile(null); }}
             style={{ padding:"8px 28px", borderRadius:"9px", border:"none", cursor:"pointer",
-              fontSize:"13px", fontWeight:700, transition:"all .15s",
+              fontSize:"13px", fontWeight: 600, transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s",
               background: tab===t ? "#fff" : "transparent",
               color: tab===t ? "var(--gray-800)" : "var(--gray-500)",
               boxShadow: tab===t ? "var(--elevation-1)" : "none" }}>
@@ -110,7 +111,7 @@ export default function ImportExport() {
                 style={{
                   border: `2px dashed ${dragging ? "var(--brand-500)" : file ? "var(--success)" : "var(--gray-300)"}`,
                   borderRadius:"16px", padding:"48px 24px", textAlign:"center",
-                  cursor:"pointer", transition:"all .2s",
+                  cursor:"pointer", transition: "color .2s, background-color .2s, border-color .2s, opacity .2s, transform .2s",
                   background: dragging ? "#f0f0ff" : file ? "#f0fdf4" : "var(--gray-50)",
                   marginBottom:"16px",
                 }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => inputRef.current?.click())?.(e); } }}>
@@ -119,8 +120,8 @@ export default function ImportExport() {
                   onChange={(e) => e.target.files[0] && pickFile(e.target.files[0])} />
                 {file ? (
                   <div>
-                    <div style={{ fontSize:"40px", marginBottom:"10px" }}>✅</div>
-                    <div style={{ fontWeight:800, fontSize:"16px", color:"#1E8E5A", marginBottom:"4px" }}>
+                    <div style={{ fontSize:"40px", marginBottom:"10px" }}><IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+                    <div style={{ fontWeight: 600, fontSize:"16px", color:"#1E8E5A", marginBottom:"4px" }}>
                       {file.name}
                     </div>
                     <div style={{ fontSize:"12px", color:"#64748b" }}>
@@ -135,8 +136,8 @@ export default function ImportExport() {
                   </div>
                 ) : (
                   <div>
-                    <div style={{ fontSize:"48px", marginBottom:"12px" }}>📂</div>
-                    <div style={{ fontWeight:700, fontSize:"16px", color:"#1e293b", marginBottom:"6px" }}>
+                    <div style={{ fontSize:"48px", marginBottom:"12px" }}><IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+                    <div style={{ fontWeight: 600, fontSize:"16px", color:"#1e293b", marginBottom:"6px" }}>
                       Drop your Excel file here
                     </div>
                     <div style={{ fontSize:"13px", color:"#64748b", marginBottom:"16px" }}>
@@ -144,7 +145,7 @@ export default function ImportExport() {
                     </div>
                     <div style={{ display:"inline-flex", padding:"6px 16px",
                       background:"var(--brand-500)", color:"#fff", borderRadius:"8px",
-                      fontSize:"12px", fontWeight:700 }}>
+                      fontSize:"12px", fontWeight: 600 }}>
                       Choose File
                     </div>
                   </div>
@@ -157,8 +158,8 @@ export default function ImportExport() {
                   style={{ flex:1, padding:"12px", borderRadius:"10px", border:"none",
                     background: file && !importing ? "var(--brand-600)" : "var(--border)",
                     color: file && !importing ? "#fff" : "var(--gray-400)",
-                    fontSize:"14px", fontWeight:800, cursor: file ? "pointer" : "default",
-                    transition:"all .15s", display:"flex", alignItems:"center",
+                    fontSize:"14px", fontWeight: 600, cursor: file ? "pointer" : "default",
+                    transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s", display:"flex", alignItems:"center",
                     justifyContent:"center", gap:"8px" }}>
                   {importing ? (
                     <><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,.4)",
@@ -170,7 +171,7 @@ export default function ImportExport() {
                 <button onClick={handleTemplate}
                   style={{ padding:"12px 20px", borderRadius:"10px",
                     border:"1.5px solid var(--border)", background:"#fff",
-                    fontSize:"13px", fontWeight:700, cursor:"pointer",
+                    fontSize:"13px", fontWeight: 600, cursor:"pointer",
                     color:"#334155", display:"flex", alignItems:"center", gap:"6px" }}>
                   Get Template
                 </button>
@@ -184,31 +185,31 @@ export default function ImportExport() {
                   <div style={{ padding:"14px 16px",
                     background: result.success ? "#dcfce7" : "#fee2e2",
                     display:"flex", alignItems:"center", gap:"10px" }}>
-                    <span style={{ fontSize:"22px" }}>{result.success ? "🎉" : "⚠️"}</span>
-                    <span style={{ fontWeight:800, fontSize:"14px",
+                    <span style={{ fontSize:"22px" }}>{result.success ? <IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
+                    <span style={{ fontWeight: 600, fontSize:"14px",
                       color: result.success ? "#15803d" : "#b91c1c" }}>
-                      {result.success ? "Import completed successfully!" : "Import completed with errors"}
+                      {result.success ? "Import completed successfully" : "Import completed with errors"}
                     </span>
                   </div>
                   <div style={{ padding:"16px", display:"grid",
                     gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
                     {[
-                      { label:"Projects created", value:result.projectsCreated, color:"#3b82f6", icon:"📁" },
-                      { label:"Goals created",    value:result.goalsCreated,    color:"#1E8E5A", icon:"🎯" },
-                      { label:"Tasks created",    value:result.tasksCreated,    color:"#C17D22", icon:"✅" },
+                      { label:"Projects created", value:result.projectsCreated, color:"#3b82f6", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /> },
+                      { label:"Goals created",    value:result.goalsCreated,    color:"#1E8E5A", icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /> },
+                      { label:"Tasks created",    value:result.tasksCreated,    color:"#C17D22", icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> },
                     ].map(s => (
                       <div key={s.label} style={{ textAlign:"center", padding:"12px",
                         background:"#fff", borderRadius:"10px",
                         border:`1px solid ${s.color}22` }}>
                         <div style={{ fontSize:"24px", marginBottom:"4px" }}>{s.icon}</div>
-                        <div style={{ fontSize:"24px", fontWeight:800, color:s.color }}>{s.value}</div>
+                        <div style={{ fontSize:"24px", fontWeight: 600, color:s.color }}>{s.value}</div>
                         <div style={{ fontSize:"11px", color:"#64748b", fontWeight:600 }}>{s.label}</div>
                       </div>
                     ))}
                   </div>
                   {result.errors?.length > 0 && (
                     <div style={{ padding:"0 16px 16px" }}>
-                      <div style={{ fontSize:"12px", fontWeight:700, color:"#b91c1c",
+                      <div style={{ fontSize:"12px", fontWeight: 600, color:"#b91c1c",
                         marginBottom:"6px" }}>
                         {result.errors.length} row error{result.errors.length>1?"s":""}:
                       </div>
@@ -241,8 +242,8 @@ export default function ImportExport() {
               <div style={{ background:"#fff", border:"1px solid var(--border)",
                 borderRadius:"16px", padding:"28px", textAlign:"center",
                 marginBottom:"16px" }}>
-                <div style={{ fontSize:"56px", marginBottom:"14px" }}>📊</div>
-                <div style={{ fontWeight:800, fontSize:"18px", color:"#1e293b",
+                <div style={{ fontSize:"56px", marginBottom:"14px" }}><IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+                <div style={{ fontWeight: 600, fontSize:"18px", color:"#1e293b",
                   marginBottom:"8px" }}>
                   Export Your Entire Workspace
                 </div>
@@ -254,9 +255,9 @@ export default function ImportExport() {
                 <button onClick={handleExport} disabled={exporting}
                   style={{ padding:"14px 36px", borderRadius:"12px", border:"none",
                     background:"var(--success)",
-                    color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer",
+                    color:"#fff", fontSize:"15px", fontWeight: 600, cursor:"pointer",
                     display:"inline-flex", alignItems:"center", gap:"10px",
-                    boxShadow:"var(--elevation-2)", transition:"all .15s" }}>
+                    boxShadow:"var(--elevation-2)", transition: "color .15s, background-color .15s, border-color .15s, opacity .15s, transform .15s" }}>
                   {exporting ? (
                     <><span style={{ width:18, height:18, border:"2px solid rgba(255,255,255,.4)",
                       borderTopColor:"#fff", borderRadius:"50%",
@@ -268,19 +269,19 @@ export default function ImportExport() {
 
               <div style={{ background:"var(--gray-50)", border:"1px solid var(--border)",
                 borderRadius:"12px", padding:"16px" }}>
-                <div style={{ fontSize:"12px", fontWeight:800, color:"#64748b",
-                  letterSpacing:".06em", textTransform:"uppercase", marginBottom:"12px" }}>
+                <div style={{ fontSize:"12px", fontWeight: 600, color:"#64748b",
+                  marginBottom:"12px" }}>
                   What's included in the export
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                   {[
-                    { sheet:"Projects", icon:"📁", color:"#3b82f6",
+                    { sheet:"Projects", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#3b82f6",
                       fields:"Name, description, status, color, category, linked goal, parent project, due date, budget, currency" },
-                    { sheet:"Goals", icon:"🎯", color:"#1E8E5A",
+                    { sheet:"Goals", icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#1E8E5A",
                       fields:"Title, description, status, progress, level, owner, quarter, confidence, target date, parent goal" },
-                    { sheet:"Tasks", icon:"✅", color:"#C17D22",
+                    { sheet:"Tasks", icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#C17D22",
                       fields:"Title, description, status, priority, project ID, due date, story points, type, severity, tags" },
-                    { sheet:"Instructions", icon:"📋", color:"#5B5FEE",
+                    { sheet:"Instructions", icon:<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#5B5FEE",
                       fields:"Full column reference guide for re-importing" },
                   ].map(s => (
                     <div key={s.sheet} style={{ display:"flex", gap:"12px",
@@ -292,7 +293,7 @@ export default function ImportExport() {
                         {s.icon}
                       </div>
                       <div>
-                        <div style={{ fontWeight:700, fontSize:"13px", color:"#1e293b" }}>
+                        <div style={{ fontWeight: 600, fontSize:"13px", color:"#1e293b" }}>
                           {s.sheet} sheet
                         </div>
                         <div style={{ fontSize:"11px", color:"#94a3b8", marginTop:"2px" }}>
@@ -318,8 +319,8 @@ export default function ImportExport() {
         <div style={{ position:"sticky", top:"80px" }}>
           <div style={{ background:"#fff", border:"1px solid var(--border)",
             borderRadius:"14px", padding:"18px", marginBottom:"12px" }}>
-            <div style={{ fontSize:"12px", fontWeight:800, color:"#475569",
-              letterSpacing:".06em", textTransform:"uppercase", marginBottom:"14px" }}>
+            <div style={{ fontSize:"12px", fontWeight: 600, color:"#475569",
+              marginBottom:"14px" }}>
               Sheets & Columns
             </div>
             {SECTIONS.map(sec => (
@@ -327,8 +328,7 @@ export default function ImportExport() {
                 <div style={{ display:"flex", alignItems:"center", gap:"7px",
                   marginBottom:"7px" }}>
                   <span style={{ fontSize:"15px" }}>{sec.icon}</span>
-                  <span style={{ fontWeight:800, fontSize:"12px", color:sec.color,
-                    textTransform:"uppercase", letterSpacing:".04em" }}>
+                  <span style={{ fontWeight: 600, fontSize:"12px", color:sec.color, }}>
                     {sec.label}
                   </span>
                 </div>
@@ -343,8 +343,8 @@ export default function ImportExport() {
           <div style={{ background:"#0F1729",
             border:"1.5px solid rgba(59,130,246,.4)", borderRadius:"14px",
             padding:"16px", color:"var(--border)" }}>
-            <div style={{ fontSize:"12px", fontWeight:800, color:"#38bdf8",
-              letterSpacing:".06em", textTransform:"uppercase", marginBottom:"10px" }}>
+            <div style={{ fontSize:"12px", fontWeight: 600, color:"#38bdf8",
+              marginBottom:"10px" }}>
               Tips
             </div>
             {[

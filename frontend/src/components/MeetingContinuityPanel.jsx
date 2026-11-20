@@ -121,7 +121,7 @@ export default function MeetingContinuityPanel({
       </div>
 
       {nothingPending ? (
-        <div className="cont-empty">You're all caught up. 🎉</div>
+        <div className="cont-empty">You're all caught up. </div>
       ) : (
         <>
           {atRiskProjects.length > 0 && (

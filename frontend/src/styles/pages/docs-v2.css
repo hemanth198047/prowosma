@@ -8,7 +8,7 @@
 /* ── Page tree ───────────────────────────────────────────────────────────── */
 .docs-sidebar { background: var(--bg-page); border-right: 1px solid var(--border); }
 .docs-new-page-btn { border-radius: var(--radius-md) !important; height: var(--control-h); font-weight: 600; }
-.docs-tree-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.05em; color: var(--text-muted); }
+.docs-tree-label { font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; color: var(--text-muted); }
 
 .doc-tree-item-row {
   margin: 1px 6px;
@@ -60,15 +60,15 @@
 .doc-block { padding: 2px 40px; max-width: none; border-radius: var(--radius-sm); }
 .doc-format-bar { border-radius: var(--radius-md); }
 .doc-emoji-btn { border-radius: var(--radius-md); }
-.docs-title { font-size: 34px !important; font-weight: 700 !important; letter-spacing: -0.02em; color: var(--text-primary); }
+.docs-title { font-size: 34px !important; font-weight: 600 !important; letter-spacing: -0.02em; color: var(--text-primary); }
 
 /* ── Blocks ──────────────────────────────────────────────────────────────── */
 .doc-block { display: flex; align-items: flex-start; gap: 8px; }
 .doc-block .doc-block-input { flex: 1; min-width: 0; font-size: 15px; line-height: 1.65; color: var(--text-primary); }
 .doc-block--heading1 { margin-top: 18px; }
-.doc-block--heading1 .doc-block-input { font-size: 26px; font-weight: 700; line-height: 1.3; letter-spacing: -0.015em; }
+.doc-block--heading1 .doc-block-input { font-size: 26px; font-weight: 600; line-height: 1.3; letter-spacing: -0.015em; }
 .doc-block--heading2 { margin-top: 14px; }
-.doc-block--heading2 .doc-block-input { font-size: 20px; font-weight: 700; line-height: 1.35; }
+.doc-block--heading2 .doc-block-input { font-size: 20px; font-weight: 600; line-height: 1.35; }
 .doc-block--heading3 { margin-top: 10px; }
 .doc-block--heading3 .doc-block-input { font-size: 17px; font-weight: 600; line-height: 1.4; }
 .doc-list-dot, .doc-list-num {
@@ -79,7 +79,7 @@
 .doc-todo-cb { margin-top: 6px !important; width: 16px !important; height: 16px; }
 .doc-block--quote { position: relative; }
 .doc-block--quote .doc-quote-line { align-self: stretch; width: 3px; flex-shrink: 0; border-radius: 2px; background: var(--border-strong); }
-.doc-block--quote .doc-block-input { color: var(--text-secondary); font-style: italic; }
+.doc-block--quote .doc-block-input { color: var(--text-secondary); font-style: normal; }
 .doc-block--callout {
   margin: 6px 40px; padding: 12px 14px;
   background: var(--brand-50); border: 1px solid var(--brand-100); border-radius: var(--radius-md);

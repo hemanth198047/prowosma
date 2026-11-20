@@ -31,9 +31,9 @@
   font-size: 20px; flex-shrink: 0;
 }
 
-.tt-kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+.tt-kpi-value { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; }
 
-.tt-kpi-label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tt-kpi-label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-top: 3px; letter-spacing: 0; }
 /* Entries table */
 .tt-entries-table { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
 
@@ -42,8 +42,8 @@
   grid-template-columns: 2fr 1.2fr 1.5fr 0.8fr 1fr 1fr 1fr;
   padding: 10px 16px;
   background: var(--gray-50);
-  font-size: 11px; font-weight: 700;
-  color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 11px; font-weight: 600;
+  color: var(--gray-500); letter-spacing: 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -86,16 +86,15 @@
 
 .tt-invoice-card-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
-.tt-invoice-number { font-size: 14px; font-weight: 800; color: var(--gray-800); }
+.tt-invoice-number { font-size: 14px; font-weight: 600; color: var(--gray-800); }
 
 .tt-invoice-meta   { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
 
-.tt-invoice-total  { font-size: 16px; font-weight: 800; color: var(--gray-800); }
+.tt-invoice-total  { font-size: 16px; font-weight: 600; color: var(--gray-800); }
 
 .tt-status-badge {
-  font-size: 10px; font-weight: 700;
-  padding: 3px 8px; border-radius: 4px;
-  text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 8px; border-radius: 4px; letter-spacing: 0;
 }
 /* Invoice detail table */
 .tt-invoice-table { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 0; }
@@ -104,8 +103,7 @@
   display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
   padding: 10px 16px;
   background: var(--gray-50);
-  font-size: 11px; font-weight: 700; color: var(--gray-500);
-  text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 11px; font-weight: 600; color: var(--gray-500); letter-spacing: 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -132,7 +130,7 @@
 }
 
 .tt-grand-total {
-  font-size: 15px; font-weight: 800;
+  font-size: 15px; font-weight: 600;
   background: var(--gray-50);
   border-top: 2px solid var(--border) !important;
 }

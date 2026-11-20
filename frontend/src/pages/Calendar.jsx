@@ -192,7 +192,7 @@ export default function Calendar() {
   };
 
   const openItem = (type, itemId) => {
-    if (type === "meeting") navigate(`/meetings?open=${itemId}`);
+    if (type === "meeting") navigate(`/meetings/earlier?open=${itemId}`);
     else if (type === "task") navigate(`/tasks?highlight=${itemId}&hcolor=6366f1`);
     else if (type === "project") navigate(`/tasks?projectId=${itemId}`);
     else if (type === "goal") navigate(`/goals?highlight=${itemId}&hcolor=8b5cf6`);
@@ -473,7 +473,7 @@ export default function Calendar() {
           onSave={handleSave}
           onDelete={() => handleDelete(editor.meeting)}
           onClose={() => setEditor(null)}
-          onOpenFull={editor.meeting ? () => { const id = editor.meeting.id; setEditor(null); navigate(`/meetings?open=${id}`); } : null}
+          onOpenFull={editor.meeting ? () => { const id = editor.meeting.id; setEditor(null); navigate(`/meetings/earlier?open=${id}`); } : null}
         />
       )}
     </div>

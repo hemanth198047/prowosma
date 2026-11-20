@@ -9,6 +9,7 @@ import BackupCodesPanel from "../components/BackupCodesPanel";
 import { useConfirm } from "../hooks/useConfirm";
 import { useToast } from "../components/ToastContext";
 import PushNotificationToggle from "../components/PushNotificationToggle";
+import { Hourglass as IcHourglass, Inbox as IcInbox, Laptop as IcLaptop, Lock as IcLock, Mail as IcMail, Smartphone as IcSmartphone, User as IcUser } from "lucide-react";
 
 export default function ProfileSettings() {
   const confirm = useConfirm();
@@ -75,7 +76,7 @@ export default function ProfileSettings() {
       setBackupCodes(r.data?.backupCodes || null);
       setBackupRemaining(r.data?.backupCodes?.length ?? null);
       setTwoFaEnabled(true); setTwoFaSetup(null); setTwoFaCode("");
-      setSuccess("2FA enabled successfully!");
+      setSuccess("2FA enabled successfully");
       setTimeout(() => setSuccess(""), 4000);
     } catch (e) { setError(apiErrorMessage(e, "Invalid code")); }
     finally { setTwoFaLoading(false); }
@@ -124,7 +125,7 @@ export default function ProfileSettings() {
       const a    = document.createElement("a");
       a.href = url; a.download = "prowosma-my-data.json";
       a.click(); URL.revokeObjectURL(url);
-      setSuccess("Data exported successfully!");
+      setSuccess("Data exported successfully");
       setTimeout(() => setSuccess(""), 4000);
     } catch { setError("Export failed"); }
   };
@@ -146,7 +147,7 @@ export default function ProfileSettings() {
 
   return (
     <div>
-      <PageHeader icon="👤" title="Profile & Settings" description="Manage your account, security and privacy" />
+      <PageHeader icon={<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />} title="Profile & settings" description="Manage your account, security and privacy" />
 
       <div className="tab-bar" style={{ marginBottom: "24px" }}>
         <button className={"tab-btn" + (section === "profile"  ? " tab-active" : "")} onClick={() => { setSection("profile");  setError(""); setSuccess(""); }}>Profile</button>
@@ -173,12 +174,12 @@ export default function ProfileSettings() {
           <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
             <div style={{ width:"72px", height:"72px", borderRadius:"50%",
               background:"var(--brand-600)",
-              color:"#fff", fontSize:"28px", fontWeight:800,
+              color:"#fff", fontSize:"28px", fontWeight: 600,
               display:"flex", alignItems:"center", justifyContent:"center" }}>
               {user?.name?.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase()}
             </div>
             <div>
-              <div style={{ fontSize:"20px", fontWeight:700, color:"var(--gray-900)" }}>{user?.name}</div>
+              <div style={{ fontSize:"20px", fontWeight: 600, color:"var(--gray-900)" }}>{user?.name}</div>
               <div style={{ fontSize:"14px", color:"var(--gray-500)", marginTop:"4px" }}>{user?.email}</div>
             </div>
           </div>
@@ -237,7 +238,7 @@ export default function ProfileSettings() {
                     <button className="btn-secondary" style={{ color:"var(--danger)" }}
                       disabled={disableCode.length < 6 || twoFaLoading}
                       onClick={disable2fa}>
-                      {twoFaLoading ? "⏳" : "Disable 2FA"}
+                      {twoFaLoading ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Disable 2FA"}
                     </button>
                   </div>
                 </div>
@@ -344,7 +345,7 @@ export default function ProfileSettings() {
                 {[...sessions].reverse().map(s => (
                   <div key={s.id} className={`sec-session-row ${s.current ? "current" : ""}`}>
                     <div className="sec-session-icon">
-                      {s.device?.includes("iPhone") || s.device?.includes("Android") ? "📱" : "💻"}
+                      {s.device?.includes("iPhone") || s.device?.includes("Android") ? <IcSmartphone size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcLaptop size={16} strokeWidth={1.5} aria-hidden="true" />}
                     </div>
                     <div className="sec-session-info">
                       <div className="sec-session-device">
@@ -379,9 +380,9 @@ export default function ProfileSettings() {
           </p>
 
           <div className="sec-gdpr-card">
-            <div className="sec-gdpr-icon">📥</div>
+            <div className="sec-gdpr-icon"><IcInbox size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <div>
-              <div style={{ fontWeight:700, fontSize:"14px", marginBottom:"4px" }}>Export My Data</div>
+              <div style={{ fontWeight: 600, fontSize:"14px", marginBottom:"4px" }}>Export My Data</div>
               <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"12px" }}>
                 Download a JSON file containing all your profile data, tasks, projects, and login history.
               </div>
@@ -392,9 +393,9 @@ export default function ProfileSettings() {
           </div>
 
           <div className="sec-gdpr-card" style={{ marginTop:"16px" }}>
-            <div className="sec-gdpr-icon">🔒</div>
+            <div className="sec-gdpr-icon"><IcLock size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <div>
-              <div style={{ fontWeight:700, fontSize:"14px", marginBottom:"4px" }}>What data we store</div>
+              <div style={{ fontWeight: 600, fontSize:"14px", marginBottom:"4px" }}>What data we store</div>
               <ul style={{ fontSize:"13px", color:"var(--gray-600)", paddingLeft:"18px", lineHeight:"2", margin:0 }}>
                 <li>Account information (name, email, hashed password)</li>
                 <li>Workspace membership and role</li>
@@ -407,9 +408,9 @@ export default function ProfileSettings() {
           </div>
 
           <div className="sec-gdpr-card" style={{ marginTop:"16px" }}>
-            <div className="sec-gdpr-icon">✉️</div>
+            <div className="sec-gdpr-icon"><IcMail size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <div>
-              <div style={{ fontWeight:700, fontSize:"14px", marginBottom:"4px" }}>Right to Erasure</div>
+              <div style={{ fontWeight: 600, fontSize:"14px", marginBottom:"4px" }}>Right to Erasure</div>
               <div style={{ fontSize:"13px", color:"var(--gray-500)", marginBottom:"12px" }}>
                 You can request permanent deletion of all your personal data. This is irreversible.
               </div>
@@ -441,7 +442,7 @@ export default function ProfileSettings() {
                 <li>All team members, activity logs, notifications</li>
                 <li>All AI settings and integrations</li>
               </ul>
-              <p style={{ marginTop:"12px", fontSize:"13px", fontWeight:700, color:"var(--danger)" }}>
+              <p style={{ marginTop:"12px", fontSize:"13px", fontWeight: 600, color:"var(--danger)" }}>
                 This action is permanent and cannot be undone.
               </p>
             </div>

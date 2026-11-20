@@ -19,6 +19,7 @@ import {
   Code2, BriefcaseBusiness, Layers, BookOpen, Square, Trash2,
 } from "lucide-react";
 import { apiErrorMessage } from "../utils/apiError";
+import { Building as IcBuilding, Folder as IcFolder, Settings as IcSettings } from "lucide-react";
 const DATE_FORMATS = ["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","DD-MM-YYYY","MMM DD, YYYY"];
 
 const NOTIF_PREFS = [
@@ -185,7 +186,7 @@ export default function WorkspaceSettings() {
   const handleResendInvite = async (id) => {
     try {
       await client.post(`/invitations/${id}/resend`);
-      setInviteSuccess("Invitation resent!");
+      setInviteSuccess("Invitation resent");
       setTimeout(() => setInviteSuccess(""), 3000);
     } catch (e) { console.error(e); }
   };
@@ -240,7 +241,7 @@ export default function WorkspaceSettings() {
       // state to [], not the actual updated workspace.
       setActiveWorkspace(res.data);
       client.get("/admin/data-residency").then(r => setResidency(r.data)).catch(() => {});
-      setSuccess("Settings saved!");
+      setSuccess("Settings saved");
       setTimeout(() => setSuccess(""), 3000);
     } catch (e) { setError(e.response?.data?.message || "Failed to save settings"); }
     finally { setSaving(false); }
@@ -282,7 +283,7 @@ export default function WorkspaceSettings() {
   if (loading) {
     return (
       <div>
-        <PageHeader icon="⚙️" title="Workspace Settings" description="Configure your workspace" />
+        <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Workspace settings" description="Configure your workspace" />
         <div className="empty-state">Loading settings...</div>
       </div>
     );
@@ -308,8 +309,8 @@ export default function WorkspaceSettings() {
   return (
     <div>
       <PageHeader
-        icon="⚙️"
-        title="Workspace Settings"
+        icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />}
+        title="Workspace settings"
         description="Configure your workspace"
         action={
           (activeNav === "general" || activeNav === "preferences") && (
@@ -520,7 +521,7 @@ export default function WorkspaceSettings() {
                       const active = quietDays.includes(d);
                       return (
                         <label key={d} style={{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer",
-                          padding:"5px 12px",borderRadius:"99px",fontSize:"12px",fontWeight:700,
+                          padding:"5px 12px",borderRadius:"99px",fontSize:"12px",fontWeight: 600,
                           border:"1px solid var(--border)",
                           background:active?"rgba(99,102,241,.1)":"var(--bg-card)",
                           color:active?"var(--brand-500)":"var(--gray-600)",userSelect:"none"}}>
@@ -571,6 +572,7 @@ export default function WorkspaceSettings() {
                         style={{ minWidth:"130px" }} id={"workspace-settings-role"}>
                         <option value="MEMBER">Member</option>
                         <option value="ADMIN">Admin</option>
+                        <option value="EDITOR">Editor (edit and comment)</option>
                         <option value="VIEWER">Viewer (read-only)</option>
                       </select>
                     </div>
@@ -614,6 +616,7 @@ export default function WorkspaceSettings() {
                                 Admin{!isOwner ? " (Manager only)" : ""}
                               </option>
                               <option value="MEMBER">Member</option>
+                              <option value="EDITOR">Editor</option>
                               <option value="VIEWER">Viewer</option>
                             </select>
                           ) : (
@@ -708,7 +711,7 @@ export default function WorkspaceSettings() {
                           flex: 1, background: s.color + "15", border: "1px solid " + s.color + "40",
                           borderRadius: "var(--radius-md)", padding: "14px", textAlign: "center"
                         }}>
-                          <div style={{ fontSize: "28px", fontWeight: 800, color: s.color }}>{s.value}</div>
+                          <div style={{ fontSize: "28px", fontWeight: 600, color: s.color }}>{s.value}</div>
                           <div style={{ fontSize: "12px", color: "var(--gray-500)", marginTop: "4px" }}>{s.label}</div>
                         </div>
                       ))}
@@ -753,7 +756,7 @@ export default function WorkspaceSettings() {
               </button>
               <div style={{marginTop:28,padding:"16px 20px",background:"var(--gray-50)",
                 borderRadius:10,border:"1px solid var(--border)"}}>
-                <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:"var(--gray-700)"}}>
+                <div style={{fontWeight: 600,fontSize:13,marginBottom:8,color:"var(--gray-700)"}}>
                   Workspace templates available
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -768,13 +771,13 @@ export default function WorkspaceSettings() {
                     <div key={t.name}
                       style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
                         background:"var(--bg-card)",border:"1px solid var(--border)",
-                        borderRadius:8,cursor:"pointer",transition:"all .12s"}}
+                        borderRadius:8,cursor:"pointer",transition: "color .12s, background-color .12s, border-color .12s, opacity .12s, transform .12s"}}
                       onClick={() => navigate("/workspace-setup")}
                       onMouseEnter={e=>e.currentTarget.style.borderColor="var(--brand-500)"}
                       onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => navigate("/workspace-setup"))?.(e); } }}>
                       <t.icon size={18} aria-hidden="true" style={{color:"var(--brand-500)",flexShrink:0}} />
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:"var(--gray-800)"}}>{t.name}</div>
+                        <div style={{fontSize:12,fontWeight: 600,color:"var(--gray-800)"}}>{t.name}</div>
                         <div style={{fontSize:11,color:"var(--gray-400)"}}>{t.desc}</div>
                       </div>
                     </div>
@@ -841,6 +844,7 @@ export default function WorkspaceSettings() {
                           >
                             <option value="ADMIN">Admin</option>
                             <option value="MEMBER">Member</option>
+                            <option value="EDITOR">Editor</option>
                             <option value="VIEWER">Viewer</option>
                           </select>
                           <button className="btn-danger" style={{ fontSize: "12px", padding: "5px 14px" }}
@@ -905,7 +909,7 @@ export default function WorkspaceSettings() {
                       padding:"6px 12px",borderRadius:"99px",border:"1px solid var(--border)",
                       background:calForm.workingDays.includes(d)?"var(--brand-500)":"var(--bg-card)",
                       color:calForm.workingDays.includes(d)?"#fff":"var(--gray-600)",
-                      fontWeight:700,fontSize:"12px",userSelect:"none"}}>
+                      fontWeight: 600,fontSize:"12px",userSelect:"none"}}>
                       <input type="checkbox" style={{display:"none"}} checked={calForm.workingDays.includes(d)}
                         onChange={()=>setCalForm(f=>({...f,workingDays:f.workingDays.includes(d)
                           ?f.workingDays.filter(x=>x!==d):[...f.workingDays,d]}))} />
@@ -928,7 +932,7 @@ export default function WorkspaceSettings() {
                 setSuccess("Business calendar saved");
               }}>Save Calendar</button>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginBottom:"10px"}}>Public Holidays</div>
+              <div style={{fontWeight: 600,fontSize:"13px",marginBottom:"10px"}}>Public Holidays</div>
               <div className="form-row">
                 <div className="form-group" style={{flex:2}}>
                   <label htmlFor={"workspace-settings-name"}>Name</label>
@@ -969,14 +973,14 @@ export default function WorkspaceSettings() {
                   borderRadius:"var(--radius-md)",padding:"12px",marginBottom:"8px"}}>
                   <div style={{width:10,height:10,borderRadius:"50%",background:g.color,marginTop:4,flexShrink:0}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:800,fontSize:"13px"}}>{g.name}</div>
+                    <div style={{fontWeight: 600,fontSize:"13px"}}>{g.name}</div>
                     {g.description&&<div style={{fontSize:"11px",color:"var(--gray-400)"}}>{g.description}</div>}
                     <div style={{fontSize:"11px",color:"var(--gray-400)",marginTop:"3px"}}>
                       {(g.memberEmails||[]).length} members · {(g.permissions||[]).length} permissions
                     </div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"6px"}}>
                       {(g.permissions||[]).map(p=>(
-                        <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"1px 7px",
+                        <span key={p} style={{fontSize:"9px",fontWeight: 600,padding:"1px 7px",
                           borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{statusText(p)}</span>
                       ))}
                     </div>
@@ -988,7 +992,7 @@ export default function WorkspaceSettings() {
                 </div>
               ))}
               <div style={{background:"var(--gray-50)",border:"1px solid var(--border)",borderRadius:"var(--radius-md)",padding:"14px",marginTop:"12px"}}>
-                <div style={{fontWeight:700,fontSize:"13px",marginBottom:"10px"}}>Create Group</div>
+                <div style={{fontWeight: 600,fontSize:"13px",marginBottom:"10px"}}>Create Group</div>
                 <div className="form-row">
                   <div className="form-group" style={{flex:2}}>
                     <label htmlFor={"workspace-settings-name-2"}>Name</label>
@@ -1027,7 +1031,7 @@ export default function WorkspaceSettings() {
                 }}>+ Create Group</button>
               </div>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginTop:"24px",marginBottom:"8px"}}>Bulk Invite</div>
+              <div style={{fontWeight: 600,fontSize:"13px",marginTop:"24px",marginBottom:"8px"}}>Bulk Invite</div>
               <p style={{fontSize:"12px",color:"var(--gray-400)",marginBottom:"8px"}}>Paste one email per line to invite multiple members.</p>
               <textarea rows={4} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}
                 placeholder={"alice@company.com\nbob@company.com\ncarol@company.com"} />
@@ -1035,6 +1039,7 @@ export default function WorkspaceSettings() {
                 <select value={bulkRole} onChange={e=>setBulkRole(e.target.value)} style={{maxWidth:140}}>
                   <option value="ADMIN">Admin</option>
                   <option value="MEMBER">Member</option>
+                  <option value="EDITOR">Editor</option>
                   <option value="VIEWER">Viewer</option>
                 </select>
                 <button className="btn-primary" disabled={!bulkEmails.trim()} onClick={async()=>{
@@ -1044,7 +1049,7 @@ export default function WorkspaceSettings() {
                 }}>Send {bulkEmails.trim().split("\n").filter(Boolean).length || 0} Invites</button>
               </div>
 
-              <div style={{fontWeight:700,fontSize:"13px",marginTop:"20px",marginBottom:"6px"}}>Guest / External Access</div>
+              <div style={{fontWeight: 600,fontSize:"13px",marginTop:"20px",marginBottom:"6px"}}>Guest / External Access</div>
               <p style={{fontSize:"12px",color:"var(--gray-400)",marginBottom:"8px"}}>Guests get read-only access via a secure link — no password needed.</p>
               <div className="form-row">
                 <div className="form-group" style={{flex:2}}>
@@ -1070,24 +1075,25 @@ export default function WorkspaceSettings() {
                     <div key={role} style={{display:"flex",gap:"12px",alignItems:"flex-start",
                       padding:"10px 12px",background:"var(--bg-card)",border:"1px solid var(--border)",
                       borderRadius:"var(--radius-sm)",marginBottom:"6px"}}>
-                      <div style={{minWidth:80,fontWeight:800,fontSize:"12px",color:"var(--brand-500)"}}>{statusText(role === "OWNER" ? "MANAGER" : role)}</div>
+                      <div style={{minWidth:80,fontWeight: 600,fontSize:"12px",color:"var(--brand-500)"}}>{statusText(role === "OWNER" ? "MANAGER" : role)}</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
                         {(Array.isArray(perms)?perms:["ALL"]).map(p=>(
-                          <span key={p} style={{fontSize:"9px",fontWeight:700,padding:"2px 7px",
+                          <span key={p} style={{fontSize:"9px",fontWeight: 600,padding:"2px 7px",
                             borderRadius:"99px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)"}}>{statusText(p)}</span>
                         ))}
                       </div>
                     </div>
                   ))}
-                  <div style={{fontWeight:700,fontSize:"13px",marginTop:"16px",marginBottom:"10px"}}>Inheritance Rules</div>
+                  <div style={{fontWeight: 600,fontSize:"13px",marginTop:"16px",marginBottom:"10px"}}>Inheritance Rules</div>
                   {[["OWNER","→","All permissions including delete workspace"],
                     ["ADMIN","→","Inherits all Member permissions + team management"],
-                    ["MEMBER","→","Inherits all Viewer permissions + create/edit"],
+                    ["MEMBER","→","Inherits all Editor permissions + create and delete"],
+                    ["EDITOR","→","Inherits all Viewer permissions + edit existing work"],
                     ["VIEWER","→","Read-only + comment"],
                     ["GUEST","→","View assigned content only"]].map(([r,a,d])=>(
                     <div key={r} style={{display:"flex",gap:"10px",padding:"7px 10px",
                       borderBottom:"1px solid var(--border)",fontSize:"12px"}}>
-                      <span style={{fontWeight:700,minWidth:70,color:"var(--brand-500)"}}>{statusText(r === "OWNER" ? "MANAGER" : r)}</span>
+                      <span style={{fontWeight: 600,minWidth:70,color:"var(--brand-500)"}}>{statusText(r === "OWNER" ? "MANAGER" : r)}</span>
                       <span style={{color:"var(--gray-400)"}}>{a}</span>
                       <span style={{color:"var(--gray-600)"}}>{d}</span>
                     </div>
@@ -1120,8 +1126,8 @@ export default function WorkspaceSettings() {
                       <div style={{display:"flex",gap:"8px",alignItems:"center",
                         padding:"10px 12px",background:"var(--bg-card)",border:"2px solid var(--brand-500)",
                         borderRadius:"var(--radius-md)"}}>
-                        <span>🏢</span>
-                        <span style={{fontWeight:800}}>{org.name}</span>
+                        <span><IcBuilding size={16} strokeWidth={1.5} aria-hidden="true" /></span>
+                        <span style={{fontWeight: 600}}>{org.name}</span>
                         <span style={{fontSize:"10px",background:"rgba(99,102,241,.1)",color:"var(--brand-500)",
                           padding:"2px 8px",borderRadius:"99px"}}>{org.tenantType}</span>
                       </div>
@@ -1130,7 +1136,7 @@ export default function WorkspaceSettings() {
                           padding:"8px 12px 8px 32px",marginTop:"4px",
                           background:"var(--gray-50)",border:"1px solid var(--border)",borderRadius:"var(--radius-sm)"}}>
                           <span style={{color:"var(--gray-400)"}}>└</span>
-                          <span>📁</span>
+                          <span><IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /></span>
                           <span style={{fontWeight:600,fontSize:"13px"}}>{child.name}</span>
                         </div>
                       ))}
@@ -1139,7 +1145,7 @@ export default function WorkspaceSettings() {
                   <div style={{fontSize:"12px",color:"var(--gray-400)"}}>
                     Total: {hierarchy.totalWorkspaces} workspace(s)
                   </div>
-                  <div style={{marginTop:"16px",fontWeight:700,fontSize:"13px"}}>Tenant Type</div>
+                  <div style={{marginTop:"16px",fontWeight: 600,fontSize:"13px"}}>Tenant Type</div>
                   <div className="form-group" style={{maxWidth:280,marginTop:"8px"}}>
                     <select onChange={async e=>{
                       await client.patch(`/workspace/${activeWorkspace.id}/parent`,{tenantType:e.target.value});
@@ -1167,7 +1173,7 @@ export default function WorkspaceSettings() {
                 {wsTemplates.map(t=>(
                   <div key={t.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",
                     borderRadius:"var(--radius-lg)",padding:"14px",minWidth:180}}>
-                    <div style={{fontWeight:800,fontSize:"13px",marginBottom:"3px"}}>{t.name}</div>
+                    <div style={{fontWeight: 600,fontSize:"13px",marginBottom:"3px"}}>{t.name}</div>
                     <div style={{fontSize:"10px",color:"var(--gray-400)",marginBottom:"10px"}}>
                       {t.templateCategory||"Custom"}
                     </div>

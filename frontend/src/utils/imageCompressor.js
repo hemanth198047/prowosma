@@ -128,7 +128,7 @@ export async function migrateHeavyLogos(workspaces, updateWorkspaceFn) {
       const compressed = await recompressBase64(ws.logoUrl);
       if (compressed && compressed !== ws.logoUrl) {
         await updateWorkspaceFn(ws.id, { logoUrl: compressed });
-        console.log(`✅ Logo compressed for "${ws.name}"`);
+        console.log(`Logo compressed for "${ws.name}"`);
       }
     } catch (e) {
       console.warn(`Could not compress logo for "${ws.name}":`, e.message);

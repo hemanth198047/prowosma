@@ -7,6 +7,7 @@ import {
 } from "../api/developer";
 import "../styles/pages/developer.css";
 import { useConfirm } from "../hooks/useConfirm";
+import { Bell as IcBell, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, Folder as IcFolder, Hourglass as IcHourglass, Key as IcKey, Link as IcLink, Settings as IcSettings, Target as IcTarget, Trash2 as IcTrash2, Users as IcUsers } from "lucide-react";
 
 const ALL_EVENTS = [
   "TASK_CREATED", "TASK_UPDATED", "TASK_COMPLETED", "TASK_DELETED",
@@ -69,7 +70,7 @@ function WebhookForm({ initial, onSave, onCancel }) {
             <label className="dev-event-chip dev-event-all">
               <input type="checkbox" checked={all}
                 onChange={() => setForm(f => ({ ...f, events: all ? [] : ["*"] }))} id={"developer-portal-events-to-send"} />
-              ✦ All events
+              All events
             </label>
             {ALL_EVENTS.map(ev => (
               <label key={ev} className={`dev-event-chip ${(all || form.events?.includes(ev)) ? "checked" : ""}`}>
@@ -260,7 +261,7 @@ export default function DeveloperPortal() {
 
   return (
     <div>
-      <PageHeader icon="⚙️" title="Developer Portal"
+      <PageHeader icon={<IcSettings size={16} strokeWidth={1.5} aria-hidden="true" />} title="Developer portal"
         description="Webhooks, API keys, and REST API documentation"
         action={<a href={SWAGGER_URL} target="_blank" rel="noreferrer"
           className="btn-secondary" style={{ fontSize: "12px", textDecoration: "none" }}>
@@ -287,7 +288,7 @@ export default function DeveloperPortal() {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--gray-800)" }}>Outbound Webhooks</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--gray-800)" }}>Outbound Webhooks</div>
               <div style={{ fontSize: "12px", color: "var(--gray-400)", marginTop: "2px" }}>
                 Prowosma sends an HTTPS POST to your URL when events occur. Payloads are signed with HMAC-SHA256.
               </div>
@@ -301,7 +302,7 @@ export default function DeveloperPortal() {
           {loading ? <div className="empty-state">Loading…</div>
           : webhooks.length === 0 ? (
             <div className="dev-empty">
-              <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔗</div>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}><IcLink size={16} strokeWidth={1.5} aria-hidden="true" /></div>
               <div style={{ fontWeight: 600, marginBottom: "6px" }}>No webhooks yet</div>
               <div style={{ fontSize: "13px", color: "var(--gray-400)" }}>
                 Create a webhook to receive real-time events in your own systems.
@@ -328,7 +329,7 @@ export default function DeveloperPortal() {
                       )}
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px" }}
                         onClick={() => handleTest(wh.id)}>
-                        {testResults[wh.id] === "sending" ? "⏳" : testResults[wh.id] === "sent" ? "✓ Sent" : testResults[wh.id] === "failed" ? "✗ Failed" : "▶ Test"}
+                        {testResults[wh.id] === "sending" ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : testResults[wh.id] === "sent" ? "✓ Sent" : testResults[wh.id] === "failed" ? "✗ Failed" : "▶ Test"}
                       </button>
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px" }}
                         onClick={() => { setEditingWh(wh); setShowWhForm(true); }}>
@@ -336,7 +337,7 @@ export default function DeveloperPortal() {
                       </button>
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--danger)" }}
                         onClick={() => handleDeleteWh(wh.id)}>
-                        🗑️
+                        <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -379,7 +380,7 @@ export default function DeveloperPortal() {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--gray-800)" }}>API Keys</div>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--gray-800)" }}>API Keys</div>
               <div style={{ fontSize: "12px", color: "var(--gray-400)", marginTop: "2px" }}>
                 Use these keys to authenticate REST API requests. Pass as <code style={{ fontSize: "11px" }}>Authorization: Bearer {"<key>"}</code>
               </div>
@@ -392,7 +393,7 @@ export default function DeveloperPortal() {
           {loading ? <div className="empty-state">Loading…</div>
           : apiKeys.length === 0 ? (
             <div className="dev-empty">
-              <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔑</div>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}><IcKey size={16} strokeWidth={1.5} aria-hidden="true" /></div>
               <div style={{ fontWeight: 600, marginBottom: "6px" }}>No API keys yet</div>
               <div style={{ fontSize: "13px", color: "var(--gray-400)" }}>
                 Create a key to integrate with Prowosma from your own applications.
@@ -426,7 +427,7 @@ export default function DeveloperPortal() {
                       )}
                       <button className="btn-secondary" style={{ fontSize: "11px", padding: "4px 10px", color: "var(--danger)" }}
                         onClick={() => handleDeleteKey(k.id)}>
-                        🗑️
+                        <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -464,14 +465,14 @@ export default function DeveloperPortal() {
 
           <div className="dev-docs-sections">
             {[
-              { icon: "✅", name: "Tasks",     base: "/api/tasks",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] },
-              { icon: "📁", name: "Projects",  base: "/api/projects",  methods: ["GET", "POST", "PUT", "DELETE"] },
-              { icon: "🎯", name: "Goals",     base: "/api/goals",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] },
-              { icon: "👥", name: "Team",      base: "/api/team",      methods: ["GET", "POST", "PUT", "DELETE"] },
-              { icon: "📊", name: "Analytics", base: "/api/analytics", methods: ["GET"] },
-              { icon: "🔗", name: "Webhooks",  base: "/api/webhooks",  methods: ["GET", "POST", "PUT", "DELETE"] },
-              { icon: "🔑", name: "API Keys",  base: "/api/keys",      methods: ["GET", "POST", "DELETE"] },
-              { icon: "🔔", name: "Notifications", base: "/api/notifications", methods: ["GET", "PUT", "DELETE"] },
+              { icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Tasks",     base: "/api/tasks",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] },
+              { icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Projects",  base: "/api/projects",  methods: ["GET", "POST", "PUT", "DELETE"] },
+              { icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Goals",     base: "/api/goals",     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] },
+              { icon: <IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Team",      base: "/api/team",      methods: ["GET", "POST", "PUT", "DELETE"] },
+              { icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Analytics", base: "/api/analytics", methods: ["GET"] },
+              { icon: <IcLink size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Webhooks",  base: "/api/webhooks",  methods: ["GET", "POST", "PUT", "DELETE"] },
+              { icon: <IcKey size={16} strokeWidth={1.5} aria-hidden="true" />, name: "API Keys",  base: "/api/keys",      methods: ["GET", "POST", "DELETE"] },
+              { icon: <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />, name: "Notifications", base: "/api/notifications", methods: ["GET", "PUT", "DELETE"] },
             ].map((s, i) => (
               <div key={i} className="dev-docs-card">
                 <div className="dev-docs-card-title">{s.icon} {s.name}</div>

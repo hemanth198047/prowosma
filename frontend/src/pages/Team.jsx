@@ -38,8 +38,10 @@ import { useAuth } from "../hooks/useAuth";
 import { useRole } from "../hooks/useRole";
 import { apiErrorMessage } from "../utils/apiError";
 import { statusText } from "../utils/statusText";
+import { Hourglass as IcHourglass, Pencil as IcPencil, Trash2 as IcTrash2, Users as IcUsers } from "lucide-react";
 
-const ROLES = ["MEMBER", "VIEWER", "ADMIN"];
+const ROLES = ["MEMBER", "EDITOR", "VIEWER", "ADMIN"];
+const ROLE_NAME = { MEMBER: "Member", EDITOR: "Editor — edit and comment, no create or delete", VIEWER: "Viewer — read-only", ADMIN: "Admin" };
 const COLORS = [
   "var(--brand-500)",
   "var(--warning)",
@@ -51,7 +53,6 @@ const COLORS = [
   "#14b8a6",
   "#f97316",
 ];
-const roleColor = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
 // Display-only relabel: the underlying role value is still "OWNER"
 // everywhere it matters (DB, RoleGuardFilter, isOwner checks) — this just
 // changes what the word looks like on screen, per feedback that "Owner"
@@ -79,7 +80,7 @@ function MemberAvatar({ member, size = 36 }) {
         borderRadius: "50%",
         background: member.color || "var(--brand-500)",
         color: "#fff",
-        fontWeight: 700,
+        fontWeight: 600,
         fontSize: size * 0.35,
         display: "flex",
         alignItems: "center",
@@ -141,7 +142,7 @@ function MemberForm({ initial, onSave, onCancel, saving, isOwner }) {
           >
             {ROLES.map((r) => (
               <option key={r} value={r} disabled={r === "ADMIN" && !canPickAdmin}>
-                {r === "ADMIN" && !canPickAdmin ? "ADMIN (Manager only)" : r}
+                {r === "ADMIN" && !canPickAdmin ? "Admin (Manager only)" : ROLE_NAME[r] || r}
               </option>
             ))}
           </select>
@@ -400,7 +401,7 @@ export default function Team() {
   return (
     <div>
       <PageHeader
-        icon="👥"
+        icon={<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Team"
         description="Manage team members and assign tasks"
         action={
@@ -490,7 +491,7 @@ export default function Team() {
             // reading order of a permissions hierarchy, not alphabetical
             // (which would put Admin before Manager before Member).
             if (memberSort === "role") {
-              const order = { OWNER: 0, ADMIN: 1, MEMBER: 2, VIEWER: 3 };
+              const order = { OWNER: 0, ADMIN: 1, MEMBER: 2, EDITOR: 3, VIEWER: 4 };
               return (order[a.role] ?? 9) - (order[b.role] ?? 9);
             }
             if (memberSort === "load") return getTasksForMember(b.id).length - getTasksForMember(a.id).length;
@@ -510,16 +511,7 @@ export default function Team() {
                   <div className="team-member-info">
                     <div className="team-member-name">{m.name}</div>
                     <div className="team-member-email">{m.email}</div>
-                    <span
-                      className="badge"
-                      style={{
-                        background: roleColor[m.role] + "22",
-                        color: roleColor[m.role],
-                        fontSize: "10px",
-                      }}
-                    >
-                      {roleLabel(m.role)}
-                    </span>
+                    <span className="team-role">{statusText(roleLabel(m.role))}</span>
                   </div>
                   <div className="card-actions">
                     {m.role !== "OWNER" && (
@@ -532,7 +524,7 @@ export default function Team() {
                               setShowForm(true);
                             }}
                           >
-                            ✏️
+                            <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />
                           </button>
                         </CanDo>
                         <CanDo action="manageMembers">
@@ -540,7 +532,7 @@ export default function Team() {
                             className="btn-icon"
                             onClick={() => handleDelete(m.id)}
                           >
-                            🗑️
+                            <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />
                           </button>
                         </CanDo>
                       </>
@@ -557,16 +549,16 @@ export default function Team() {
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color:"#C17D22" }}
+
                     >
                       {inProgressTasks}
                     </span>
-                    <span className="team-stat-label">In Progress</span>
+                    <span className="team-stat-label">In progress</span>
                   </div>
                   <div className="team-stat">
                     <span
                       className="team-stat-value"
-                      style={{ color:"#1E8E5A" }}
+
                     >
                       {doneTasks}
                     </span>
@@ -767,7 +759,7 @@ export default function Team() {
                     {new Date(inv.expiresAt).toLocaleDateString()}
                   </div>
                 </div>
-                <span className="pending-invite-badge">PENDING</span>
+                <span className="pending-invite-badge">Pending</span>
                 <div className="pending-invite-actions">
                   <button
                     className="btn-secondary"
@@ -854,6 +846,7 @@ export default function Team() {
                 <option value="MEMBER">
                   Member — Full access to projects and tasks
                 </option>
+                <option value="EDITOR">Editor — Edit and comment, no create or delete</option>
                 <option value="VIEWER">Viewer — Read-only access</option>
                 <option value="ADMIN" disabled={!isOwner}>
                   {isOwner
@@ -992,7 +985,7 @@ function ExpertiseProfileModal({ member, onSave, onClose }) {
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <input type="range" min={0} max={100} value={form.capacityPercent}
                 onChange={e=>set("capacityPercent",Number(e.target.value))} style={{flex:1}} id={"team-capacity"} />
-              <span style={{fontWeight:700,minWidth:36}}>{form.capacityPercent}%</span>
+              <span style={{fontWeight: 600,minWidth:36}}>{form.capacityPercent}%</span>
             </div>
           </div>
         </div>
@@ -1083,7 +1076,7 @@ function ExpertFinder() {
             onKeyDown={e=>e.key==="Enter"&&askAI()}
             placeholder="Who is best for a Python ML project? Who can mentor React?" />
           <button className="btn-primary" onClick={askAI} disabled={aiLoading||!aiQuery.trim()}>
-            {aiLoading ? "⏳" : "Ask →"}
+            {aiLoading ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Ask →"}
           </button>
         </div>
         {aiResult && (
@@ -1102,7 +1095,7 @@ function ExpertFinder() {
             placeholder="Search by skill (e.g. React, Python, DevOps, ML)…"
             className="exp-search-input" />
           <button className="btn-primary" onClick={search} disabled={searching||!query.trim()}>
-            {searching ? "⏳" : "Find Experts"}
+            {searching ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Find Experts"}
           </button>
         </div>
         <button className="btn-secondary" onClick={runInfer} disabled={inferring}
@@ -1135,7 +1128,7 @@ function ExpertFinder() {
                     </div>
                     <div className="exp-result-avail">
                       <span className="exp-avail-dot" style={{background:avColor}} />
-                      <span style={{color:avColor,fontSize:"11px",fontWeight:700}}>{m.availability}</span>
+                      <span style={{color:avColor,fontSize:"11px",fontWeight: 600}}>{m.availability}</span>
                       {m.capacityPercent < 100 && (
                         <span style={{fontSize:"10px",color:"#64748b",marginLeft:"4px"}}>({m.capacityPercent}% capacity)</span>
                       )}
@@ -1318,9 +1311,9 @@ function TribalKnowledgeTab() {
   }, []);
 
   const RISK_META = {
-    HIGH:   { color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:"🔴" },
-    MEDIUM: { color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:"🟡" },
-    LOW:    { color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:"🟢" },
+    HIGH:   { color:"#D64545", bg:"rgba(239,68,68,.1)",   icon:<span className="emo-dot emo-dot--red" aria-hidden="true" /> },
+    MEDIUM: { color:"#C17D22", bg:"rgba(245,158,11,.1)",  icon:<span className="emo-dot emo-dot--yellow" aria-hidden="true" /> },
+    LOW:    { color:"#1E8E5A", bg:"rgba(16,185,129,.1)",  icon:<span className="emo-dot emo-dot--green" aria-hidden="true" /> },
   };
 
   if (loading) return <div className="exp-empty">Analysing tribal knowledge risks…</div>;

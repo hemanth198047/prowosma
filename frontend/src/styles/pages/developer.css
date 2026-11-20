@@ -19,7 +19,7 @@
 
 .dev-card-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 
-.dev-card-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+.dev-card-name { font-size: 14px; font-weight: 600; color: var(--gray-800); }
 
 .dev-card-url  { font-size: 12px; color: var(--gray-400); margin-top: 2px; font-family: monospace; }
 
@@ -31,7 +31,7 @@
 
 .dev-stat { font-size: 11px; color: var(--gray-400); }
 
-.dev-last-status { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
+.dev-last-status { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
 
 .dev-last-status.ok     { background: rgba(5,150,105,0.12); color: var(--success); }
 
@@ -47,7 +47,7 @@
 
 .dev-event-tag.dev-event-all { background: var(--brand-100); color: var(--brand-700); }
 
-.dev-scope-read  { background: #e0f2fe; color: #0369a1; }
+.dev-scope-read  { background: #e0f2fe; color: var(--brand-600); }
 
 .dev-scope-write { background: rgba(217,119,6,0.12); color: var(--warning); }
 
@@ -70,7 +70,7 @@
   padding: 4px 10px; border-radius: 5px;
   background: var(--gray-100); color: var(--gray-600);
   cursor: pointer; border: 1px solid transparent;
-  transition: all 0.1s;
+  transition: color 0.1s var(--ease, cubic-bezier(.2,0,0,1)), background-color 0.1s var(--ease, cubic-bezier(.2,0,0,1)), border-color 0.1s var(--ease, cubic-bezier(.2,0,0,1)), opacity 0.1s var(--ease, cubic-bezier(.2,0,0,1)), transform 0.1s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow 0.1s var(--ease, cubic-bezier(.2,0,0,1));
 }
 
 .dev-event-chip input { display: none; }
@@ -95,7 +95,7 @@
 /* Docs tab */
 .dev-docs { display: flex; flex-direction: column; gap: 24px; }
 
-.dev-docs-header h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.dev-docs-header h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
 
 .dev-docs-header p  { font-size: 13px; color: var(--gray-500); }
 
@@ -111,13 +111,13 @@
   box-shadow: var(--shadow-xs);
 }
 
-.dev-docs-card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.dev-docs-card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 
 .dev-docs-base { font-size: 11px; color: var(--gray-500); display: block; margin-bottom: 8px; }
 
 .dev-docs-methods { display: flex; gap: 4px; flex-wrap: wrap; }
 
-.dev-docs-auth h4  { font-size: 14px; font-weight: 700; margin-bottom: 6px; margin-top: 0; }
+.dev-docs-auth h4  { font-size: 14px; font-weight: 600; margin-bottom: 6px; margin-top: 0; }
 
 .dev-docs-auth p   { font-size: 13px; color: var(--gray-500); margin-bottom: 8px; }
 

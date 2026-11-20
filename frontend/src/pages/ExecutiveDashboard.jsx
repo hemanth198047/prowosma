@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import "../styles/pages/analytics.css";
 import { statusText } from "../utils/statusText";
+import { Bot as IcBot, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, Folder as IcFolder, Target as IcTarget, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 const getAISummary = () => client.get("/ai/executive-summary");
 const getRisks     = () => client.get("/ai/risks");
@@ -95,7 +96,7 @@ export default function ExecutiveDashboard() {
 
   return (
     <div>
-      <PageHeader icon="🎯" title="Executive Dashboard"
+      <PageHeader icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} title="Executive dashboard"
         description="One-screen strategic view: portfolio health, goals, KPIs, risks, and AI narrative"
         action={
           <button className="btn-primary" onClick={loadAISummary} disabled={aiLoading}>
@@ -108,7 +109,7 @@ export default function ExecutiveDashboard() {
       {aiSummary && (
         <div className="exec-ai-narrative">
           <div className="exec-ai-header">
-            <span className="exec-ai-icon">🤖</span>
+            <span className="exec-ai-icon"><IcBot size={16} strokeWidth={1.5} aria-hidden="true" /></span>
             <span className="exec-ai-title">AI Executive Summary</span>
             <button className="btn-icon" onClick={() => setAiSummary(null)}>✕</button>
           </div>
@@ -130,17 +131,17 @@ export default function ExecutiveDashboard() {
 
       {/* KPI row */}
       <div className="exec-stat-row">
-        <StatCard icon="📁" label="Active Projects"  value={activeProjects}  color="#5B5FEE"
+        <StatCard icon={<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />} label="Active Projects"  value={activeProjects}  color="#5B5FEE"
           sub={atRiskProjects > 0 ? `${atRiskProjects} at risk` : "All healthy"} />
-        <StatCard icon="🎯" label="Goals On Track"   value={goalOnTrack}     color="#1E8E5A"
+        <StatCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} label="Goals On Track"   value={goalOnTrack}     color="#1E8E5A"
           sub={goalAtRisk > 0 ? `${goalAtRisk} at risk` : "All on track"} />
-        <StatCard icon="📊" label="Portfolio Health"
+        <StatCard icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />} label="Portfolio Health"
           value={avgHealth !== null ? `${avgHealth}%` : "—"}
           color={avgHealth === null ? "#64748b" : avgHealth >= 70 ? "#1E8E5A" : avgHealth >= 50 ? "#C17D22" : "#D64545"}
           sub={avgHealth === null ? "No projects yet" : undefined} />
-        <StatCard icon="⚠️" label="KPI Alerts"       value={kpiAlerts}       color="#D64545"
+        <StatCard icon={<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />} label="KPI Alerts"       value={kpiAlerts}       color="#D64545"
           sub={kpiAlerts === 0 ? "All clear" : "Threshold breached"} />
-        <StatCard icon="✅" label="Total Goals"       value={goals.length}    color="#7C5CBF"
+        <StatCard icon={<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />} label="Total Goals"       value={goals.length}    color="#7C5CBF"
           sub={`${goals.filter(g=>g.status==="ACHIEVED").length} achieved`} />
       </div>
 
@@ -230,7 +231,7 @@ export default function ExecutiveDashboard() {
                   <tr key={p.id}>
                     <td className="exec-table-name">{p.name}</td>
                     <td><span className={`portfolio-status-chip portfolio-status-${p.status?.toLowerCase()}`}>{statusText(p.status)}</span></td>
-                    <td><span style={{ color, fontWeight:700 }}>{h}%</span></td>
+                    <td><span style={{ color, fontWeight: 600 }}>{h}%</span></td>
                     <td>
                       <div className="exec-mini-bar">
                         <div className="exec-mini-fill" style={{ width:`${p.completionRate||0}%`, background:color }} />

@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import { apiErrorMessage } from "../utils/apiError";
 
 import "../styles/pages/auth.css";
+import { CircleCheck as IcCircleCheck, CircleX as IcCircleX, Mail as IcMail, PartyPopper as IcPartyPopper } from "lucide-react";
 
 /** Older backends only embed the workspace name in the 409 message
  *  ("You're already part of <name>. Please log in instead."); newer ones also
@@ -162,7 +163,7 @@ export default function AcceptInvite() {
 
   const roleLabel = {
     OWNER: "Manager", ADMIN: "Admin",
-    MEMBER: "Member", VIEWER: "Viewer",
+    MEMBER: "Member", EDITOR: "Editor", VIEWER: "Viewer",
   }[invitedRole] || invitedRole;
 
   return (
@@ -180,7 +181,7 @@ export default function AcceptInvite() {
         {/* Error */}
         {step === "error" && (
           <div style={{ textAlign: "center" }}>
-            <div className="accept-invite-icon">❌</div>
+            <div className="accept-invite-icon"><IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <h2 className="accept-invite-title">Invitation Error</h2>
             <p className="accept-invite-desc">{error}</p>
             <button
@@ -201,7 +202,7 @@ export default function AcceptInvite() {
             left wondering whether the link failed. */}
         {step === "already_member" && (
           <div style={{ textAlign: "center" }} data-testid="already-member">
-            <div className="accept-invite-icon">✅</div>
+            <div className="accept-invite-icon"><IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <h2 className="accept-invite-title">You're already a member</h2>
             <p className="accept-invite-desc">
               This invitation has already been used, so there's nothing left to accept.
@@ -219,7 +220,7 @@ export default function AcceptInvite() {
                 <div className="invite-summary-row">
                   <span className="invite-summary-label">Log in with</span>
                   <span className="invite-summary-value"
-                    style={{ color: "var(--brand-600)", fontWeight: 700 }}>
+                    style={{ color: "var(--brand-600)", fontWeight: 600 }}>
                     {invitedEmail}
                   </span>
                 </div>
@@ -246,7 +247,7 @@ export default function AcceptInvite() {
         {/* Success */}
         {step === "success" && (
           <div style={{ textAlign: "center" }}>
-            <div className="accept-invite-icon">🎉</div>
+            <div className="accept-invite-icon"><IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" /></div>
             <h2 className="accept-invite-title">
               Welcome to {invitedWorkspace}!
             </h2>
@@ -267,8 +268,8 @@ export default function AcceptInvite() {
         {/* Form — completely independent, shows invited email read-only */}
         {step === "form" && (
           <div>
-            <div className="accept-invite-icon">✉️</div>
-            <h2 className="accept-invite-title">You've been invited!</h2>
+            <div className="accept-invite-icon"><IcMail size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+            <h2 className="accept-invite-title">You've been invited</h2>
 
             {/* Invite summary */}
             <div className="invite-summary-box">
@@ -283,7 +284,7 @@ export default function AcceptInvite() {
               <div className="invite-summary-row">
                 <span className="invite-summary-label">Invited Email</span>
                 <span className="invite-summary-value"
-                  style={{ color: "var(--brand-600)", fontWeight: 700 }}>
+                  style={{ color: "var(--brand-600)", fontWeight: 600 }}>
                   {invitedEmail}
                 </span>
               </div>

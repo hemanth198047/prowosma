@@ -41,13 +41,6 @@ const ICONS = {
   admin: ShieldCheck, developer: Terminal,
 };
 /* ── helpers ──────────────────────────────────────────────────── */
-function greeting() {
-  const h = new Date().getHours();
-  if (h >= 5  && h < 12) return "Good morning";
-  if (h >= 12 && h < 17) return "Good afternoon";
-  if (h >= 17 && h < 21) return "Good evening";
-  return "Good night";
-}
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-US",{
     weekday:"long", year:"numeric", month:"long", day:"numeric"
@@ -58,7 +51,7 @@ function fmtDate(d) {
 function Chip({ Icon, value, label, alert, onClick }) {
   return (
     <button type="button" className={"dz-chip" + (alert ? " dz-chip--alert" : "")} onClick={onClick}>
-      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+      {alert && <Icon size={14} strokeWidth={1.5} aria-hidden="true" />}
       <span className="dz-chip-v">{value}</span>
       <span className="dz-chip-l">{label}</span>
     </button>
@@ -72,7 +65,7 @@ function OverdueModal({ summary, onClose, navigate }) {
     <div className="modal-overlay">
       <div className="modal">
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <h2 style={{ color:"#ef4444", fontSize:16, display:"flex", alignItems:"center", gap:8 }}><AlertTriangle size={18} /> Overdue Items</h2>
+          <h2 style={{ color:"#ef4444", fontSize:16, display:"flex", alignItems:"center", gap:8 }}><AlertTriangle size={18} /> Overdue items</h2>
           <button className="btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
         {[
@@ -484,7 +477,7 @@ function AiHub({ summary, totalOverdue, completionRate, navigate, tiles }) {
    DASHBOARD
    ════════════════════════════════════════════════════════════════ */
 export default function Dashboard() {
-  const { user, activeWorkspace } = useAuth();
+  const { activeWorkspace } = useAuth();
   const { show: showToast } = useToast();
   const navigate  = useNavigate();
   const [summary,     setSummary]     = useState(null);
@@ -515,7 +508,7 @@ export default function Dashboard() {
   }, [activeWorkspace?.id]);
 
   const handleSendReminder = async () => {
-    try   { await client.post("/reminders/send-now"); showToast("Reminder sent!", "success"); }
+    try   { await client.post("/reminders/send-now"); showToast("Reminder sent", "success"); }
     catch { showToast("Failed to send reminder. Check email configuration.", "error"); }
   };
 
@@ -537,7 +530,6 @@ export default function Dashboard() {
   const completionRate = summary.totalTasks > 0 ? Math.round((summary.doneTasks/summary.totalTasks)*100) : 0;
   const totalOverdue = (summary.overdueTasks?.length||0) + (summary.overdueProjects?.length||0) + (summary.overdueGoals?.length||0);
   const goalHealth = summary.totalGoals > 0 ? Math.round(((summary.achievedGoals||0)/summary.totalGoals)*100) : 0;
-  const userName = user?.name?.split(" ")[0] || "there";
   const todayStr = fmtDate(new Date());
   const projects = summary.projectsWithProgress?.length > 0 ? summary.projectsWithProgress : (summary.activeProjectList || []);
   const goals = summary.activeGoalList || [];
@@ -575,7 +567,7 @@ export default function Dashboard() {
     { Icon:ICONS.sops,      tint:"rgba(16,185,129,.1)", color:"#10b981", label:"SOPs",      to:"/sops" },
   ];
   const automateTiles = [
-    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM Studio",  to:"/bpm" },
+    { Icon:ICONS.bpm,          tint:"rgba(99,102,241,.1)", color:"#6366f1", label:"BPM studio",  to:"/bpm" },
     { Icon:ICONS.automations,  tint:"rgba(245,158,11,.1)", color:"#f59e0b", label:"Automations", to:"/automations" },
     { Icon:ICONS.integrations, tint:"rgba(14,165,233,.1)", color:"#0ea5e9", label:"Integrations",to:"/integrations" },
     { Icon:ICONS.import,       tint:"rgba(16,185,129,.1)", color:"#10b981", label:"Import",      to:"/import" },
@@ -602,7 +594,7 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className="dz-hero">
         <div className="dz-hero-text">
-          <h1>{greeting()}, {userName}</h1>
+          <h1>Today</h1>
           <p>{todayStr}</p>
         </div>
         <div className="dz-hero-actions">
@@ -618,7 +610,7 @@ export default function Dashboard() {
         <Chip Icon={Target} value={`${goalHealth}%`} label="goal health" onClick={() => navigate("/goals")} />
         <Chip Icon={LineChart} value={`${completionRate}%`} label="complete" onClick={() => navigate("/analytics")} />
         <Chip Icon={ShieldCheck} value={summary.raidRisks||0} label="RAID risks" alert={(summary.raidRisks||0) > 0} onClick={() => navigate("/roadmap")} />
-        <Chip Icon={DollarSign} value={summary.roiForecast||"–"} label="ROI forecast" onClick={() => navigate("/roi")} />
+        {summary.roiForecast ? <Chip Icon={DollarSign} value={summary.roiForecast} label="ROI forecast" onClick={() => navigate("/roi")} /> : null}
         <Chip Icon={Users} value={summary.onlineCount||0} label="online" onClick={() => navigate("/team")} />
       </div>
 

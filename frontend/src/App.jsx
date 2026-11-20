@@ -62,7 +62,6 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { getDashboardSummary } from "./api/dashboard";
 const CustomFields = lazy(() => import("./pages/CustomFields"));
 const Integrations = lazy(() => import("./pages/Integrations"));
-const MeetingAssistant = lazy(() => import("./pages/MeetingAssistant"));
 const AiMeetingAssistant = lazy(() => import("./pages/AiMeetingAssistant"));
 const AiMeetingGoogleCallback = lazy(() => import("./pages/AiMeetingGoogleCallback"));
 const Attendance = lazy(() => import("./pages/Attendance"));
@@ -102,11 +101,36 @@ import { ToastProvider } from "./components/Toast";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 import PeopleProvider from "./components/people/PeopleProvider";
 const Docs = lazy(() => import("./pages/Docs"));
-import Meetings  from "./pages/Meetings";
+import EarlierMeetings, { MeetingRedirect, OldAssistantRedirect } from "./pages/EarlierMeetings";
 import Sops      from "./pages/Sops";
 
 import { usePWA } from "./hooks/usePWA";
+import { Gem as IcGem } from "lucide-react";
+import { applyDesign, activeDesign, DESIGNS, DESIGN_CHANGED_EVENT } from "./utils/design";
 
+
+/* ── Classic / New design, in the user menu ─────────────────────── */
+function DesignChoice() {
+  const [design, setDesign] = useState(activeDesign());
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const on = (e) => setDesign(e.detail);
+    window.addEventListener(DESIGN_CHANGED_EVENT, on);
+    return () => window.removeEventListener(DESIGN_CHANGED_EVENT, on);
+  }, []);
+  const pick = async (d) => { if (d === design || busy) return; setBusy(true); await applyDesign(d); setBusy(false); };
+  return (
+    <div className="design-choice" role="group" aria-label="Design">
+      <span className="design-choice-label">Design</span>
+      <div className="design-choice-options">
+        {[[DESIGNS.NEW, "New"], [DESIGNS.CLASSIC, "Classic"]].map(([d, label]) => (
+          <button key={d} type="button" aria-pressed={design === d} disabled={busy}
+            className={`design-choice-btn${design === d ? " is-active" : ""}`} onClick={() => pick(d)}>{label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Upgrade / Licensing CTA — always visible in topbar ────────── */
 function UpgradeCTA() {
@@ -117,7 +141,7 @@ function UpgradeCTA() {
       onClick={() => navigate("/licensing")}
       title="View plans & pricing"
     >
-      <span className="upgrade-cta-icon">💎</span>
+      <span className="upgrade-cta-icon"><IcGem size={16} strokeWidth={1.5} aria-hidden="true" /></span>
       <span className="upgrade-cta-label">Upgrade</span>
     </button>
   );
@@ -168,7 +192,7 @@ function UserMenu() {
             className="user-menu-item"
             onClick={() => { navigate("/profile"); setOpen(false); }}
           >
-            👤 Profile & Security
+            Profile & security
           </button>
           {!isInstalled && (
             <button
@@ -178,20 +202,22 @@ function UserMenu() {
                 window.dispatchEvent(new CustomEvent('prowosma:show-install'));
               }}
             >
-              📱 Install App
+              Install app
             </button>
           )}
           {isInstalled && (
             <div className="user-menu-item" style={{ color: "#10b981", cursor: "default" }}>
-              ✅ App Installed
+              App installed
             </div>
           )}
+          <div className="user-menu-divider" />
+          <DesignChoice />
           <div className="user-menu-divider" />
           <button
             className="user-menu-item"
             onClick={() => { logoutUser(); navigate("/login"); setOpen(false); }}
           >
-            🚪 Sign Out
+            Sign out
           </button>
         </div>
       )}
@@ -208,20 +234,20 @@ function PageSkeleton() {
       background:"var(--bg-page,#f8fafc)"
     }}>
       <div style={{height:28,width:"35%",borderRadius:8,
-        background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        background:"#e2e8f0",
         backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite"}}/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         {[1,2,3,4].map(i=>(
           <div key={i} style={{height:80,borderRadius:12,
-            background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+            background:"#e2e8f0",
             backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite",
             animationDelay:`${i*0.1}s`}}/>
         ))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:16,flex:1}}>
-        <div style={{borderRadius:16,background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        <div style={{borderRadius:16,background:"#e2e8f0",
           backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite", minHeight:320}}/>
-        <div style={{borderRadius:16,background:"linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)",
+        <div style={{borderRadius:16,background:"#e2e8f0",
           backgroundSize:"200% 100%", animation:"shimmer 1.4s infinite"}}/>
       </div>
       <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
@@ -349,37 +375,39 @@ function AppShell() {
     const titles = {
       "/docs":             "Docs",
       "/decisions":        "Decision Records",
-      "/change-requests":  "Change Requests",
-      "/meetings":          "Meeting Notes",
-      "/meeting-assistant": "Meeting Assistant",
-      "/ai-meeting-assistant": "AI Meeting Assistant",
+      "/change-requests":  "Change requests",
+      "/meetings":          "Meetings",
+      "/meetings/earlier":  "Earlier meetings",
+      "/meetings/earlier/assistant": "Earlier meetings",
+      "/meeting-assistant": "Meetings",
+      "/ai-meeting-assistant": "Meetings",
       "/attendance": "Attendance",
-      "/integrations/meeting-platforms": "Meeting Platforms",
+      "/integrations/meeting-platforms": "Meeting platforms",
       "/sops":              "SOPs",
       "/":                  "Dashboard",
       "/tasks":             "Tasks",
       "/projects":          "Projects",
       "/goals":             "Goals",
-      "/kanban":      "Kanban Board",
-      "/jira-board":          "Jira Board",
+      "/kanban":      "Kanban board",
+      "/jira-board":          "Jira board",
       "/jira-board/settings": "Jira Board Settings",
       "/sprints":           "Sprints",
       "/portfolio":         "Portfolio",
-      "/import":            "Import Tasks",
+      "/import":            "Import tasks",
       "/automations":       "Automations",
       "/calendar":          "Calendar",
-      "/gantt":             "Gantt Chart",
+      "/gantt":             "Gantt chart",
       "/analytics":         "Analytics",
       "/reports":           "Reports",
       "/search":            "Search",
       "/team":              "Team",
       "/org-chart":         "Org chart",
-      "/activity":          "Activity Log",
-      "/ai-assistant":      "AI Assistant",
-      "/time-tracking":     "Time & Billing",
-      "/developer":         "Developer Portal",
-      "/workspace-settings":"Workspace Settings",
-      "/profile":           "Profile & Security",
+      "/activity":          "Activity log",
+      "/ai-assistant":      "AI assistant",
+      "/time-tracking":     "Time & billing",
+      "/developer":         "Developer portal",
+      "/workspace-settings":"Workspace settings",
+      "/profile":           "Profile & security",
       "/login":             "Sign In",
     };
     const path = location.pathname;
@@ -494,13 +522,17 @@ function AppShell() {
               ) : (
               <Routes>
                   <Route path="/docs" element={<ProtectedRoute><Docs /></ProtectedRoute>} />
-                  <Route path="/meetings"  element={<ProtectedRoute><Meetings  /></ProtectedRoute>} />
-                  <Route path="/meeting-assistant" element={<ProtectedRoute><MeetingAssistant /></ProtectedRoute>} />
+                  {/* Meetings: one page (the AI meeting assistant, which took over the old notes page and first assistant) */}
+                  <Route path="/meetings" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/meetings/earlier" element={<ProtectedRoute><EarlierMeetings /></ProtectedRoute>} />
+                  <Route path="/meetings/earlier/assistant" element={<ProtectedRoute><EarlierMeetings /></ProtectedRoute>} />
+                  <Route path="/meetings/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/meeting-assistant" element={<OldAssistantRedirect />} />
                   <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
-                  <Route path="/ai-meeting-assistant" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant" element={<MeetingRedirect />} />
                   <Route path="/ai-meeting-assistant/google-callback" element={<ProtectedRoute><AiMeetingGoogleCallback /></ProtectedRoute>} />
                   <Route path="/ai-meeting-assistant/microsoft-callback" element={<ProtectedRoute><AiMeetingGoogleCallback provider="microsoft" /></ProtectedRoute>} />
-                  <Route path="/ai-meeting-assistant/:id" element={<ProtectedRoute><AiMeetingAssistant /></ProtectedRoute>} />
+                  <Route path="/ai-meeting-assistant/:id" element={<MeetingRedirect />} />
                   <Route path="/integrations/meeting-platforms" element={<ProtectedRoute><MeetingPlatforms /></ProtectedRoute>} />
                   <Route path="/integrations/meeting-platforms/google-callback" element={<ProtectedRoute><GoogleMeetCallback /></ProtectedRoute>} />
                   <Route path="/sops"      element={<ProtectedRoute><Sops      /></ProtectedRoute>} />

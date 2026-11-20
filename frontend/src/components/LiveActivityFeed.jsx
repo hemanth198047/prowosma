@@ -5,21 +5,22 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { Bell as IcBell, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, Flag as IcFlag, Folder as IcFolder, MessageSquare as IcMessageSquare, NotebookPen as IcNotebookPen, PartyPopper as IcPartyPopper, Pencil as IcPencil, RefreshCw as IcRefreshCw, Target as IcTarget, Trash2 as IcTrash2, Zap as IcZap } from "lucide-react";
 
 const EVENT_ICON = {
-  TASK_CREATED:          "✅",
-  TASK_UPDATED:          "✏️",
-  TASK_COMPLETED:        "🏁",
-  TASK_STATUS_CHANGED:   "🔄",
-  TASK_PRIORITY_CHANGED: "⚡",
-  TASK_DELETED:          "🗑️",
-  TASK_COMMENTED:        "💬",
-  PROJECT_CREATED:       "📁",
-  PROJECT_UPDATED:       "📝",
-  PROJECT_DELETED:       "🗑️",
-  GOAL_CREATED:          "🎯",
-  GOAL_PROGRESS_CHANGED: "📊",
-  GOAL_COMPLETED:        "🎉",
+  TASK_CREATED:          <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_UPDATED:          <IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_COMPLETED:        <IcFlag size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_STATUS_CHANGED:   <IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_PRIORITY_CHANGED: <IcZap size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_DELETED:          <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />,
+  TASK_COMMENTED:        <IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />,
+  PROJECT_CREATED:       <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />,
+  PROJECT_UPDATED:       <IcNotebookPen size={16} strokeWidth={1.5} aria-hidden="true" />,
+  PROJECT_DELETED:       <IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" />,
+  GOAL_CREATED:          <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />,
+  GOAL_PROGRESS_CHANGED: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />,
+  GOAL_COMPLETED:        <IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" />,
 };
 
 const EVENT_COLOR = {
@@ -51,7 +52,7 @@ export default function LiveActivityFeed() {
         type:    event.type,
         message: event.message,
         entity:  event.entityName,
-        icon:    EVENT_ICON[event.type] || "🔔",
+        icon:    EVENT_ICON[event.type] || <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />,
         color:   EVENT_COLOR[event.type] || "#0ea5e9",
         leaving: false,
       };

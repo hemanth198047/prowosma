@@ -6,6 +6,7 @@ import client from "../api/client";
 import PageHeader from "../components/PageHeader";
 
 import "../styles/pages/gantt.css";
+import { Calendar as IcCalendar, Folder as IcFolder, Target as IcTarget } from "lucide-react";
 const ZOOM_LEVELS = {
   day:     { label: "Day",     dayWidth: 50 },
   week:    { label: "Week",    dayWidth: 20 },
@@ -138,7 +139,7 @@ function GanttPanel({ items, zoom, dragging, dragOffset, resizing, resizeOffset,
   if (items.length === 0) {
     return (
       <div className="empty-state" style={{ padding:"32px 0" }}>
-        <div style={{ fontSize:"40px", marginBottom:"10px" }}>📅</div>
+        <div style={{ fontSize:"40px", marginBottom:"10px" }}><IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" /></div>
         <p style={{ fontWeight:600 }}>{label}</p>
       </div>
     );
@@ -167,8 +168,8 @@ function GanttPanel({ items, zoom, dragging, dragOffset, resizing, resizeOffset,
               }}
             >
               <div className="gantt-task-name" title={item.title}>
-                {isHeader && <span style={{ fontSize:"13px", marginRight:"6px" }}>📁</span>}
-                {isGoal   && <span style={{ fontSize:"13px", marginRight:"6px" }}>🎯</span>}
+                {isHeader && <span style={{ fontSize:"13px", marginRight:"6px" }}><IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /></span>}
+                {isGoal   && <span style={{ fontSize:"13px", marginRight:"6px" }}><IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /></span>}
                 {isChild  && <span style={{ fontSize:"10px", color:"var(--gray-300)", marginRight:"4px" }}>↳</span>}
                 {!isGoal && !isHeader && !isChild && (
                   <div className="gantt-proj-dot" style={{ background: barColor }} />
@@ -464,8 +465,8 @@ export default function Gantt() {
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 160px)", userSelect:"none" }}>
       <PageHeader
-        icon="📅"
-        title="Gantt Chart"
+        icon={<IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />}
+        title="Gantt chart"
         description="Timeline view of project tasks and goals — drag bars to reschedule, drag edge to resize"
         action={<button className="btn-secondary" style={{ fontSize:"12px" }} onClick={load}>Refresh</button>}
       />

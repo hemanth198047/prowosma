@@ -7,6 +7,7 @@ import { getProjects } from "../api/projects";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { statusText } from "../utils/statusText";
+import { Pencil as IcPencil, Trash2 as IcTrash2, Zap as IcZap } from "lucide-react";
 
 const api = {
   list:   (pid) => client.get(`/epics${pid?`?projectId=${pid}`:""}`),
@@ -136,7 +137,7 @@ export default function Epics() {
 
   return (
     <div>
-      <PageHeader icon="⚡" title="Epics"
+      <PageHeader icon={<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />} title="Epics"
         description="Group related user stories and track delivery of major features"
         action={<button className="btn-primary" onClick={()=>{setEditing(null);setShowForm(true);}}>
           + Create Epic
@@ -180,15 +181,15 @@ export default function Epics() {
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}>
                     <div style={{width:10,height:10,borderRadius:"50%",background:epic.color||"#5B5FEE",flexShrink:0}}/>
-                    <div style={{fontWeight:800,fontSize:"14px",color:"var(--gray-800)"}}>{epic.name}</div>
+                    <div style={{fontWeight: 600,fontSize:"14px",color:"var(--gray-800)"}}>{epic.name}</div>
                   </div>
                   {epic.description && (
                     <div style={{fontSize:"12px",color:"var(--gray-500)",marginLeft:"18px"}}>{epic.description}</div>
                   )}
                 </div>
                 <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-                  <button className="btn-icon" onClick={()=>{setEditing(epic);setShowForm(true);}}>✏️</button>
-                  <button className="btn-icon" onClick={()=>handleDelete(epic.id)}>🗑️</button>
+                  <button className="btn-icon" onClick={()=>{setEditing(epic);setShowForm(true);}}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                  <button className="btn-icon" onClick={()=>handleDelete(epic.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
                 </div>
               </div>
 
@@ -207,7 +208,7 @@ export default function Epics() {
 
               {/* Meta row */}
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center"}}>
-                <span style={{fontSize:"10px",fontWeight:700,padding:"2px 8px",borderRadius:"99px",
+                <span style={{fontSize:"10px",fontWeight: 600,padding:"2px 8px",borderRadius:"99px",
                   background:`${sm.color}18`,color:sm.color}}>{sm.label}</span>
                 <span style={{fontSize:"11px",color:"var(--gray-400)"}}>
                   {doneTasks}/{epicTasks.length} tasks
@@ -218,7 +219,7 @@ export default function Epics() {
                   </span>
                 )}
                 {epic.priority && epic.priority!=="MEDIUM" && (
-                  <span style={{fontSize:"9px",fontWeight:700,
+                  <span style={{fontSize:"9px",fontWeight: 600,
                     color:epic.priority==="HIGH"||epic.priority==="CRITICAL"?"var(--danger)":"var(--warning)"}}>
                     {epic.priority}
                   </span>

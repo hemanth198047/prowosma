@@ -10,13 +10,14 @@ import { useConfirm } from "../hooks/useConfirm";
 import PageHeader         from "../components/PageHeader";
 
 import "../styles/pages/sops.css";
+import { BookOpen as IcBookOpen, CircleCheck as IcCircleCheck, Package as IcPackage, Pencil as IcPencil, Search as IcSearch, Trash2 as IcTrash2, Square as IcSquare } from "lucide-react";
 // ─── Constants ────────────────────────────────────────────────
 const STATUSES = ["DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"];
 const STATUS_META = {
-  DRAFT:     { label:"Draft",     color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)", icon:"✏️"  },
-  REVIEW:    { label:"In Review", color:"var(--warning)", bg:"rgba(217,119,6,0.12)", icon:"🔍"  },
-  PUBLISHED: { label:"Published", color:"var(--success)", bg:"rgba(5,150,105,0.12)", icon:"✅"  },
-  ARCHIVED:  { label:"Archived",  color:"var(--gray-400)", bg:"var(--gray-100)", icon:"📦"  },
+  DRAFT:     { label:"Draft",     color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)", icon:<IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />  },
+  REVIEW:    { label:"In Review", color:"var(--warning)", bg:"rgba(217,119,6,0.12)", icon:<IcSearch size={16} strokeWidth={1.5} aria-hidden="true" />  },
+  PUBLISHED: { label:"Published", color:"var(--success)", bg:"rgba(5,150,105,0.12)", icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />  },
+  ARCHIVED:  { label:"Archived",  color:"var(--gray-400)", bg:"var(--gray-100)", icon:<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />  },
 };
 
 function fmtDate(iso) {
@@ -197,8 +198,8 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
           {/* Actions */}
           {canPublish  && <button className="sop-action-btn sop-publish-btn" onClick={() => onPublish(sop)}>Publish</button>}
           {canArchive  && <button className="sop-action-btn sop-archive-btn" onClick={() => onArchive(sop)}>Archive</button>}
-          <button className="sop-icon-btn" onClick={() => onEdit(sop)} title="Edit">✎</button>
-          <button className="sop-icon-btn sop-delete-btn" onClick={() => onDelete(sop)} title="Delete">🗑</button>
+          <button className="sop-icon-btn" onClick={() => onEdit(sop)} title="Edit"><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+          <button className="sop-icon-btn sop-delete-btn" onClick={() => onDelete(sop)} title="Delete"><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -262,7 +263,7 @@ function SopCard({ sop, currentUser, onEdit, onDelete, onPublish, onArchive, onA
                     const ack = sop.acknowledgements?.find(a => a.userEmail === email);
                     return (
                       <div key={email} className={`sop-ack-item${ack ? " acked" : ""}`}>
-                        <span className="sop-ack-dot">{ack ? "✅" : "⬜"}</span>
+                        <span className="sop-ack-dot">{ack ? <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
                         <span className="sop-ack-email">{email.split("@")[0]}</span>
                         {ack && <span className="sop-ack-date">{fmtDate(ack.ackedAt)}</span>}
                       </div>
@@ -366,7 +367,7 @@ export default function Sops() {
 
   const handleAcknowledge = async (sop) => {
     await acknowledgeSop(sop.id, { userEmail: user?.email, userName: user?.name || user?.email });
-    toast?.("SOP acknowledged ✅", "success"); load();
+    toast?.("SOP acknowledged ", "success"); load();
   };
 
   const handleRevokeAck = async (sop) => {
@@ -400,7 +401,7 @@ export default function Sops() {
       <PageHeader
         title="SOPs"
         description="Standard operating procedures — manage lifecycle, version control, and team acknowledgements."
-        icon="📖"
+        icon={<IcBookOpen size={16} strokeWidth={1.5} aria-hidden="true" />}
       />
 
       {/* My pending acks banner */}
@@ -451,7 +452,7 @@ export default function Sops() {
         <div className="sop-loading">Loading SOPs…</div>
       ) : filtered.length === 0 ? (
         <div className="sop-empty">
-          <div className="sop-empty-icon">📖</div>
+          <div className="sop-empty-icon"><IcBookOpen size={16} strokeWidth={1.5} aria-hidden="true" /></div>
           <h3>No SOPs yet</h3>
           <p>Document your standard operating procedures, publish them, and track who has read and acknowledged each one.</p>
           <button className="btn-primary"

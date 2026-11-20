@@ -13,7 +13,7 @@
   border-right:1px solid var(--border);
 }
 .sprint-summary-stat:last-child { border-right:none; }
-.sprint-summary-num   { font-size:24px; font-weight:800; line-height:1; margin-bottom:4px; color:var(--gray-800); }
+.sprint-summary-num   { font-size:24px; font-weight: 600; line-height:1; margin-bottom:4px; color:var(--gray-800); }
 .sprint-summary-label { font-size:11px; color:var(--gray-400); font-weight:500; }
 
 .sprint-filter-bar {
@@ -22,7 +22,7 @@
 .sprint-filter-btn {
   padding:5px 14px; border:1px solid var(--border); border-radius: var(--radius-full);
   font-size:12px; font-weight:600; background:var(--bg-card);
-  color:var(--gray-500); cursor:pointer; transition:all .15s;
+  color:var(--gray-500); cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1));
 }
 .sprint-filter-btn:hover  { border-color:var(--brand-400); color:var(--brand-600); }
 .sprint-filter-btn.active { background:var(--brand-500); color:#fff; border-color:var(--brand-500); }
@@ -40,11 +40,11 @@
 }
 .sprint-card-header { display:flex; flex-direction:column; gap:6px; }
 .sprint-card-top    { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.sprint-card-title  { font-size:17px; font-weight:800; color:var(--gray-800); }
-.sprint-status-chip { font-size:11px; font-weight:700; padding:3px 10px; border-radius: var(--radius-full); flex-shrink:0; }
+.sprint-card-title  { font-size:17px; font-weight: 600; color:var(--gray-800); }
+.sprint-status-chip { font-size:11px; font-weight: 600; padding:3px 10px; border-radius: var(--radius-full); flex-shrink:0; }
 .sprint-goal-text   { font-size:13px; color:var(--gray-500); line-height:1.5; }
 .sprint-dates       { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--gray-400); }
-.sprint-days-left   { font-size:11px; font-weight:700; padding:2px 8px; border-radius: var(--radius-full);
+.sprint-days-left   { font-size:11px; font-weight: 600; padding:2px 8px; border-radius: var(--radius-full);
   background:rgba(5,150,105,0.12); color:var(--success); }
 .sprint-days-left.urgent { background:rgba(239,68,68,0.12); color:var(--danger); }
 
@@ -61,8 +61,8 @@
 /* Backlog */
 .sprint-backlog { border-top:1px solid var(--border); padding-top:14px; display:flex; flex-direction:column; gap:10px; }
 .sprint-backlog-header { display:flex; align-items:center; justify-content:space-between; }
-.sprint-section-label  { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--gray-400); }
-.sprint-points-badge   { font-size:12px; font-weight:700; color:var(--brand-500); padding:2px 8px;
+.sprint-section-label  { font-size:11px; font-weight: 600; letter-spacing:0; color:var(--gray-400); }
+.sprint-points-badge   { font-size:12px; font-weight: 600; color:var(--brand-500); padding:2px 8px;
   background:rgba(99,102,241,0.1); border-radius: var(--radius-full); }
 .sprint-task-list      { display:flex; flex-direction:column; gap:4px; }
 .sprint-task-row {
@@ -78,7 +78,7 @@
 .sprint-status-in_progress { background:var(--warning); }
 .sprint-status-todo        { background:var(--brand-500); }
 .sprint-task-title  { flex:1; color:var(--gray-700); font-weight:500; }
-.sprint-task-points { font-size:11px; font-weight:700; color:var(--gray-400); min-width:30px; text-align:right; }
+.sprint-task-points { font-size:11px; font-weight: 600; color:var(--gray-400); min-width:30px; text-align:right; }
 .sprint-task-remove-btn {
   background:none; border:none; color:var(--gray-400); cursor:pointer;
   font-size:12px; padding:0 4px; border-radius:4px; transition:color .15s;
@@ -105,7 +105,7 @@
 .sprint-retro-summary { display:flex; flex-direction:column; gap:10px; }
 .sprint-retro-mood { font-size:22px; text-align:center; padding:8px; }
 .sprint-retro-section { display:flex; flex-direction:column; gap:4px; }
-.sprint-retro-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--gray-400); margin-bottom:2px; }
+.sprint-retro-section-title { font-size:11px; font-weight: 600; letter-spacing:0; color:var(--gray-400); margin-bottom:2px; }
 .sprint-retro-item {
   font-size:12px; color:var(--gray-600); padding:5px 10px;
   background:var(--gray-50); border-radius:var(--radius-sm);
@@ -117,7 +117,7 @@
 .sprint-mood-btn {
   padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-sm);
   font-size:12px; background:var(--bg-card); color:var(--gray-600);
-  cursor:pointer; transition:all .15s;
+  cursor:pointer; transition: color .15s var(--ease, cubic-bezier(.2,0,0,1)), background-color .15s var(--ease, cubic-bezier(.2,0,0,1)), border-color .15s var(--ease, cubic-bezier(.2,0,0,1)), opacity .15s var(--ease, cubic-bezier(.2,0,0,1)), transform .15s var(--ease, cubic-bezier(.2,0,0,1)), box-shadow .15s var(--ease, cubic-bezier(.2,0,0,1));
 }
 .sprint-mood-btn.active { border-color:var(--brand-500); background:rgba(99,102,241,0.1); color:var(--brand-500); }
 
@@ -129,7 +129,7 @@
 /* Sprint goal milestones */
 .sprint-goals-panel { padding:14px 0 4px; }
 .sprint-goals-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
-.sprint-goals-title  { font-size:13px; font-weight:800; color:var(--gray-800); }
+.sprint-goals-title  { font-size:13px; font-weight: 600; color:var(--gray-800); }
 .sprint-goals-pct    { display:flex; align-items:center; font-size:11px; color:var(--gray-500); font-weight:600; }
 .sprint-goal-ms-row  { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
 .sprint-goal-ms-row:last-of-type { border-bottom:none; }

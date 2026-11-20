@@ -9,18 +9,40 @@ import {
 import client from "../api/client";
 import { useToast } from "./ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { AlarmClock as IcAlarmClock, AtSign as IcAtSign, Bell as IcBell, CheckCheck as IcCheckCheck, CircleCheck as IcCircleCheck, CircleX as IcCircleX, ClipboardList as IcClipboardList, Folder as IcFolder, Footprints as IcFootprints, Info as IcInfo, Mail as IcMail, Pin as IcPin, PinOff as IcPinOff, Target as IcTarget, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert, User as IcUser, X as IcX, Zap as IcZap } from "lucide-react";
+import { statusText } from "../utils/statusText";
 
-const TYPE_COLOR = { INFO:"var(--brand-500)", WARNING:"var(--warning)", SUCCESS:"var(--success)", ERROR:"var(--danger)" };
-const TYPE_ICON  = { INFO:"ℹ️", WARNING:"⚠️", SUCCESS:"✅", ERROR:"❌" };
-const ENTITY_ICON= { TASK:"✅", PROJECT:"📁", GOAL:"🎯", SPRINT:"🏃", AUTOMATION:"⚡", APPROVAL:"📋" };
+// Tone of the icon tile. Only warnings and errors carry colour; everything else stays neutral.
+const TYPE_TONE = { INFO:"neutral", SUCCESS:"neutral", WARNING:"warning", ERROR:"danger" };
+
+/** Event-type titles read in sentence case: "Task Status Changed" -> "Task status changed".
+ *  Only short, all-Title-Case titles are touched, so names inside longer titles keep their capitals. */
+const titleText = (t = "") => {
+  const words = t.trim().split(/\s+/);
+  if (words.length > 4 || !words.every(w => /^[A-Z][a-z]+$/.test(w))) return t;
+  return words.map((w, i) => (i === 0 ? w : w.toLowerCase())).join(" ");
+};
+/** Enum values inside a message read as words: "IN_PROGRESS" -> "In progress" */
+const readable = (m = "") => m.replace(/\b[A-Z]{2,}(?:_[A-Z]+)+\b|\b(?:TODO|DONE|BLOCKED|CANCELLED|OPEN|CLOSED)\b/g, w => statusText(w));
+/** "Today 14:02", "Nov 15, 21:13", or with the year when it is not this year */
+const whenText = (iso) => {
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const time = d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  const date = d.toLocaleDateString([], d.getFullYear() === now.getFullYear() ? { month:"short", day:"numeric" } : { month:"short", day:"numeric", year:"numeric" });
+  return `${date}, ${time}`;
+};
+const TYPE_ICON  = { INFO:<IcInfo size={16} strokeWidth={1.5} aria-hidden="true" />, WARNING:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, SUCCESS:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, ERROR:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" /> };
+const ENTITY_ICON= { TASK:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, PROJECT:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, GOAL:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, SPRINT:<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, AUTOMATION:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, APPROVAL:<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /> };
 
 const CATEGORY_META = {
-  ASSIGNMENT: { label:"Assignments", icon:"👤", color:"#5B5FEE" },
-  MENTION:    { label:"Mentions",    icon:"@",  color:"#ec4899" },
-  APPROVAL:   { label:"Approvals",   icon:"✅", color:"#1E8E5A" },
-  GOAL:       { label:"Goals",       icon:"🎯", color:"#7C5CBF" },
-  RISK:       { label:"Risks",       icon:"⚠️", color:"#C17D22" },
-  SYSTEM:     { label:"System",      icon:"🔔", color:"#64748b" },
+  ASSIGNMENT: { label:"Assignments", icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#5B5FEE" },
+  MENTION:    { label:"Mentions",    icon:<IcAtSign size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#ec4899" },
+  APPROVAL:   { label:"Approvals",   icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#1E8E5A" },
+  GOAL:       { label:"Goals",       icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#7C5CBF" },
+  RISK:       { label:"Risks",       icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#C17D22" },
+  SYSTEM:     { label:"System",      icon:<IcBell size={16} strokeWidth={1.5} aria-hidden="true" />, color:"#64748b" },
 };
 
 const SNOOZE_OPTIONS = [
@@ -156,146 +178,140 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-wrapper" ref={ref}>
-      <button className="notif-bell-btn" onClick={() => setOpen(o => !o)}>
-        🔔
+      <button type="button" className="notif-bell-btn" onClick={() => setOpen(o => !o)}
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} aria-expanded={open}>
+        <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="notif-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}
       </button>
 
       {open && (
-        <div className="notif-panel notif-inbox-panel">
+        <div className="notif-panel notif-inbox-panel nb-panel" role="dialog" aria-label="Notifications">
           {/* Header */}
-          <div className="notif-panel-header">
-            <div className="notif-inbox-title">
+          <div className="nb-head">
+            <div className="nb-title">
               Inbox
-              {unreadCount > 0 && <span className="notif-unread-badge">{unreadCount} new</span>}
+              {unreadCount > 0 && <span className="nb-title-count">{unreadCount} new</span>}
             </div>
-            <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
-              <select className="notif-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <div className="nb-head-actions">
+              <select className="nb-sort" aria-label="Sort" value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="newest">Newest</option>
                 <option value="priority">Priority</option>
               </select>
               {unreadCount > 0 && (
-                <button className="btn-link" style={{ fontSize:"11px" }} onClick={handleMarkAllRead}>
-                  Mark all read
+                <button type="button" className="nb-link" onClick={handleMarkAllRead}>
+                  <IcCheckCheck size={14} strokeWidth={1.5} aria-hidden="true" /> Mark all read
                 </button>
               )}
               {notifications.length > 0 && (
-                <button className="btn-link" style={{ fontSize:"11px", color:"#D64545" }}
+                <button type="button" className="nb-icon-btn" title="Clear all" aria-label="Clear all notifications"
                   onClick={async () => { if(await confirm({ title: "Clear all notifications?", danger: true, confirmText: "Clear all" })) { await deleteAllNotifications(); setNotifications([]); setUnreadCount(0); } }}>
-                  Clear
+                  <IcTrash2 size={15} strokeWidth={1.5} aria-hidden="true" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Group tabs */}
-          <div className="notif-group-tabs">
+          <div className="nb-tabs" role="tablist" aria-label="Filter notifications">
             {groups.map(g => (
-              <button key={g.key}
-                className={`notif-group-tab${activeGroup === g.key ? " active" : ""}`}
+              <button key={g.key} type="button" role="tab" aria-selected={activeGroup === g.key}
+                className={`nb-tab${activeGroup === g.key ? " is-active" : ""}`}
                 onClick={() => setActiveGroup(g.key)}>
                 {g.label}
-                {g.count > 0 && <span className="notif-group-count">{g.count}</span>}
+                {g.count > 0 && <span className="nb-tab-count">{g.count}</span>}
               </button>
             ))}
           </div>
 
           {/* Bulk actions */}
           {selectedIds.length > 0 && (
-            <div className="notif-bulk-bar">
+            <div className="nb-bulk">
               <span>{selectedIds.length} selected</span>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"3px 8px" }}
-                onClick={handleBulkRead}>Mark read</button>
-              <button className="btn-secondary" style={{ fontSize:"11px", padding:"3px 8px" }}
-                onClick={() => setSelectedIds([])}>Clear selection</button>
+              <button type="button" className="nb-link" onClick={handleBulkRead}>Mark read</button>
+              <button type="button" className="nb-link nb-link--quiet" onClick={() => setSelectedIds([])}>Clear selection</button>
             </div>
           )}
 
           {/* Notification list */}
-          <div className="notif-list">
+          <div className={`nb-list${selectedIds.length ? " is-selecting" : ""}`}>
             {filtered.length > 0 ? filtered.map(n => {
-              const catMeta = CATEGORY_META[n.category] || CATEGORY_META.SYSTEM;
               const isSelected = selectedIds.includes(n.id);
+              const tone = TYPE_TONE[n.type] || "neutral";
               return (
                 <div key={n.id}
-                  className={`notif-item${!n.read ? " unread" : ""}${n.pinned ? " pinned" : ""}${isSelected ? " selected" : ""}`}
-                  onClick={() => handleClick(n)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => handleClick(n))?.(e); } }}>
+                  className={`nb-item${!n.read ? " is-unread" : ""}${isSelected ? " is-selected" : ""}`}
+                  onClick={() => handleClick(n)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleClick(n); } }}>
 
-                  {/* Checkbox for bulk */}
-                  <input type="checkbox" className="notif-check"
-                    checked={isSelected}
-                    onClick={e => e.stopPropagation()}
-                    onChange={() => toggleSelect(n.id)} />
-
-                  <div className="notif-item-icon"
-                    style={{ background: TYPE_COLOR[n.type]+"22", color: TYPE_COLOR[n.type] }}>
-                    {ENTITY_ICON[n.entityType] || TYPE_ICON[n.type]}
+                  {/* Icon tile; becomes a checkbox on hover and while selecting */}
+                  <div className="nb-lead">
+                    <span className={`nb-icon nb-icon--${tone}`} aria-hidden="true">
+                      {ENTITY_ICON[n.entityType] || TYPE_ICON[n.type] || <IcBell size={16} strokeWidth={1.5} />}
+                    </span>
+                    <input type="checkbox" className="nb-check" aria-label={`Select ${n.title}`}
+                      checked={isSelected}
+                      onClick={e => e.stopPropagation()}
+                      onChange={() => toggleSelect(n.id)} />
                   </div>
 
-                  <div className="notif-item-content">
-                    <div className="notif-item-title">
-                      {n.pinned && <span className="notif-pin-icon">📌</span>}
-                      {n.priority === "HIGH" && <span className="notif-high-badge">HIGH</span>}
-                      <span className="notif-cat-chip" style={{ background:`${catMeta.color}18`, color:catMeta.color }}>
-                        {catMeta.icon}
-                      </span>
-                      {n.title}
+                  <div className="nb-body">
+                    <div className="nb-item-title">
+                      <span className="nb-item-title-text">{titleText(n.title)}</span>
+                      {n.pinned && <IcPin className="nb-pin" size={13} strokeWidth={1.5} aria-label="Pinned" />}
+                      {n.priority === "HIGH" && <span className="nb-high">High</span>}
                     </div>
-                    <div className="notif-item-message">{n.message}</div>
+                    {n.message && <div className="nb-item-msg">{readable(n.message)}</div>}
                     {n.entityType === "APPROVAL" && n.entityId && (
-                      <div className="notif-approval-actions">
-                        <button className="notif-approve-btn"
+                      <div className="nb-approval">
+                        <button type="button" className="nb-btn nb-btn--primary"
                           onClick={async e => {
                             e.stopPropagation();
                             try { await respondApproval(n.entityId, { action:"APPROVED", comment:"Approved via notification" }); }
                             catch { toast("Failed to approve", "error"); }
-                          }}>✓ Approve</button>
-                        <button className="notif-reject-btn"
+                          }}>Approve</button>
+                        <button type="button" className="nb-btn"
                           onClick={async e => {
                             e.stopPropagation();
                             try { await respondApproval(n.entityId, { action:"REJECTED", comment:"Rejected via notification" }); }
                             catch { toast("Failed to reject", "error"); }
-                          }}>✕ Reject</button>
+                          }}>Reject</button>
                       </div>
                     )}
-                    <div className="notif-item-time">
-                      {new Date(n.createdAt).toLocaleString([], { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })}
+                    <div className="nb-meta">
+                      {!n.read && <span className="nb-dot" aria-label="Unread" />}
+                      <time dateTime={n.createdAt}>{whenText(n.createdAt)}</time>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="notif-item-actions" onClick={e => e.stopPropagation()} role="presentation">
-                    {!n.read && <div className="notif-unread-dot" />}
-                    <button className="notif-action-btn" title={n.pinned ? "Unpin" : "Pin"}
-                      onClick={() => handlePin(n.id)}>{n.pinned ? "📌" : "📍"}</button>
-                    <div className="notif-snooze-wrap">
-                      <button className="notif-action-btn" title="Snooze"
-                        onClick={() => setSnoozeMenuId(id => id === n.id ? null : n.id)}>💤</button>
+                  {/* Actions: one horizontal row, shown on hover and focus */}
+                  <div className="nb-actions" onClick={e => e.stopPropagation()} role="presentation">
+                    <button type="button" className="nb-icon-btn" title={n.pinned ? "Unpin" : "Pin"} aria-label={n.pinned ? "Unpin" : "Pin"}
+                      onClick={() => handlePin(n.id)}>{n.pinned ? <IcPinOff size={15} strokeWidth={1.5} aria-hidden="true" /> : <IcPin size={15} strokeWidth={1.5} aria-hidden="true" />}</button>
+                    <div className="nb-snooze">
+                      <button type="button" className="nb-icon-btn" title="Snooze" aria-label="Snooze" aria-expanded={snoozeMenuId === n.id}
+                        onClick={() => setSnoozeMenuId(id => id === n.id ? null : n.id)}><IcAlarmClock size={15} strokeWidth={1.5} aria-hidden="true" /></button>
                       {snoozeMenuId === n.id && (
-                        <div className="notif-snooze-menu">
+                        <div className="nb-menu" role="menu">
                           {SNOOZE_OPTIONS.map(opt => (
-                            <button key={opt.hours} onClick={() => handleSnooze(n.id, opt.hours)}>
+                            <button key={opt.hours} type="button" role="menuitem" onClick={() => handleSnooze(n.id, opt.hours)}>
                               {opt.label}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
-                    <button className="notif-action-btn" title="Delete"
-                      onClick={() => handleDelete(n.id)}>✕</button>
+                    <button type="button" className="nb-icon-btn" title="Delete" aria-label="Delete"
+                      onClick={() => handleDelete(n.id)}><IcX size={15} strokeWidth={1.5} aria-hidden="true" /></button>
                   </div>
                 </div>
               );
             }) : (
-              <div className="notif-empty">
-                <div style={{ fontSize:"32px", marginBottom:"8px" }}>
-                  {activeGroup === "PINNED" ? "📌" : activeGroup === "UNREAD" ? "✉️" : "🔔"}
-                </div>
-                <p style={{ color:"#888", fontSize:"13px" }}>
-                  {activeGroup === "UNREAD" ? "All caught up!" : "Nothing here"}
-                </p>
+              <div className="nb-empty">
+                <span className="nb-icon nb-icon--neutral" aria-hidden="true">
+                  {activeGroup === "PINNED" ? <IcPin size={16} strokeWidth={1.5} /> : activeGroup === "UNREAD" ? <IcMail size={16} strokeWidth={1.5} /> : <IcBell size={16} strokeWidth={1.5} />}
+                </span>
+                <p>{activeGroup === "UNREAD" ? "All caught up" : "Nothing here"}</p>
               </div>
             )}
           </div>

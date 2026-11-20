@@ -139,7 +139,17 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     // ── feature flag ─────────────────────────────────────────────────────
 
     @Test
-    void offByDefault_everyEndpointSaysSoAndNothingIsStored() throws Exception {
+    void onByDefault_asTheOneMeetingsFeature() throws Exception {
+        MvcResult s = mvc.perform(as(get(BASE + "/status"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(s).get("enabled").asBoolean()).isTrue();
+        assertThat(mvc.perform(as(get(BASE + "/dashboard"), ownerToken(), workspaceId)).andReturn().getResponse().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void turnedOffByAnAdmin_everyEndpointSaysSoAndNothingIsStored() throws Exception {
+        MvcResult off = mvc.perform(as(post("/api/admin/features"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"key\":\"universalMeetingAssistant\",\"enabled\":false}")).andReturn();
+        assertThat(off.getResponse().getStatus()).as(off.getResponse().getContentAsString()).isEqualTo(200);
         MvcResult s = mvc.perform(as(get(BASE + "/status"), ownerToken(), workspaceId)).andReturn();
         assertThat(json(s).get("enabled").asBoolean()).isFalse();
 
@@ -1076,5 +1086,155 @@ class UmaApiTest extends TwoWorkspaceTestBase {
                 .content(om.writeValueAsString(Map.of("ids", List.of(o))))).andReturn();
         assertThat(exists(o)).isTrue();
         assertThat(other.getResponse().getStatus()).isIn(200, 404);
+    }
+
+    // ── merged from Meetings (notes) and the first Meeting Assistant ─────
+
+    String notesMeeting(String projectId, String notes, String meetingAt, String title) throws Exception {
+        ai.responder = c -> c.system().equals(com.prowosma.backend.uma.ai.InsightPrompts.EXTRACT_SYSTEM)
+                ? "{\"summary\":\"Release planning.\","
+                  + "\"decisions\":[{\"text\":\"Ship the beta on Monday\",\"decidedBy\":\"Alex\",\"evidence\":[5]}],"
+                  + "\"risks\":[{\"text\":\"The payment provider may block the release\",\"kind\":\"BLOCKER\",\"evidence\":[6]}],"
+                  + "\"actions\":[{\"title\":\"Write the release notes\",\"owner\":\"Ravi\",\"evidence\":[7]}]}"
+                : "{}";
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("title", title); body.put("meetingType", "planning"); body.put("agenda", "Beta date\nRisks");
+        body.put("notes", notes); body.put("attendees", List.of("ravi@test.com", " ", "ravi@test.com"));
+        body.put("meetingAt", meetingAt);
+        if (projectId != null) body.put("projectId", projectId);
+        MvcResult r = mvc.perform(as(post(BASE + "/meetings/notes"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(body))).andReturn();
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        JsonNode m = json(r);
+        assertThat(m.get("meetingType").asText()).isEqualTo("PLANNING");
+        assertThat(m.get("agenda").asText()).isEqualTo("Beta date\nRisks");
+        assertThat(m.get("attendees")).hasSize(1);
+        pipeline.drain();
+        return m.get("id").asText();
+    }
+
+    String notesMeeting(String projectId) throws Exception {
+        return notesMeeting(projectId, NOTES, "2026-11-16T09:00:00Z", "Release planning");
+    }
+
+    static final String NOTES = "We agreed to ship the beta on Monday.\nThe payment provider may block the release.\nRavi will write the release notes.";
+
+    @Test
+    void notesWrittenByHand_becomeAMeetingWithInsights() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = notesMeeting(null);
+        JsonNode d = detail(id);
+        assertThat(d.at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
+        assertThat(d.get("segments").toString()).contains("Agenda:").contains("ship the beta on Monday");
+        assertThat(d.at("/insights/decisions/0/text").asText()).isEqualTo("Ship the beta on Monday");
+
+        MvcResult empty = mvc.perform(as(post(BASE + "/meetings/notes"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Nothing\"}")).andReturn();
+        assertThat(empty.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void decisionsAndRisks_goToTheWorkspaceLogsOnce() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = notesMeeting(null);
+        JsonNode d = detail(id);
+        String decisionId = d.at("/insights/decisions/0/id").asText();
+        String riskId = d.at("/insights/risks/0/id").asText();
+
+        MvcResult r1 = mvc.perform(as(post(BASE + "/meetings/" + id + "/decisions/" + decisionId + "/log"), ownerToken(), workspaceId)).andReturn();
+        assertThat(r1.getResponse().getStatus()).as(r1.getResponse().getContentAsString()).isEqualTo(200);
+        MvcResult r2 = mvc.perform(as(post(BASE + "/meetings/" + id + "/decisions/" + decisionId + "/log"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(r2).get("id").asText()).as("logging twice returns the same entry").isEqualTo(json(r1).get("id").asText());
+        assertThat(json(r1).get("sourceMeetingId").asText()).isEqualTo(id);
+        assertThat(detail(id).at("/insights/decisions/0/loggedDecisionId").asText()).isEqualTo(json(r1).get("id").asText());
+
+        // RAID is per project: without one the person is asked for it
+        MvcResult noProject = mvc.perform(as(post(BASE + "/meetings/" + id + "/risks/" + riskId + "/raid"), ownerToken(), workspaceId)).andReturn();
+        assertThat(noProject.getResponse().getStatus()).isEqualTo(400);
+        assertThat(json(noProject).get("code").asText()).isEqualTo("PROJECT_NEEDED");
+        MvcResult raid = mvc.perform(as(post(BASE + "/meetings/" + id + "/risks/" + riskId + "/raid"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"projectId\":\"proj-1\",\"impact\":\"high\"}")).andReturn();
+        assertThat(raid.getResponse().getStatus()).as(raid.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(raid).get("type").asText()).as("a blocker is an ISSUE in the RAID log").isEqualTo("ISSUE");
+        assertThat(json(raid).get("impact").asText()).isEqualTo("HIGH");
+
+        // a member who didn't add the meeting can't write to the logs from it
+        MvcResult member = mvc.perform(as(post(BASE + "/meetings/" + id + "/decisions/" + decisionId + "/log"), memberToken(), workspaceId)).andReturn();
+        assertThat(member.getResponse().getStatus()).isIn(403, 404);
+    }
+
+    @Test
+    void summaryEdits_areVersionedSurviveRegenerationAndCanBeRestored() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String id = notesMeeting(null);
+        MvcResult e = mvc.perform(as(put(BASE + "/meetings/" + id + "/summary"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"summary\":\"Beta ships Monday; payments are the open risk.\"}")).andReturn();
+        assertThat(e.getResponse().getStatus()).as(e.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(e).get("summaryEdited").asBoolean()).isTrue();
+        assertThat(json(e).at("/summaryHistory/0/text").asText()).isEqualTo("Release planning.");
+
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/regenerate"), ownerToken(), workspaceId)).andReturn();
+        pipeline.drain();
+        JsonNode ins = detail(id).get("insights");
+        assertThat(ins.get("summary").asText()).as("the person's summary is kept").isEqualTo("Beta ships Monday; payments are the open risk.");
+        assertThat(ins.get("summaryHistory")).hasSize(2);
+
+        MvcResult back = mvc.perform(as(post(BASE + "/meetings/" + id + "/summary/versions/1/restore"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(back).get("summary").asText()).isEqualTo("Release planning.");
+        MvcResult blank = mvc.perform(as(put(BASE + "/meetings/" + id + "/summary"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"summary\":\"   \"}")).andReturn();
+        assertThat(blank.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void actionItem_canBeLinkedToAnExistingTaskInsteadOfADuplicate() throws Exception {
+        enable(ownerToken(), workspaceId);
+        Task existing = new Task();
+        existing.setOrganizationId(workspaceId); existing.setTitle("Write release notes for the beta"); existing.setStatus("TODO");
+        existing.setSourceActionKey("uma:test-existing");
+        existing = mongoTemplate.save(existing);
+        String id = notesMeeting(null);
+        String actionId = action(detail(id), "Write the release notes").get("id").asText();
+
+        MvcResult sim = mvc.perform(as(get(BASE + "/meetings/" + id + "/actions/" + actionId + "/similar"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(sim).get(0).get("id").asText()).isEqualTo(existing.getId());
+
+        MvcResult link = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + actionId + "/link"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"taskId\":\"" + existing.getId() + "\"}")).andReturn();
+        assertThat(link.getResponse().getStatus()).as(link.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(link).get("status").asText()).isEqualTo("LINKED");
+        assertThat(mongoTemplate.find(new Query(Criteria.where("title").is("Write the release notes")), Task.class)).as("no duplicate created").isEmpty();
+
+        // the linked task shows up as an open action item until it is done
+        MvcResult open = mvc.perform(as(get(BASE + "/actions"), ownerToken(), workspaceId)).andReturn();
+        assertThat(json(open).toString()).contains("IN_TASKS").contains(existing.getId());
+        existing.setStatus("DONE"); mongoTemplate.save(existing);
+        assertThat(json(mvc.perform(as(get(BASE + "/actions"), ownerToken(), workspaceId)).andReturn()).toString()).doesNotContain(existing.getId());
+
+        MvcResult other = mvc.perform(as(post(BASE + "/meetings/" + id + "/actions/" + actionId + "/link"), ownerToken(), workspaceId)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"taskId\":\"missing\"}")).andReturn();
+        assertThat(other.getResponse().getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    void continuity_showsThePreviousMeetingOfTheProjectAndWhatIsStillOpen() throws Exception {
+        enable(ownerToken(), workspaceId);
+        String first = notesMeeting("proj-9");
+        String actionId = action(detail(first), "Write the release notes").get("id").asText();
+        MvcResult ap = mvc.perform(as(post(BASE + "/meetings/" + first + "/actions/" + actionId + "/approve"), ownerToken(), workspaceId)).andReturn();
+        assertThat(ap.getResponse().getStatus()).as(ap.getResponse().getContentAsString()).isEqualTo(200);
+
+        String second = notesMeeting("proj-9", NOTES, "2026-11-18T09:00:00Z", "Release follow-up");
+
+        JsonNode c = json(mvc.perform(as(get(BASE + "/meetings/" + second + "/continuity"), ownerToken(), workspaceId)).andReturn());
+        assertThat(c.at("/previousMeeting/id").asText()).isEqualTo(first);
+        assertThat(c.at("/sinceLastMeeting/tasksStillOpen/0/title").asText()).isEqualTo("Write the release notes");
+        assertThat(c.at("/counts/openActionItems").asInt()).isGreaterThanOrEqualTo(1);
+
+        JsonNode prep = json(mvc.perform(as(get(BASE + "/prepare").param("projectId", "proj-9"), ownerToken(), workspaceId)).andReturn());
+        assertThat(prep.at("/previousMeeting/id").asText()).isEqualTo(second);
+
+        JsonNode trends = json(mvc.perform(as(get(BASE + "/trends").param("days", "400"), ownerToken(), workspaceId)).andReturn());
+        assertThat(trends.size()).as("days are clamped to 90").isEqualTo(90);
     }
 }

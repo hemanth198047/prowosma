@@ -155,7 +155,7 @@ function GoalEmbedBlock({ goalId, allGoals, onRemove }) {
   const pct = goal.progress ?? 0;
   return (
     <div className="doc-task-embed doc-goal-embed">
-      <div className="doc-task-embed-icon">🎯</div>
+      <div className="doc-task-embed-icon"></div>
       <div className="doc-task-embed-info">
         <div className="doc-task-embed-title">{goal.title}</div>
         <div className="doc-goal-progress-bar">
@@ -221,7 +221,7 @@ function EmbedBlock({ type, content, onChange, onRemove }) {
     <div className="doc-embed-block">
       <div className="doc-embed-toolbar">
         <span className="doc-embed-type-label">{label}</span>
-        <button onClick={() => setEditing(true)}>✎ Edit URL</button>
+        <button onClick={() => setEditing(true)}>Edit URL</button>
         <button onClick={onRemove}>✕ Remove</button>
       </div>
       <iframe src={embedUrl} className="doc-embed-iframe"
@@ -390,7 +390,7 @@ function DecisionInlineForm({ docId, wsId, initial, onSave, onCancel }) {
             try { await onSave({ ...form, docId, workspaceId: wsId }); }
             finally { setSaving(false); }
           }}>
-          {saving ? "⏳…" : initial ? "Update" : "Save Decision"}
+          {saving ? "…" : initial ? "Update" : "Save Decision"}
         </button>
       </div>
     </div>
@@ -411,7 +411,7 @@ function DecisionEmbedBlock({ decisionId, docDecisions, onEdit, onRemove, onNavi
   return (
     <div className="dec-embed" onClick={() => onNavigate && onNavigate(d)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => onNavigate && onNavigate(d))?.(e); } }}>
       <div className="dec-embed-left">
-        <span className="dec-embed-icon">⚖️</span>
+        <span className="dec-embed-icon"></span>
       </div>
       <div className="dec-embed-body">
         <div className="dec-embed-header">
@@ -426,7 +426,7 @@ function DecisionEmbedBlock({ decisionId, docDecisions, onEdit, onRemove, onNavi
         {d.owner     && <div className="dec-embed-owner">{d.owner}</div>}
       </div>
       <div className="dec-embed-btns" onClick={e => e.stopPropagation()} role="presentation">
-        <button title="Edit" onClick={() => onEdit(d)}>✎</button>
+        <button title="Edit" onClick={() => onEdit(d)}></button>
         <button title="Remove embed" onClick={onRemove}>✕</button>
       </div>
     </div>
@@ -913,7 +913,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
     return (
       <div className="doc-db-block">
         <div className="doc-db-header">
-          <span>🗄</span>
+          <span></span>
           <span className="doc-db-title" contentEditable suppressContentEditableWarning
             onBlur={e=>onChange({...block, props:{...block.props,title:e.target.textContent}})}>
             {block.props?.title||"Database"}
@@ -1095,7 +1095,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
   if (block.type === "divider") return (
     <div className={`doc-block doc-block--divider${focused ? " doc-block--focused" : ""}`} onClick={() => onFocus(block.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => onFocus(block.id))?.(e); } }}>
       <hr className="doc-divider-hr" />
-      {focused && <div className="doc-block-actions"><button onClick={() => onDelete(block.id, "up")} title="Delete">🗑</button></div>}
+      {focused && <div className="doc-block-actions"><button onClick={() => onDelete(block.id, "up")} title="Delete"></button></div>}
     </div>
   );
 
@@ -1143,7 +1143,7 @@ function BlockRow({ block, index, total, onChange, onDelete, onAddAfter, onAddMu
           className="doc-todo-cb" />
       )}
       {block.type === "quote"        && <div className="doc-quote-line" />}
-      {block.type === "callout"      && <span className="doc-callout-emoji">💡</span>}
+      {block.type === "callout"      && <span className="doc-callout-emoji"></span>}
       {block.type === "bulletList"   && <span className="doc-list-dot">•</span>}
       {block.type === "numberedList" && <span className="doc-list-num">{index + 1}.</span>}
 
@@ -1358,9 +1358,9 @@ const TEMPLATES = [
     ],
   },
   {
-    key:"meeting", emoji:"📝", label:"Meeting Notes",
+    key:"meeting", emoji:"📝", label:"Meeting notes",
     blocks: () => [
-      newBlock("heading1","Meeting Notes"),
+      newBlock("heading1","Meeting notes"),
       newBlock("paragraph",`${new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}`),
       newBlock("heading2","Attendees"),
       newBlock("bulletList",""),
@@ -1616,7 +1616,7 @@ function FormatBar({ showLegend, onToggleLegend }) {
         e.preventDefault();
         const url = prompt("Link URL:");
         if (url) cmd("createLink", url);
-      }} title="Link">🔗</button>
+      }} title="Link"></button>
       <div className="doc-format-sep" />
       <button
         className={`doc-format-legend-btn${showLegend ? " active" : ""}`}
@@ -1775,7 +1775,7 @@ function VersionHistoryPanel({ versions, loading, restoringVersion, activeDoc, c
             {loading && <div className="doc-vh-loading">Loading versions…</div>}
             {!loading && versions.length === 0 && (
               <div className="doc-vh-empty">
-                <div style={{fontSize:32,marginBottom:8}}>📋</div>
+                <div style={{fontSize:32,marginBottom:8}}></div>
                 <div>No version history yet.</div>
                 <div style={{fontSize:12,marginTop:4,opacity:.7}}>Versions are saved automatically as you edit.</div>
               </div>
@@ -1983,7 +1983,7 @@ export default function Docs() {
       const demo = {
         id:"__demo__", title:"Getting Started", emoji:"👋", parentId:null, workspaceId:wsId,
         content: serializeBlocks([
-          newBlock("heading1","Welcome to Prowosma Docs 👋"),
+          newBlock("heading1","Welcome to Prowosma Docs "),
           newBlock("paragraph","This is your team's knowledge base. Write anything here."),
           newBlock("heading2","What you can do"),
           newBlock("bulletList","Type / to open the block command menu"),
@@ -2259,7 +2259,7 @@ export default function Docs() {
                           {(c.user || "?").slice(0, 2).toUpperCase()}
                           {c.blockId && (
                             <span style={{position:"absolute",bottom:-14,left:"50%",transform:"translateX(-50%)",
-                              fontSize:"8px",fontWeight:700,color:c.color,whiteSpace:"nowrap",
+                              fontSize:"8px",fontWeight: 600,color:c.color,whiteSpace:"nowrap",
                               background:"#fff",borderRadius:"3px",padding:"1px 3px",
                               border:`1px solid ${c.color}44`,lineHeight:1}}>
                               editing
@@ -2360,7 +2360,7 @@ export default function Docs() {
                     <span key={t} className="doc-tag-chip">#{t}</span>
                   ))}
                   <button className="doc-tags-edit-btn" onClick={() => setShowTagPanel(v => !v)}
-                    title="Edit tags">✎</button>
+                    title="Edit tags"></button>
                 </div>
               )}
 
@@ -2418,7 +2418,7 @@ export default function Docs() {
                             <button className="doc-publish-copy-btn"
                               onClick={() => {
                                 navigator.clipboard.writeText(window.location.origin + "/docs/p/" + activeDoc.publishedSlug);
-                                toast?.show("Link copied!", "success");
+                                toast?.show("Link copied", "success");
                               }}>
                               Copy
                             </button>
@@ -2458,7 +2458,7 @@ export default function Docs() {
                 zIndex:50,overflowY:"auto",display:"flex",flexDirection:"column"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                   padding:"14px 16px",borderBottom:"1px solid var(--border)",
-                  fontWeight:800,fontSize:"14px"}}>
+                  fontWeight: 600,fontSize:"14px"}}>
                   Inline Comments
                   <button style={{background:"none",border:"none",cursor:"pointer",fontSize:"18px"}}
                     onClick={()=>setShowInlineComments(false)}>✕</button>
@@ -2476,7 +2476,7 @@ export default function Docs() {
                       {c.selectedText && (
                         <div style={{fontSize:"11px",color:"#94a3b8",
                           borderLeft:"3px solid var(--brand-500)",paddingLeft:"8px",marginBottom:"6px",
-                          fontStyle:"italic"}}>
+                          fontStyle: "normal"}}>
                           "{c.selectedText.slice(0,80)}{c.selectedText.length>80?"…":""}"
                         </div>
                       )}
@@ -2495,7 +2495,7 @@ export default function Docs() {
                               window.location.reload();
                             }}>Resolve</button>
                         )}
-                        {c.resolved && <span style={{color:"#1E8E5A",fontWeight:700}}>✓ Resolved</span>}
+                        {c.resolved && <span style={{color:"#1E8E5A",fontWeight: 600}}>✓ Resolved</span>}
                       </div>
                       {(c.replies||[]).map(r=>(
                         <div key={r.id} style={{marginTop:"8px",paddingTop:"8px",
@@ -2541,7 +2541,7 @@ export default function Docs() {
         ) : allDocs.length === 0 ? (
           /* True empty state — no docs exist at all */
           <div className="docs-empty-state">
-            <div className="docs-empty-icon">📚</div>
+            <div className="docs-empty-icon"></div>
             <h2>Knowledge base</h2>
             <p>Docs, wikis, SOPs, meeting notes, OKR reviews — all in one place.</p>
             <button className="btn btn-primary" style={{marginTop:16}} onClick={() => setShowTpl(true)}>
@@ -2558,7 +2558,7 @@ export default function Docs() {
         ) : (
           /* Docs exist but none selected — show a page picker */
           <div className="docs-select-state">
-            <div className="docs-select-icon">👈</div>
+            <div className="docs-select-icon"></div>
             <h2>Select a page</h2>
             <p>Choose a page from the sidebar, or create a new one.</p>
             <div className="docs-select-list">

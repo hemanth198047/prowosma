@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { apiErrorMessage } from "../utils/apiError";
 
 import "../styles/pages/auth.css";
+import { CircleCheck as IcCircleCheck, CircleX as IcCircleX, Hourglass as IcHourglass } from "lucide-react";
 export default function MagicLogin() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -58,11 +59,11 @@ export default function MagicLogin() {
         borderRadius:"16px",padding:"40px",maxWidth:360,width:"100%",textAlign:"center",
         boxShadow:"var(--elevation-2)"}}>
         <div style={{fontSize:"48px",marginBottom:"16px"}}>
-          {status==="verifying"?"⏳":status==="success"?"✅":"❌"}
+          {status==="verifying"?<IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" />:status==="success"?<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" />}
         </div>
-        <h2 style={{fontSize:"20px",fontWeight:800,marginBottom:"8px",color:"var(--gray-800)"}}>
+        <h2 style={{fontSize:"20px",fontWeight: 600,marginBottom:"8px",color:"var(--gray-800)"}}>
           {status==="verifying"?"Verifying your link…"
-           :status==="success"?"Logged in!"
+           :status==="success"?"Logged in"
            :"Login failed"}
         </h2>
         <p style={{fontSize:"14px",color:"var(--gray-500)"}}>
@@ -73,7 +74,7 @@ export default function MagicLogin() {
         {status==="error" && (
           <button onClick={()=>navigate("/login")}
             style={{marginTop:"16px",padding:"10px 24px",background:"var(--brand-500)",color:"#fff",
-              border:"none",borderRadius:"8px",fontWeight:700,cursor:"pointer",fontSize:"14px"}}>
+              border:"none",borderRadius:"8px",fontWeight: 600,cursor:"pointer",fontSize:"14px"}}>
             Back to Login
           </button>
         )}

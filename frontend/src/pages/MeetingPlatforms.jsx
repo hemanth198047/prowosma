@@ -12,6 +12,7 @@ import {
 } from "../api/meetingAssistant";
 import { PROVIDER_META } from "../utils/meetingStatus";
 import "../styles/pages/meeting-assistant.css";
+import { Mic as IcMic } from "lucide-react";
 
 const GOOD_TO_KNOW = {
   GOOGLE_MEET: [
@@ -231,7 +232,7 @@ function SettingsForm({ initial, caps, usage, onSaved }) {
         <p className="ma-hint" role="status">
           {caps?.aiReady
             ? "AI is ready. Documents are written by the AI provider configured in AI Settings."
-            : <>AI isn't ready: {caps?.aiReason || "check AI Settings"} <a href="/ai-settings">AI Settings</a></>}
+            : <>AI isn't ready: {caps?.aiReason || "check AI Settings"} <a href="/ai-settings">AI settings</a></>}
         </p>
         <label className="ma-switch">
           <input type="checkbox" checked={!!f.autoGenerateOutputs} onChange={(e) => set("autoGenerateOutputs", e.target.checked)} />
@@ -301,7 +302,7 @@ export default function MeetingPlatforms() {
   if (!allowed) {
     return (
       <div>
-        <PageHeader icon="🎙" title="Meeting Platforms" />
+        <PageHeader icon={<IcMic size={16} strokeWidth={1.5} aria-hidden="true" />} title="Meeting platforms" />
         <p className="ma-card" role="alert">Only workspace admins can manage meeting platforms.</p>
       </div>
     );
@@ -309,7 +310,7 @@ export default function MeetingPlatforms() {
 
   return (
     <div>
-      <PageHeader icon="🎙" title="Meeting Platforms"
+      <PageHeader icon={<IcMic size={16} strokeWidth={1.5} aria-hidden="true" />} title="Meeting platforms"
         description="Choose which meeting platforms your team can use with the Meeting Assistant."
         action={<button className="ma-btn" onClick={() => navigate("/meeting-assistant")}>Open Meeting Assistant</button>} />
       <div className="ma-platforms">

@@ -123,7 +123,7 @@ export default function MeetingArtifactPanel({ session, type, aiReady, aiReason,
             <button className="ma-btn primary" disabled={busy} onClick={() => run(() => generateMeetingOutputs(session.id), "Generating…")}>Generate summary, minutes and notes</button>
           </>
         ) : session.segmentCount > 0 && !aiReady ? (
-          <p>The {LABEL[type]} can't be generated because AI isn't ready. {aiReason} <a href="/ai-settings">AI Settings</a></p>
+          <p>The {LABEL[type]} can't be generated because AI isn't ready. {aiReason} <a href="/ai-settings">AI settings</a></p>
         ) : (
           <p>No transcript has been collected for this meeting, so there is nothing to show here yet.</p>
         )}

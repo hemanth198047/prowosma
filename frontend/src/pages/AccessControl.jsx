@@ -11,6 +11,7 @@ import {
   getDepartments, createDepartment, updateDepartment, setDepartmentMembers, deleteDepartment,
   getAccessMembers, updateAccessMember, runOrgSetup, assignLegacyDocs,
 } from "../api/access";
+import { KeyRound as IcKeyRound, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
 
 const unwrap = (res) => (Array.isArray(res?.data) ? res.data : res?.data?.content || []);
 
@@ -252,8 +253,8 @@ function ProfilesTab({ profiles, settings, reload, notify }) {
               <td>{SCOPE_LABELS[p.scope] || p.scope}{p.departmentAdmin ? " · department admin" : ""}</td>
               <td>{p.scope === "ALL" ? "Everything" : (p.capabilities || []).map((c) => CAPABILITY_LABELS[c] || c).join(", ") || "Update their own tasks, comment"}</td>
               <td>
-                <button className="btn-icon" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>✏️</button>
-                <button className="btn-icon" aria-label={`Delete ${p.name}`} onClick={() => remove(p)}>🗑</button>
+                <button className="btn-icon" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                <button className="btn-icon" aria-label={`Delete ${p.name}`} onClick={() => remove(p)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </td>
             </tr>
           ))}
@@ -306,8 +307,8 @@ function DepartmentsTab({ departments, members, reload, notify }) {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <strong>{d.name}</strong>
             <span>
-              <button className="btn-icon" aria-label={`Rename ${d.name}`} onClick={() => rename(d)}>✏️</button>
-              <button className="btn-icon" aria-label={`Delete ${d.name}`} onClick={() => remove(d)}>🗑</button>
+              <button className="btn-icon" aria-label={`Rename ${d.name}`} onClick={() => rename(d)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+              <button className="btn-icon" aria-label={`Delete ${d.name}`} onClick={() => remove(d)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
             </span>
           </div>
           <div style={{ marginTop: 6 }}>
@@ -497,7 +498,7 @@ export default function AccessControl() {
   return (
     <div className="page">
       <PageHeader
-        icon="🔐" title="Access Control"
+        icon={<IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" />} title="Access control"
         description="Decide who sees which projects and tasks: departments, access profiles and project responsibilities."
       />
       {loadError && <p role="alert" style={{ color: "var(--danger)" }}>{loadError}</p>}

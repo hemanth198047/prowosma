@@ -1,12 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { Calendar as IcCalendar, ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, Folder as IcFolder, Hand as IcHand, House as IcHouse, Tag as IcTag, Target as IcTarget, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 const routeMap = {
-  "/": { label: "Dashboard", icon: "📊" },
-  "/projects": { label: "Projects", icon: "📁" },
-  "/tasks": { label: "Tasks", icon: "✅" },
-  "/goals": { label: "Goals", icon: "🎯" },
-  "/categories": { label: "Project Categories", icon: "🏷️" },
-  "/credits": { label: "Credits", icon: "🙏" },
+  "/": { label: "Dashboard", icon: <IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/projects": { label: "Projects", icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/tasks": { label: "Tasks", icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/goals": { label: "Goals", icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/categories": { label: "Project categories", icon: <IcTag size={16} strokeWidth={1.5} aria-hidden="true" /> },
+  "/credits": { label: "Credits", icon: <IcHand size={16} strokeWidth={1.5} aria-hidden="true" /> },
 };
 
 export default function Breadcrumb() {
@@ -14,7 +15,7 @@ export default function Breadcrumb() {
   const navigate = useNavigate();
   const [searchParams] = [new URLSearchParams(location.search)];
 
-  const crumbs = [{ label: "Home", icon: "🏠", path: "/" }];
+  const crumbs = [{ label: "Home", icon: <IcHouse size={16} strokeWidth={1.5} aria-hidden="true" />, path: "/" }];
 
   const route = routeMap[location.pathname];
   if (route && location.pathname !== "/") {
@@ -32,21 +33,21 @@ export default function Breadcrumb() {
   const highlight = searchParams.get("highlight");
 
   if (categoryId)
-    crumbs.push({ label: "Category Filter", icon: "🏷️", path: null });
+    crumbs.push({ label: "Category Filter", icon: <IcTag size={16} strokeWidth={1.5} aria-hidden="true" />, path: null });
   if (projectId)
-    crumbs.push({ label: "Project Filter", icon: "📁", path: null });
+    crumbs.push({ label: "Project Filter", icon: <IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, path: null });
   if (status)
     crumbs.push({
       label: `Status: ${status.replace("_", " ")}`,
-      icon: "🔵",
+      icon: <span className="emo-dot emo-dot--blue" aria-hidden="true" />,
       path: null,
     });
   if (filter === "overdue")
-    crumbs.push({ label: "Overdue", icon: "⚠️", path: null });
+    crumbs.push({ label: "Overdue", icon: <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, path: null });
   if (filter === "today")
-    crumbs.push({ label: "Due Today", icon: "📅", path: null });
+    crumbs.push({ label: "Due Today", icon: <IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />, path: null });
   if (highlight)
-    crumbs.push({ label: "Highlighted Item", icon: "🎯", path: null });
+    crumbs.push({ label: "Highlighted Item", icon: <IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, path: null });
 
   if (crumbs.length === pageCrumbs) return null;
 

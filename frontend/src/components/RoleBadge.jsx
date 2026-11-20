@@ -8,6 +8,7 @@ export default function RoleBadge({ role }) {
     OWNER:  "role-badge role-owner",
     ADMIN:  "role-badge role-admin",
     MEMBER: "role-badge role-member",
+    EDITOR: "role-badge role-editor",
     VIEWER: "role-badge role-viewer",
   }[role] || "role-badge role-member";
 
@@ -15,6 +16,7 @@ export default function RoleBadge({ role }) {
     OWNER:  "Manager",
     ADMIN:  "Admin",
     MEMBER: "Member",
+    EDITOR: "Editor",
     VIEWER: "Viewer",
   }[role] || role;
 

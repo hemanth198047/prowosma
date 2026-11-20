@@ -102,3 +102,17 @@ export const scheduleUmaMeeting    = (data)        => client.post(`${BASE}/meeti
 export const setUmaAutoFireflies   = (id, on)      => client.put(`${BASE}/meetings/${id}/automation`, { autoFireflies: on });
 export const checkUmaMeeting       = (id)          => client.post(`${BASE}/meetings/${id}/check`);
 export const startUmaInstantMeeting = (data)        => client.post(`${BASE}/meetings/instant`, data);
+
+// ── Merged from Meetings (notes) and the first Meeting assistant ──
+export const createUmaNotes        = (body)                  => client.post(`${BASE}/meetings/notes`, body);
+export const editUmaSummary        = (id, summary)           => client.put(`${BASE}/meetings/${id}/summary`, { summary });
+export const restoreUmaSummary     = (id, number)            => client.post(`${BASE}/meetings/${id}/summary/versions/${number}/restore`);
+export const logUmaDecision        = (id, decisionId, body)  => client.post(`${BASE}/meetings/${id}/decisions/${decisionId}/log`, body || {});
+export const logUmaRisk            = (id, findingId, body)   => client.post(`${BASE}/meetings/${id}/risks/${findingId}/raid`, body || {});
+export const getUmaSimilarTasks    = (id, actionId)          => client.get(`${BASE}/meetings/${id}/actions/${actionId}/similar`, fresh);
+export const linkUmaActionToTask   = (id, actionId, taskId)  => client.post(`${BASE}/meetings/${id}/actions/${actionId}/link`, { taskId });
+export const getUmaContinuity      = (id)                    => client.get(`${BASE}/meetings/${id}/continuity`, fresh);
+export const getUmaPrepare         = (projectId)             => client.get(`${BASE}/prepare`, { params: { projectId: projectId || undefined }, ...fresh });
+export const getUmaOpenActions     = (projectId, limit = 100) => client.get(`${BASE}/actions`, { params: { projectId: projectId || undefined, limit }, ...fresh });
+export const getUmaTrends          = (days = 30)             => client.get(`${BASE}/trends`, { params: { days }, ...fresh });
+export const getUmaProjectMeetings = (projectId, limit = 10) => client.get(`${BASE}/meetings`, { params: { projectId, limit }, ...fresh });

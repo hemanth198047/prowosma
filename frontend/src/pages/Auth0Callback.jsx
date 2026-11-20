@@ -6,6 +6,7 @@ import client from "../api/client";
 import { getMyWorkspaces } from "../api/workspaces";
 
 import "../styles/pages/auth.css";
+import { KeyRound as IcKeyRound } from "lucide-react";
 export default function Auth0Callback() {
   const { isLoading, isAuthenticated, user, error, getIdTokenClaims } = useAuth0();
   const { loginUser } = useAuth();
@@ -55,7 +56,7 @@ export default function Auth0Callback() {
       display:"flex", flexDirection:"column", alignItems:"center",
       justifyContent:"center", height:"100vh", gap:"16px",
     }}>
-      <div style={{ fontSize:"32px" }}>🔐</div>
+      <div style={{ fontSize:"32px" }}><IcKeyRound size={16} strokeWidth={1.5} aria-hidden="true" /></div>
       <div style={{ fontSize:"16px", fontWeight:600, color:"var(--brand-500)" }}>
         Signing you in…
       </div>

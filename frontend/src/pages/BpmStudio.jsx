@@ -11,6 +11,7 @@ import {
   Zap, Bot, UserCheck, GitBranch, Cog, Split, CircleStop, Play, Pause, Check, X, Minus,
   FolderKanban, SquareCheckBig, Target, Users, Workflow, Plus, Pencil, Trash2, CheckCircle2,
 } from "lucide-react";
+import { Pencil as IcPencil, Shuffle as IcShuffle } from "lucide-react";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 const api = {
@@ -117,7 +118,7 @@ const TEMPLATES = [
       {id:"t1", type:"TRIGGER",        label:"Member Joined",          x:340,y:40,  config:{}},
       {id:"a1", type:"AI_STEP",        label:"AI Onboarding Plan",     x:340,y:160, config:{prompt:"Create a 30-60-90 day onboarding plan for a new team member. Include learning goals, key people to meet, tools to set up, and first week tasks. Tailor to their role.",requiresHumanReview:true}},
       {id:"h1", type:"HUMAN_APPROVAL", label:"Manager Approves Plan",  x:340,y:300, config:{approvers:"manager@company.com"}},
-      {id:"ac1",type:"ACTION",         label:"Assign Buddy / Mentor",  x:340,y:440, config:{actionType:"NOTIFY",title:"Onboarding Started",message:"Welcome! Your onboarding plan is ready. Your buddy will reach out today."}},
+      {id:"ac1",type:"ACTION",         label:"Assign Buddy / Mentor",  x:340,y:440, config:{actionType:"NOTIFY",title:"Onboarding Started",message:"Welcome. Your onboarding plan is ready. Your buddy will reach out today."}},
       {id:"e1", type:"END",            label:"Done",                   x:340,y:560, config:{}},
     ],
     transitions:[
@@ -200,20 +201,19 @@ function WorkflowCanvas({ process, onChange }) {
       {/* LEFT TOOLBOX */}
       <div style={{ width:180, flexShrink:0, borderRight:"1px solid var(--border)", background:"var(--gray-50)",
         display:"flex", flexDirection:"column", gap:0, overflowY:"auto", padding:"12px 10px" }}>
-        <div style={{ fontSize:"10px", fontWeight:800, color:"#94a3b8", letterSpacing:".07em",
-          textTransform:"uppercase", marginBottom:"10px" }}>Node Types</div>
+        <div style={{ fontSize:"10px", fontWeight: 600, color:"#94a3b8", marginBottom:"10px" }}>Node Types</div>
         {NODE_TYPES.map(m => (
           <button key={m.type} onClick={() => addNode(m.type)} title={m.desc}
             style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 10px",
               borderRadius:"8px", border:"1px solid transparent", background:"transparent",
-              cursor:"pointer", marginBottom:"3px", textAlign:"left", transition:"all .13s" }}
+              cursor:"pointer", marginBottom:"3px", textAlign:"left", transition: "color .13s, background-color .13s, border-color .13s, opacity .13s, transform .13s" }}
             onMouseEnter={e=>{ e.currentTarget.style.background=m.bg; e.currentTarget.style.borderColor=m.color+"33"; }}
             onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor="transparent"; }}>
             <span style={{ width:28, height:28, borderRadius:"7px", background:m.bg,
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:"14px", flexShrink:0, border:`1px solid ${m.color}22` }}><m.icon size={15} aria-hidden="true" /></span>
             <div>
-              <div style={{ fontSize:"11px", fontWeight:700, color:"#334155", lineHeight:1.2 }}>{m.label}</div>
+              <div style={{ fontSize:"11px", fontWeight: 600, color:"#334155", lineHeight:1.2 }}>{m.label}</div>
               <div style={{ fontSize:"9px", color:"#94a3b8", lineHeight:1.3 }}>{m.desc}</div>
             </div>
           </button>
@@ -302,21 +302,20 @@ function WorkflowCanvas({ process, onChange }) {
                 <div style={{ display:"flex", alignItems:"center", gap:"6px", padding:"7px 10px",
                   background:meta.bg, borderBottom:`1.5px solid ${meta.color}33` }}>
                   <span style={{ display:"inline-flex" }}>{meta.icon && <meta.icon size={14} aria-hidden="true" />}</span>
-                  <span style={{ fontSize:"9px", fontWeight:800, color:meta.color,
-                    textTransform:"uppercase", letterSpacing:".05em", flex:1 }}>{meta.label}</span>
+                  <span style={{ fontSize:"9px", fontWeight: 600, color:meta.color, flex:1 }}>{meta.label}</span>
                   <button onClick={e=>{e.stopPropagation();deleteNode(node.id);}}
                     style={{ background:"none", border:"none", cursor:"pointer",
                       color:"#94a3b8", fontSize:"12px", padding:"0 2px", lineHeight:1 }}
                     title="Delete node">✕</button>
                 </div>
                 {/* Label */}
-                <div style={{ padding:"8px 10px 6px", fontSize:"12px", fontWeight:700,
+                <div style={{ padding:"8px 10px 6px", fontSize:"12px", fontWeight: 600,
                   color:"#1e293b", lineHeight:1.3 }}>{node.label}</div>
                 {/* Connect button */}
                 <div style={{ padding:"0 8px 8px", display:"flex", gap:"4px" }}>
                   <button onClick={e=>{e.stopPropagation();setConnecting(isConnSrc?null:node.id);}}
                     style={{ flex:1, padding:"3px 8px", borderRadius:"6px", border:"none",
-                      fontSize:"10px", fontWeight:700, cursor:"pointer", transition:"all .12s",
+                      fontSize:"10px", fontWeight: 600, cursor:"pointer", transition: "color .12s, background-color .12s, border-color .12s, opacity .12s, transform .12s",
                       background: isConnSrc?"var(--brand-500)":"var(--gray-100)",
                       color: isConnSrc?"#fff":"var(--gray-500)" }}>
                     {isConnSrc?"✓ Connecting…":"→ Connect"}
@@ -325,7 +324,7 @@ function WorkflowCanvas({ process, onChange }) {
                     <button onClick={e=>{e.stopPropagation();addTransition(connecting,node.id);}}
                       style={{ padding:"3px 8px", borderRadius:"6px", border:"1.5px solid var(--brand-500)",
                         background:"var(--brand-50)", color:"#5B5FEE", fontSize:"10px",
-                        fontWeight:700, cursor:"pointer" }}>
+                        fontWeight: 600, cursor:"pointer" }}>
                       Link here
                     </button>
                   )}
@@ -337,8 +336,8 @@ function WorkflowCanvas({ process, onChange }) {
           {nodes.length===0 && (
             <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column",
               alignItems:"center", justifyContent:"center", gap:"10px", pointerEvents:"none" }}>
-              <div style={{ fontSize:"48px" }}>🔀</div>
-              <div style={{ fontWeight:700, fontSize:"16px", color:"#64748b" }}>
+              <div style={{ fontSize:"48px" }}><IcShuffle size={16} strokeWidth={1.5} aria-hidden="true" /></div>
+              <div style={{ fontWeight: 600, fontSize:"16px", color:"#64748b" }}>
                 Click a node type on the left to start building
               </div>
               <div style={{ fontSize:"13px", color:"#94a3b8" }}>
@@ -359,8 +358,7 @@ function WorkflowCanvas({ process, onChange }) {
             display:"flex", alignItems:"center", gap:"8px" }}>
             <span style={{ display:"inline-flex" }}>{selectedMeta?.icon && <selectedMeta.icon size={18} aria-hidden="true" />}</span>
             <div style={{ flex:1 }}>
-              <div style={{ fontWeight:800, fontSize:"12px", color:selectedMeta?.color,
-                textTransform:"uppercase", letterSpacing:".05em" }}>{selectedMeta?.label}</div>
+              <div style={{ fontWeight: 600, fontSize:"12px", color:selectedMeta?.color, }}>{selectedMeta?.label}</div>
             </div>
             <button onClick={()=>setSelected(null)} style={{ background:"none", border:"none",
               cursor:"pointer", color:"#94a3b8", fontSize:"14px" }}>✕</button>
@@ -369,8 +367,7 @@ function WorkflowCanvas({ process, onChange }) {
           <div style={{ padding:"12px", flex:1 }}>
             {/* Label */}
             <div style={{ marginBottom:"12px" }}>
-              <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-label"}>
+              <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-label"}>
                 Label
               </label>
               <input value={selectedNode.label||""}
@@ -383,8 +380,7 @@ function WorkflowCanvas({ process, onChange }) {
             {selectedNode.type==="AI_STEP" && (
               <>
                 <div style={{ marginBottom:"12px" }}>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-ai-prompt"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-ai-prompt"}>
                     AI Prompt
                   </label>
                   <textarea rows={5} value={selectedNode.config?.prompt||""}
@@ -406,8 +402,7 @@ function WorkflowCanvas({ process, onChange }) {
             {/* Human Approval config */}
             {selectedNode.type==="HUMAN_APPROVAL" && (
               <div>
-                <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                  textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-approvers-email"}>
+                <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-approvers-email"}>
                   Approvers (email)
                 </label>
                 <input value={selectedNode.config?.approvers||""}
@@ -422,8 +417,7 @@ function WorkflowCanvas({ process, onChange }) {
             {selectedNode.type==="CONDITION" && (
               <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-variable-name"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-variable-name"}>
                     Variable name
                   </label>
                   <input value={selectedNode.config?.variable||""}
@@ -433,8 +427,7 @@ function WorkflowCanvas({ process, onChange }) {
                       border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-variable-name"} />
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-expected-value"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-expected-value"}>
                     Expected value
                   </label>
                   <input value={selectedNode.config?.value||""}
@@ -450,8 +443,7 @@ function WorkflowCanvas({ process, onChange }) {
             {selectedNode.type==="ACTION" && (
               <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-action-type"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-action-type"}>
                     Action type
                   </label>
                   <select value={selectedNode.config?.actionType||"NOTIFY"}
@@ -466,8 +458,7 @@ function WorkflowCanvas({ process, onChange }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-title-subject"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-title-subject"}>
                     Title / Subject
                   </label>
                   <input value={selectedNode.config?.title||""}
@@ -477,8 +468,7 @@ function WorkflowCanvas({ process, onChange }) {
                       border:"1px solid var(--border)", fontSize:"11px", boxSizing:"border-box" }} id={"bpm-studio-title-subject"} />
                 </div>
                 <div>
-                  <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
-                    textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-message-body"}>
+                  <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b", display:"block", marginBottom:"4px" }} htmlFor={"bpm-studio-message-body"}>
                     Message / Body
                   </label>
                   <textarea rows={3} value={selectedNode.config?.message||""}
@@ -494,8 +484,7 @@ function WorkflowCanvas({ process, onChange }) {
             {/* Connections info */}
             <div style={{ marginTop:"16px", padding:"10px", background:"var(--gray-50)",
               borderRadius:"8px", border:"1px solid var(--gray-100)" }}>
-              <div style={{ fontSize:"10px", fontWeight:700, color:"#94a3b8",
-                textTransform:"uppercase", letterSpacing:".05em", marginBottom:"6px" }}>
+              <div style={{ fontSize:"10px", fontWeight: 600, color:"#94a3b8", marginBottom:"6px" }}>
                 Connections
               </div>
               {[...transitions.filter(t=>t.fromNodeId===selectedNode.id).map(t=>({dir:"→",t})),
@@ -541,7 +530,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
       <div style={{ padding:"14px 16px", borderBottom:"1px solid var(--border)",
         display:"flex", alignItems:"center", gap:"12px", background:"#fff", flexShrink:0 }}>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:800, fontSize:"15px", color:"#0f172a" }}>
+          <div style={{ fontWeight: 600, fontSize:"15px", color:"#0f172a" }}>
             {instance.processName}
           </div>
           <div style={{ fontSize:"11px", color:"#94a3b8", marginTop:"2px" }}>
@@ -550,7 +539,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
           </div>
         </div>
         <span style={{ padding:"4px 12px", borderRadius:"var(--radius-full)", fontSize:"12px",
-          fontWeight:700, background:sm.bg, color:sm.color }}>
+          fontWeight: 600, background:sm.bg, color:sm.color }}>
           <sm.icon size={13} aria-hidden="true" /> {sm.label}
         </span>
         <button onClick={onClose} style={{ background:"none", border:"none",
@@ -584,12 +573,11 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px",
                     marginBottom:"6px", flexWrap:"wrap" }}>
-                    <span style={{ fontWeight:700, fontSize:"13px", color:"#1e293b" }}>
+                    <span style={{ fontWeight: 600, fontSize:"13px", color:"#1e293b" }}>
                       {h.nodeLabel}
                     </span>
-                    <span style={{ fontSize:"10px", fontWeight:700, padding:"2px 8px",
-                      borderRadius:"var(--radius-full)", textTransform:"uppercase", letterSpacing:".04em",
-                      background: isWaiting?meta.color+"18":isDone?"#dcfce7":isFailed?"#fee2e2":"var(--gray-100)",
+                    <span style={{ fontSize:"10px", fontWeight: 600, padding:"2px 8px",
+                      borderRadius:"var(--radius-full)", background: isWaiting?meta.color+"18":isDone?"#dcfce7":isFailed?"#fee2e2":"var(--gray-100)",
                       color: isWaiting?meta.color:isDone?"#15803d":isFailed?"#b91c1c":"var(--gray-500)" }}>
                       {statusText(h.status)}
                     </span>
@@ -605,8 +593,8 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                     <div style={{ background:"#0F1729",
                       border:"1px solid rgba(99,102,241,.3)", borderRadius:"10px",
                       padding:"12px 14px", marginBottom:"8px", position:"relative" }}>
-                      <div style={{ fontSize:"10px", fontWeight:800, color:"#38bdf8",
-                        letterSpacing:".05em", textTransform:"uppercase", marginBottom:"6px" }}>
+                      <div style={{ fontSize:"10px", fontWeight: 600, color:"#38bdf8",
+                        marginBottom:"6px" }}>
                         AI Output
                       </div>
                       <div style={{ fontSize:"12px", color:"var(--border)", lineHeight:1.6,
@@ -617,7 +605,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                         <button onClick={()=>{setOverrideNode(h.nodeId);setOverrideVal(h.aiOutput||"");}}
                           style={{ marginTop:"8px", padding:"3px 10px", borderRadius:"6px",
                             border:"1px solid rgba(255,255,255,.2)", background:"rgba(255,255,255,.1)",
-                            color:"rgba(255,255,255,.8)", fontSize:"10px", fontWeight:700,
+                            color:"rgba(255,255,255,.8)", fontSize:"10px", fontWeight: 600,
                             cursor:"pointer" }}>
                           Override
                         </button>
@@ -633,7 +621,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                             <button onClick={()=>{onOverride(instance.id,h.nodeId,overrideVal,"Manual correction");setOverrideNode(null);}}
                               style={{ padding:"5px 12px", borderRadius:"6px", border:"none",
                                 background:"var(--brand-500)", color:"#fff", fontSize:"11px",
-                                fontWeight:700, cursor:"pointer" }}>
+                                fontWeight: 600, cursor:"pointer" }}>
                               Apply Override
                             </button>
                             <button onClick={()=>setOverrideNode(null)}
@@ -651,11 +639,11 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                   {/* Human decision record */}
                   {h.humanDecision && (
                     <div style={{ display:"inline-flex", alignItems:"center", gap:"6px",
-                      padding:"4px 10px", borderRadius:"var(--radius-full)", fontSize:"11px", fontWeight:700,
+                      padding:"4px 10px", borderRadius:"var(--radius-full)", fontSize:"11px", fontWeight: 600,
                       background: h.humanDecision==="APPROVED"?"#dcfce7":h.humanDecision==="REJECTED"?"#fee2e2":"#fef3c7",
                       color: h.humanDecision==="APPROVED"?"#15803d":h.humanDecision==="REJECTED"?"#b91c1c":"var(--warning)",
                       marginBottom:"4px" }}>
-                      {h.humanDecision==="APPROVED"?"✓":h.humanDecision==="REJECTED"?"✕":"✏️"} {h.humanDecision}
+                      {h.humanDecision==="APPROVED"?"✓":h.humanDecision==="REJECTED"?"✕":<IcPencil size={16} strokeWidth={1.5} aria-hidden="true" />} {h.humanDecision}
                       {h.humanComment && <span style={{ fontWeight:400, opacity:.8 }}> — "{h.humanComment}"</span>}
                       {h.decidedBy && <span style={{ fontWeight:400, opacity:.7 }}> by {h.decidedBy}</span>}
                     </div>
@@ -665,12 +653,12 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                   {isWaiting && h.nodeType==="HUMAN_APPROVAL" && (
                     <div style={{ background:"#fffbeb", border:"1.5px solid #f59e0b44",
                       borderRadius:"10px", padding:"12px 14px" }}>
-                      <div style={{ fontWeight:700, fontSize:"12px", color:"#C17D22",
+                      <div style={{ fontWeight: 600, fontSize:"12px", color:"#C17D22",
                         marginBottom:"10px" }}>Your decision is required</div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px",
                         marginBottom:"10px" }}>
                         <div>
-                          <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                          <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b",
                             display:"block", marginBottom:"3px" }} htmlFor={"bpm-studio-decision"}>Decision</label>
                           <select value={decision} onChange={e=>setDecision(e.target.value)}
                             style={{ width:"100%", padding:"6px 8px", borderRadius:"7px",
@@ -681,7 +669,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                           </select>
                         </div>
                         <div>
-                          <label style={{ fontSize:"10px", fontWeight:700, color:"#64748b",
+                          <label style={{ fontSize:"10px", fontWeight: 600, color:"#64748b",
                             display:"block", marginBottom:"3px" }} htmlFor={"bpm-studio-comment"}>Comment</label>
                           <input value={comment} onChange={e=>setComment(e.target.value)}
                             placeholder="Optional reason"
@@ -692,7 +680,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                       <button onClick={()=>{onDecide(instance.id,h.nodeId,decision,comment);setComment("");}}
                         style={{ padding:"8px 20px", borderRadius:"8px", border:"none",
                           background:"var(--warning)", color:"#fff",
-                          fontSize:"12px", fontWeight:800, cursor:"pointer",
+                          fontSize:"12px", fontWeight: 600, cursor:"pointer",
                           boxShadow:"var(--elevation-2)" }}>
                         Submit Decision
                       </button>
@@ -711,13 +699,13 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
                         <button onClick={()=>onDecide(instance.id,h.nodeId,"APPROVED","Reviewed and accepted")}
                           style={{ padding:"6px 14px", borderRadius:"7px", border:"none",
                             background:"var(--brand-500)", color:"#fff", fontSize:"11px",
-                            fontWeight:700, cursor:"pointer" }}>
+                            fontWeight: 600, cursor:"pointer" }}>
                           ✓ Accept
                         </button>
                         <button onClick={()=>setOverrideNode(h.nodeId)}
                           style={{ padding:"6px 14px", borderRadius:"7px",
                             border:"1px solid var(--brand-500)", background:"transparent",
-                            color:"#5B5FEE", fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
+                            color:"#5B5FEE", fontSize:"11px", fontWeight: 600, cursor:"pointer" }}>
                           Override
                         </button>
                       </div>
@@ -732,7 +720,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
         {/* Process variables */}
         {Object.keys(instance.variables||{}).length > 0 && (
           <details style={{ marginTop:"8px" }}>
-            <summary style={{ fontSize:"11px", fontWeight:700, color:"#64748b",
+            <summary style={{ fontSize:"11px", fontWeight: 600, color:"#64748b",
               cursor:"pointer", padding:"6px 10px", background:"var(--gray-50)",
               borderRadius:"7px", border:"1px solid var(--border)" }}>
               Process Variables ({Object.keys(instance.variables).length})
@@ -742,7 +730,7 @@ function InstanceViewer({ instance, onDecide, onOverride, onClose }) {
               {Object.entries(instance.variables).map(([k,v]) => (
                 <div key={k} style={{ display:"flex", gap:"8px", padding:"3px 0",
                   borderBottom:"1px solid var(--gray-100)", fontSize:"11px" }}>
-                  <span style={{ fontWeight:700, color:"#334155", flexShrink:0 }}>{k}</span>
+                  <span style={{ fontWeight: 600, color:"#334155", flexShrink:0 }}>{k}</span>
                   <span style={{ color:"#64748b", wordBreak:"break-all" }}>{String(v).slice(0,120)}</span>
                 </div>
               ))}
@@ -904,7 +892,7 @@ export default function BpmStudio() {
             background:"var(--gray-50)", fontSize:"12px", fontWeight:600, cursor:"pointer", color:"#334155" }}>
           ← All Runs
         </button>
-        <span style={{ fontSize:"14px", fontWeight:700, color:"#1e293b" }}>Execution Detail</span>
+        <span style={{ fontSize:"14px", fontWeight: 600, color:"#1e293b" }}>Execution Detail</span>
       </div>
       <div style={{ flex:1, minHeight:0, overflow:"hidden", padding:"16px" }}>
         <InstanceViewer instance={viewInstance}
@@ -923,7 +911,7 @@ export default function BpmStudio() {
   ];
   return (
     <div className="bpm-page">
-      <PageHeader title="Workflow Studio"
+      <PageHeader title="Workflow studio"
         description="Design, automate, and run business processes with AI steps and human decisions"
         action={
           <button type="button" className="btn-primary pg-btn" onClick={newProcess}>

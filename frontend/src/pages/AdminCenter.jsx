@@ -20,6 +20,7 @@ import {
   LockKeyhole, MonitorSmartphone, AlertTriangle, Siren, User, CircleCheck, Briefcase, FileText, Bot, Zap,
   Shield, Eye, MailPlus, CircleDot, Crown, Trash2,
 } from "lucide-react";
+import { Globe as IcGlobe, Pencil as IcPencil } from "lucide-react";
 
 // ── API helpers ───────────────────────────────────────────────
 // Read workspace ID directly from sessionStorage as a fallback
@@ -625,14 +626,14 @@ function SecurityPolicyPanel() {
 }
 
 const DEFAULT_FLAGS = [
-  { key:"ai_assistant",      label:"AI Assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
+  { key:"ai_assistant",      label:"AI assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
   { key:"ai_prioritization", label:"AI Prioritization",   desc:"Daily AI-ranked task list",               group:"AI" },
-  { key:"universalMeetingAssistant", label:"AI Meeting Assistant (new)", desc:"Summaries, decisions and action items from uploaded recordings, transcripts and meeting links. Off until turned on.", group:"AI", offByDefault:true },
+  { key:"universalMeetingAssistant", label:"Meetings", desc:"Meetings: notes, recordings, transcripts and meeting links turned into summaries, decisions and action items. On unless turned off.", group:"Knowledge" },
   { key:"attendance", label:"Attendance (clock-in)", desc:"Clock in/out in the top bar, breaks, shifts, call times, leave, corrections, overtime and payroll export. Off until turned on.", group:"Work", offByDefault:true },
   { key:"burnout_detection", label:"Burnout Detection",   desc:"Workload pattern analysis alerts",        group:"AI" },
   { key:"collab_editing",    label:"Collaborative Docs",  desc:"Real-time multi-user document editing",   group:"Collaboration" },
   { key:"sprint_module",     label:"Sprint / Agile",      desc:"Sprint planning and burndown charts",     group:"Work" },
-  { key:"kpi_tracker",       label:"KPI Tracker",         desc:"Standalone KPI metrics and forecasting",  group:"Insights" },
+  { key:"kpi_tracker",       label:"KPI tracker",         desc:"Standalone KPI metrics and forecasting",  group:"Insights" },
   { key:"automations",       label:"Automations",         desc:"No-code workflow automation builder",     group:"Automate" },
   { key:"approval_workflows",label:"Approval Workflows",  desc:"Multi-step approval chains",              group:"Automate" },
   { key:"sop_management",    label:"SOP Management",      desc:"Standard operating procedures lifecycle", group:"Knowledge" },
@@ -966,10 +967,10 @@ function DataResidency() {
   const { show:toast } = useToast();
 
   const REGIONS = [
-    { id:"US",    flag:"🇺🇸", name:"United States",  desc:"AWS us-east-1 (N. Virginia)" },
-    { id:"EU",    flag:"🇪🇺", name:"Europe (GDPR)",  desc:"AWS eu-west-1 (Ireland)" },
-    { id:"APAC",  flag:"🌏", name:"Asia Pacific",   desc:"AWS ap-south-1 (Mumbai)" },
-    { id:"AU",    flag:"🇦🇺", name:"Australia",      desc:"AWS ap-southeast-2 (Sydney)" },
+    { id:"US",    flag:"", name:"United States",  desc:"AWS us-east-1 (N. Virginia)" },
+    { id:"EU",    flag:"", name:"Europe (GDPR)",  desc:"AWS eu-west-1 (Ireland)" },
+    { id:"APAC",  flag:<IcGlobe size={16} strokeWidth={1.5} aria-hidden="true" />, name:"Asia Pacific",   desc:"AWS ap-south-1 (Mumbai)" },
+    { id:"AU",    flag:"", name:"Australia",      desc:"AWS ap-southeast-2 (Sydney)" },
   ];
 
   return (
@@ -1029,7 +1030,7 @@ function Soc2Panel() {
       <div className="admin-card">
         <div className="admin-card-title">SOC2 Type II Preparation</div>
         <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"16px"}}>
-          <div style={{fontSize:"32px",fontWeight:800,color}}>{pct}%</div>
+          <div style={{fontSize:"32px",fontWeight: 600,color}}>{pct}%</div>
           <div>
             <div className="admin-mfa-bar" style={{width:"200px"}}>
               <div className="admin-mfa-fill" style={{width:`${pct}%`,background:color}} />
@@ -1098,7 +1099,7 @@ function LicensePanel() {
                   onKeyDown={e => e.key === "Enter" && handleSaveSeats()}
                  
                   style={{ width:"64px", padding:"4px 6px", border:"1px solid var(--primary)",
-                    borderRadius:"6px", fontSize:"16px", fontWeight:700, textAlign:"center" }}
+                    borderRadius:"6px", fontSize:"16px", fontWeight: 600, textAlign:"center" }}
                 />
                 <button className="btn-primary" style={{ fontSize:"11px", padding:"4px 8px" }}
                   onClick={handleSaveSeats}>✓</button>
@@ -1111,7 +1112,7 @@ function LicensePanel() {
                 <button onClick={() => { setSeatInput(String(total)); setEditSeats(true); }}
                   style={{ background:"none", border:"none", cursor:"pointer",
                     fontSize:"13px", color:"var(--gray-400)", padding:"0" }}
-                  title="Edit seats">✏️</button>
+                  title="Edit seats"><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             )}
             <div className="budget-stat-label">Licensed Seats</div>
@@ -1189,7 +1190,7 @@ function TenantAnalytics() {
         <div className="admin-card" style={{marginTop:"16px",background:"var(--gray-50)"}}>
           <div className="admin-card-title">Health Score</div>
           <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
-            <div style={{fontSize:"32px",fontWeight:800,color:churnColor}}>{engagementScore}</div>
+            <div style={{fontSize:"32px",fontWeight: 600,color:churnColor}}>{engagementScore}</div>
             <div>
               <div className="admin-mfa-bar" style={{width:"180px"}}>
                 <div className="admin-mfa-fill" style={{width:`${engagementScore}%`,background:churnColor}} />
@@ -1632,7 +1633,7 @@ function DlpPanel() {
 // security/billing/compliance — these two tabs extend it to cover people
 // and delivery, reusing the same Team/Invitations/Projects APIs the rest
 // of the app already uses (no new backend surface needed for read access).
-const ADMIN_ROLE_COLOR = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", VIEWER: "var(--success)" };
+const ADMIN_ROLE_COLOR = { OWNER: "var(--warning)", ADMIN: "var(--danger)", MEMBER: "var(--brand-500)", EDITOR: "var(--purple)", VIEWER: "var(--success)" };
 
 function WorkspacePeople() {
   const { isOwner } = useRole();
@@ -1779,13 +1780,14 @@ function WorkspacePeople() {
                 </div>
               </div>
               {m.role === "OWNER" ? (
-                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>MANAGER</span>
+                <span className="badge" style={{ background: ADMIN_ROLE_COLOR.OWNER + "22", color: ADMIN_ROLE_COLOR.OWNER }}>Manager</span>
               ) : (
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <select value={m.role} disabled={busyId === m.id}
                     onChange={e => handleRoleChange(m, e.target.value)}
                     style={{ fontSize: "12px", padding: "4px 8px" }}>
                     <option value="MEMBER">Member</option>
+                    <option value="EDITOR">Editor</option>
                     <option value="VIEWER">Viewer</option>
                     <option value="ADMIN" disabled={!isOwner && m.role !== "ADMIN"}>Admin{!isOwner ? " (Manager only)" : ""}</option>
                   </select>
@@ -1838,6 +1840,7 @@ function WorkspacePeople() {
               <select id="admin-invite-role" value={inviteForm.role}
                 onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}>
                 <option value="MEMBER">Member — Full access to projects and tasks</option>
+                <option value="EDITOR">Editor — Edit and comment, no create or delete</option>
                 <option value="VIEWER">Viewer — Read-only access</option>
                 <option value="ADMIN" disabled={!isOwner}>
                   {isOwner ? "Admin — Can manage members and settings" : "Admin — Manager only"}
@@ -1957,7 +1960,7 @@ export default function AdminCenter() {
 
   return (
     <div>
-      <PageHeader title="Admin Centre"
+      <PageHeader title="Admin centre"
         description="Users, projects, security, compliance, feature flags, and billing — all in one place" />
 
       <div className="ws-settings-layout admin-layout">

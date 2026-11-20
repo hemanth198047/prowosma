@@ -3,7 +3,7 @@ import { NAV_TOP, NAV_GROUPS, NAV_BOTTOM, NAV_RESTRICTED, locate, matchesPath } 
 
 // Every route the old emoji sidebar linked to — none may go missing in the redesign.
 const OLD_FULL_MENU = [
-  "/", "/meeting-assistant", "/projects", "/tasks", "/goals", "/kanban", "/jira-board", "/epics",
+  "/", "/projects", "/tasks", "/goals", "/kanban", "/jira-board", "/epics",
   "/deployments", "/knowledge-graph", "/sprints", "/gantt", "/calendar", "/docs", "/meetings", "/sops",
   "/analytics", "/portfolio", "/roadmap", "/change-requests", "/portfolio-plus", "/kpis", "/executive",
   "/roi", "/scenarios", "/decisions", "/reports", "/time-tracking", "/bpm", "/automations",
@@ -12,7 +12,7 @@ const OLD_FULL_MENU = [
   "/jira-board/settings", "/developer", "/ai", "/ai-intelligence", "/ai-settings", "/profile",
 ];
 const OLD_RESTRICTED_MENU = [
-  "/tasks", "/kanban", "/calendar", "/projects", "/meeting-assistant", "/gantt", "/goals", "/sprints",
+  "/tasks", "/kanban", "/calendar", "/projects", "/meetings", "/gantt", "/goals", "/sprints",
   "/epics", "/roadmap", "/change-requests", "/portfolio-plus", "/docs", "/sops", "/decisions",
   "/channels", "/reports", "/analytics", "/time-tracking", "/ai", "/team", "/org-chart", "/profile",
 ];
@@ -21,16 +21,17 @@ const full = [...NAV_TOP, ...NAV_GROUPS.flatMap(g => g.items), ...NAV_BOTTOM];
 
 describe("navigation config", () => {
   it("keeps every link of the old full menu, once each", () => {
-    // The only additions: the AI Meeting Assistant and Attendance, each shown only when its feature flag is on.
-    const routes = full.map(i => i.to).filter(r => r !== "/ai-meeting-assistant" && r !== "/attendance");
+    // Meetings replaced "/meetings" and "/meeting-assistant" (one link); Attendance is the only addition.
+    const routes = full.map(i => i.to).filter(r => r !== "/attendance");
     expect([...routes].sort()).toEqual([...OLD_FULL_MENU].sort());
   });
 
-  it("lists the AI Meeting Assistant once, behind its feature flag", () => {
-    const items = full.filter(i => i.to === "/ai-meeting-assistant");
+  it("lists Meetings once, behind the meeting permission and its feature flag; the old meeting links are gone", () => {
+    const items = full.filter(i => i.to === "/meetings");
     expect(items).toHaveLength(1);
-    expect(items[0].gate).toEqual({ flag: "aiMeetingAssistant" });
-    expect(NAV_RESTRICTED.some(i => i.to === "/ai-meeting-assistant")).toBe(false);
+    expect(items[0].gate).toEqual({ can: "USE_MEETING_ASSISTANT", flag: "aiMeetingAssistant" });
+    expect(full.some(i => i.to === "/meeting-assistant" || i.to === "/ai-meeting-assistant")).toBe(false);
+    expect(NAV_RESTRICTED.find(i => i.to === "/meetings").gate).toEqual({ can: "USE_MEETING_ASSISTANT", flag: "aiMeetingAssistant" });
   });
 
   it("lists Attendance under People and in the restricted menu, behind its feature flag", () => {
@@ -48,11 +49,10 @@ describe("navigation config", () => {
 
   it("keeps the old permission gates", () => {
     const gate = to => full.find(i => i.to === to).gate;
-    expect(gate("/meeting-assistant")).toEqual({ can: "USE_MEETING_ASSISTANT" });
+    expect(gate("/meetings")).toEqual({ can: "USE_MEETING_ASSISTANT", flag: "aiMeetingAssistant" });
     expect(gate("/workspace-settings")).toEqual({ cando: "manageSettings" });
     expect(gate("/admin")).toEqual({ cando: "adminOnly" });
     expect(gate("/access-control")).toEqual({ cando: "adminOnly" });
-    expect(NAV_RESTRICTED.find(i => i.to === "/meeting-assistant").gate).toEqual({ can: "USE_MEETING_ASSISTANT" });
   });
 
   it("keeps the overdue badges on Projects and Tasks", () => {
@@ -86,7 +86,7 @@ describe("locate (top bar trail)", () => {
     expect(locate("/")).toEqual({ section: null, label: "Dashboard" });
   });
   it("prefers the most specific route", () => {
-    expect(locate("/jira-board/settings")).toEqual({ section: "Settings", label: "Jira Settings" });
+    expect(locate("/jira-board/settings")).toEqual({ section: "Settings", label: "Jira settings" });
     expect(locate("/integrations/meeting-platforms")).toEqual({ section: "Automate", label: "Integrations" });
   });
   it("falls back to a readable name for unlisted pages", () => {

@@ -14,6 +14,7 @@ import {
   addMilestone, toggleMilestone,
 } from "../api/portfolio";
 import { statusText } from "../utils/statusText";
+import { Building2 as IcBuilding2, ClipboardList as IcClipboardList, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────
 // RELEASE MANAGEMENT
@@ -55,7 +56,7 @@ function ReleaseForm({ initial, projects, onSave, onCancel }) {
           </select></div>
         <div className="form-group"><label htmlFor={"portfolio-plus-environment"}>Environment</label>
           <select value={form.environment} onChange={e=>set("environment",e.target.value)} id={"portfolio-plus-environment"}>
-            <option>PRODUCTION</option><option>STAGING</option><option>BETA</option>
+            <option>Production</option><option>Staging</option><option>Beta</option>
           </select></div>
       </div>
       <div className="form-row">
@@ -149,9 +150,9 @@ function ReleasesTab({ projects }) {
                       await confirm({ title: "Changelog", message: res.data.autoChangelog, confirmText: "Close", cancelText: null });
                       load();
                     }
-                  }}>📋</button>
-                <button className="btn-icon" onClick={()=>{setEditing(r);setShowForm(true);}}>✏️</button>
-                <button className="btn-icon" onClick={()=>handleDelete(r.id)}>🗑️</button>
+                  }}><IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                <button className="btn-icon" onClick={()=>{setEditing(r);setShowForm(true);}}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                <button className="btn-icon" onClick={()=>handleDelete(r.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </span>
             {r.autoChangelog && (
               <div style={{gridColumn:"1/-1",padding:"8px 10px",background:"rgba(99,102,241,.04)",
@@ -243,8 +244,8 @@ function InitiativesTab({ projects, goals }) {
                 </div>
               </div>
               <div style={{display:"flex",gap:"4px"}}>
-                <button className="btn-icon" onClick={()=>openForm(item)}>✏️</button>
-                <button className="btn-icon" onClick={()=>handleDelete(item.id)}>🗑️</button>
+                <button className="btn-icon" onClick={()=>openForm(item)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                <button className="btn-icon" onClick={()=>handleDelete(item.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
               </div>
             </div>
             {item.description && <div className="pplus-initiative-desc">{item.description}</div>}
@@ -254,7 +255,7 @@ function InitiativesTab({ projects, goals }) {
             <div className="pplus-initiative-progress">
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
                 <span style={{fontSize:"11px",color:"var(--gray-400)"}}>Progress</span>
-                <span style={{fontSize:"11px",fontWeight:700}}>{item.progress||0}%</span>
+                <span style={{fontSize:"11px",fontWeight: 600}}>{item.progress||0}%</span>
               </div>
               <div className="pplus-progress-bar">
                 <div className="pplus-progress-fill"
@@ -288,11 +289,11 @@ function InitiativesTab({ projects, goals }) {
           <div className="form-row">
             <div className="form-group"><label htmlFor={"portfolio-plus-status-2"}>Status</label>
               <select value={form.status} onChange={e=>set("status",e.target.value)} id={"portfolio-plus-status-2"}>
-                <option>ACTIVE</option><option>PAUSED</option><option>COMPLETED</option><option>CANCELLED</option>
+                <option>Active</option><option>Paused</option><option>Completed</option><option>Cancelled</option>
               </select></div>
             <div className="form-group"><label htmlFor={"portfolio-plus-priority"}>Priority</label>
               <select value={form.priority} onChange={e=>set("priority",e.target.value)} id={"portfolio-plus-priority"}>
-                <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+                <option>High</option><option>Medium</option><option>LOW</option>
               </select></div>
             <div className="form-group"><label htmlFor={"portfolio-plus-owner-2"}>Owner</label>
               <input value={form.owner} onChange={e=>set("owner",e.target.value)} id={"portfolio-plus-owner-2"} /></div>
@@ -428,8 +429,8 @@ function ProgrammesTab({ projects }) {
                     onClick={()=>setExpanded(v=>v===prog.id?null:prog.id)}>
                     {isExpanded?"▲ Hide":"▼ Milestones"}
                   </button>
-                  <button className="btn-icon" onClick={()=>openForm(prog)}>✏️</button>
-                  <button className="btn-icon" onClick={()=>handleDelete(prog.id)}>🗑️</button>
+                  <button className="btn-icon" onClick={()=>openForm(prog)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                  <button className="btn-icon" onClick={()=>handleDelete(prog.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
                 </div>
               </div>
 
@@ -438,7 +439,7 @@ function ProgrammesTab({ projects }) {
                   <div className="pplus-progress-bar">
                     <div className="pplus-progress-fill" style={{width:`${pct}%`}} />
                   </div>
-                  <span style={{fontSize:"11px",fontWeight:700}}>{pct}%</span>
+                  <span style={{fontSize:"11px",fontWeight: 600}}>{pct}%</span>
                 </div>
               )}
 
@@ -497,7 +498,7 @@ function ProgrammesTab({ projects }) {
           <div className="form-row">
             <div className="form-group"><label htmlFor={"portfolio-plus-status-3"}>Status</label>
               <select value={form.status} onChange={e=>set("status",e.target.value)} id={"portfolio-plus-status-3"}>
-                <option>ACTIVE</option><option>PAUSED</option><option>COMPLETED</option><option>CANCELLED</option>
+                <option>Active</option><option>Paused</option><option>Completed</option><option>Cancelled</option>
               </select></div>
             <div className="form-group"><label htmlFor={"portfolio-plus-owner-3"}>Owner</label>
               <input value={form.owner} onChange={e=>set("owner",e.target.value)} id={"portfolio-plus-owner-3"} /></div>
@@ -545,7 +546,7 @@ export default function PortfolioPlus() {
 
   return (
     <div>
-      <PageHeader icon="🏗" title="Portfolio+"
+      <PageHeader icon={<IcBuilding2 size={16} strokeWidth={1.5} aria-hidden="true" />} title="Portfolio+"
         description="Release management, strategic initiatives, and programme tracking. Looking for Change Requests? That moved to its own page in the sidebar." />
 
       <div className="admin-tab-bar">

@@ -30,7 +30,7 @@ describe("Login — internationalization", () => {
   it("renders real English text by default", async () => {
     render(<MemoryRouter><Login /></MemoryRouter>);
     await waitFor(() => {
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in to Prowosma")).toBeInTheDocument();
     });
     expect(screen.getByText(/see where the hours go/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText("you@company.com")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("Login — internationalization", () => {
     render(<MemoryRouter><Login /></MemoryRouter>);
 
     await waitFor(() => {
-      expect(screen.getByText("Bienvenido de nuevo")).toBeInTheDocument();
+      expect(screen.getByText("Inicia sesión en Prowosma")).toBeInTheDocument();
     });
     expect(screen.getByText(/a dónde van las horas/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText("tu@empresa.com")).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe("Login — internationalization", () => {
 
   it("interpolation works — the footer year and app name are substituted, not left as literal placeholders", async () => {
     render(<MemoryRouter><Login /></MemoryRouter>);
-    await waitFor(() => screen.getByText("Welcome back"));
+    await waitFor(() => screen.getByText("Sign in to Prowosma"));
 
     const year = new Date().getFullYear();
     expect(screen.getByText(new RegExp(`${year}.*Prowosma`))).toBeInTheDocument();

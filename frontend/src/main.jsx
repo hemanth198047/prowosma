@@ -8,6 +8,10 @@ import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, shouldSkipAuth0RedirectCallback } from '
 import { initErrorTracking, ErrorTrackingBoundary } from './config/errorTracking'
 import { ErrorFallback } from './components/ErrorFallback.jsx'
 import './i18n' // must run before any component using useTranslation() renders
+import { applyDesign, currentDesign } from './utils/design'
+
+// Classic or New design (?design=classic|new, or the person's saved choice). New needs no extra download.
+applyDesign(currentDesign())
 
 // No-op unless VITE_SENTRY_DSN is set — see src/config/errorTracking.js.
 initErrorTracking()

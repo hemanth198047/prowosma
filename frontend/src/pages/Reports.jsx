@@ -8,6 +8,7 @@ PieChart, Pie, Cell,
   ResponsiveContainer, Legend,
 } from "recharts";
 import "../styles/pages/analytics.css";
+import { Hourglass as IcHourglass, TrendingUp as IcTrendingUp } from "lucide-react";
 
 // ── C-7: No-code Report Builder ───────────────────────────────
 const METRICS = [
@@ -149,7 +150,7 @@ export default function Reports() {
 
   return (
     <div>
-      <PageHeader icon="📈" title="Reports"
+      <PageHeader icon={<IcTrendingUp size={16} strokeWidth={1.5} aria-hidden="true" />} title="Reports"
         description="Operational reports, analytics, and scheduled delivery"
         action={
           <div style={{ display:"flex", gap:"8px" }}>
@@ -195,7 +196,7 @@ export default function Reports() {
               </div>
             )}
             <button className="btn-primary" style={{ fontSize:"12px" }} onClick={load}>
-              {loading ? "⏳" : "Generate"}
+              {loading ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Generate"}
             </button>
           </div>
 

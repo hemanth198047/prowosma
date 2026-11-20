@@ -9,6 +9,7 @@ import PageHeader from "../components/PageHeader";
 import client from "../api/client";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { CircleCheck as IcCircleCheck, Construction as IcConstruction, MessageSquare as IcMessageSquare, SendHorizontal as IcSendHorizontal, Target as IcTarget } from "lucide-react";
 
 const getChannels    = ()         => client.get("/channels");
 const createChannel  = (data)     => client.post("/channels", data);
@@ -109,9 +110,9 @@ function StandupPanel() {
                 </div>
               </div>
             </div>
-            {e.yesterday && <div className="channel-standup-item"><span>✅</span><div>{e.yesterday}</div></div>}
-            {e.today     && <div className="channel-standup-item"><span>🎯</span><div>{e.today}</div></div>}
-            {e.blockers  && <div className="channel-standup-item"><span>🚧</span><div style={{color:"var(--danger)"}}>{e.blockers}</div></div>}
+            {e.yesterday && <div className="channel-standup-item"><span><IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /></span><div>{e.yesterday}</div></div>}
+            {e.today     && <div className="channel-standup-item"><span><IcTarget size={16} strokeWidth={1.5} aria-hidden="true" /></span><div>{e.today}</div></div>}
+            {e.blockers  && <div className="channel-standup-item"><span><IcConstruction size={16} strokeWidth={1.5} aria-hidden="true" /></span><div style={{color:"var(--danger)"}}>{e.blockers}</div></div>}
           </div>
         ))}
         {entries.length===0 && <div className="empty-state">No standups yet. Post the first one above.</div>}
@@ -343,7 +344,7 @@ function ChannelView({ channel, title, me, onDelete, onMembers, onBack }) {
           );
         })}
         {messages.length===0 && (
-          <div className="channel-empty">No messages yet. Say hello!</div>
+          <div className="channel-empty">No messages yet. Say hello</div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -359,7 +360,7 @@ function ChannelView({ channel, title, me, onDelete, onMembers, onBack }) {
           className="channel-input"
         />
         <button className="channel-send-btn" onClick={send} disabled={sending||!text.trim()} aria-label="Send">
-          {sending ? "…" : "➤"}
+          {sending ? "…" : <IcSendHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />}
         </button>
       </div>
     </div>
@@ -415,7 +416,7 @@ export default function Channels() {
 
   return (
     <div>
-      <PageHeader icon="💬" title="Channels & Standup"
+      <PageHeader icon={<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />} title="Channels & standup"
         description="Talk with your team: open channels, private groups and direct messages" />
 
       <div className="admin-tab-bar">

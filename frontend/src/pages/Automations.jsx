@@ -8,21 +8,22 @@ import {
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { AlarmClock as IcAlarmClock, Bell as IcBell, Bot as IcBot, CircleCheck as IcCircleCheck, CircleX as IcCircleX, ClipboardList as IcClipboardList, Flag as IcFlag, Flame as IcFlame, Folder as IcFolder, Footprints as IcFootprints, Hourglass as IcHourglass, Inbox as IcInbox, MessageSquare as IcMessageSquare, PartyPopper as IcPartyPopper, Pencil as IcPencil, RefreshCw as IcRefreshCw, Shuffle as IcShuffle, Siren as IcSiren, Tag as IcTag, Target as IcTarget, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert, User as IcUser, Zap as IcZap } from "lucide-react";
 
 // ── Meta definitions ──────────────────────────────────────────
 const TRIGGER_META = [
-  { value:"TASK_CREATED",           label:"Task Created",           icon:"✅", group:"Tasks" },
-  { value:"TASK_STATUS_CHANGED",    label:"Task Status Changed",    icon:"🔄", group:"Tasks" },
-  { value:"TASK_OVERDUE",           label:"Task Becomes Overdue",   icon:"⚠️", group:"Tasks" },
-  { value:"TASK_ASSIGNED",          label:"Task Assigned",          icon:"👤", group:"Tasks" },
-  { value:"PROJECT_STATUS_CHANGED", label:"Project Status Changed", icon:"📁", group:"Projects" },
-  { value:"GOAL_ACHIEVED",          label:"Goal Achieved",          icon:"🎯", group:"Goals" },
-  { value:"SPRINT_STARTED",         label:"Sprint Started",         icon:"🏃", group:"Agile" },
-  { value:"SPRINT_COMPLETED",       label:"Sprint Completed",       icon:"🏁", group:"Agile" },
+  { value:"TASK_CREATED",           label:"Task Created",           icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"TASK_STATUS_CHANGED",    label:"Task Status Changed",    icon:<IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"TASK_OVERDUE",           label:"Task Becomes Overdue",   icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"TASK_ASSIGNED",          label:"Task Assigned",          icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"PROJECT_STATUS_CHANGED", label:"Project Status Changed", icon:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Projects" },
+  { value:"GOAL_ACHIEVED",          label:"Goal Achieved",          icon:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Goals" },
+  { value:"SPRINT_STARTED",         label:"Sprint Started",         icon:<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Agile" },
+  { value:"SPRINT_COMPLETED",       label:"Sprint Completed",       icon:<IcFlag size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Agile" },
   { value:"APPROVAL_APPROVED",      label:"Approval Approved",      icon:"✔️", group:"Approvals" },
-  { value:"APPROVAL_REJECTED",      label:"Approval Rejected",      icon:"✖️", group:"Approvals" },
-  { value:"SCHEDULED",              label:"Scheduled (Cron)",        icon:"⏰", group:"Scheduled" },
-  { value:"INBOUND_WEBHOOK",         label:"Inbound Webhook",         icon:"📥", group:"Webhooks" },
+  { value:"APPROVAL_REJECTED",      label:"Approval Rejected",      icon:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Approvals" },
+  { value:"SCHEDULED",              label:"Scheduled (Cron)",        icon:<IcAlarmClock size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Scheduled" },
+  { value:"INBOUND_WEBHOOK",         label:"Inbound Webhook",         icon:<IcInbox size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Webhooks" },
 ];
 
 const CONDITION_FIELDS = [
@@ -41,23 +42,23 @@ const CONDITION_OPS = [
 ];
 
 const ACTION_META = [
-  { value:"SEND_NOTIFICATION", label:"Send Notification",  icon:"🔔", group:"Notifications" },
-  { value:"CHANGE_STATUS",     label:"Change Task Status", icon:"🔄", group:"Tasks" },
-  { value:"CHANGE_PRIORITY",   label:"Change Priority",    icon:"🔥", group:"Tasks" },
-  { value:"ADD_TAG",           label:"Add Tag",            icon:"🏷",  group:"Tasks" },
-  { value:"POST_COMMENT",      label:"Post Comment",       icon:"💬", group:"Tasks" },
-  { value:"REQUEST_APPROVAL",  label:"Request Approval",   icon:"✅", group:"Approvals" },
-  { value:"AI_SUMMARISE",      label:"AI: Summarise",      icon:"🤖", group:"AI Actions" },
-  { value:"AI_RISK_CHECK",     label:"AI: Risk Check",     icon:"⚠️", group:"AI Actions" },
-  { value:"AI_ASSIGN",         label:"AI: Smart Assign",   icon:"👤", group:"AI Actions" },
-  { value:"START_BPM",         label:"Start BPM Process",  icon:"🔀", group:"BPM" },
+  { value:"SEND_NOTIFICATION", label:"Send Notification",  icon:<IcBell size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Notifications" },
+  { value:"CHANGE_STATUS",     label:"Change Task Status", icon:<IcRefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"CHANGE_PRIORITY",   label:"Change Priority",    icon:<IcFlame size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"ADD_TAG",           label:"Add Tag",            icon:<IcTag size={16} strokeWidth={1.5} aria-hidden="true" />,  group:"Tasks" },
+  { value:"POST_COMMENT",      label:"Post Comment",       icon:<IcMessageSquare size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Tasks" },
+  { value:"REQUEST_APPROVAL",  label:"Request Approval",   icon:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, group:"Approvals" },
+  { value:"AI_SUMMARISE",      label:"AI: Summarise",      icon:<IcBot size={16} strokeWidth={1.5} aria-hidden="true" />, group:"AI Actions" },
+  { value:"AI_RISK_CHECK",     label:"AI: Risk Check",     icon:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, group:"AI Actions" },
+  { value:"AI_ASSIGN",         label:"AI: Smart Assign",   icon:<IcUser size={16} strokeWidth={1.5} aria-hidden="true" />, group:"AI Actions" },
+  { value:"START_BPM",         label:"Start BPM Process",  icon:<IcShuffle size={16} strokeWidth={1.5} aria-hidden="true" />, group:"BPM" },
 ];
 
 const WORKFLOW_TEMPLATES = [
   {
     name: "Task Overdue Alert",
     description: "Notify team when a task becomes overdue",
-    icon: "⏰",
+    icon: <IcAlarmClock size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "TASK_OVERDUE",
     conditions: [],
     actions: [{ id:"1", type:"SEND_NOTIFICATION", config:{ title:"Task Overdue", message:"Task {{title}} is now overdue" } }],
@@ -65,7 +66,7 @@ const WORKFLOW_TEMPLATES = [
   {
     name: "High Priority Auto-Assign",
     description: "Post a comment when a high-priority task is created",
-    icon: "🚨",
+    icon: <IcSiren size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "TASK_CREATED",
     conditions: [{ id:"1", field:"priority", operator:"equals", value:"HIGH" }],
     actions: [{ id:"1", type:"POST_COMMENT", config:{ comment:"This is a high-priority task. Please action immediately." } }],
@@ -73,25 +74,25 @@ const WORKFLOW_TEMPLATES = [
   {
     name: "Sprint Start Notification",
     description: "Notify everyone when a new sprint begins",
-    icon: "🏃",
+    icon: <IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "SPRINT_STARTED",
     conditions: [],
-    actions: [{ id:"1", type:"SEND_NOTIFICATION", config:{ title:"Sprint Started", message:"A new sprint has begun. Check your backlog!" } }],
+    actions: [{ id:"1", type:"SEND_NOTIFICATION", config:{ title:"Sprint Started", message:"A new sprint has begun. Check your backlog" } }],
   },
   {
     name: "Goal Achievement Celebration",
     description: "Post a comment when a goal is achieved",
-    icon: "🎉",
+    icon: <IcPartyPopper size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "GOAL_ACHIEVED",
     conditions: [],
     actions: [
-      { id:"1", type:"SEND_NOTIFICATION", config:{ title:"Goal Achieved! 🎉", message:"Goal {{title}} has been completed!" } },
+      { id:"1", type:"SEND_NOTIFICATION", config:{ title:"Goal Achieved ", message:"Goal {{title}} has been completed" } },
     ],
   },
   {
     name: "Approval Required on Done",
     description: "Request approval before marking a task as done",
-    icon: "✅",
+    icon: <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "TASK_STATUS_CHANGED",
     conditions: [{ id:"1", field:"status", operator:"equals", value:"DONE" }],
     actions: [{ id:"1", type:"REQUEST_APPROVAL", config:{ title:"Approve task completion", approvers:[], chainType:"SEQUENTIAL", slaHours:24 } }],
@@ -99,7 +100,7 @@ const WORKFLOW_TEMPLATES = [
   {
     name: "Change Request Approval",
     description: "Multi-step approval chain for change requests",
-    icon: "📋",
+    icon: <IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" />,
     triggerType: "TASK_CREATED",
     conditions: [{ id:"1", field:"tag", operator:"contains", value:"change-request" }],
     actions: [{ id:"1", type:"REQUEST_APPROVAL", config:{ title:"Change Request Review", approvers:[], chainType:"SEQUENTIAL", slaHours:48 } }],
@@ -231,7 +232,7 @@ function ActionEditor({ actions, onChange }) {
                     <label htmlFor={"automations-risk-threshold-high-medium-low"}>Risk threshold (HIGH/MEDIUM/LOW)</label>
                     <select value={a.config?.threshold||"HIGH"}
                       onChange={e => updateConfig(a.id,"threshold",e.target.value)} id={"automations-risk-threshold-high-medium-low"}>
-                      <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+                      <option>High</option><option>Medium</option><option>LOW</option>
                     </select>
                     <div className="integration-field-help">AI analyses task/project for risks and notifies if above threshold</div>
                   </div>
@@ -738,7 +739,7 @@ export default function Automations() {
   return (
     <div>
       <PageHeader
-        icon="⚡"
+        icon={<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Automations"
         description="Visual no-code automation builder with approval workflows"
         action={
@@ -782,7 +783,7 @@ export default function Automations() {
             <input style={{ width:"200px" }} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search automations..." />
             <select value={filterTrigger} onChange={e=>setFilterTrigger(e.target.value)}>
               <option value="">All Triggers</option>
-              {TRIGGER_META.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+              {TRIGGER_META.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
               <option value="">All Statuses</option>
@@ -805,7 +806,7 @@ export default function Automations() {
             return (
               <div key={a.id} className={`auto-card${!a.enabled ? " auto-card-disabled" : ""}`}>
                 <div className="auto-card-left">
-                  <div className="auto-card-icon">{triggerMeta?.icon || "⚡"}</div>
+                  <div className="auto-card-icon">{triggerMeta?.icon || <IcZap size={16} strokeWidth={1.5} aria-hidden="true" />}</div>
                   <div className="auto-card-info">
                     <div className="auto-card-name">{a.name}</div>
                     <div className="auto-card-meta">
@@ -832,10 +833,10 @@ export default function Automations() {
                   <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 8px" }}
                     disabled={testing === a.id}
                     onClick={() => handleTest(a.id)}>
-                    {testing === a.id ? "⏳" : "▶ Test"}
+                    {testing === a.id ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "▶ Test"}
                   </button>
-                  <button className="btn-icon" onClick={() => { setEditing(a); setShowBuilder(true); }}>✏️</button>
-                  <button className="btn-icon" onClick={() => handleDelete(a.id)}>🗑️</button>
+                  <button className="btn-icon" onClick={() => { setEditing(a); setShowBuilder(true); }}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+                  <button className="btn-icon" onClick={() => handleDelete(a.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
                 </div>
               </div>
             );
@@ -860,7 +861,7 @@ export default function Automations() {
               .map(a => (
                 <div key={a.id} className="auto-history-group">
                   <div className="auto-history-group-name">
-                    <span>{TRIGGER_META.find(t=>t.value===a.triggerType)?.icon || "⚡"}</span>
+                    <span>{TRIGGER_META.find(t=>t.value===a.triggerType)?.icon || <IcZap size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
                     <span>{a.name}</span>
                     <span className="auto-history-stats">
                       {a.runCount} runs · {a.failCount} failed
@@ -868,7 +869,7 @@ export default function Automations() {
                   </div>
                   {a.recentLogs.map(log => (
                     <div key={log.id} className={`auto-history-entry${log.success ? "" : " failed"}`}>
-                      <span className="auto-history-icon">{log.success ? "✅" : "❌"}</span>
+                      <span className="auto-history-icon">{log.success ? <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" />}</span>
                       <div className="auto-history-info">
                         <div className="auto-history-msg">{log.message}</div>
                         <div className="auto-history-meta">

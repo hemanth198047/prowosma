@@ -275,7 +275,7 @@ export function MeetingActionsPanel({ session, members = [], projects = [], aiRe
           {session.canExtract && aiReady && (
             <button className="ma-btn primary" disabled={sh.busy} onClick={() => sh.run(() => extractMeetingActions(session.id), "Extracting…")}>
               {data.status === "READY" ? "Extract again" : "Extract actions"}</button>)}
-          {session.segmentCount > 0 && !aiReady && <p className="ma-hint">AI isn't ready: {aiReason} <a href="/ai-settings">AI Settings</a></p>}
+          {session.segmentCount > 0 && !aiReady && <p className="ma-hint">AI isn't ready: {aiReason} <a href="/ai-settings">AI settings</a></p>}
         </div>
       )}
       {session.canExtract && aiReady && (session.actionsStatus === "FAILED" || data.actions.length > 0) && !running && (

@@ -147,4 +147,102 @@ class RoleGuardFilterTest extends ProwosmaTestBase {
         m.setEmail(adminEmail); m.setOrganizationId(workspaceId); m.setRole("ADMIN");
         return m;
     }
+
+    // ── EDITOR: changes existing work and comments; never creates or deletes ──
+
+    private String ownerCreatesTask() throws Exception {
+        String body = mvc.perform(post("/api/tasks")
+                .header("Authorization", authHeader(ownerToken()))
+                .header("X-Workspace-Id", workspaceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(TASK_JSON))
+           .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("id").asText();
+    }
+
+    private TeamMember editorMember() {
+        TeamMember m = new TeamMember();
+        m.setEmail(memberEmail); m.setOrganizationId(workspaceId); m.setRole("EDITOR");
+        return m;
+    }
+
+    @Test
+    @DisplayName("T7: EDITOR can't create a task → 403")
+    void editor_cannotCreate() throws Exception {
+        upsert(editorMember());
+        mvc.perform(post("/api/tasks")
+                .header("Authorization", authHeader(memberToken()))
+                .header("X-Workspace-Id", workspaceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(TASK_JSON))
+           .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("T8: EDITOR can edit an existing task and comment on it, but not delete it")
+    void editor_canEditAndComment_butNotDelete() throws Exception {
+        String id = ownerCreatesTask();
+        upsert(editorMember());
+
+        int edit = mvc.perform(patch("/api/tasks/" + id)
+                .header("Authorization", authHeader(memberToken()))
+                .header("X-Workspace-Id", workspaceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Renamed by an editor\"}"))
+           .andReturn().getResponse().getStatus();
+        assertNotEquals(403, edit, "an editor may change an existing task");
+
+        int comment = mvc.perform(post("/api/tasks/" + id + "/comments")
+                .header("Authorization", authHeader(memberToken()))
+                .header("X-Workspace-Id", workspaceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"text\":\"Looks good\",\"content\":\"Looks good\"}"))
+           .andReturn().getResponse().getStatus();
+        assertNotEquals(403, comment, "an editor may comment");
+
+        mvc.perform(delete("/api/tasks/" + id)
+                .header("Authorization", authHeader(memberToken()))
+                .header("X-Workspace-Id", workspaceId))
+           .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("T9: EDITOR can't manage the team or settings → 403")
+    void editor_cannotManageTeam() throws Exception {
+        upsert(editorMember());
+        mvc.perform(post("/api/team")
+                .header("Authorization", authHeader(memberToken()))
+                .header("X-Workspace-Id", workspaceId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"new@test.com\",\"role\":\"MEMBER\"}"))
+           .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("T10: EDITOR may time their own work and talk to the team, but still can't create projects or channels")
+    void editor_ownTimeAndMessages_allowed() throws Exception {
+        String task = ownerCreatesTask();
+        upsert(editorMember());
+        for (String path : new String[]{"/api/work-sessions/start", "/api/work-sessions/stop", "/api/attendance/me/clock-in",
+                "/api/tasks/" + task + "/timelogs", "/api/channels/c1/messages", "/api/channels/dm"}) {
+            int status = mvc.perform(post(path)
+                    .header("Authorization", authHeader(memberToken()))
+                    .header("X-Workspace-Id", workspaceId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+               .andReturn().getResponse().getStatus();
+            org.junit.jupiter.api.Assertions.assertTrue(status != 403
+                    || !mvc.perform(post(path).header("Authorization", authHeader(memberToken())).header("X-Workspace-Id", workspaceId)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}")).andReturn().getResponse().getContentAsString().contains("Editors can change existing work"),
+                    "an editor isn't stopped by the role rule at " + path);
+        }
+        for (String path : new String[]{"/api/projects", "/api/channels"}) {
+            mvc.perform(post(path)
+                    .header("Authorization", authHeader(memberToken()))
+                    .header("X-Workspace-Id", workspaceId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"x\"}"))
+               .andExpect(status().isForbidden());
+        }
+    }
 }

@@ -12,6 +12,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts";
+import { CircleCheck as IcCircleCheck, Footprints as IcFootprints, Frown as IcFrown, Meh as IcMeh, Pencil as IcPencil, Smile as IcSmile, Trash2 as IcTrash2, Square as IcSquare } from "lucide-react";
 
 const STATUS_META = {
   PLANNING:  { label:"Planning",  color:"var(--brand-500)", bg:"rgba(99,102,241,0.12)" },
@@ -21,10 +22,10 @@ const STATUS_META = {
 };
 
 const MOOD_META = {
-  GREAT:   { icon:"😄", label:"Great" },
-  GOOD:    { icon:"🙂", label:"Good" },
-  NEUTRAL: { icon:"😐", label:"Neutral" },
-  BAD:     { icon:"😟", label:"Bad" },
+  GREAT:   { icon:<IcSmile size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Great" },
+  GOOD:    { icon:<IcSmile size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Good" },
+  NEUTRAL: { icon:<IcMeh size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Neutral" },
+  BAD:     { icon:<IcFrown size={16} strokeWidth={1.5} aria-hidden="true" />, label:"Bad" },
 };
 
 // ── Sprint Form ────────────────────────────────────────────────
@@ -397,8 +398,8 @@ function PIPanel({ sprints, allTasks }) {
             value={g.confidence}
             onChange={e => setConf(g.id, e.target.value)}
             style={{ color: CONF_COLOR[g.confidence] }}>
-            <option value="HIGH">HIGH</option>
-            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
             <option value="LOW">LOW</option>
           </select>
           <button className="btn-icon" onClick={() => removeGoal(g.id)}>✕</button>
@@ -602,7 +603,7 @@ function RetroPanel({ sprint, onSaved }) {
         <span className="sprint-section-label">Retrospective</span>
         <button className="btn-secondary" style={{ fontSize:"11px", padding:"4px 10px" }}
           onClick={() => setOpen(v => !v)}>
-          {open ? "✕ Close" : existing ? "✎ Edit" : "+ Add Retro"}
+          {open ? "✕ Close" : existing ? "Edit" : "+ Add Retro"}
         </button>
       </div>
 
@@ -734,7 +735,7 @@ function SprintGoalsPanel({ sprint, onRefresh }) {
         <div key={m.id} className="sprint-goal-ms-row">
           <button className={`sprint-goal-ms-check${m.achieved?" done":""}`}
             onClick={()=>toggle(m.id)}>
-            {m.achieved ? "✅" : "⬜"}
+            {m.achieved ? <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" /> : <IcSquare size={16} strokeWidth={1.5} aria-hidden="true" />}
           </button>
           <span className={`sprint-goal-ms-text${m.achieved?" done-text":""}`}>
             {m.milestone}
@@ -804,7 +805,7 @@ function SprintCard({ sprint, allTasks, onEdit, onDelete, onRefresh }) {
       <div className="sprint-progress-section">
         <div className="sprint-progress-label">
           <span>{sprintTasks.length} tasks · {donePts}/{totalPts} pts</span>
-          <span style={{ fontWeight:700, color: pct===100?"var(--success)":"var(--gray-600)" }}>{pct}%</span>
+          <span style={{ fontWeight: 600, color: pct===100?"var(--success)":"var(--gray-600)" }}>{pct}%</span>
         </div>
         <div className="sprint-progress-bar">
           <div className="sprint-progress-fill" style={{ width:`${pct}%`, background:pct===100?"var(--success)":"var(--brand-500)" }} />
@@ -848,8 +849,8 @@ function SprintCard({ sprint, allTasks, onEdit, onDelete, onRefresh }) {
           )}
         </div>
         <div style={{ display:"flex", gap:"4px" }}>
-          <button className="btn-icon" onClick={() => onEdit(sprint)}>✏️</button>
-          <button className="btn-icon" onClick={() => onDelete(sprint.id)}>🗑️</button>
+          <button className="btn-icon" onClick={() => onEdit(sprint)}><IcPencil size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+          <button className="btn-icon" onClick={() => onDelete(sprint.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -929,7 +930,7 @@ export default function Sprints() {
   return (
     <div>
       <PageHeader
-        icon="🏃"
+        icon={<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Sprints"
         description="Plan, run, and review agile sprints"
         action={
@@ -1018,7 +1019,7 @@ export default function Sprints() {
         ))}
         {filtered.length === 0 && (
           <div className="empty-state">
-            No sprints yet. Create your first sprint to start planning!
+            No sprints yet. Create your first sprint to start planning
           </div>
         )}
       </div>}

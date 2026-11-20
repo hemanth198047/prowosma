@@ -573,7 +573,7 @@ export default function MeetingAssistant() {
 
   return (
     <div className="ma2-page">
-      <PageHeader title="Meeting Assistant"
+      <PageHeader title="Meeting assistant"
         description="Turn a meeting into a summary, minutes, tasks and projects. You review everything before anything is created."
         action={selected ? (
           <button type="button" className="btn-primary pg-btn" onClick={() => setSelectedId(null)}>

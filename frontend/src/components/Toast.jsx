@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { ToastContext } from "./ToastContext";
+import { CircleCheck as IcCircleCheck, CircleX as IcCircleX, Info as IcInfo, TriangleAlert as IcTriangleAlert } from "lucide-react";
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -22,10 +23,10 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => (
           <div key={t.id} className={"toast toast-" + t.type}>
             <span className="toast-icon">
-              {t.type === "success" ? "✅"
-                : t.type === "error" ? "❌"
-                : t.type === "warning" ? "⚠️"
-                : "ℹ️"}
+              {t.type === "success" ? <IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />
+                : t.type === "error" ? <IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" />
+                : t.type === "warning" ? <IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />
+                : <IcInfo size={16} strokeWidth={1.5} aria-hidden="true" />}
             </span>
             <span className="toast-message">{t.message}</span>
             <button className="toast-close" onClick={() => remove(t.id)}>

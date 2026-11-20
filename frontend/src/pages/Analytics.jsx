@@ -9,16 +9,17 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import "../styles/pages/analytics.css";
+import { ChartColumn as IcChartColumn, CircleCheck as IcCircleCheck, Target as IcTarget, Timer as IcTimer, TriangleAlert as IcTriangleAlert, Trophy as IcTrophy, Zap as IcZap } from "lucide-react";
 
 // ── KPI Card ──────────────────────────────────────────────────
-function KpiCard({ icon, label, value, sub, color, suffix = "" }) {
+function KpiCard({ icon, label, value, sub, tone, suffix = "" }) {
   return (
     <div className="analytics-kpi-card">
-      <div className="analytics-kpi-icon" style={{ background: color + "18", color }}>
+      <div className={`analytics-kpi-icon${tone === "danger" ? " is-danger" : ""}`}>
         {icon}
       </div>
       <div className="analytics-kpi-body">
-        <div className="analytics-kpi-value" style={{ color }} title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}>
+        <div className={`analytics-kpi-value${tone === "danger" ? " is-danger" : ""}`} title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}>
           {value}{suffix}
         </div>
         <div className="analytics-kpi-label">{label}</div>
@@ -92,7 +93,7 @@ function WorkloadView() {
           return (
             <div key={level} className="workload-summary-chip"
               style={{ background: m.bg, border: `1px solid ${m.color}33` }}>
-              <span style={{ fontSize: "20px", fontWeight: 800, color: m.color }}>{count}</span>
+              <span style={{ fontSize: "20px", fontWeight: 600, color: m.color }}>{count}</span>
               <span style={{ fontSize: "11px", color: m.color, fontWeight: 600 }}>{m.label}</span>
             </div>
           );
@@ -133,7 +134,7 @@ function WorkloadView() {
                 <div style={{ display: "flex", justifyContent: "space-between",
                   fontSize: "11px", color:"#94a3b8", marginBottom: "4px" }}>
                   <span>Completion rate</span>
-                  <span style={{ fontWeight: 700, color:"#475569" }}>{m.completionRate}%</span>
+                  <span style={{ fontWeight: 600, color:"#475569" }}>{m.completionRate}%</span>
                 </div>
                 <div className="workload-completion-bar">
                   <div style={{
@@ -308,7 +309,7 @@ export default function Analytics() {
 
   if (loading) return (
     <div>
-      <PageHeader icon="📊" title="Analytics" description="Loading…" />
+      <PageHeader icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />} title="Analytics" description="Loading…" />
       <div className="analytics-loading">
         <div className="analytics-spinner" />
         <p>Crunching the numbers…</p>
@@ -318,7 +319,7 @@ export default function Analytics() {
 
   if (error) return (
     <div>
-      <PageHeader icon="📊" title="Analytics" description="Business intelligence dashboard" />
+      <PageHeader icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />} title="Analytics" description="Business intelligence dashboard" />
       <div className="empty-state">{error}</div>
     </div>
   );
@@ -327,7 +328,7 @@ export default function Analytics() {
   // arrives without them, show an empty state instead of crashing the page.
   if (!data || !data.kpis) return (
     <div>
-      <PageHeader icon="📊" title="Analytics" description="Operational intelligence — velocity, health scores, capacity planning" />
+      <PageHeader icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />} title="Analytics" description="Operational intelligence — velocity, health scores, capacity planning" />
       <div className="empty-state">No analytics data yet. It appears once your workspace has projects and tasks.</div>
     </div>
   );
@@ -338,7 +339,7 @@ export default function Analytics() {
   return (
     <div>
       <PageHeader
-        icon="📊"
+        icon={<IcChartColumn size={16} strokeWidth={1.5} aria-hidden="true" />}
         title="Analytics"
         description="Operational intelligence — velocity, health scores, capacity planning"
         action={
@@ -383,7 +384,7 @@ export default function Analytics() {
               ["burndown", "Burndown"],
               ["status",   "By Status"],
               ["priority", "By Priority"],
-              ["trend",    "📈 30-Day Trend"],
+              ["trend",    "30-Day Trend"],
               ["capacity", "Capacity"],
               ["health",   "Project Health"],
             ].map(([key, label]) => (
@@ -405,17 +406,17 @@ export default function Analytics() {
         <div>
           {/* KPI Row */}
           <div className="analytics-kpi-row">
-            <KpiCard icon="✅" label="Completion Rate"   value={kpis.completionRate}  suffix="%" color="var(--success)"
+            <KpiCard icon={<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />} label="Completion rate"   value={kpis.completionRate}  suffix="%"
               sub={`${kpis.completedTasks} of ${kpis.totalTasks} tasks done`} />
-            <KpiCard icon="⚡" label="In Progress"       value={kpis.inProgress}      color="var(--warning)"
+            <KpiCard icon={<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />} label="In progress"       value={kpis.inProgress}     
               sub="tasks active right now" />
-            <KpiCard icon="⚠️" label="Overdue Tasks"     value={kpis.overdueTasks}    color="var(--danger)"
+            <KpiCard icon={<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />} label="Overdue tasks"     value={kpis.overdueTasks}    tone="danger"
               sub={`${kpis.overdueRate}% of all tasks`} />
-            <KpiCard icon="⏱️" label="Avg Task Age"      value={kpis.avgTaskAgeDays}  suffix=" days" color="var(--brand-500)"
+            <KpiCard icon={<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />} label="Average task age"      value={kpis.avgTaskAgeDays}  suffix=" days"
               sub="for open tasks" />
-            <KpiCard icon="🎯" label="Goal Success Rate" value={kpis.goalSuccessRate} suffix="%" color="var(--purple)"
+            <KpiCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} label="Goal success rate" value={kpis.goalSuccessRate} suffix="%"
               sub={`${kpis.achievedGoals} of ${kpis.totalGoals} goals achieved`} />
-            <KpiCard icon="🏆" label="Most Productive"   value={kpis.topUser}         color="#0ea5e9"
+            <KpiCard icon={<IcTrophy size={16} strokeWidth={1.5} aria-hidden="true" />} label="Most productive"   value={kpis.topUser}        
               sub="this month" />
           </div>
 

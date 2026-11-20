@@ -71,6 +71,13 @@ public final class AccessGatePolicy {
      * capability. Its sessions are private to their owner and whoever they share them with.
      */
     private static final String MEETING_ASSISTANT = "/api/meeting-assistant";
+    /** Meetings (the AI Meeting Assistant that took over Meetings notes and the first assistant): same capability. */
+    private static final String MEETINGS_V2 = "/api/v2/meeting-assistant";
+
+    /** Sending a meeting's decision to the Decision log or a risk to the RAID log is a planning write. */
+    private static boolean isMeetingPlanningWrite(String path) {
+        return path.matches("^/api/v2/meeting-assistant/meetings/[^/]+/(decisions/[^/]+/log|risks/[^/]+/raid)$");
+    }
 
     /**
      * Inside otherwise-allowed areas, these stay closed to restricted callers:
@@ -80,6 +87,8 @@ public final class AccessGatePolicy {
     private static final List<String> ALWAYS_DENIED = List.of(
             "/api/meeting-assistant/fireflies/recent",
             "/api/meeting-assistant/fireflies/import",
+            "/api/v2/meeting-assistant/fireflies/recent",
+            "/api/v2/meeting-assistant/meetings/fireflies",
             "/api/notifications/announce",       // an announcement goes to the whole workspace
             "/api/activity-logs/export",
             "/api/activity-logs/verify-integrity",
@@ -108,7 +117,8 @@ public final class AccessGatePolicy {
         if (!m.equals("GET") && matchesAny(path, PLANNING_WRITES) && !scope.has(AccessConstants.CAP_MANAGE_PLANNING)) return false;
         for (String denied : ALWAYS_DENIED) if (matchesPrefix(path, denied)) return false;
 
-        boolean meeting = matchesPrefix(path, MEETING_ASSISTANT) && scope.has(AccessConstants.CAP_USE_MEETING_ASSISTANT);
+        if (!m.equals("GET") && isMeetingPlanningWrite(path) && !scope.has(AccessConstants.CAP_MANAGE_PLANNING)) return false;
+        boolean meeting = (matchesPrefix(path, MEETING_ASSISTANT) || matchesPrefix(path, MEETINGS_V2)) && scope.has(AccessConstants.CAP_USE_MEETING_ASSISTANT);
         boolean listed = meeting || isGanttDatePatch(path, m) || matchesAny(path, ANY_METHOD) || (m.equals("GET") && (matchesAny(path, GET_ONLY) || GET_EXACT.contains(stripTrailingSlash(path))));
         if (!listed) return false;
 

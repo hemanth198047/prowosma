@@ -6,6 +6,7 @@ import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import { getProjects } from "../api/projects";
 import { getTeamMembers } from "../api/team";
+import { Calendar as IcCalendar, Coins as IcCoins, Hourglass as IcHourglass, Package as IcPackage, Shuffle as IcShuffle, Sparkles as IcSparkles, Target as IcTarget, Timer as IcTimer, Trash2 as IcTrash2, Users as IcUsers, Zap as IcZap } from "lucide-react";
 
 // ── API ────────────────────────────────────────────────────────
 const api = {
@@ -21,17 +22,17 @@ const api = {
 
 // ── Constants ──────────────────────────────────────────────────
 const SCENARIO_TYPES = [
-  { value:"TEAM_CHANGE",     label:"Team Change",       icon:"👥",
+  { value:"TEAM_CHANGE",     label:"Team Change",       icon:<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Simulate losing or adding team members and the impact on delivery" },
-  { value:"DEADLINE_SHIFT",  label:"Deadline Shift",    icon:"📅",
+  { value:"DEADLINE_SHIFT",  label:"Deadline Shift",    icon:<IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Compress or extend project timelines and see confidence projections" },
-  { value:"SCOPE_CHANGE",    label:"Scope Change",      icon:"📦",
+  { value:"SCOPE_CHANGE",    label:"Scope Change",      icon:<IcPackage size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Add or remove story points and see sprint/delivery impact" },
-  { value:"BUDGET_CUT",      label:"Budget Cut",        icon:"💰",
+  { value:"BUDGET_CUT",      label:"Budget Cut",        icon:<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Model budget reduction scenarios and projected burn rate" },
-  { value:"VELOCITY_CHANGE", label:"Velocity Change",   icon:"⚡",
+  { value:"VELOCITY_CHANGE", label:"Velocity Change",   icon:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Simulate team slowdown (illness, onboarding, tech debt) or speedup" },
-  { value:"COMBINED",        label:"Combined",          icon:"🔀",
+  { value:"COMBINED",        label:"Combined",          icon:<IcShuffle size={16} strokeWidth={1.5} aria-hidden="true" />,
     desc:"Mix multiple changes together for complex what-if analysis" },
 ];
 
@@ -120,7 +121,7 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
           <div className="sc-results-title">Simulation: {scenarioName}</div>
           <div className="sc-results-subtitle" style={{color:rm.color}}>{rm.label}</div>
           <div className="sc-results-confidence">
-            <span style={{fontWeight:800,fontSize:"24px",color:rm.color}}>
+            <span style={{fontWeight: 600,fontSize:"24px",color:rm.color}}>
               {results.deliveryConfidence}%
             </span>
             <span style={{fontSize:"13px",color:"var(--gray-500)",marginLeft:"6px"}}>delivery confidence</span>
@@ -130,26 +131,26 @@ function SimulationResults({ results, aiNarrative, scenarioName }) {
 
       {/* Key metrics grid */}
       <div className="sc-metrics-grid">
-        <MetricCard icon="📅" label="Projected Completion"
+        <MetricCard icon={<IcCalendar size={16} strokeWidth={1.5} aria-hidden="true" />} label="Projected Completion"
           value={fmtDate(results.projectedCompletionDate)}
           sub={`Baseline: ${fmtDate(results.baselineCompletionDate)}`}
           color={results.estimatedDelayDays > 0 ? "var(--danger)" : "var(--success)"} />
-        <MetricCard icon="⏱" label="Delay Estimate"
+        <MetricCard icon={<IcTimer size={16} strokeWidth={1.5} aria-hidden="true" />} label="Delay Estimate"
           value={delayLabel} color={delayColor}
           sub={`${results.sprintsToCompletion} sprints needed`} />
-        <MetricCard icon="⚡" label="Sprint Velocity"
+        <MetricCard icon={<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />} label="Sprint Velocity"
           value={`${results.sprintVelocityProjected} pts`}
           sub="After scenario changes"
           delta={results.sprintVelocityProjected > 0 ? undefined : undefined} />
-        <MetricCard icon="🎯" label="Goals at Risk"
+        <MetricCard icon={<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />} label="Goals at Risk"
           value={results.goalsAtRisk}
           color={results.goalsAtRisk > 0 ? "var(--danger)" : "var(--success)"}
           sub={`Confidence Δ ${results.goalConfidenceImpact > 0 ? "+" : ""}${results.goalConfidenceImpact} pts`} />
-        <MetricCard icon="👥" label="Team Load"
+        <MetricCard icon={<IcUsers size={16} strokeWidth={1.5} aria-hidden="true" />} label="Team Load"
           value={`${results.teamLoadChange > 0 ? "+" : ""}${results.teamLoadChange}%`}
           color={results.teamLoadChange > 20 ? "var(--danger)" : results.teamLoadChange > 0 ? "var(--warning)" : "var(--success)"}
           sub={results.burnoutRisk ? "Burnout risk" : "Within capacity"} />
-        <MetricCard icon="💰" label="Budget Variance"
+        <MetricCard icon={<IcCoins size={16} strokeWidth={1.5} aria-hidden="true" />} label="Budget Variance"
           value={results.budgetVariance < 0 ? `−$${Math.abs(results.budgetVariance).toLocaleString()}` : "No change"}
           color={results.budgetVariance < -1000 ? "var(--danger)" : "var(--gray-700)"}
           sub={`Burn: $${(results.projectedBurnRate||0).toLocaleString()}/mo`} />
@@ -494,8 +495,8 @@ function CompareView({ scenarios }) {
                 bVal={`${sB.results.goalConfidenceImpact > 0 ? "+" : ""}${sB.results.goalConfidenceImpact}`}
                 better="higher" />
               <CompareRow label="Burnout Risk"
-                aVal={sA.results.burnoutRisk ? "Yes ⚠️" : "No ✓"}
-                bVal={sB.results.burnoutRisk ? "Yes ⚠️" : "No ✓"} better="lower" />
+                aVal={sA.results.burnoutRisk ? "Yes " : "No ✓"}
+                bVal={sB.results.burnoutRisk ? "Yes " : "No ✓"} better="lower" />
             </tbody>
           </table>
 
@@ -611,7 +612,7 @@ export default function ScenarioPlanning() {
 
   return (
     <div>
-      <PageHeader icon="🔮" title="Scenario Planning"
+      <PageHeader icon={<IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" />} title="Scenario planning"
         description="Model what-if changes and simulate their impact on delivery, goals, and team health"
         action={
           <div style={{display:"flex",gap:"8px"}}>
@@ -619,7 +620,7 @@ export default function ScenarioPlanning() {
               <>
                 <button className="btn-secondary" onClick={saveScenario}>Save</button>
                 <button className="btn-primary" onClick={runPreview} disabled={previewing}>
-                  {previewing ? "⏳" : "Preview"}
+                  {previewing ? <IcHourglass size={16} strokeWidth={1.5} aria-hidden="true" /> : "Preview"}
                 </button>
               </>
             )}
@@ -667,7 +668,7 @@ export default function ScenarioPlanning() {
                   const typeMeta = SCENARIO_TYPES.find(t=>t.value===s.type);
                   return (
                     <div key={s.id} className="sc-saved-card">
-                      <div className="sc-saved-icon">{typeMeta?.icon||"🔮"}</div>
+                      <div className="sc-saved-icon">{typeMeta?.icon||<IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" />}</div>
                       <div className="sc-saved-body">
                         <div className="sc-saved-name">{s.name}</div>
                         <div className="sc-saved-meta">
@@ -701,7 +702,7 @@ export default function ScenarioPlanning() {
                             View
                           </button>
                         )}
-                        <button className="btn-icon" onClick={()=>handleDelete(s.id)}>🗑️</button>
+                        <button className="btn-icon" onClick={()=>handleDelete(s.id)}><IcTrash2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
                       </div>
                     </div>
                   );
@@ -766,7 +767,7 @@ export default function ScenarioPlanning() {
                     scenarioName={editing.name} />
                 ) : (
                   <div className="sc-preview-placeholder">
-                    <div className="sc-preview-icon">🔮</div>
+                    <div className="sc-preview-icon"><IcSparkles size={16} strokeWidth={1.5} aria-hidden="true" /></div>
                     <div className="sc-preview-hint">
                       Adjust the sliders and click <strong>Preview</strong> to see a live simulation,
                       or <strong>Save</strong> then <strong>▶ Run Simulation</strong> to persist results.
