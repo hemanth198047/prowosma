@@ -10,7 +10,7 @@ vi.mock("../../api/projects", () => ({ getProjects: () => Promise.resolve({ data
 vi.mock("../../api/team", () => ({ getTeamMembers: () => Promise.resolve({ data: [{ id: "t1", name: "Asha", email: "asha@x.com" }, { id: "t2", name: "Bo", email: "bo@x.com" }] }) }));
 const api = vi.hoisted(() => Object.fromEntries([
   "getAttendanceStatus", "getMyAttendance", "getMyLogs", "getMyRequests", "getBalances", "getMyCallTimes", "requestCorrection", "requestLeave",
-  "cancelRequest", "claimOvertime", "getApprovals", "decideRequest", "decideOvertime", "getReport", "exportReport", "getFloor",
+  "cancelRequest", "claimOvertime", "getApprovals", "decideRequest", "decideOvertime", "getReport", "getReportOptions", "exportReport", "getFloor",
   "getAttendanceSettings", "saveAttendanceSettings", "addShift", "saveShift", "deleteShift", "getCallTimes", "addCallTime", "deleteCallTime",
   "clockIn", "clockOut", "startBreak", "endBreak", "reportIdle",
 ].map((k) => [k, vi.fn()])));
@@ -44,6 +44,7 @@ describe("Attendance page", () => {
     api.getMyRequests.mockResolvedValue({ data: [{ id: "r1", kind: "LEAVE", leaveType: "CASUAL", fromDate: "2026-11-20", toDate: "2026-11-20", days: 1, status: "PENDING" }] });
     api.getBalances.mockResolvedValue({ data: balances });
     api.getMyCallTimes.mockResolvedValue({ data: [] });
+    api.getReportOptions.mockResolvedValue({ data: { workspaces: [{ id: "w1", name: "Studio", current: true, seesEveryone: true }], people: [], departments: [], managers: [], workModes: [] } });
   });
 
   it("explains how to turn it on while the flag is off", async () => {
@@ -148,5 +149,64 @@ describe("Attendance page", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Reports" }));
     await screen.findByText(/Nothing in this range/);
     expect(screen.queryByRole("button", { name: "Excel" })).not.toBeInTheDocument();
+  });
+
+  it("filters the details by workspace, department, person, status and flags, and exports with the same filters", async () => {
+    api.getMyAttendance.mockResolvedValue(me({ canManage: true }));
+    api.getFloor.mockResolvedValue({ data: { date: "2026-11-18", counts: {}, people: [] } });
+    api.getApprovals.mockResolvedValue({ data: { requests: [], overtime: [] } });
+    api.getReportOptions.mockResolvedValue({ data: {
+      workspaces: [{ id: "w1", name: "Studio", current: true, seesEveryone: true }, { id: "w2", name: "Weddings", current: false, seesEveryone: true }],
+      people: [{ email: "asha@x.com", name: "Asha", departments: ["Camera"] }, { email: "bo@x.com", name: "Bo", departments: ["Editing, Colour"] }],
+      departments: ["Camera", "Editing, Colour"], managers: [{ email: "lena@x.com", name: "Lena" }], workModes: ["IN_OFFICE", "REMOTE", "ON_LOCATION"],
+    } });
+    api.getReport.mockResolvedValue({ data: [
+      { date: "2026-11-17", name: "Bo", email: "bo@x.com", status: "LATE", workspaceId: "w1", workspace: "Studio", departments: ["Editing, Colour"], managerName: "Lena", project: "Ad shoot" },
+      { date: "2026-11-17", name: "Asha", email: "asha@x.com", status: "PRESENT", workspaceId: "w2", workspace: "Weddings", departments: ["Camera"] },
+    ] });
+    api.exportReport.mockResolvedValue({ data: new Blob(["x"]) });
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+    show();
+    fireEvent.click(await screen.findByRole("tab", { name: "Reports" }));
+    expect(await screen.findByText("Reports to Lena")).toBeInTheDocument();
+    const filters = screen.getByRole("group", { name: "Filters" });
+    const lastParams = () => api.getReport.mock.calls.at(-1)[0];
+
+    fireEvent.click(within(filters).getByRole("button", { name: "Workspace" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Studio/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Weddings/ }));
+    await waitFor(() => expect(lastParams().workspace).toEqual(["w1", "w2"]));
+    await waitFor(() => expect(api.getReportOptions).toHaveBeenLastCalledWith({ workspace: ["w1", "w2"] }));
+    expect(await screen.findByRole("columnheader", { name: "Workspace" })).toBeInTheDocument();
+
+    fireEvent.click(within(filters).getByRole("button", { name: "Department" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Editing, Colour/ }));
+    await waitFor(() => expect(lastParams().department).toEqual(["Editing, Colour"]));
+    expect(within(filters).getByRole("button", { name: /Department: Editing, Colour/ })).toBeInTheDocument();
+
+    fireEvent.click(within(filters).getByRole("button", { name: "Status" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Late" }));
+    fireEvent.click(within(filters).getByRole("button", { name: "Late" }));
+    await waitFor(() => expect(lastParams()).toEqual(expect.objectContaining({ status: ["LATE"], late: true })));
+
+    fireEvent.change(within(filters).getByLabelText("Search name or email"), { target: { value: "bo" } });
+    await waitFor(() => expect(lastParams().q).toBe("bo"));
+
+    fireEvent.click(screen.getByRole("button", { name: "CSV" }));
+    await waitFor(() => expect(api.exportReport).toHaveBeenCalledWith(expect.objectContaining({
+      format: "csv", workspace: ["w1", "w2"], department: ["Editing, Colour"], status: ["LATE"], late: true, q: "bo" })));
+
+    fireEvent.click(within(filters).getByRole("button", { name: "Clear filters" }));
+    await waitFor(() => expect(lastParams()).toEqual(expect.objectContaining({ workspace: [], department: [], status: [], late: undefined, q: undefined })));
+  });
+
+  it("clicking a count in the summary shows only that status", async () => {
+    api.getMyAttendance.mockResolvedValue(me({ isManager: true }));
+    api.getReport.mockResolvedValue({ data: [{ date: "2026-11-17", name: "Bo", email: "bo@x.com", status: "ABSENT", departments: [] }] });
+    show();
+    fireEvent.click(await screen.findByRole("tab", { name: "Reports" }));
+    fireEvent.click(await screen.findByRole("button", { name: "1 no-show" }));
+    await waitFor(() => expect(api.getReport.mock.calls.at(-1)[0].status).toEqual(["ABSENT"]));
   });
 });

@@ -2,6 +2,7 @@ package com.prowosma.backend.attendance.web;
 
 import com.prowosma.backend.attendance.app.AttendanceExport;
 import com.prowosma.backend.attendance.app.AttendanceFeature;
+import com.prowosma.backend.attendance.app.AttendanceReports;
 import com.prowosma.backend.attendance.app.AttendanceService;
 import com.prowosma.backend.attendance.app.AttendanceService.Caller;
 import com.prowosma.backend.attendance.model.*;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -32,9 +34,10 @@ public class AttendanceController {
     private final AttendanceService service;
     private final AttendanceFeature feature;
     private final WorkspaceContext workspace;
+    private final AttendanceReports reports;
 
-    public AttendanceController(AttendanceService service, AttendanceFeature feature, WorkspaceContext workspace) {
-        this.service = service; this.feature = feature; this.workspace = workspace;
+    public AttendanceController(AttendanceService service, AttendanceFeature feature, WorkspaceContext workspace, AttendanceReports reports) {
+        this.service = service; this.feature = feature; this.workspace = workspace; this.reports = reports;
     }
 
     private Caller who(Authentication auth) {
@@ -149,19 +152,29 @@ public class AttendanceController {
     }
 
     // ── reports (admins/HR everyone; managers their reports; others themselves) ──
+    // Filters (all optional, each may repeat): workspace, person (or email), department, manager, status, workMode, project;
+    // late=true, overtime=true, missedClockOut=true; q (name or email contains). See AttendanceReports.
 
     @GetMapping("/report")
-    public List<Map<String, Object>> report(Authentication auth, @RequestParam(required = false) String from,
-                                            @RequestParam(required = false) String to, @RequestParam(required = false) String email) {
-        return service.report(who(auth), from, to, email);
+    public List<Map<String, Object>> report(Authentication auth, @RequestParam MultiValueMap<String, String> q) {
+        return reports.report(who(auth), filter(q));
+    }
+
+    @GetMapping("/report/options")
+    public Map<String, Object> reportOptions(Authentication auth, @RequestParam MultiValueMap<String, String> q) {
+        return reports.options(who(auth), values(q, "workspace"));
     }
 
     @GetMapping("/report/export")
-    public ResponseEntity<byte[]> export(Authentication auth, @RequestParam(required = false) String from, @RequestParam(required = false) String to,
-                                         @RequestParam(required = false) String email, @RequestParam(defaultValue = "csv") String format) {
+    public ResponseEntity<byte[]> export(Authentication auth, @RequestParam MultiValueMap<String, String> q) {
         Caller c = who(auth);
-        if (!c.admin()) throw AttendanceException.forbidden("Only workspace admins and HR can export attendance for payroll.");
-        List<Map<String, Object>> rows = service.report(c, from, to, email);
+        AttendanceReports.ReportFilter f = filter(q);
+        for (Caller in : reports.callers(c, f.workspaces()))
+            if (!in.admin()) throw AttendanceException.forbidden("Only workspace admins and HR can export attendance for payroll"
+                    + (in == c ? "." : " (you aren't one in every chosen workspace)."));
+        List<Map<String, Object>> rows = reports.report(c, f);
+        String format = first(q, "format");
+        String from = first(q, "from"), to = first(q, "to");
         boolean excel = "xlsx".equalsIgnoreCase(format);
         byte[] body = excel ? AttendanceExport.xlsx(rows, service.zone(c.org())) : AttendanceExport.csv(rows, service.zone(c.org()));
         String name = "attendance" + (from == null ? "" : "-" + from.replaceAll("[^0-9-]", "")) + (to == null ? "" : "-to-" + to.replaceAll("[^0-9-]", ""))
@@ -171,6 +184,26 @@ public class AttendanceController {
                 .contentType(excel ? MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                         : MediaType.parseMediaType("text/csv; charset=utf-8"))
                 .body(body);
+    }
+
+    static AttendanceReports.ReportFilter filter(MultiValueMap<String, String> q) {
+        List<String> people = new java.util.ArrayList<>(values(q, "person"));
+        people.addAll(values(q, "email"));
+        return new AttendanceReports.ReportFilter(first(q, "from"), first(q, "to"), values(q, "workspace"), people,
+                values(q, "department"), values(q, "manager"), values(q, "status"), values(q, "workMode"), values(q, "project"),
+                "true".equalsIgnoreCase(first(q, "late")), "true".equalsIgnoreCase(first(q, "overtime")),
+                "true".equalsIgnoreCase(first(q, "missedClockOut")), first(q, "q"));
+    }
+
+    /** Every non-blank value of a parameter, as sent (a department name may contain commas, so values are never split). */
+    static List<String> values(MultiValueMap<String, String> q, String key) {
+        List<String> raw = q.getOrDefault(key, List.of());
+        return raw.stream().filter(v -> v != null && !v.isBlank()).map(String::trim).limit(200).toList();
+    }
+
+    static String first(MultiValueMap<String, String> q, String key) {
+        List<String> v = values(q, key);
+        return v.isEmpty() ? null : v.get(0);
     }
 
     // ── admin / HR ──────────────────────────────────────────────────────

@@ -55,13 +55,26 @@ public class AttendanceService {
     }
 
     public Caller caller(String org, String rawEmail) {
+        boolean restricted;
+        try { restricted = visibility.isRestricted(); } catch (RuntimeException outsideRequest) { restricted = false; }
+        return caller(org, rawEmail, restricted);
+    }
+
+    /**
+     * The same person's rights in ANOTHER workspace than the one the request is for (reports across workspaces):
+     * that workspace's own access control decides whether an admin role counts. A lookup error restricts.
+     */
+    public Caller callerIn(String org, String rawEmail) {
+        String email = rawEmail == null ? "" : rawEmail.toLowerCase(Locale.ROOT);
+        return caller(org, rawEmail, visibility.scopeFor(email, org).isRestricted());
+    }
+
+    private Caller caller(String org, String rawEmail, boolean restricted) {
         String email = rawEmail == null ? "" : rawEmail.toLowerCase(Locale.ROOT);
         Workspace ws = workspaces.findById(org).orElseThrow(AttendanceException::notFound);
         TeamMember tm = members.findAllByEmailAndOrganizationId(rawEmail, org).stream().findFirst().orElse(null);
         String role = email.equalsIgnoreCase(ws.getOwnerEmail()) ? "OWNER" : tm == null ? "NONE" : tm.getRole();
         if ("NONE".equals(role)) throw AttendanceException.forbidden("You're not a member of this workspace.");
-        boolean restricted;
-        try { restricted = visibility.isRestricted(); } catch (RuntimeException outsideRequest) { restricted = false; }
         boolean adminRole = ("OWNER".equals(role) || "ADMIN".equals(role)) && !restricted;
         boolean hr = adminRole || settings(org).getHrEmails().stream().anyMatch(e -> e.equalsIgnoreCase(email));
         String name = tm != null && tm.getName() != null ? tm.getName() : users.findByEmail(rawEmail).map(u -> u.getName()).orElse(email);
@@ -551,6 +564,15 @@ public class AttendanceService {
 
     public record Person(String email, String name, String title, String department) {}
 
+    /** Whose attendance this caller may see: admin/HR everyone; a manager their direct reports and themselves; anyone else themselves. */
+    public List<Person> visiblePeople(Caller c) {
+        List<Person> who = people(c.org());
+        if (c.admin()) return who;
+        Set<String> allowed = new HashSet<>(directReports(c));
+        allowed.add(c.email());
+        return who.stream().filter(p -> allowed.contains(p.email())).toList();
+    }
+
     private List<Person> people(String org) {
         Map<String, Person> out = new LinkedHashMap<>();
         workspaces.findById(org).ifPresent(ws -> {
@@ -696,12 +718,7 @@ public class AttendanceService {
         LocalDate t = to == null || to.isBlank() ? today(c.org()) : date(to);
         if (t.isBefore(f)) throw AttendanceException.bad("BAD_RANGE", "The end date is before the start date.");
         if (f.plusDays(92).isBefore(t)) throw AttendanceException.bad("BAD_RANGE", "Choose a range of three months or less.");
-        List<Person> who = people(c.org());
-        if (!c.admin()) {
-            Set<String> allowed = new HashSet<>(directReports(c));
-            allowed.add(c.email());
-            who = who.stream().filter(p -> allowed.contains(p.email())).toList();
-        }
+        List<Person> who = visiblePeople(c);
         if (onlyEmail != null && !onlyEmail.isBlank()) who = who.stream().filter(p -> p.email().equalsIgnoreCase(onlyEmail.trim())).toList();
         Set<String> emails = new HashSet<>();
         who.forEach(p -> emails.add(p.email()));

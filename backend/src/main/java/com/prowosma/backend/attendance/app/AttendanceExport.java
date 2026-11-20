@@ -17,13 +17,15 @@ import java.util.Map;
 public final class AttendanceExport {
     private AttendanceExport() {}
 
-    static final String[] HEADERS = {"Date", "Name", "Email", "Department", "Status", "First in", "Last out", "Worked (h)", "Breaks (h)",
+    static final String[] HEADERS = {"Date", "Name", "Email", "Workspace", "Department", "Manager", "Status", "First in", "Last out", "Worked (h)", "Breaks (h)",
             "Late (min)", "Overtime (h)", "Overtime status", "Comp-off earned (days)", "Work mode", "Project", "Sprint", "Leave type", "Holiday",
             "Auto clock-out", "IP", "Location"};
 
     static Object[] values(Map<String, Object> r, ZoneId zone) {
         DateTimeFormatter hm = DateTimeFormatter.ofPattern("HH:mm").withZone(zone);
-        return new Object[]{r.get("date"), r.get("name"), r.get("email"), r.get("department"), r.get("status"),
+        Object deps = r.get("departments") instanceof List<?> l && !l.isEmpty()
+                ? String.join("; ", l.stream().map(String::valueOf).toList()) : r.get("department");
+        return new Object[]{r.get("date"), r.get("name"), r.get("email"), r.get("workspace"), deps, r.get("managerName"), r.get("status"),
                 r.get("firstIn") instanceof Instant i ? hm.format(i) : "", r.get("lastOut") instanceof Instant o ? hm.format(o) : "",
                 hours(r.get("workedMinutes")), hours(r.get("breakMinutes")), r.get("lateMinutes") == null ? "" : r.get("lateMinutes"),
                 hours(r.get("overtimeMinutes")), r.get("overtimeStatus"), r.get("compOffEarned"), r.get("workMode"), r.get("project"), r.get("sprint"),

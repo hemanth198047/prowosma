@@ -9,12 +9,13 @@ import { getTeamMembers } from "../api/team";
 import { unwrapList } from "../api/client";
 import {
   addCallTime, addShift, cancelRequest, claimOvertime, decideOvertime, decideRequest, deleteCallTime, deleteShift, exportReport,
-  getApprovals, getAttendanceSettings, getBalances, getCallTimes, getFloor, getMyCallTimes, getMyLogs, getMyRequests, getReport,
+  getApprovals, getAttendanceSettings, getBalances, getCallTimes, getFloor, getMyCallTimes, getMyLogs, getMyRequests, getReport, getReportOptions,
   requestCorrection, requestLeave, saveAttendanceSettings, saveShift,
 } from "../api/attendance";
 import { BREAK_LABEL, MODE_LABEL, hm, refreshMyAttendance, timeIn, useAttendanceEnabled, useMyAttendance } from "../hooks/useAttendance";
 import "../styles/pages/attendance.css";
 import DateInput from "../components/DateInput";
+import MultiPick from "../components/MultiPick";
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const LEAVE_LABEL = { CASUAL: "Casual", SICK: "Sick", EARNED: "Earned", COMP_OFF: "Comp-off", UNPAID: "Unpaid" };
@@ -359,20 +360,43 @@ function Floor({ tz }) {
 
 // ── Reports and export ──────────────────────────────────────────────────
 
+const NO_FILTERS = { workspaces: [], people: [], departments: [], managers: [], statuses: [], workModes: [], projects: [], late: false, overtime: false, missedClockOut: false };
+const REPORT_STATUSES = ["PRESENT", "LATE", "ABSENT", "NOT_YET_IN", "LEAVE", "HALF_DAY_LEAVE", "HOLIDAY", "WEEKEND"];
+const lastMonth = () => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); return [iso(d), iso(end)]; };
+
+/**
+ * Attendance details with filters: date range, workspace(s), department, person, manager ("Reports to"), status,
+ * work mode, project, late / overtime / missed clock-out, and a name search. Export uses the same filters.
+ * What people can see follows each workspace's rules (admin/HR everyone, managers their team) - the server decides.
+ */
 function Reports({ canExport, tz }) {
   const { show: toast } = useToast();
-  const [range, setRange] = useState({ from: firstOfMonth(), to: todayIso(), email: "" });
+  const [range, setRange] = useState({ from: firstOfMonth(), to: todayIso() });
+  const [f, setF] = useState(NO_FILTERS);
+  const [q, setQ] = useState("");
+  const [search, setSearch] = useState("");
   const [rows, setRows] = useState(null);
-  const [people, setPeople] = useState([]);
-  useEffect(() => { getTeamMembers().then((r) => setPeople(list(r))).catch(() => {}); }, []);
+  const [opts, setOpts] = useState({ workspaces: [], people: [], departments: [], managers: [], workModes: [] });
+  const [projectsSeen, setProjectsSeen] = useState([]);
+  useEffect(() => { const t = setTimeout(() => setSearch(q.trim()), 300); return () => clearTimeout(t); }, [q]);
+  useEffect(() => {
+    getReportOptions({ workspace: f.workspaces }).then((r) => setOpts(r.data)).catch(() => {});
+  }, [f.workspaces]);
+  const params = useMemo(() => ({
+    from: range.from, to: range.to, workspace: f.workspaces, person: f.people, department: f.departments, manager: f.managers,
+    status: f.statuses, workMode: f.workModes, project: f.projects,
+    late: f.late || undefined, overtime: f.overtime || undefined, missedClockOut: f.missedClockOut || undefined, q: search || undefined,
+  }), [range, f, search]);
   const load = useCallback(() => {
-    getReport({ from: range.from, to: range.to, email: range.email || undefined }).then((r) => setRows(r.data))
-      .catch((e) => { setRows([]); toast(apiErrorMessage(e, "Couldn't load the report."), "error"); });
-  }, [range, toast]);
+    getReport(params).then((r) => {
+      setRows(r.data);
+      setProjectsSeen((seen) => [...new Set([...seen, ...r.data.map((x) => x.project).filter(Boolean)])].sort());
+    }).catch((e) => { setRows([]); toast(apiErrorMessage(e, "Couldn't load the report."), "error"); });
+  }, [params, toast]);
   useEffect(() => { load(); }, [load]);
   const download = async (format) => {
     try {
-      const r = await exportReport({ from: range.from, to: range.to, email: range.email || undefined, format });
+      const r = await exportReport({ ...params, format });
       const url = URL.createObjectURL(r.data);
       const a = document.createElement("a");
       a.href = url; a.download = `attendance-${range.from}-to-${range.to}.${format}`;
@@ -385,6 +409,18 @@ function Reports({ canExport, tz }) {
     for (const r of rows || []) s[r.status] = (s[r.status] || 0) + 1;
     return s;
   }, [rows]);
+  const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const flag = (k) => setF((x) => ({ ...x, [k]: !x[k] }));
+  const active = Object.entries(f).some(([, v]) => (Array.isArray(v) ? v.length : v)) || !!q;
+  const clear = () => { setF(NO_FILTERS); setQ(""); };
+  const multiWs = f.workspaces.length > 1;
+  const people = opts.people.map((p) => ({ value: p.email, label: p.name || p.email, hint: (p.departments || []).join(", ") || p.email }));
+  const deptCount = useMemo(() => {
+    const c = {};
+    for (const p of opts.people) for (const d of p.departments || []) c[d] = (c[d] || 0) + 1;
+    return c;
+  }, [opts.people]);
+  const exportBlocked = canExport && f.workspaces.length > 0 && opts.workspaces.some((w) => f.workspaces.includes(w.id) && !w.seesEveryone);
   return (
     <>
       <div className="att-row">
@@ -392,29 +428,63 @@ function Reports({ canExport, tz }) {
           <DateInput type="date" aria-label="From" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} />
           <span>to</span>
           <DateInput type="date" aria-label="To" value={range.to} min={range.from} onChange={(e) => setRange({ ...range, to: e.target.value })} />
-          <select aria-label="Person" value={range.email} onChange={(e) => setRange({ ...range, email: e.target.value })}>
-            <option value="">Everyone I can see</option>
-            {people.filter((p) => p.email).map((p) => <option key={p.id} value={p.email.toLowerCase()}>{p.name || p.email}</option>)}
-          </select>
+          <div className="att-quick" role="group" aria-label="Quick ranges">
+            <button type="button" onClick={() => setRange({ from: todayIso(), to: todayIso() })}>Today</button>
+            <button type="button" onClick={() => setRange({ from: daysAgo(6), to: todayIso() })}>Last 7 days</button>
+            <button type="button" onClick={() => setRange({ from: firstOfMonth(), to: todayIso() })}>This month</button>
+            <button type="button" onClick={() => { const [a, b] = lastMonth(); setRange({ from: a, to: b }); }}>Last month</button>
+          </div>
         </div>
         {canExport && (
           <div className="att-row-actions">
-            <button type="button" className="btn-secondary pg-btn" onClick={() => download("csv")}><Download size={14} aria-hidden="true" />CSV</button>
-            <button type="button" className="btn-secondary pg-btn" onClick={() => download("xlsx")}><Download size={14} aria-hidden="true" />Excel</button>
+            <button type="button" className="btn-secondary pg-btn" disabled={exportBlocked} title={exportBlocked ? "You can only export workspaces where you're an admin or HR" : undefined}
+              onClick={() => download("csv")}><Download size={14} aria-hidden="true" />CSV</button>
+            <button type="button" className="btn-secondary pg-btn" disabled={exportBlocked} title={exportBlocked ? "You can only export workspaces where you're an admin or HR" : undefined}
+              onClick={() => download("xlsx")}><Download size={14} aria-hidden="true" />Excel</button>
           </div>
         )}
       </div>
-      <p className="att-sub">{["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY_LEAVE"].filter((k) => summary[k]).map((k) => `${summary[k]} ${STATUS[k][0].toLowerCase()}`).join(" · ") || "Nothing in this range."}
+
+      <div className="att-filters" role="group" aria-label="Filters">
+        <input className="att-search" type="search" placeholder="Search name or email" aria-label="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
+        {opts.workspaces.length > 1 && (
+          <MultiPick label="Workspace" selected={f.workspaces} onChange={set("workspaces")} allLabel="Only this workspace"
+            options={opts.workspaces.map((w) => ({ value: w.id, label: w.name, hint: (w.current ? "This workspace · " : "") + (w.seesEveryone ? "everyone" : "you and your team") }))} />
+        )}
+        <MultiPick label="Department" selected={f.departments} onChange={set("departments")} emptyText="No departments yet. Set one on each person's profile, or create department groups under Access control."
+          options={opts.departments.map((d) => ({ value: d, label: d, hint: `${deptCount[d] || 0} ${deptCount[d] === 1 ? "person" : "people"}` }))} />
+        <MultiPick label="Person" selected={f.people} onChange={set("people")} options={people} />
+        {opts.managers.length > 0 && (
+          <MultiPick label="Reports to" selected={f.managers} onChange={set("managers")} options={opts.managers.map((m) => ({ value: m.email, label: m.name }))} />
+        )}
+        <MultiPick label="Status" selected={f.statuses} onChange={set("statuses")} options={REPORT_STATUSES.map((k) => ({ value: k, label: STATUS[k][0] }))} />
+        <MultiPick label="Work mode" selected={f.workModes} onChange={set("workModes")} options={(opts.workModes || []).map((m) => ({ value: m, label: MODE_LABEL[m] || m }))} />
+        <MultiPick label="Project" selected={f.projects} onChange={set("projects")} emptyText="No project was chosen at clock-in in this range."
+          options={projectsSeen.map((p) => ({ value: p, label: p }))} />
+        <button type="button" className={"att-toggle" + (f.late ? " on" : "")} aria-pressed={f.late} onClick={() => flag("late")}>Late</button>
+        <button type="button" className={"att-toggle" + (f.overtime ? " on" : "")} aria-pressed={f.overtime} onClick={() => flag("overtime")}>Overtime</button>
+        <button type="button" className={"att-toggle" + (f.missedClockOut ? " on" : "")} aria-pressed={f.missedClockOut} onClick={() => flag("missedClockOut")}>Missed clock-out</button>
+        {active && <button type="button" className="att-clear" onClick={clear}>Clear filters</button>}
+      </div>
+
+      <p className="att-sub att-summary">
+        {rows && rows.length > 0 ? <>{rows.length} {rows.length === 1 ? "row" : "rows"}:{" "}
+          {REPORT_STATUSES.filter((k) => summary[k]).map((k, i) => (
+            <span key={k}>{i > 0 ? " · " : ""}<button type="button" className="att-sumlink" onClick={() => set("statuses")([k])}
+              title={`Show only ${STATUS[k][0].toLowerCase()}`}>{summary[k]} {STATUS[k][0].toLowerCase()}</button></span>
+          ))}</> : rows ? (active ? "Nothing matches these filters." : "Nothing in this range.") : null}
         {" "}A no-show is a past working day with no punch and no approved leave.</p>
       {!rows ? <p className="att-sub">Loading…</p> : rows.length > 0 && (
         <div className="att-table-wrap">
           <table className="att-table">
-            <thead><tr><th>Date</th><th>Person</th><th>Status</th><th>In</th><th>Out</th><th>Worked</th><th>Late</th><th>Overtime</th><th>Where</th></tr></thead>
+            <thead><tr><th>Date</th><th>Person</th>{multiWs && <th>Workspace</th>}<th>Department</th><th>Status</th><th>In</th><th>Out</th><th>Worked</th><th>Late</th><th>Overtime</th><th>Where</th></tr></thead>
             <tbody>
               {rows.slice(0, 1000).map((r) => (
-                <tr key={`${r.email}|${r.date}`}>
+                <tr key={`${r.workspaceId}|${r.email}|${r.date}`}>
                   <td>{r.date}</td>
-                  <td>{r.name}</td>
+                  <td>{r.name}{r.managerName ? <div className="att-sub">Reports to {r.managerName}</div> : null}</td>
+                  {multiWs && <td>{r.workspace}</td>}
+                  <td>{(r.departments || []).join(", ") || "—"}</td>
                   <td><Pill status={r.status} label={r.status === "LEAVE" && r.leaveType ? `${LEAVE_LABEL[r.leaveType]} leave` : r.status === "HOLIDAY" && r.holiday ? r.holiday : undefined} />{r.autoClosed && <div className="att-sub">Clock-out missed</div>}</td>
                   <td>{timeIn(r.firstIn, tz)}</td>
                   <td>{r.state && r.state !== "OFF" ? "Still in" : timeIn(r.lastOut, tz)}</td>

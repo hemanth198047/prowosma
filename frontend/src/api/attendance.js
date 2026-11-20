@@ -25,8 +25,11 @@ export const getApprovals = () => client.get(`${BASE}/approvals`, fresh);
 export const decideRequest = (id, approve, note) => client.post(`${BASE}/approvals/requests/${id}`, { approve, note });
 export const decideOvertime = (logId, approve, note) => client.post(`${BASE}/approvals/overtime/${logId}`, { approve, note });
 
-export const getReport = (params) => client.get(`${BASE}/report`, { ...fresh, params });
-export const exportReport = (params) => client.get(`${BASE}/report/export`, { ...fresh, params, responseType: "blob" });
+// Filters can repeat (department=A&department=B) and a value may contain commas, so lists are sent as repeated keys.
+const repeated = { indexes: null };
+export const getReport = (params) => client.get(`${BASE}/report`, { ...fresh, params, paramsSerializer: repeated });
+export const getReportOptions = (params) => client.get(`${BASE}/report/options`, { ...fresh, params, paramsSerializer: repeated });
+export const exportReport = (params) => client.get(`${BASE}/report/export`, { ...fresh, params, paramsSerializer: repeated, responseType: "blob" });
 
 export const getFloor = () => client.get(`${BASE}/floor`, fresh);
 export const getAttendanceSettings = () => client.get(`${BASE}/settings`, fresh);
