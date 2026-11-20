@@ -153,7 +153,7 @@ export default function JiraBoardSettings() {
             Settings are saved to this browser.
           </p>
         </div>
-        <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0}}>
+        <div className="jbs-header-actions" style={{display:"flex",gap:10,alignItems:"center",flexShrink:0}}>
           {saved && <span className="jbs-saved">✓ Saved</span>}
           <button className="jbs-btn-ghost" onClick={handleReset}>Reset to defaults</button>
           <button className="jbs-btn-secondary" onClick={()=>navigate("/jira-board")}>

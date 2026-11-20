@@ -12,6 +12,7 @@ import { useAccess } from "../hooks/useAccess";
 
 import "../styles/pages/docs.css";
 import "../styles/pages/docs-v2.css";
+import "../styles/pages/docs-blocks.css";
 import ActionMenu from "../components/ui/ActionMenu";
 import { ChevronRight, FileText, FilePlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { statusText } from "../utils/statusText";

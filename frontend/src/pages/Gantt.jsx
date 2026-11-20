@@ -482,8 +482,7 @@ export default function Gantt() {
         </div>
 
         {activeTab === "tasks" && (
-          <select aria-label="Filter by project" value={filterProject} onChange={(e) => setFilterProject(e.target.value)}
-            style={{ fontSize:"12px", padding:"6px 12px" }}>
+          <select className="select-compact" aria-label="Filter by project" value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
             <option value="ALL">All Projects</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>

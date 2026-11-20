@@ -95,7 +95,7 @@ export default function ImportExport() {
         ))}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:"20px", alignItems:"start" }}>
+      <div className="ie-layout" style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:"20px", alignItems:"start" }}>
 
         {/* ── MAIN PANEL ── */}
         <div>

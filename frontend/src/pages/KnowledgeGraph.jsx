@@ -400,7 +400,7 @@ export default function KnowledgeGraph() {
   if (!graph || graph.nodes.length === 0) return (
     <div>
       <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
+      <div className="kg-stats" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"12px", marginBottom:"24px" }}>
         {Object.entries(META).map(([type,m])=>(
           <StatCard key={type} icon={m.icon} label={m.label+"s"} value={0} color={m.color} />
         ))}
@@ -429,7 +429,7 @@ export default function KnowledgeGraph() {
       <PageHeader icon="🕸" title="Knowledge Graph" description="Visual map of relationships between docs, tasks, goals, and projects" />
 
       {/* Stats row */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
+      <div className="kg-filters" style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"10px", marginBottom:"16px" }}>
         {/* StatCard also concatenates its color prop with an alpha suffix
             internally (see StatCard above) — literal hex here too, same
             reasoning as META/EDGE_COLORS. */}
@@ -480,7 +480,7 @@ export default function KnowledgeGraph() {
 
       {/* Graph view */}
       {view==="graph" && (
-        <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 320px":"1fr", gap:"12px", alignItems:"start" }}>
+        <div className="kg-layout" style={{ display:"grid", gridTemplateColumns:selected?"1fr 320px":"1fr", gap:"12px", alignItems:"start" }}>
           {/* SVG graph — a real scrollable canvas (both directions),
               like a workflow/diagram tool (n8n, Miro, etc.), rather than
               shrinking everything to fit the panel. Rendering the SVG at

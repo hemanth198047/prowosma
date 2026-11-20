@@ -1,0 +1,123 @@
+/* Base styles that older screens rely on but that were never defined (or were lost when stylesheets were split):
+   without them those buttons fell back to the browser's grey default, and toolbar dropdowns stretched to full width.
+   Theme tokens only, so light and dark both follow the app. */
+
+/* Filter / segment pills: Meetings, Custom Fields, Import, SOPs, notifications, invite page */
+.meet-filter-btn, .calendar-filter-btn, .importer-source-btn, .sop-stat-pill, .notif-group-tab, .auth-tab, .report-period-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; margin: 0;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text-secondary);
+  font: inherit; font-size: 13px; font-weight: 550; line-height: 1; white-space: nowrap; cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.meet-filter-btn:hover, .calendar-filter-btn:hover, .importer-source-btn:hover, .sop-stat-pill:hover,
+.notif-group-tab:hover, .auth-tab:hover, .report-period-btn:hover { color: var(--text-primary); border-color: var(--border-strong, var(--text-muted)); }
+.meet-filter-btn:focus-visible, .calendar-filter-btn:focus-visible, .importer-source-btn:focus-visible, .sop-stat-pill:focus-visible,
+.notif-group-tab:focus-visible, .auth-tab:focus-visible, .report-period-btn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+.report-period-btn.active, .importer-source-btn.active, .auth-tab.active, .notif-group-tab.active, .sop-stat-pill.active {
+  background: var(--brand-600, #4f46e5); border-color: var(--brand-600, #4f46e5); color: #fff;
+}
+.meet-extract-btn.loading { opacity: .7; cursor: not-allowed; }
+
+/* A dropdown that sits in a toolbar keeps its natural width (the global form rule makes every select 100% wide). */
+.select-compact { width: auto !important; min-width: 160px; max-width: 280px; height: 34px; padding: 0 10px; font-size: 13px; flex: none; }
+
+/* Meetings toolbar: one line - search, status, project, then the button on the right */
+.meet-filter-bar { align-items: center; }
+.meet-filter-bar .meet-search { height: 34px; }
+
+/* Reports */
+.report-period-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.report-period-row input[type="datetime-local"] { width: auto; height: 32px; }
+.reports-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.report-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+.report-card-title { margin-bottom: 12px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.report-stat { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+.report-stat-num { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* Import: the three steps */
+.importer-step { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; }
+.importer-step.active { color: var(--text-primary); font-weight: 600; }
+.importer-step-label { white-space: nowrap; }
+.importer-step-line { width: 40px; height: 2px; background: var(--border); }
+
+/* Developer portal: on / off dot */
+.dev-status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gray-400, #9ca3af); vertical-align: middle; }
+.dev-status-dot.active { background: var(--success, #10b981); }
+
+/* Portfolio / executive / misc chips that had no base */
+.portfolio-status-chip { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--gray-100, var(--bg-hover)); color: var(--text-secondary); }
+
+/* Meetings: an action item row, the "extract" button, the status label */
+.meet-action-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+.meet-action-row.converted { color: var(--text-muted); }
+.meet-extract-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px solid var(--brand-500); border-radius: 8px; background: var(--brand-50); color: var(--brand-700, var(--brand-600)); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.meet-extract-btn:disabled { opacity: .55; cursor: default; }
+.meet-status { display: inline-flex; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--gray-100, var(--bg-hover)); color: var(--text-secondary); }
+.meet-status--in_progress { background: var(--brand-50); color: var(--brand-700, var(--brand-600)); }
+.meet-status--completed { color: var(--success-text, #047857); }
+
+/* Analytics */
+.analytics-section-title { margin: 24px 0 12px; font-size: 15px; font-weight: 650; color: var(--text-primary); }
+.workload-completion { margin-top: 10px; }
+.resource-forecast-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+
+/* Import preview: status and priority labels */
+.importer-status, .importer-priority { display: inline-flex; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 650; background: var(--gray-100, var(--bg-hover)); color: var(--text-secondary); text-transform: capitalize; }
+.importer-status-in_progress { background: var(--brand-50); color: var(--brand-700, var(--brand-600)); }
+.importer-status-done { color: var(--success-text, #047857); }
+.importer-priority-high, .importer-priority-critical { color: var(--danger-text, #b91c1c); }
+
+/* Team: expertise search results */
+.exp-results { display: grid; gap: 12px; margin-top: 16px; }
+.exp-result-score { display: grid; justify-items: center; flex: none; }
+
+/* Activity log groups, SOP acknowledgements, Portfolio */
+.al-group { display: grid; gap: 6px; margin-bottom: 16px; }
+.sop-ack-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.sop-ack-item.acked { color: var(--text-secondary); }
+.portfolio-main { min-width: 0; }
+.cp-close { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.cp-close:hover { background: var(--gray-100, var(--bg-hover)); color: var(--text-primary); }
+
+/* ── Phones: pages whose desktop layout ran off the screen ──────────────────
+   Page stylesheets load after the shared phone rules, so these use ".main-content" to win. */
+@media (max-width: 768px) {
+  /* Tab rows scroll sideways instead of running off the screen (Profile, Team, ...) */
+  .main-content .tab-bar, .main-content .admin-tab-bar { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .main-content .tab-bar::-webkit-scrollbar, .main-content .admin-tab-bar::-webkit-scrollbar { display: none; }
+  .main-content .tab-bar > *, .main-content .admin-tab-bar > * { flex: none; }
+
+  /* Filter rows wrap */
+  .main-content .meet-status-filters, .main-content .report-period-row, .main-content .activity-filters { flex-wrap: wrap; }
+  .main-content .meet-search { width: 100%; }
+
+  /* Kanban: one column per screen width, swipe sideways between them */
+  .main-content .kanban-board { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+  .main-content .kanban-board > * { scroll-snap-align: start; min-width: 0; }
+
+  /* Two-column pages stack */
+  .main-content .ie-layout, .main-content .kg-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  .main-content .kg-stats, .main-content .int-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .main-content .kg-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .main-content .int-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .main-content .wl-root { flex-direction: column; }
+  .main-content .wl-body { grid-template-columns: minmax(0, 1fr) !important; }
+  .main-content .wl-right { flex-wrap: wrap; }
+  .main-content .jbs-body { grid-template-columns: minmax(0, 1fr); }
+  .main-content .jbs-header-actions { flex-wrap: wrap; flex-shrink: 1 !important; }
+  .main-content .ai-assistant-layout { display: flex; flex-direction: column; grid-template-columns: none; }
+  .main-content .ai-sidebar-panels { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; width: 100%; max-width: none; }
+  .main-content .ai-sidebar-panels > * { flex: none; width: auto; }
+
+  /* Docs: the page list sits above the page instead of squeezing it */
+  .main-content .docs-page { flex-direction: column; height: auto; max-height: none; overflow: visible; }
+  .main-content .docs-sidebar:not(.docs-sidebar--closed) { width: 100%; min-width: 0; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--border); }
+
+  /* Wide tables scroll inside their box */
+  .main-content .pplus-table { overflow-x: auto; }
+  .main-content .pplus-table-head, .main-content .pplus-table-row { min-width: 680px; }
+
+  /* AI assistant tool buttons fit the screen */
+  .main-content .ai-panel-btn { max-width: 100%; min-width: 0; }
+  .main-content .ai-panel-btn-desc { white-space: normal; }
+}

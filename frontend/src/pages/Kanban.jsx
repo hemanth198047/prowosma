@@ -230,7 +230,7 @@ export default function Kanban() {
 
       {/* Toolbar */}
       <div className="kanban-toolbar">
-        <select aria-label="Filter by project" value={filterProject} onChange={e => setFilterProject(e.target.value)}>
+        <select className="select-compact" aria-label="Filter by project" value={filterProject} onChange={e => setFilterProject(e.target.value)}>
           <option value="">All Projects</option>
           {projects.filter(p => !p.parentProjectId).map(p => (
             <optgroup key={p.id} label={p.name}>

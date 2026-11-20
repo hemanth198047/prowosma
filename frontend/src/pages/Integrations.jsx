@@ -912,7 +912,7 @@ export default function Integrations() {
 
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px",
+      <div className="int-stats" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px",
         marginBottom:"20px" }}>
         {[
           { label:"Connected",    value:connectedCount,     color:"#1E8E5A", icon:"✓" },
@@ -984,7 +984,7 @@ export default function Integrations() {
                   <div style={{ fontSize:"12px", color:"#64748b", marginTop:"2px" }}>{tier.desc}</div>
                 </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"10px" }}>
+              <div className="int-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"10px" }}>
                 {tFiltered.map(intg => (
                   <IntegrationCard key={intg.key} intg={intg}
                     savedConfig={savedConfigs[intg.key]}
@@ -996,7 +996,7 @@ export default function Integrations() {
           );
         })
       ) : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"10px" }}>
+        <div className="int-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"10px" }}>
           {filtered.map(intg => (
             <IntegrationCard key={intg.key} intg={intg}
               savedConfig={savedConfigs[intg.key]}

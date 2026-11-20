@@ -782,8 +782,7 @@ export default function Meetings() {
             </button>
           ))}
         </div>
-        <select value={filterProjectId} onChange={e => setFilterProjectId(e.target.value)}
-          style={{ fontSize: "12px", padding: "4px 8px" }}
+        <select className="select-compact" aria-label="Filter by project" value={filterProjectId} onChange={e => setFilterProjectId(e.target.value)}
           title="Show only meetings that discussed this project">
           <option value="">All projects</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

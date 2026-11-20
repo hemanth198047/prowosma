@@ -475,7 +475,7 @@ export default function Team() {
         <>
         {members.length > 1 && (
           <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"10px" }}>
-            <select aria-label="Sort members" value={memberSort} onChange={e=>setMemberSort(e.target.value)} style={{ fontSize:"12px" }}>
+            <select className="select-compact" aria-label="Sort members" value={memberSort} onChange={e=>setMemberSort(e.target.value)}>
               <option value="">Sort by: Default</option>
               <option value="name">Sort by: Name</option>
               <option value="role">Sort by: Role</option>
