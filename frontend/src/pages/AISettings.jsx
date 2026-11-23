@@ -327,7 +327,7 @@ export default function AISettings() {
       ...prev,
       features: {
         ...prev?.features,
-        [key]: !prev?.features?.[key],
+        [key]: prev?.features?.[key] === false,
       },
     }));
     try {
@@ -339,14 +339,14 @@ export default function AISettings() {
         ...prev,
         features: {
           ...prev?.features,
-          [key]: !prev?.features?.[key],
+          [key]: prev?.features?.[key] === false,
         },
       }));
     }
   };
 
   const enabledCount = AI_FEATURES.filter(
-    (f) => settings?.features?.[f.key],
+    (f) => settings?.features?.[f.key] !== false,      // a feature nobody switched off is on (the server's rule)
   ).length;
   const filteredFeatures =
     activeCategory === "All"
@@ -633,7 +633,7 @@ export default function AISettings() {
               style={{ fontSize: "12px" }}
               onClick={async () => {
                 for (const f of AI_FEATURES) {
-                  if (!settings?.features?.[f.key])
+                  if (settings?.features?.[f.key] === false)
                     await handleToggleFeature(f.key);
                 }
               }}
@@ -645,7 +645,7 @@ export default function AISettings() {
               style={{ fontSize: "12px" }}
               onClick={async () => {
                 for (const f of AI_FEATURES) {
-                  if (settings?.features?.[f.key])
+                  if (settings?.features?.[f.key] !== false)
                     await handleToggleFeature(f.key);
                 }
               }}
@@ -662,14 +662,14 @@ export default function AISettings() {
               className={`calendar-filter-btn ${activeCategory === cat ? "active" : ""}`}
               onClick={() => setActiveCategory(cat)}
             >
-              {cat}
+              {cat !== "All" && <span className="ai-cat-dot" data-category={cat} aria-hidden="true" />}{cat}
             </button>
           ))}
         </div>
 
         <div className="ai-features-grid">
           {filteredFeatures.map((feature) => {
-            const enabled = settings?.features?.[feature.key] || false;
+            const enabled = settings?.aiEnabled !== false && settings?.features?.[feature.key] !== false;
             return (
               <div
                 key={feature.key}

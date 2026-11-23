@@ -8,12 +8,15 @@ import com.prowosma.backend.model.Task;
 import com.prowosma.backend.repository.GoalRepository;
 import com.prowosma.backend.repository.ProjectRepository;
 import com.prowosma.backend.repository.TaskRepository;
+import com.prowosma.backend.repository.TeamMemberRepository;
 import com.prowosma.backend.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -31,6 +34,94 @@ public class AIController {
     private final NotificationService notificationService;
     private final WorkspaceContext workspaceContext;
     private final LlmModelCatalog modelCatalog;
+    private final TeamMemberRepository teamMembers;
+
+
+    // ── shared helpers: friendly errors, input checks, workspace snapshot ──────────
+
+    private static final Logger log = LoggerFactory.getLogger(AIController.class);
+
+    /** Anything that stopped an AI feature, in words a person can act on. The page shows {error} and {hint}. */
+    @ExceptionHandler(AiProblem.class)
+    public Map<String, Object> aiProblem(AiProblem e) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("error", e.getMessage());
+        if (e.getHint() != null) m.put("hint", e.getHint());
+        m.put("kind", e.getKind());
+        return m;
+    }
+
+    /** A bug or an odd workspace must never end as a blank page or a technical message. (Real HTTP errors still pass through.) */
+    @ExceptionHandler(RuntimeException.class)
+    public Map<String, Object> unexpected(RuntimeException e) {
+        if (e instanceof org.springframework.web.ErrorResponse || e instanceof org.springframework.security.access.AccessDeniedException
+                || e instanceof org.springframework.http.converter.HttpMessageNotReadableException
+                || e instanceof org.springframework.web.method.annotation.MethodArgumentTypeMismatchException) throw e;
+        log.warn("AI feature failed: {}", e.getClass().getSimpleName());
+        return Map.of("error", "Something went wrong while preparing this.", "hint", "Please try again. If it keeps happening, tell your admin.", "kind", "UNEXPECTED");
+    }
+
+    /** A required piece of text from the person, trimmed and limited; otherwise a plain request to fill it in. */
+    private static String need(Map<String, ?> body, String key, String ask, int max) {
+        Object v = body == null ? null : body.get(key);
+        String t = v == null ? "" : String.valueOf(v).trim();
+        if (t.isEmpty()) throw new AiProblem("INPUT", ask, null);
+        return t.length() > max ? t.substring(0, max) : t;
+    }
+
+    private static String opt(Map<String, ?> body, String key, String dflt, int max) {
+        Object v = body == null ? null : body.get(key);
+        String t = v == null ? "" : String.valueOf(v).trim();
+        if (t.isEmpty()) return dflt;
+        return t.length() > max ? t.substring(0, max) : t;
+    }
+
+    private static String clip(String s, int n) {
+        if (s == null) return "";
+        String t = s.replaceAll("\\s+", " ").trim();
+        return t.length() > n ? t.substring(0, n) + "…" : t;
+    }
+
+    private static Map<String, Object> nothingYet(String why) { return Map.of("message", why); }
+
+    private List<Task> myTasks() {
+        return visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(),
+                org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+    }
+
+    private List<Project> myProjects() {
+        return visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(),
+                org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+    }
+
+    private static boolean open(Task t) { return !"DONE".equals(t.getStatus()); }
+
+    private static boolean overdue(Task t) { return open(t) && t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now()); }
+
+    /** Most urgent first: overdue, then by due date, then high priority. Used wherever only some tasks fit in the question to the AI. */
+    private static List<Task> mostUrgent(List<Task> tasks, int limit) {
+        return tasks.stream().sorted(Comparator
+                .comparing((Task t) -> t.getDueDate() == null ? LocalDateTime.MAX : t.getDueDate())
+                .thenComparing(t -> "HIGH".equals(t.getPriority()) ? 0 : "MEDIUM".equals(t.getPriority()) ? 1 : 2)).limit(limit).toList();
+    }
+
+    private static String line(Task t) {
+        return "- " + clip(t.getTitle(), 120) + " [" + t.getPriority() + ", " + t.getStatus() + (t.getDueDate() != null ? ", due " + t.getDueDate().toLocalDate() : "") + "]\n";
+    }
+
+    /** What the assistant can see: names and numbers, trimmed so it always fits. This is what lets "Knowledge" and "Chat" answer about real data. */
+    private String snapshot(List<Task> tasks, List<Project> projects) {
+        StringBuilder b = new StringBuilder();
+        b.append("Projects: ").append(projects.size()).append(" | Tasks: ").append(tasks.size())
+                .append(" (done ").append(tasks.stream().filter(t -> !open(t)).count())
+                .append(", overdue ").append(tasks.stream().filter(AIController::overdue).count()).append(")\n");
+        projects.stream().limit(25).forEach(p -> b.append("Project: ").append(clip(p.getName(), 80)).append(p.getStatus() != null ? " [" + p.getStatus() + "]" : "").append("\n"));
+        mostUrgent(tasks.stream().filter(AIController::open).toList(), 25).forEach(t -> b.append("Task ").append(line(t).substring(2)));
+        try {
+            goalService.getAll().stream().limit(15).forEach(g -> b.append("Goal: ").append(clip(g.getTitle(), 80)).append("\n"));
+        } catch (RuntimeException ignored) { /* goals are optional context */ }
+        return b.toString();
+    }
 
     // ── Settings ──────────────────────────────────────────────
 
@@ -84,17 +175,17 @@ public class AIController {
     @PostMapping("/task-assistant")
     public Map<String, Object> generateTasks(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("task_assistant"))
-            return Map.of("error", "Task Assistant is not enabled");
-        String projectDesc = body.get("description");
-        String projectName = body.getOrDefault("projectName", "Project");
+            return Map.of("error", "Task Assistant is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String desc = need(body, "description", "Describe the project first, for example \"Launch a customer feedback portal\".", 6000);
+        String name = opt(body, "projectName", "Project", 200);
         String prompt = """
             You are a project manager. Generate a list of tasks for the following project.
             Return ONLY a JSON array of task objects with fields:
             title (string), description (string), priority (LOW/MEDIUM/HIGH), estimatedMinutes (number)
             No extra text, just the JSON array.
             """;
-        List tasks = aiService.askJson(prompt,
-                "Project: " + projectName + "\nDescription: " + projectDesc, List.class);
+        List<?> tasks = aiService.askJson(prompt, "Project: " + name + "\nDescription: " + desc, List.class);
+        if (tasks.isEmpty()) throw new AiProblem("BAD_ANSWER", "The AI didn't suggest any tasks for that description.", "Add more detail about what the project should deliver and try again.");
         return Map.of("tasks", tasks);
     }
 
@@ -103,44 +194,53 @@ public class AIController {
     @PostMapping("/goal-advisor")
     public Map<String, Object> adviseGoal(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("goal_advisor"))
-            return Map.of("error", "Goal Advisor is not enabled");
-        String goalTitle = body.get("title");
-        String goalDesc = body.getOrDefault("description", "");
+            return Map.of("error", "Goal Advisor is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String goalTitle = need(body, "title", "Type the goal you want help with first, for example \"Grow newsletter to 5,000 readers\".", 300);
+        String goalDesc = opt(body, "description", "", 4000);
         String prompt = """
             You are a life coach and goal strategist. Given a goal, suggest sub-goals and steps.
             Return ONLY a JSON object with:
             { "subGoals": [ { "title": string, "description": string, "steps": [{"title": string}] } ] }
             No extra text, just JSON.
             """;
-        Map result = aiService.askJson(prompt,
-                "Goal: " + goalTitle + "\nDescription: " + goalDesc, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Goal: " + goalTitle + "\nDescription: " + goalDesc, Map.class);
     }
 
     // ── AI-3 & AI-9: Smart Prioritization Engine ──────────────
 
     @PostMapping("/prioritize")
-    public Map<String, Object> prioritizeTasks(@RequestBody Map<String, Object> body) {
+    public Map<String, Object> prioritizeTasks(@RequestBody(required = false) Map<String, Object> body) {
         if (!aiService.isEnabled("prioritization"))
-            return Map.of("error", "Prioritization Engine is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> !"DONE".equals(t.getStatus())).toList();
-        if (tasks.isEmpty()) return Map.of("message", "No tasks to prioritize");
+            return Map.of("error", "Prioritization Engine is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> open = myTasks().stream().filter(AIController::open).toList();
+        if (open.isEmpty()) return nothingYet("You have no open tasks to put in order. Add some tasks first.");
+        List<Task> tasks = mostUrgent(open, 60);
+        Map<String, Task> byId = new HashMap<>();
         StringBuilder taskList = new StringBuilder();
-        tasks.forEach(t -> taskList.append("- ID:").append(t.getId())
-                .append(" | Title:").append(t.getTitle())
-                .append(" | Priority:").append(t.getPriority())
-                .append(" | Status:").append(t.getStatus())
-                .append(" | DueDate:").append(t.getDueDate() != null ? t.getDueDate().toString() : "none")
-                .append(" | Blockers:").append(t.getBlockedByTaskIds() != null ? t.getBlockedByTaskIds().size() : 0)
-                .append("\n"));
+        tasks.forEach(t -> {
+            byId.put(t.getId(), t);
+            taskList.append("- ID:").append(t.getId())
+                    .append(" | Title:").append(clip(t.getTitle(), 120))
+                    .append(" | Priority:").append(t.getPriority())
+                    .append(" | Status:").append(t.getStatus())
+                    .append(" | DueDate:").append(t.getDueDate() != null ? t.getDueDate().toLocalDate().toString() : "none")
+                    .append(" | Blockers:").append(t.getBlockedByTaskIds() != null ? t.getBlockedByTaskIds().size() : 0)
+                    .append("\n");
+        });
         String prompt = """
             You are a productivity expert. Analyze these tasks and suggest optimal priority order.
-            Return ONLY a JSON object:
+            Use the exact ID values given. Return ONLY a JSON object:
             { "prioritized": [{"id": string, "title": string, "suggestedPriority": "HIGH/MEDIUM/LOW", "reason": string}],
               "insights": string }
             """;
-        Map result = aiService.askJson(prompt, "Tasks:\n" + taskList, Map.class);
+        Map<String, Object> result = aiService.askJson(prompt, "Tasks:\n" + taskList + (open.size() > tasks.size() ? "(" + (open.size() - tasks.size()) + " less urgent tasks are not listed)\n" : ""), Map.class);
+        Object list = result.get("prioritized");
+        if (list instanceof List<?> l) {                       // keep only tasks that exist, so nothing invented is shown
+            List<Object> good = new ArrayList<>();
+            for (Object o : l) if (o instanceof Map<?, ?> m && m.get("id") != null && byId.containsKey(String.valueOf(m.get("id")))) good.add(o);
+            result = new LinkedHashMap<>(result);
+            result.put("prioritized", good);
+        }
         return result;
     }
 
@@ -149,29 +249,27 @@ public class AIController {
     @GetMapping("/daily-digest")
     public Map<String, Object> getDailyDigest() {
         if (!aiService.isEnabled("daily_digest"))
-            return Map.of("error", "Daily Digest is not enabled");
-        List<Task> allTasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Task> overdue = allTasks.stream()
-                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now())
-                        && !"DONE".equals(t.getStatus())).toList();
-        List<Task> today = allTasks.stream()
-                .filter(t -> t.getDueDate() != null
-                        && t.getDueDate().toLocalDate().equals(LocalDateTime.now().toLocalDate()))
-                .toList();
-        long done = allTasks.stream().filter(t -> "DONE".equals(t.getStatus())).count();
+            return Map.of("error", "Daily Digest is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> allTasks = myTasks();
+        if (allTasks.isEmpty()) return nothingYet("There are no tasks yet, so there is nothing to summarise. Add a few tasks and try again.");
+        List<Task> overdue = allTasks.stream().filter(AIController::overdue).toList();
+        List<Task> today = allTasks.stream().filter(t -> t.getDueDate() != null && t.getDueDate().toLocalDate().equals(LocalDateTime.now().toLocalDate())).toList();
+        long done = allTasks.stream().filter(t -> !open(t)).count();
         long inProgress = allTasks.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus())).count();
-        String context = String.format(
-                "Total tasks: %d, Done: %d, In Progress: %d, Overdue: %d, Due Today: %d",
-                allTasks.size(), done, inProgress, overdue.size(), today.size());
+        StringBuilder context = new StringBuilder(String.format(
+                "Total tasks: %d, Done: %d, In Progress: %d, Overdue: %d, Due Today: %d\n", allTasks.size(), done, inProgress, overdue.size(), today.size()));
+        mostUrgent(overdue, 8).forEach(t -> context.append("Overdue ").append(line(t).substring(2)));
+        today.stream().limit(8).forEach(t -> context.append("Due today ").append(line(t).substring(2)));
         String prompt = """
             You are a productivity coach. Based on the task data, generate an encouraging
             and actionable daily digest. Include: summary, top 3 priorities for today,
             motivational message, and one productivity tip.
             Return as JSON: { "summary": string, "priorities": [string], "motivation": string, "tip": string }
             """;
-        Map result = aiService.askJson(prompt, context, Map.class);
-        notificationService.create("📊 Daily AI Digest Ready",
-                "Your AI digest has been generated", "INFO", "TASK", null);
+        Map<String, Object> result = aiService.askJson(prompt, context.toString(), Map.class);
+        try {
+            notificationService.create("📊 Daily AI Digest Ready", "Your AI digest has been generated", "INFO", "TASK", null);
+        } catch (RuntimeException ignored) { /* the digest is the point; a failed notification must not hide it */ }
         return result;
     }
 
@@ -180,9 +278,9 @@ public class AIController {
     @PostMapping("/breakdown")
     public Map<String, Object> breakdown(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("breakdown"))
-            return Map.of("error", "AI Breakdown is not enabled");
-        String goal = body.get("goal");
-        String timeframe = body.getOrDefault("timeframe", "3 months");
+            return Map.of("error", "AI Breakdown is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String goal = need(body, "goal", "Type the goal to break down first, for example \"Open a second office\".", 1000);
+        String timeframe = opt(body, "timeframe", "3 months", 100);
         String prompt = """
             You are a strategic planner. Break down a goal into projects and tasks.
             Return ONLY JSON:
@@ -192,36 +290,28 @@ public class AIController {
               ]}
             ]}
             """;
-        Map result = aiService.askJson(prompt,
-                "Goal: " + goal + "\nTimeframe: " + timeframe, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Goal: " + goal + "\nTimeframe: " + timeframe, Map.class);
     }
 
     // ── AI-8: Smart Scheduling ─────────────────────────────────
 
     @PostMapping("/schedule")
-    public Map<String, Object> schedule(@RequestBody Map<String, Object> body) {
+    public Map<String, Object> schedule(@RequestBody(required = false) Map<String, Object> body) {
         if (!aiService.isEnabled("scheduling"))
-            return Map.of("error", "Smart Scheduling is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> !"DONE".equals(t.getStatus())).collect(Collectors.toList());
-        String workHours = (String) body.getOrDefault("workHours", "9-17");
-        String startDate = (String) body.getOrDefault("startDate",
-                LocalDateTime.now().toLocalDate().toString());
+            return Map.of("error", "Smart Scheduling is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> open = myTasks().stream().filter(AIController::open).toList();
+        if (open.isEmpty()) return nothingYet("You have no open tasks to schedule.");
+        String workHours = opt(body, "workHours", "9-17", 40);
+        String startDate = opt(body, "startDate", LocalDateTime.now().toLocalDate().toString(), 20);
         StringBuilder taskList = new StringBuilder();
-        tasks.forEach(t -> taskList.append("- ").append(t.getTitle())
-                .append(" | Priority:").append(t.getPriority())
-                .append(" | Est:").append(t.getDueDate() != null ? t.getDueDate() : "flexible")
-                .append("\n"));
+        mostUrgent(open, 50).forEach(t -> taskList.append(line(t)));
         String prompt = """
             You are a scheduling expert. Create an optimal daily schedule for these tasks.
             Return ONLY JSON:
             { "schedule": [{ "date": string, "tasks": [{"title": string, "timeSlot": string, "duration": string}] }],
               "advice": string }
             """;
-        Map result = aiService.askJson(prompt,
-                "Work hours: " + workHours + "\nStart: " + startDate + "\nTasks:\n" + taskList, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Work hours: " + workHours + "\nStart: " + startDate + "\nTasks:\n" + taskList, Map.class);
     }
 
     // ── AI-10: Weekly Planning ─────────────────────────────────
@@ -229,14 +319,13 @@ public class AIController {
     @GetMapping("/weekly-plan")
     public Map<String, Object> weeklyPlan() {
         if (!aiService.isEnabled("weekly_planning"))
-            return Map.of("error", "Weekly Planning is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> !"DONE".equals(t.getStatus())).toList();
-        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+            return Map.of("error", "Weekly Planning is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> open = myTasks().stream().filter(AIController::open).toList();
+        if (open.isEmpty()) return nothingYet("You have no open tasks to plan a week around. Add some tasks first.");
+        List<Project> projects = myProjects();
         StringBuilder context = new StringBuilder();
-        context.append("Active Tasks: ").append(tasks.size()).append("\n");
-        tasks.stream().limit(20).forEach(t -> context.append("- ")
-                .append(t.getTitle()).append(" [").append(t.getPriority()).append("]\n"));
+        context.append("Open tasks: ").append(open.size()).append("\n");
+        mostUrgent(open, 30).forEach(t -> context.append(line(t)));
         context.append("Projects: ").append(projects.size()).append("\n");
         String prompt = """
             You are a weekly planning coach. Create a structured weekly plan.
@@ -244,8 +333,7 @@ public class AIController {
             { "weekOf": string, "monday": [string], "tuesday": [string], "wednesday": [string],
               "thursday": [string], "friday": [string], "goals": [string], "advice": string }
             """;
-        Map result = aiService.askJson(prompt, context.toString(), Map.class);
-        return result;
+        return aiService.askJson(prompt, context.toString(), Map.class);
     }
 
     // ── AI-12: Task Estimation ─────────────────────────────────
@@ -253,9 +341,9 @@ public class AIController {
     @PostMapping("/estimate")
     public Map<String, Object> estimate(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("estimation"))
-            return Map.of("error", "Task Estimation is not enabled");
-        String taskTitle = body.get("title");
-        String taskDesc = body.getOrDefault("description", "");
+            return Map.of("error", "Task Estimation is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String taskTitle = need(body, "title", "Type the task to estimate first, for example \"Build the login page\".", 300);
+        String taskDesc = opt(body, "description", "", 4000);
         String prompt = """
             You are an experienced software project manager. Estimate task effort.
             Return ONLY JSON:
@@ -263,9 +351,7 @@ public class AIController {
               "unit": "minutes", "confidence": "LOW/MEDIUM/HIGH", "reasoning": string,
               "breakdown": [{"step": string, "minutes": number}] }
             """;
-        Map result = aiService.askJson(prompt,
-                "Task: " + taskTitle + "\nDescription: " + taskDesc, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Task: " + taskTitle + "\nDescription: " + taskDesc, Map.class);
     }
 
     // ── AI-13: Daily Standup ───────────────────────────────────
@@ -273,33 +359,29 @@ public class AIController {
     @GetMapping("/standup")
     public Map<String, Object> standup() {
         if (!aiService.isEnabled("standup"))
-            return Map.of("error", "Daily Standup is not enabled");
-        List<Task> allTasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Task> inProgress = allTasks.stream()
-                .filter(t -> "IN_PROGRESS".equals(t.getStatus())).toList();
-        List<Task> done = allTasks.stream()
-                .filter(t -> "DONE".equals(t.getStatus())
-                        && t.getUpdatedAt() != null
-                        && t.getUpdatedAt().isAfter(LocalDateTime.now().minusDays(1)))
-                .toList();
-        List<Task> blocked = allTasks.stream()
-                .filter(t -> t.getBlockedByTaskIds() != null && !t.getBlockedByTaskIds().isEmpty())
-                .toList();
+            return Map.of("error", "Daily Standup is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> allTasks = myTasks();
+        List<Task> inProgress = allTasks.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus())).toList();
+        List<Task> done = allTasks.stream().filter(t -> "DONE".equals(t.getStatus()) && t.getUpdatedAt() != null
+                && t.getUpdatedAt().isAfter(LocalDateTime.now().minusDays(1))).toList();
+        List<Task> blocked = allTasks.stream().filter(t -> open(t) && t.getBlockedByTaskIds() != null && !t.getBlockedByTaskIds().isEmpty()).toList();
+        if (inProgress.isEmpty() && done.isEmpty() && blocked.isEmpty())
+            return nothingYet("Nothing was finished in the last day and nothing is in progress, so there is no standup to report yet. Move a task to In Progress and try again.");
         StringBuilder context = new StringBuilder();
-        context.append("Done yesterday: ").append(done.size()).append(" tasks\n");
+        context.append("Done in the last day: ").append(done.size()).append(" tasks\n");
         context.append("In Progress: ").append(inProgress.size()).append(" tasks\n");
         context.append("Blocked: ").append(blocked.size()).append(" tasks\n");
-        done.stream().limit(5).forEach(t -> context.append("Done: ").append(t.getTitle()).append("\n"));
-        inProgress.stream().limit(5).forEach(t -> context.append("Doing: ").append(t.getTitle()).append("\n"));
+        done.stream().limit(8).forEach(t -> context.append("Done: ").append(clip(t.getTitle(), 120)).append("\n"));
+        inProgress.stream().limit(8).forEach(t -> context.append("Doing: ").append(clip(t.getTitle(), 120)).append("\n"));
+        blocked.stream().limit(5).forEach(t -> context.append("Blocked: ").append(clip(t.getTitle(), 120)).append("\n"));
         String prompt = """
             Generate a concise daily standup report.
             Return ONLY JSON:
             { "yesterday": string, "today": string, "blockers": string,
-              "mood": "🟢 On Track / 🟡 At Risk / 🔴 Behind",
+              "mood": "On Track / At Risk / Behind",
               "suggestion": string }
             """;
-        Map result = aiService.askJson(prompt, context.toString(), Map.class);
-        return result;
+        return aiService.askJson(prompt, context.toString(), Map.class);
     }
 
     // ── AI-14: Smart Dependency Detection ─────────────────────
@@ -307,20 +389,36 @@ public class AIController {
     @GetMapping("/detect-dependencies")
     public Map<String, Object> detectDependencies() {
         if (!aiService.isEnabled("dependency_detection"))
-            return Map.of("error", "Dependency Detection is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> !"DONE".equals(t.getStatus())).toList();
-        if (tasks.size() < 2) return Map.of("dependencies", List.of(), "message", "Need at least 2 tasks");
+            return Map.of("error", "Dependency Detection is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> open = myTasks().stream().filter(AIController::open).toList();
+        if (open.size() < 2) return Map.of("dependencies", List.of(), "message", "You need at least two open tasks to look for links between them.");
+        List<Task> tasks = mostUrgent(open, 40);
+        Map<String, Task> byId = new HashMap<>();
         StringBuilder taskList = new StringBuilder();
-        tasks.stream().limit(30).forEach(t -> taskList.append("ID:").append(t.getId())
-                .append(" Title:").append(t.getTitle()).append("\n"));
+        tasks.forEach(t -> { byId.put(t.getId(), t); taskList.append("ID:").append(t.getId()).append(" Title:").append(clip(t.getTitle(), 120)).append("\n"); });
         String prompt = """
             Analyze these tasks and detect logical dependencies.
-            Return ONLY JSON:
+            Use the exact ID values given. Return ONLY JSON:
             { "dependencies": [{"taskId": string, "dependsOnId": string,
               "reason": string, "confidence": "HIGH/MEDIUM/LOW"}] }
             """;
-        return aiService.askJson(prompt, taskList.toString(), Map.class);
+        Map<String, Object> result = aiService.askJson(prompt, taskList.toString(), Map.class);
+        List<Object> good = new ArrayList<>();
+        if (result.get("dependencies") instanceof List<?> l)
+            for (Object o : l) {
+                if (!(o instanceof Map<?, ?> m)) continue;
+                Task a = byId.get(String.valueOf(m.get("taskId"))), d = byId.get(String.valueOf(m.get("dependsOnId")));
+                if (a == null || d == null || a == d) continue;       // ids the AI made up are dropped
+                Map<String, Object> row = new LinkedHashMap<>();
+                m.forEach((k, v) -> row.put(String.valueOf(k), v));
+                row.put("taskTitle", clip(a.getTitle(), 120));
+                row.put("dependsOnTitle", clip(d.getTitle(), 120));
+                good.add(row);
+            }
+        Map<String, Object> out = new LinkedHashMap<>(result);
+        out.put("dependencies", good);
+        if (good.isEmpty()) out.put("message", "No clear links between your tasks were found.");
+        return out;
     }
 
     // ── AI-15: Risk Detection ──────────────────────────────────
@@ -328,16 +426,16 @@ public class AIController {
     @GetMapping("/risks")
     public Map<String, Object> detectRisks() {
         if (!aiService.isEnabled("risk_detection"))
-            return Map.of("error", "Risk Detection is not enabled");
-        List<Task> overdue = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(LocalDateTime.now())
-                        && !"DONE".equals(t.getStatus())).toList();
-        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
+            return Map.of("error", "Risk Detection is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> tasks = myTasks();
+        List<Project> projects = myProjects();
+        if (tasks.isEmpty() && projects.isEmpty()) return nothingYet("There are no projects or tasks yet, so there is nothing to check for risks.");
+        List<Task> overdue = tasks.stream().filter(AIController::overdue).toList();
         StringBuilder context = new StringBuilder();
+        context.append("Open tasks: ").append(tasks.stream().filter(AIController::open).count()).append("\n");
         context.append("Overdue tasks: ").append(overdue.size()).append("\n");
         context.append("Total projects: ").append(projects.size()).append("\n");
-        overdue.forEach(t -> context.append("Overdue: ").append(t.getTitle())
-                .append(" since ").append(t.getDueDate()).append("\n"));
+        mostUrgent(overdue, 15).forEach(t -> context.append("Overdue ").append(line(t).substring(2)));
         String prompt = """
             You are a risk analyst. Identify project risks and mitigation strategies.
             Return ONLY JSON:
@@ -345,8 +443,7 @@ public class AIController {
               "description": string, "mitigation": string}],
               "overallRisk": "HIGH/MEDIUM/LOW", "summary": string }
             """;
-        Map result = aiService.askJson(prompt, context.toString(), Map.class);
-        return result;
+        return aiService.askJson(prompt, context.toString(), Map.class);
     }
 
     // ── AI-16: Natural Language Task Creation ─────────────────
@@ -354,15 +451,20 @@ public class AIController {
     @PostMapping("/natural-task")
     public Map<String, Object> naturalTask(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("natural_language"))
-            return Map.of("error", "Natural Language Creation is not enabled");
-        String input = body.get("text");
+            return Map.of("error", "Natural Language Creation is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String input = need(body, "text", "Type what needs doing first, for example \"Call the supplier tomorrow about the invoice, high priority\".", 2000);
         String prompt = """
-            Extract task details from natural language input.
+            Extract task details from natural language input. Work out relative dates such as "tomorrow" or "next Friday" from today's date.
             Return ONLY JSON:
             { "title": string, "description": string, "priority": "LOW/MEDIUM/HIGH",
-              "dueDate": "ISO date or null", "tags": [string], "estimatedMinutes": number }
+              "dueDate": "YYYY-MM-DD or null", "tags": [string], "estimatedMinutes": number }
             """;
-        Map result = aiService.askJson(prompt, "Input: " + input, Map.class);
+        Map<String, Object> result = new LinkedHashMap<>(aiService.askJson(prompt, "Input: " + input, Map.class));
+        Object title = result.get("title");
+        if (title == null || String.valueOf(title).isBlank())
+            throw new AiProblem("BAD_ANSWER", "We couldn't find a task in that sentence.", "Say what needs doing, for example \"Send the report to Ravi on Friday\".");
+        String pr = String.valueOf(result.getOrDefault("priority", "MEDIUM")).toUpperCase(Locale.ROOT);
+        result.put("priority", List.of("LOW", "MEDIUM", "HIGH").contains(pr) ? pr : "MEDIUM");
         return result;
     }
 
@@ -371,8 +473,8 @@ public class AIController {
     @PostMapping("/meeting-notes")
     public Map<String, Object> meetingNotes(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("meeting_notes"))
-            return Map.of("error", "Meeting Notes is not enabled");
-        String notes = body.get("notes");
+            return Map.of("error", "Meeting Notes is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String notes = need(body, "notes", "Paste your meeting notes first.", 30000);
         String prompt = """
             Extract action items and tasks from meeting notes.
             Return ONLY JSON:
@@ -380,8 +482,7 @@ public class AIController {
               "dueDate": string, "description": string}],
               "summary": string, "decisions": [string] }
             """;
-        Map result = aiService.askJson(prompt, "Meeting Notes:\n" + notes, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Meeting Notes:\n" + notes, Map.class);
     }
 
     // ── AI-19: Focus Mode ──────────────────────────────────────
@@ -389,12 +490,11 @@ public class AIController {
     @GetMapping("/focus-mode")
     public Map<String, Object> focusMode() {
         if (!aiService.isEnabled("focus_mode"))
-            return Map.of("error", "Focus Mode is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
-                .filter(t -> !"DONE".equals(t.getStatus())).toList();
+            return Map.of("error", "Focus Mode is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> open = myTasks().stream().filter(AIController::open).toList();
+        if (open.isEmpty()) return nothingYet("You have no open tasks, so there is nothing to focus on right now.");
         StringBuilder taskList = new StringBuilder();
-        tasks.stream().limit(20).forEach(t -> taskList.append("- ").append(t.getTitle())
-                .append(" [").append(t.getPriority()).append("]\n"));
+        mostUrgent(open, 25).forEach(t -> taskList.append(line(t)));
         String prompt = """
             You are a focus coach. Select the ONE most important task to focus on right now.
             Return ONLY JSON:
@@ -409,10 +509,10 @@ public class AIController {
     @PostMapping("/deadline-negotiator")
     public Map<String, Object> negotiateDeadline(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("deadline_negotiator"))
-            return Map.of("error", "Deadline Negotiator is not enabled");
-        String taskTitle = body.get("title");
-        String currentDeadline = body.get("deadline");
-        String reason = body.getOrDefault("reason", "");
+            return Map.of("error", "Deadline Negotiator is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String taskTitle = need(body, "title", "Type the task whose deadline you want to discuss first.", 300);
+        String currentDeadline = opt(body, "deadline", "not set", 60);
+        String reason = opt(body, "reason", "", 2000);
         String prompt = """
             You are a deadline negotiation expert. Suggest realistic deadline options.
             Return ONLY JSON:
@@ -420,9 +520,7 @@ public class AIController {
               {"date": string, "label": string, "rationale": string}],
               "recommendation": string, "riskIfExtended": string }
             """;
-        Map result = aiService.askJson(prompt,
-                "Task: " + taskTitle + "\nDeadline: " + currentDeadline + "\nReason: " + reason, Map.class);
-        return result;
+        return aiService.askJson(prompt, "Task: " + taskTitle + "\nDeadline: " + currentDeadline + "\nReason: " + reason, Map.class);
     }
 
     // ── AI-22: Burnout Detection ───────────────────────────────
@@ -430,18 +528,15 @@ public class AIController {
     @GetMapping("/burnout-check")
     public Map<String, Object> burnoutCheck() {
         if (!aiService.isEnabled("burnout_detection"))
-            return Map.of("error", "Burnout Detection is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        long overdue = tasks.stream().filter(t -> t.getDueDate() != null
-                && t.getDueDate().isBefore(LocalDateTime.now())
-                && !"DONE".equals(t.getStatus())).count();
-        long highPriority = tasks.stream().filter(t -> "HIGH".equals(t.getPriority())
-                && !"DONE".equals(t.getStatus())).count();
+            return Map.of("error", "Burnout Detection is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> tasks = myTasks();
+        List<Task> pending = tasks.stream().filter(AIController::open).toList();
+        if (pending.isEmpty()) return nothingYet("There is no open work, so there is no workload to check. Nothing to worry about right now.");
+        long overdue = tasks.stream().filter(AIController::overdue).count();
+        long highPriority = pending.stream().filter(t -> "HIGH".equals(t.getPriority())).count();
         long inProgress = tasks.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus())).count();
-        String context = String.format(
-                "Overdue: %d, High Priority Pending: %d, In Progress simultaneously: %d, Total Pending: %d",
-                overdue, highPriority, inProgress,
-                tasks.stream().filter(t -> !"DONE".equals(t.getStatus())).count());
+        String context = String.format("Overdue: %d, High Priority Pending: %d, In Progress simultaneously: %d, Total Pending: %d",
+                overdue, highPriority, inProgress, pending.size());
         String prompt = """
             You are a wellbeing coach. Assess burnout risk based on workload data.
             Return ONLY JSON:
@@ -449,8 +544,7 @@ public class AIController {
               "indicators": [string], "recommendations": [string],
               "immediateAction": string, "message": string }
             """;
-        Map result = aiService.askJson(prompt, context, Map.class);
-        return result;
+        return aiService.askJson(prompt, context, Map.class);
     }
 
     // ── AI-23: Knowledge Assistant ─────────────────────────────
@@ -458,82 +552,68 @@ public class AIController {
     @PostMapping("/ask")
     public Map<String, Object> ask(@RequestBody Map<String, String> body) {
         if (!aiService.isEnabled("knowledge_assistant"))
-            return Map.of("error", "Knowledge Assistant is not enabled");
-        String question = body.get("question");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Goal> goals = goalService.getAll();
-        String context = String.format(
-                "Projects: %d, Tasks: %d (Done: %d), Goals: %d",
-                projects.size(), tasks.size(),
-                tasks.stream().filter(t -> "DONE".equals(t.getStatus())).count(),
-                goals.size());
+            return Map.of("error", "Knowledge Assistant is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String question = need(body, "question", "Type your question first, for example \"Which tasks are overdue?\"", 2000);
+        String context = snapshot(myTasks(), myProjects());
         String prompt = """
-            You are a helpful project management assistant for Prowosma app.
-            Answer questions about the user's projects, tasks and goals concisely.
+            You are a helpful project management assistant for the Prowosma app.
+            Answer questions about the user's projects, tasks and goals concisely, using ONLY the workspace data given.
+            If the data doesn't contain the answer, say so plainly instead of guessing.
             Return ONLY JSON: { "answer": string, "suggestions": [string] }
             """;
-        return aiService.askJson(prompt,
-                "Context: " + context + "\nQuestion: " + question, Map.class);
+        return aiService.askJson(prompt, "Workspace data:\n" + context + "\nQuestion: " + question, Map.class);
     }
 
     // ── AI-24: Chat Assistant ──────────────────────────────────
 
+    @SuppressWarnings("unchecked")
     @PostMapping("/chat")
     public Map<String, Object> chat(@RequestBody Map<String, Object> body) {
         if (!aiService.isEnabled("chat_assistant"))
-            return Map.of("error", "Chat Assistant is not enabled");
-        String message = (String) body.get("message");
-        List<Map<String, String>> history = (List<Map<String, String>>) body.getOrDefault("history", List.of());
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        String context = String.format("Projects: %d, Tasks: %d", projects.size(), tasks.size());
-        // Extract userName from top-level OR from nested context map
-        String userName = (String) body.getOrDefault("userName", null);
-        if (userName == null || userName.isBlank()) {
-            Map<String, Object> ctx = (Map<String, Object>) body.get("context");
-            if (ctx != null) userName = (String) ctx.getOrDefault("userName", null);
+            return Map.of("error", "Chat Assistant is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        String message = need(body, "message", "Type a message first.", 4000);
+        Object ctxObj = body.get("context");
+        Map<String, Object> ctx = ctxObj instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+        String userName = opt(body, "userName", String.valueOf(ctx.getOrDefault("userName", "")).replace("null", ""), 80);
+        if (userName.isBlank()) userName = "there";
+        String page = String.valueOf(ctx.getOrDefault("page", "App"));
+        StringBuilder convo = new StringBuilder();
+        if (body.get("history") instanceof List<?> h) {              // the last few turns, so follow-up questions make sense
+            List<?> recent = h.subList(Math.max(0, h.size() - 8), h.size());
+            for (Object o : recent)
+                if (o instanceof Map<?, ?> m && m.get("content") != null)
+                    convo.append("assistant".equals(String.valueOf(m.get("role"))) ? "Assistant: " : "User: ").append(clip(String.valueOf(m.get("content")), 600)).append("\n");
         }
-        if (userName == null || userName.isBlank()) userName = "there";
-        String userFullName = (String) body.getOrDefault("userFullName", userName);
-
-        // Build richer context string
-        String richContext = String.format(
-            "User: %s | Page: %s | Projects: %d active | Tasks: %d total",
-            userFullName,
-            body.getOrDefault("context", Map.of()) instanceof Map ctxMap
-                ? ctxMap.getOrDefault("page", "App") : "App",
-            projects.size(),
-            tasks.size()
-        );
-
         String systemPrompt = """
-    You are an AI assistant for Prowosma, a project management platform.
-    IMPORTANT: The user's name is %s. ALWAYS address them as %s — never as "User".
-    You have access to their workspace data: %s.
-    Be concise, warm, and actionable. Use their name naturally in responses.
-    When referencing their data, be specific about counts and names.
-    """.formatted(userName, userName, richContext);
-        String response = aiService.ask(systemPrompt, message);
+            You are an AI assistant for Prowosma, a project management platform.
+            The user's name is %s. Address them by name, never as "User".
+            Current page: %s.
+            Their workspace data (names and numbers only):
+            %s
+            Be concise, warm and actionable. When you mention their data be specific, and if the data doesn't have the answer, say so instead of guessing.
+            Recent conversation:
+            %s""".formatted(userName, clip(page, 60), snapshot(myTasks(), myProjects()), convo.length() == 0 ? "(none)" : convo);
+        String response = aiService.chatReply(systemPrompt, message, null);
+        if (response == null || response.isBlank())
+            throw new AiProblem("BAD_ANSWER", "The AI sent back an empty reply.", "Please ask again.");
         return Map.of("response", response, "timestamp", LocalDateTime.now().toString());
     }
 
-    // ── AI-25: Habit Failure Prediction ───────────────────────
+    // ── AI-25: Predictive Planning ────────────────────────────
 
     @GetMapping("/predict-risks")
     public Map<String, Object> predictRisks() {
         if (!aiService.isEnabled("predictive_planning"))
-            return Map.of("error", "Predictive Planning is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        List<Project> projects = visibility.filterProjects(projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        long overdueCount = tasks.stream().filter(t -> t.getDueDate() != null
-                && t.getDueDate().isBefore(LocalDateTime.now())
-                && !"DONE".equals(t.getStatus())).count();
-        long blockedCount = tasks.stream().filter(t ->
-                t.getBlockedByTaskIds() != null && !t.getBlockedByTaskIds().isEmpty()).count();
-        String context = String.format(
-                "Total tasks: %d, Overdue: %d, Blocked: %d, Projects: %d",
-                tasks.size(), overdueCount, blockedCount, projects.size());
+            return Map.of("error", "Predictive Planning is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> tasks = myTasks();
+        if (tasks.isEmpty()) return nothingYet("There are no tasks yet, so there is nothing to base a prediction on. Add tasks with due dates and try again.");
+        List<Project> projects = myProjects();
+        long overdueCount = tasks.stream().filter(AIController::overdue).count();
+        long blockedCount = tasks.stream().filter(t -> open(t) && t.getBlockedByTaskIds() != null && !t.getBlockedByTaskIds().isEmpty()).count();
+        long dueSoon = tasks.stream().filter(t -> open(t) && t.getDueDate() != null && t.getDueDate().isAfter(LocalDateTime.now())
+                && t.getDueDate().isBefore(LocalDateTime.now().plusDays(7))).count();
+        String context = String.format("Total tasks: %d, Open: %d, Overdue: %d, Blocked: %d, Due in the next 7 days: %d, Projects: %d",
+                tasks.size(), tasks.stream().filter(AIController::open).count(), overdueCount, blockedCount, dueSoon, projects.size());
         String prompt = """
             Predict upcoming risks and failure patterns based on project data.
             Return ONLY JSON:
@@ -541,8 +621,7 @@ public class AIController {
               "timeframe": string, "prevention": string}],
               "trend": string, "recommendation": string }
             """;
-        Map result = aiService.askJson(prompt, context, Map.class);
-        return result;
+        return aiService.askJson(prompt, context, Map.class);
     }
 
     // ── AI-26: Team Performance Insights ──────────────────────
@@ -550,14 +629,25 @@ public class AIController {
     @GetMapping("/team-insights")
     public Map<String, Object> teamInsights() {
         if (!aiService.isEnabled("team_insights"))
-            return Map.of("error", "Team Insights is not enabled");
-        List<Task> tasks = visibility.filterTasks(taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId(), org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
-        Map<String, Long> byAssignee = new java.util.HashMap<>();
+            return Map.of("error", "Team Insights is switched off for this workspace.", "hint", "An admin can turn it on in AI Settings.", "kind", "DISABLED");
+        List<Task> tasks = myTasks();
+        Map<String, String> names = new HashMap<>();
+        try {
+            teamMembers.findByOrganizationId(workspaceContext.getWorkspaceId()).forEach(m -> names.put(m.getId(), m.getName() != null ? m.getName() : m.getEmail()));
+        } catch (RuntimeException ignored) { /* ids are used when names can't be looked up */ }
+        Map<String, long[]> perPerson = new TreeMap<>();                 // name -> {open, done, overdue}
         tasks.forEach(t -> {
-            if (t.getAssigneeIds() != null) {
-                t.getAssigneeIds().forEach(id -> byAssignee.merge(id, 1L, Long::sum));
+            if (t.getAssigneeIds() == null) return;
+            for (String id : t.getAssigneeIds()) {
+                long[] c = perPerson.computeIfAbsent(names.getOrDefault(id, "Team member"), k -> new long[3]);
+                if (open(t)) c[0]++; else c[1]++;
+                if (overdue(t)) c[2]++;
             }
         });
+        if (perPerson.isEmpty()) return nothingYet("No tasks are assigned to anyone yet, so there is no team workload to look at. Assign some tasks and try again.");
+        StringBuilder sb = new StringBuilder();
+        perPerson.entrySet().stream().limit(40).forEach(e -> sb.append(e.getKey()).append(": open ").append(e.getValue()[0])
+                .append(", done ").append(e.getValue()[1]).append(", overdue ").append(e.getValue()[2]).append("\n"));
         String prompt = """
             Analyze team workload and performance patterns.
             Return ONLY JSON:
@@ -565,9 +655,7 @@ public class AIController {
               "recommendations": [string], "teamHealth": "GOOD/FAIR/POOR",
               "summary": string }
             """;
-        Map result = aiService.askJson(prompt,
-                "Assignee task counts: " + byAssignee.toString(), Map.class);
-        return result;
+        return aiService.askJson(prompt, "Tasks per person:\n" + sb, Map.class);
     }
 
     // ── AI: Meeting Notes Extractor ────────────────────────────

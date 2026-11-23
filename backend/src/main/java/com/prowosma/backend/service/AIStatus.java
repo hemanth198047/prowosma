@@ -38,6 +38,7 @@ public final class AIStatus {
         out.put("configured", enabled && problem == null);
         out.put("provider", provider);
         out.put("model", model);
+        out.put("features", s == null || s.getFeatures() == null ? Map.of() : s.getFeatures());     // on/off switches only, nothing sensitive
         out.put("message", switch (state) {
             case "ON" -> "AI is on for this workspace.";
             case "NEEDS_SETUP" -> "AI is turned on but isn't ready: " + problem + " An admin can fix this in AI Settings.";

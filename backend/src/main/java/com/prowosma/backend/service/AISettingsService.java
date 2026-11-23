@@ -70,7 +70,7 @@ public class AISettingsService {
         settings.setOrganizationId(workspaceContext.getWorkspaceId());
         if (settings.getFeatures() == null)
             settings.setFeatures(new java.util.HashMap<>());
-        boolean current = settings.getFeatures().getOrDefault(featureKey, false);
+        boolean current = settings.getFeatures().getOrDefault(featureKey, true);      // same rule as AIService.isEnabled: a feature nobody switched off is on
         settings.getFeatures().put(featureKey, !current);
         AISettings saved = aiSettingsRepository.save(settings);
         activityLogService.log("AI_SETTINGS", saved.getId(), "AI Settings",

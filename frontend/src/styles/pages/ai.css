@@ -768,3 +768,66 @@
   content: ""; width: 14px; height: 14px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
+
+/* ── AI results: readable answers, plain-language problems ───────────────── */
+.ai-r-result { margin-top: 20px; border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; background: #fff; }
+.ai-r-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #4338ca; color: #fff; font-weight: 600; font-size: 14px; }
+.ai-r-head-actions { display: flex; gap: 6px; }
+.ai-r-headbtn { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.ai-r-headbtn:hover { background: rgba(255,255,255,.26); }
+.ai-r-body { padding: 16px 18px 18px; }
+.ai-r-note { margin: 0 0 12px; padding: 8px 12px; background: #f1f5f9; border-radius: 8px; color: #334155; font-size: 14px; }
+.ai-r-fields { display: grid; gap: 14px; }
+.ai-r-fields--compact { gap: 6px; }
+.ai-r-key { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #64748b; margin-bottom: 3px; }
+.ai-r-text { margin: 0; font-size: 14px; line-height: 1.55; color: #0f172a; white-space: pre-wrap; }
+.ai-r-muted { color: #94a3b8; }
+.ai-r-list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #0f172a; }
+.ai-r-cards { display: grid; gap: 10px; }
+.ai-r-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; background: #f8fafc; }
+.ai-r-card-title { font-weight: 600; font-size: 14px; color: #1e293b; margin-bottom: 4px; }
+.ai-r-box { display: flex; gap: 12px; align-items: flex-start; margin-top: 20px; padding: 14px 16px; border-radius: 12px; border: 1px solid; position: relative; }
+.ai-r-box-body { flex: 1; font-size: 14px; line-height: 1.5; }
+.ai-r-box-body p { margin: 4px 0 0; }
+.ai-r-box-body .pg-btn { margin-top: 10px; }
+.ai-r-box--error { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+.ai-r-box--info { background: #f0f9ff; border-color: #bae6fd; color: #0c4a6e; }
+.ai-r-x { background: transparent; border: 0; cursor: pointer; color: inherit; opacity: .6; padding: 2px; }
+.ai-r-x:hover { opacity: 1; }
+
+/* ── AI Settings: every kind of feature has its own colour ───────────────────
+   Icons were dark-blue on blue (nearly invisible) and every card looked the same. Each category now has a hue:
+   a soft tinted tile with a coloured icon, which turns solid with a white icon when the feature is on. */
+.ai-feature-card, .ai-cat-dot { --cat: #4f46e5; --cat-soft: #eef2ff; --cat-line: #c7d2fe; }
+[data-category="Task Management"] { --cat: #2563eb; --cat-soft: #eff6ff; --cat-line: #bfdbfe; }
+[data-category="Goal Management"] { --cat: #7c3aed; --cat-soft: #f5f3ff; --cat-line: #ddd6fe; }
+[data-category="Planning"]        { --cat: #0d9488; --cat-soft: #f0fdfa; --cat-line: #99f6e4; }
+[data-category="Daily Review"]    { --cat: #d97706; --cat-soft: #fffbeb; --cat-line: #fde68a; }
+[data-category="Analytics"]       { --cat: #e11d48; --cat-soft: #fff1f2; --cat-line: #fecdd3; }
+[data-category="Productivity"]    { --cat: #059669; --cat-soft: #ecfdf5; --cat-line: #a7f3d0; }
+[data-category="Wellbeing"]       { --cat: #db2777; --cat-soft: #fdf2f8; --cat-line: #fbcfe8; }
+[data-category="Knowledge"]       { --cat: #0891b2; --cat-soft: #ecfeff; --cat-line: #a5f3fc; }
+[data-category="Chat"]            { --cat: #4f46e5; --cat-soft: #eef2ff; --cat-line: #c7d2fe; }
+[data-category="Team"]            { --cat: #ea580c; --cat-soft: #fff7ed; --cat-line: #fed7aa; }
+
+.ai-cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cat); margin-right: 7px; vertical-align: 1px; }
+
+.ai-feature-card { border: 1px solid #e5e7eb; background: #fff; }
+.ai-feature-card::before { background: var(--cat); }
+.ai-feature-card:hover { border-color: var(--cat-line); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--cat) 45%, transparent); transform: translateY(-1px); }
+.ai-feature-card.enabled { border-color: var(--cat-line); background: linear-gradient(180deg, var(--cat-soft), #fff 60%); }
+
+.ai-feature-card .ai-feature-icon-wrap { width: 44px; height: 44px; border-radius: 12px; background: var(--cat-soft); box-shadow: inset 0 0 0 1px var(--cat-line); }
+.ai-feature-card.enabled .ai-feature-icon-wrap { background: var(--cat) !important; box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--cat) 70%, transparent); }
+.ai-feature-icon { display: inline-flex; color: var(--cat); font-size: inherit; }
+.ai-feature-icon svg { width: 22px; height: 22px; stroke-width: 1.75; }
+.ai-feature-card.enabled .ai-feature-icon { color: #fff; }
+
+.ai-feature-toggle.on { background: var(--cat); }
+.ai-feature-card .ai-feature-name { color: var(--gray-900, #111827); background: none; -webkit-text-fill-color: currentColor; }
+.ai-feature-card:hover .ai-feature-name, .ai-feature-card.enabled .ai-feature-name { color: var(--gray-900, #111827); }
+.ai-feature-card.enabled .ai-feature-desc { color: var(--gray-600, #4b5563); opacity: 1; }
+.ai-feature-category { background: var(--cat-soft); color: var(--cat); border-color: var(--cat-line); }
+.ai-feature-card:hover .ai-feature-category, .ai-feature-card.enabled .ai-feature-category { background: var(--cat-soft); color: var(--cat); border-color: var(--cat-line); }
+.ai-feature-card.enabled::after { content: "● On"; color: var(--cat); opacity: 1; font-size: 10px; font-weight: 700; }
+.ai-feature-card:not(.enabled)::after { content: "Off"; position: absolute; top: 14px; right: 56px; font-size: 10px; font-weight: 600; color: #9ca3af; }

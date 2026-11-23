@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import AiResult from "../components/AiResult";
+import { useRole } from "../hooks/useRole";
 import { resultOf } from "../utils/aiResult";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,7 +22,7 @@ import {
   chatWithAI,
   predictRisks,
   teamInsights,
-  getAISettings,
+  getAIStatus,
   toggleAI,
   toggleAIFeature,
 } from "../api/ai";
@@ -29,7 +31,7 @@ import { useAuth } from "../hooks/useAuth";
 
 import "../styles/pages/ai.css";
 import { apiErrorMessage } from "../utils/apiError";
-import { Bot as IcBot, ClipboardList as IcClipboardList, Settings as IcSettings } from "lucide-react";
+import { Bot as IcBot, ClipboardList as IcClipboardList, Settings as IcSettings, AlertTriangle } from "lucide-react";
 const PANELS = [
   {
     key: "chat",
@@ -215,50 +217,6 @@ function AIDisabledBanner({
   return null;
 }
 
-const humanKey = (k) => k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (c) => c.toUpperCase());
-/** A flat report (every value a short piece of text) reads better as labelled lines than as JSON. */
-function readable(data) {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const entries = Object.entries(data);
-  if (!entries.length || !entries.every(([, v]) => v == null || ["string", "number", "boolean"].includes(typeof v))) return null;
-  return entries.map(([k, v]) => `${humanKey(k)}: ${v ?? "-"}`).join("\n\n");
-}
-
-function ResultCard({ data, onClose }) {
-  const [copied, setCopied] = useState(false);
-  if (!data) return null;
-  const text = typeof data === "string" ? data : readable(data) ?? JSON.stringify(data, null, 2);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="ai-result-card">
-      <div className="ai-result-header">
-        <span style={{ fontWeight: 600 }}>AI Response</span>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            className="btn-icon"
-            style={{ color: copied ? "var(--success)" : "#fff", fontSize: "14px" }}
-            onClick={handleCopy}
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
-          <button className="btn-icon" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-      </div>
-      <pre className="ai-result-content">
-        {text}
-      </pre>
-    </div>
-  );
-}
-
 function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
   const [messages, setMessages] = useState([
     {
@@ -289,10 +247,11 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
         history,
         userName: user?.name || "User",
       });
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: res.data.response },
-      ]);
+      const d = res.data || {};
+      const reply = d.error
+        ? `${d.error}${d.hint ? " " + d.hint : ""}`
+        : d.response || "The AI sent back an empty reply. Please ask again.";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (error) {
       // Log the error for debugging and still show a user-friendly message
       console.error(error);
@@ -302,7 +261,7 @@ function ChatPanel({ settings, onToggleAI, onToggleFeature, navigate, user }) {
           role: "assistant",
           content: `${apiErrorMessage(
             error,
-            "Could not reach the AI service. Please add your API key in AI Settings → API Configuration."
+            "We couldn't reach the AI service just now. Check your connection and try again."
           )}`,
         },
       ]);
@@ -378,12 +337,16 @@ export default function AIAssistant() {
   const [settings, setSettings] = useState(null);
   const navigate = useNavigate();
   const set = (k, v) => setInputs((prev) => ({ ...prev, [k]: v }));
+  const { isAdmin } = useRole();
+  const runId = useRef(0);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await getAISettings();
-        setSettings(res.data || {});
+        // The status call works for everyone; the full settings call is admin-only and used to leave members seeing "AI is turned off".
+        const res = await getAIStatus();
+        const d = res.data || {};
+        setSettings({ aiEnabled: !!d.enabled, features: d.features || {}, state: d.state, statusMessage: d.message });
       } catch (e) {
         console.error(e);
       }
@@ -415,17 +378,20 @@ export default function AIAssistant() {
 
   const run = async (fn, ...args) => {
     if (!featureEnabled) return;
+    const mine = ++runId.current;            // an answer for a panel the person has already left must not appear in the new one
     setLoading(true);
     setResult(null);
     try {
       const res = await fn(...args);
-      setResult(resultOf(res));
+      if (mine === runId.current) setResult(resultOf(res));
     } catch (err) {
-      setResult({
-        error: apiErrorMessage(err, "Feature not enabled or AI not configured"),
+      if (mine === runId.current) setResult({
+        error: apiErrorMessage(err, "We couldn't reach the server."),
+        hint: "Check your connection and try again.",
+        kind: "NETWORK",
       });
     } finally {
-      setLoading(false);
+      if (mine === runId.current) setLoading(false);
     }
   };
 
@@ -820,7 +786,16 @@ export default function AIAssistant() {
           </div>
         )}
 
-        <ResultCard data={result} onClose={() => setResult(null)} />
+        {settings?.aiEnabled && settings?.state === "NEEDS_SETUP" && !result && (
+          <div className="ai-r-box ai-r-box--error" role="status">
+            <AlertTriangle size={18} aria-hidden="true" />
+            <div className="ai-r-box-body"><strong>AI is switched on but isn't ready yet.</strong>
+              <p>{isAdmin ? "Add your AI key in AI Settings to finish the setup." : "Ask a workspace admin to finish the AI setup."}</p>
+              {isAdmin && <button type="button" className="btn-secondary pg-btn" onClick={() => navigate("/ai-settings")}>Open AI Settings</button>}
+            </div>
+          </div>
+        )}
+        <AiResult data={result} onClose={() => setResult(null)} canOpenSettings={isAdmin} onOpenSettings={() => navigate("/ai-settings")} />
       </div>
     );
   };
@@ -836,20 +811,22 @@ export default function AIAssistant() {
             <span style={{ fontSize: "12px", color: "#888" }}>
               AI: {settings?.aiEnabled ? "ON" : "OFF"}
             </span>
-            <button
-              className={settings?.aiEnabled ? "btn-secondary" : "btn-primary"}
-              style={{ fontSize: "12px", padding: "6px 14px" }}
-              onClick={handleToggleAI}
-            >
-              {settings?.aiEnabled ? "Turn Off AI" : "Turn On AI"}
-            </button>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: "12px", padding: "6px 14px" }}
-              onClick={() => navigate("/ai-settings")}
-            >
-              Settings
-            </button>
+            {isAdmin && (<>
+              <button
+                className={settings?.aiEnabled ? "btn-secondary" : "btn-primary"}
+                style={{ fontSize: "12px", padding: "6px 14px" }}
+                onClick={handleToggleAI}
+              >
+                {settings?.aiEnabled ? "Turn Off AI" : "Turn On AI"}
+              </button>
+              <button
+                className="btn-secondary"
+                style={{ fontSize: "12px", padding: "6px 14px" }}
+                onClick={() => navigate("/ai-settings")}
+              >
+                Settings
+              </button>
+            </>)}
           </div>
         }
       />
@@ -857,12 +834,14 @@ export default function AIAssistant() {
       <div className="ai-assistant-layout">
         <div className="ai-sidebar-panels">
           {PANELS.map((p) => {
-            const isOn = settings?.aiEnabled && settings?.features?.[p.feature];
+            const isOn = settings?.aiEnabled && settings?.features?.[p.feature] !== false;
             return (
               <button
                 key={p.key}
                 className={`ai-panel-btn ${activePanel === p.key ? "active" : ""}`}
                 onClick={() => {
+                  runId.current += 1;
+                  setLoading(false);
                   setActivePanel(p.key);
                   setResult(null);
                 }}

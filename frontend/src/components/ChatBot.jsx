@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { chatWithAI, getAISettings, toggleAI } from "../api/ai";
+import { chatWithAI, getAIStatus, toggleAI } from "../api/ai";
 import { MessageCircle, X as XIcon } from "lucide-react";
 import { BookOpen as IcBookOpen, Hourglass as IcHourglass, SendHorizontal as IcSendHorizontal, Sparkles as IcSparkles, Zap as IcZap } from "lucide-react";
 
@@ -370,9 +370,9 @@ export default function ChatBot() {
   /* Check AI settings once on open */
   useEffect(()=>{
     if(open && !aiChecked){
-      getAISettings()
+      getAIStatus()      // works for every member (the full settings call is admin-only)
         .then(r=>{
-          const enabled = r?.data?.aiEnabled!==false;
+          const enabled = r?.data?.enabled!==false;
           setAiEnabled(enabled);
           setMode(enabled?"ai":"offline");
           setAiChecked(true);
@@ -463,7 +463,8 @@ export default function ChatBot() {
           sessionId,
           context:{ page:context, workspace:activeWorkspace?.name, workspaceId:activeWorkspace?.id },
         });
-        const reply = res?.data?.reply||res?.data?.message||res?.data?.response||"Could you rephrase that?";
+        const d = res?.data || {};
+        const reply = d.error ? `${d.error}${d.hint ? "\n\n" + d.hint : ""}` : (d.reply||d.message||d.response||"Could you rephrase that?");
         addBot(reply, res?.data?.suggestions||[], "ai", content);
       }catch{
         // Backend error → fallback to offline

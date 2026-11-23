@@ -18,6 +18,7 @@ public class AIService {
     private final AISettingsRepository aiSettingsRepository;
     private final WorkspaceContext workspaceContext;
     private final FieldEncryptionService crypto;
+    private final ConfiguredLlmClient llm;
     private AISettings getSettings() {
         return aiSettingsRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
                 .findFirst()
@@ -140,16 +141,88 @@ public class AIService {
         }
     }
 
-    public <T> T askJson(String systemPrompt, String userMessage, Class<T> responseType) {
-        String raw = ask(systemPrompt, userMessage);
+    // ── strict path used by the AI assistant's panels ─────────────────────────────────
+
+    private static final int JSON_TOKENS = 8192;          // models that "think" first spend part of the budget before answering
+
+    /** Turns a provider failure into words a person can act on. */
+    static AiProblem explain(com.prowosma.backend.integration.LlmException e) {
+        return switch (e.getKind()) {
+            case NOT_CONFIGURED -> new AiProblem("NOT_CONFIGURED", e.getMessage(), "Ask a workspace admin to open AI Settings and finish the setup.");
+            case AUTH -> new AiProblem("AUTH", "The AI provider didn't accept the saved key.",
+                    "An admin should open AI Settings, paste a valid key and press Save. A key that was deleted or expired needs to be replaced.");
+            case RATE_LIMITED -> new AiProblem("BUSY", "The AI provider is getting too many requests right now.",
+                    "Wait a minute and try again. If it keeps happening, an admin can choose a different model in AI Settings.");
+            case SERVER, NETWORK -> new AiProblem("UNAVAILABLE", e.getMessage(),
+                    "This usually passes in a few minutes, so try again shortly. If it keeps happening, an admin can choose a different model in AI Settings.");
+            case INPUT_TOO_LARGE -> new AiProblem("TOO_BIG", "There is more information than the AI model can read in one go.",
+                    "Try again with less text, or an admin can choose a model that handles longer text in AI Settings.");
+            default -> new AiProblem("MODEL", e.getMessage(), "An admin can open AI Settings, press \"Refresh models\" and choose a model that works.");
+        };
+    }
+
+    /** One call to the configured model; a short hiccup (busy, brief outage) is retried once before the person is told. */
+    private ConfiguredLlmClient.Result strict(String system, String user, int tokens, String featureKey) {
+        String org = workspaceContext.getWorkspaceId();
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return llm.complete(org, system, user, tokens, featureKey);
+            } catch (com.prowosma.backend.integration.LlmException e) {
+                if (attempt == 1 && e.isTransient()) {
+                    try { Thread.sleep(1500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw explain(e); }
+                    continue;
+                }
+                throw explain(e);
+            }
+        }
+    }
+
+    /** Free text (the chat). With no key saved at all it answers from the built-in help; any other problem is explained, never hidden. */
+    public String chatReply(String systemPrompt, String userMessage, String featureKey) {
+        AISettings settings = getSettings();
+        if (!settings.isAiEnabled()) throw new AiProblem("DISABLED", "AI is switched off for this workspace.", "An admin can turn it on in AI Settings.");
+        if (settings.getApiKey() == null || settings.getApiKey().isBlank()) return generateFallbackResponse(userMessage, systemPrompt);
+        return strict(systemPrompt, userMessage, Math.max(settings.getMaxTokens(), 2048), featureKey).text();
+    }
+
+    /** Asks for JSON and reads it forgivingly: fences and chatter around it are ignored, and one clearer second try is made if it still isn't JSON. */
+    public <T> T askJson(String systemPrompt, String userMessage, Class<T> responseType) { return askJson(systemPrompt, userMessage, responseType, null); }
+
+    public <T> T askJson(String systemPrompt, String userMessage, Class<T> responseType, String featureKey) {
+        ConfiguredLlmClient.Result r = strict(systemPrompt, userMessage, JSON_TOKENS, featureKey);
+        T out = readJson(r.text(), responseType);
+        if (out == null) {
+            r = strict(systemPrompt + "\nIMPORTANT: reply with valid JSON only: no explanation, no markdown, nothing before or after it.", userMessage, JSON_TOKENS * 2, featureKey);
+            out = readJson(r.text(), responseType);
+        }
+        if (out == null)
+            throw new AiProblem("BAD_ANSWER", "The AI replied in a form we couldn't use.",
+                    "Press the button again. If it keeps happening, an admin can choose a different model in AI Settings.");
+        return out;
+    }
+
+    /** The first JSON value in the text, shaped as the caller wants (an object where a list was wanted is searched for its list, and the other way round). */
+    <T> T readJson(String raw, Class<T> type) {
+        if (raw == null) return null;
+        String t = raw.trim();
+        int start = -1;
+        for (int i = 0; i < t.length(); i++) { char c = t.charAt(i); if (c == '{' || c == '[') { start = i; break; } }
+        if (start < 0) return null;
         try {
-            String cleaned = raw.trim();
-            if (cleaned.startsWith("```json")) cleaned = cleaned.substring(7);
-            if (cleaned.startsWith("```")) cleaned = cleaned.substring(3);
-            if (cleaned.endsWith("```")) cleaned = cleaned.substring(0, cleaned.length() - 3);
-            return objectMapper.readValue(cleaned.trim(), responseType);
+            com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(t.substring(start));
+            if (n == null || n.isMissingNode() || n.isNull()) return null;
+            if (List.class.isAssignableFrom(type) && n.isObject()) {
+                for (var it = n.elements(); it.hasNext(); ) { var v = it.next(); if (v.isArray()) { n = v; break; } }
+                if (!n.isArray()) return null;
+            }
+            if (Map.class.isAssignableFrom(type) && n.isArray()) {
+                Map<String, Object> wrapped = new LinkedHashMap<>();
+                wrapped.put("items", objectMapper.convertValue(n, List.class));
+                return type.cast(wrapped);
+            }
+            return objectMapper.convertValue(n, type);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI response: " + e.getMessage());
+            return null;
         }
     }
 

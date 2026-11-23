@@ -48,11 +48,14 @@ public class ConfiguredLlmClient implements LlmClient {
     }
 
     @Override
-    public String notReadyReason(String org) {
+    public String notReadyReason(String org) { return notReadyReason(org, FEATURE); }
+
+    /** Like {@link #notReadyReason(String)} for another feature (the AI assistant's panels); a null feature skips the per-feature switch. */
+    public String notReadyReason(String org, String featureKey) {
         AISettings s = settings(org);
         if (s == null || !s.isAiEnabled()) return "AI isn't turned on. An admin can enable it under AI Settings.";
         if (s.getApiKey() == null || s.getApiKey().isBlank()) return "No AI API key is saved. An admin can add one under AI Settings.";
-        if (!s.isFeatureEnabled(FEATURE)) return "Meeting summaries are switched off in AI Settings.";
+        if (featureKey != null && !s.isFeatureEnabled(featureKey)) return FEATURE.equals(featureKey) ? "Meeting summaries are switched off in AI Settings." : "This AI feature is switched off in AI Settings.";
         String provider = provider(s);
         String model = s.getModel() == null ? "" : s.getModel().trim();
         switch (provider) {
@@ -89,8 +92,10 @@ public class ConfiguredLlmClient implements LlmClient {
     // ── call ──────────────────────────────────────────────────────────────────
 
     @Override
-    public Result complete(String org, String system, String user, int maxOutputTokens) {
-        String reason = notReadyReason(org);
+    public Result complete(String org, String system, String user, int maxOutputTokens) { return complete(org, system, user, maxOutputTokens, FEATURE); }
+
+    public Result complete(String org, String system, String user, int maxOutputTokens, String featureKey) {
+        String reason = notReadyReason(org, featureKey);
         if (reason != null) throw new LlmException(Kind.NOT_CONFIGURED, reason);
         AISettings s = settings(org);
         String provider = provider(s);
