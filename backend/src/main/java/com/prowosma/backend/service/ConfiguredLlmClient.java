@@ -146,7 +146,13 @@ public class ConfiguredLlmClient implements LlmClient {
         if (st == 429 && r.body() != null && r.body().contains("limit: 0"))
             throw new LlmException(Kind.BAD_RESPONSE, "This key has no quota for the model \"" + model + "\". Choose another model in AI Settings, or turn on billing for the key.");
         if (st == 429) throw new LlmException(Kind.RATE_LIMITED, "The AI provider is rate limiting requests.");
-        if (st >= 500) throw new LlmException(Kind.SERVER, "The AI provider had a problem.");
+        if (st >= 500) {
+            String why = LlmModelCatalog.providerMessage(r.body(), key);
+            boolean busy = st == 503 || (why != null && why.toLowerCase(java.util.Locale.ROOT).matches(".*(high demand|overloaded|unavailable|try again later).*"));
+            throw new LlmException(Kind.SERVER, busy
+                    ? "The AI model \"" + (model == null ? "default" : model) + "\" is overloaded right now (the provider says it is busy" + (why == null ? "" : ": " + why) + ")."
+                    : "The AI provider had an internal error (" + st + ")" + (why == null ? "." : ": " + why));
+        }
         if (st < 200 || st >= 300) {
             boolean big = (st == 400 || st == 413) && r.body() != null && TOO_LARGE.matcher(r.body()).find();
             String why = LlmModelCatalog.providerMessage(r.body(), key);        // the provider's own words, shortened, key removed

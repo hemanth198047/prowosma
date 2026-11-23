@@ -306,7 +306,7 @@ public class MeetingIntelligence {
             case NOT_CONFIGURED -> new UmaException(HttpStatus.FAILED_DEPENDENCY, "AI_NOT_READY", e.getMessage(), "An admin can set up AI under AI Settings, then press Retry.");
             case AUTH -> new UmaException(HttpStatus.BAD_GATEWAY, "AI_AUTH", e.getMessage(), "An admin needs to fix the AI key in AI Settings, then press Retry.");
             case INPUT_TOO_LARGE -> new UmaException(HttpStatus.BAD_GATEWAY, "AI_TOO_LONG", e.getMessage(), "An admin can lower app.uma.ai.chunk-chars, then press Retry.");
-            case RATE_LIMITED, SERVER, NETWORK -> new UmaException(HttpStatus.SERVICE_UNAVAILABLE, "AI_UNAVAILABLE", e.getMessage(), "This usually passes. Press Retry in a few minutes.");
+            case RATE_LIMITED, SERVER, NETWORK -> new UmaException(HttpStatus.SERVICE_UNAVAILABLE, "AI_UNAVAILABLE", e.getMessage(), "Your transcript is saved, nothing is lost. This usually passes in a few minutes: press Retry. If it keeps happening, an admin can choose a different model in AI Settings (Refresh models), then press Retry.");
             default -> new UmaException(HttpStatus.BAD_GATEWAY, "AI_BAD_OUTPUT", e.getMessage(), "Press Retry.");
         };
     }
