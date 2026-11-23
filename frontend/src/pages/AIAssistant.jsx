@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { unwrapList } from "../api/client";
+import { resultOf } from "../utils/aiResult";
 import { useNavigate } from "react-router-dom";
 import {
   generateTasks,
@@ -215,10 +215,19 @@ function AIDisabledBanner({
   return null;
 }
 
+const humanKey = (k) => k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (c) => c.toUpperCase());
+/** A flat report (every value a short piece of text) reads better as labelled lines than as JSON. */
+function readable(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const entries = Object.entries(data);
+  if (!entries.length || !entries.every(([, v]) => v == null || ["string", "number", "boolean"].includes(typeof v))) return null;
+  return entries.map(([k, v]) => `${humanKey(k)}: ${v ?? "-"}`).join("\n\n");
+}
+
 function ResultCard({ data, onClose }) {
   const [copied, setCopied] = useState(false);
   if (!data) return null;
-  const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  const text = typeof data === "string" ? data : readable(data) ?? JSON.stringify(data, null, 2);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -244,7 +253,7 @@ function ResultCard({ data, onClose }) {
         </div>
       </div>
       <pre className="ai-result-content">
-        {typeof data === "string" ? data : JSON.stringify(data, null, 2)}
+        {text}
       </pre>
     </div>
   );
@@ -410,7 +419,7 @@ export default function AIAssistant() {
     setResult(null);
     try {
       const res = await fn(...args);
-      setResult(unwrapList(res));
+      setResult(resultOf(res));
     } catch (err) {
       setResult({
         error: apiErrorMessage(err, "Feature not enabled or AI not configured"),
