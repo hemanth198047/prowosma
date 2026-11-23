@@ -62,7 +62,7 @@ public class AIController {
     @PostMapping("/settings/models")
     public Map<String, Object> listModels(@RequestBody Map<String, String> body) {
         try {
-            LlmModelCatalog.Models m = modelCatalog.list(body.get("apiProvider"), body.get("apiKey"), body.get("apiBaseUrl"));
+            LlmModelCatalog.Models m = modelCatalog.list(body.get("apiProvider"), body.get("apiKey"), body.get("apiBaseUrl"), "true".equalsIgnoreCase(body.get("refresh")));
             return Map.of("provider", m.provider(), "models", m.models());
         } catch (com.prowosma.backend.integration.LlmException e) {
             return Map.of("models", List.of(), "error", e.getMessage(), "kind", e.getKind().name());

@@ -138,12 +138,21 @@ public class ConfiguredLlmClient implements LlmClient {
         }
         int st = r.status();
         if (st == 401 || st == 403) throw new LlmException(Kind.AUTH, "The AI provider rejected the saved API key.");
+        if (st == 404) {
+            // The most common cause: the chosen model was retired or isn't offered to this key. Say so, and what to do.
+            throw new LlmException(Kind.BAD_RESPONSE, "The model \"" + (model == null ? "default" : model) + "\" isn't available for this key. "
+                    + "Open AI Settings, load the models and choose one from the list.");
+        }
+        if (st == 429 && r.body() != null && r.body().contains("limit: 0"))
+            throw new LlmException(Kind.BAD_RESPONSE, "This key has no quota for the model \"" + model + "\". Choose another model in AI Settings, or turn on billing for the key.");
         if (st == 429) throw new LlmException(Kind.RATE_LIMITED, "The AI provider is rate limiting requests.");
         if (st >= 500) throw new LlmException(Kind.SERVER, "The AI provider had a problem.");
         if (st < 200 || st >= 300) {
             boolean big = (st == 400 || st == 413) && r.body() != null && TOO_LARGE.matcher(r.body()).find();
+            String why = LlmModelCatalog.providerMessage(r.body(), key);        // the provider's own words, shortened, key removed
             throw new LlmException(big ? Kind.INPUT_TOO_LARGE : Kind.BAD_RESPONSE,
-                    big ? "The configured model can't take this much text." : "The AI provider didn't accept the request.");
+                    big ? "The configured model can't take this much text."
+                        : "The AI provider didn't accept the request" + (why == null ? "." : ": " + why));
         }
         try {
             return parse(provider, om.readTree(r.body()), model);

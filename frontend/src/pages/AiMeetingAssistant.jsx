@@ -721,6 +721,33 @@ function Section({ title, items, empty, select }) {
   );
 }
 
+/** Past, present and future in one small switch. Uses the lists the dashboard already returns; nothing new to load. */
+function MeetingTimeline({ data, select }) {
+  const upcoming = data.upcoming || [];
+  const now = data.inProgress || [];
+  const taken = new Set([...upcoming, ...now].map((m) => m.id));
+  const past = (data.recent || []).filter((m) => !taken.has(m.id));
+  const [tab, setTab] = useState(() => (now.length ? "now" : upcoming.length ? "future" : "past"));
+  const TABS3 = [
+    ["past", "Past", past, "No past meetings yet."],
+    ["now", "Now", now, "Nothing happening right now."],
+    ["future", "Upcoming", upcoming, "No upcoming meetings. Use Add → Schedule a meeting."],
+  ];
+  const [, , items, empty] = TABS3.find(([k]) => k === tab);
+  return (
+    <section className="uma-section" aria-label="Meetings">
+      <div className="uma-tabs" role="tablist" aria-label="Meetings by time">
+        {TABS3.map(([k, label, list]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} className="uma-tab" onClick={() => setTab(k)}>
+            {label}{list.length ? <span className="uma-count">{list.length}</span> : null}
+          </button>
+        ))}
+      </div>
+      {items.length ? <ul className="uma-mlist">{items.map((m) => <MeetingRow key={m.id} m={m} select={select} />)}</ul> : <p className="uma-hint">{empty}</p>}
+    </section>
+  );
+}
+
 function ProviderCards() {
   const [providers, setProviders] = useState(null);
   useEffect(() => { getUmaProviders().then((r) => setProviders(r.data)).catch(() => setProviders([])); }, []);
@@ -728,7 +755,7 @@ function ProviderCards() {
   return (
     <details className="uma-providers">
       <summary>What works with each meeting app</summary>
-      <p className="uma-hint">Shown as it really is today. "Possible later" needs an admin connection and the meeting app's permission.</p>
+      <p className="uma-fine">What each meeting app supports today.</p>
       <div className="uma-pgrid">
         {providers.filter((p) => p.id !== "OTHER").map((p) => (
           <div key={p.id} className="uma-pcard">
@@ -752,7 +779,8 @@ function ProviderCards() {
 }
 
 function HowItWorks() {
-  const [open, setOpen] = useState(() => { try { return localStorage.getItem("uma.howItWorks") !== "closed"; } catch { return true; } });
+  // Closed unless the person opened it before - it should never push the meetings down the page.
+  const [open, setOpen] = useState(() => { try { return localStorage.getItem("uma.howItWorks") === "open"; } catch { return false; } });
   const toggle = (e) => {
     const isOpen = e.currentTarget.open;
     setOpen(isOpen);
@@ -761,18 +789,8 @@ function HowItWorks() {
   return (
     <details className="uma-how" open={open} onToggle={toggle}>
       <summary>How it works</summary>
-      <ol className="uma-how-steps">
-        <li><strong>Start or plan the meeting.</strong> Click <em>Meet now</em> for a meeting right away, or <em>Add → Schedule a meeting</em> for later -
-          in Google Meet or Microsoft Teams (choose your usual one in <em>Settings</em>). Invite the people who'll be there.</li>
-        <li><strong>Join it from Prowosma</strong> with <em>Join meeting</em>, and turn on the meeting's transcription (or let Fireflies' notetaker join - admit it when it asks).</li>
-        <li><strong>Talk as usual.</strong> Say clearly who does what and by when ("Priya, can you do the frontend by Thursday?" - "Yes").</li>
-        <li><strong>That's it.</strong> A few minutes after the meeting the notes are written and clearly agreed tasks are created and assigned to the
-          people who were invited. You'll see <em>Meeting processed: 3 tasks created…</em></li>
-        <li><strong>Check anything that needs you.</strong> Items that weren't clear (an owner who wasn't invited, a suggestion rather than an agreement)
-          wait on the meeting page with the reason - create, change or dismiss them.</li>
-      </ol>
-      <p className="uma-fine">No Fireflies? Click <em>Record meeting</em> before you start and share the meeting tab (Chrome or Edge).
-        Already have a recording or a transcript? Use <em>Upload recording</em> or <em>Add → Import transcript</em>.</p>
+      <p className="uma-fine">Meet now or schedule a meeting, join from here with transcription on, then check the notes and tasks it creates.
+        No transcript? Use Record meeting, Upload recording, or Add → Import transcript.</p>
     </details>
   );
 }
@@ -933,13 +951,7 @@ function Dashboard({ openDialog, projects = [] }) {
           <div>
             <MeetingsToolbar data={data} picking={picking} setPicking={setPicking} selected={selected} setSelected={setSelected}
               onClear={() => setClearing(true)} onDeleted={load} />
-            <Section title="Needs attention" items={data.failed} select={select} />
-            <Section title="Ready for review" items={data.awaitingReview} select={select} />
-            <Section title="Processing" items={data.inProgress} select={select} />
-            <Section title="Upcoming" items={data.upcoming} select={select} />
-            <Section title="Recent meetings" empty="No other meetings." select={select}
-              items={data.recent.filter((m) => !["REVIEW_READY", "FAILED", "QUEUED", "TRANSCRIBING", "ANALYZING"].includes(m.status)
-                && !data.upcoming.some((u) => u.id === m.id))} />
+            <MeetingTimeline data={data} select={select} />
             {clearing && <ClearOldDialog defaultDays={data.retentionDays || 15} onClose={() => setClearing(false)} onDone={() => { setClearing(false); load(); }} />}
           </div>
           <aside className="uma-side" aria-label="Open action items">

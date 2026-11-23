@@ -217,12 +217,12 @@ export default function AISettings() {
   const latest = useRef({ form: null, settings: null });   // read inside the async loader without re-creating it
 
   latest.current = { form, settings };
-  const loadModels = useCallback(async (provider, apiKey, apiBaseUrl) => {
+  const loadModels = useCallback(async (provider, apiKey, apiBaseUrl, refresh = false) => {
     const id = ++modelReq.current;
     setModelsLoading(true);
     setModelsError("");
     try {
-      const res = await listAIModels({ apiProvider: provider, apiKey, apiBaseUrl });
+      const res = await listAIModels({ apiProvider: provider, apiKey, apiBaseUrl, refresh: refresh ? "true" : "" });
       if (id !== modelReq.current) return;                       // a newer request replaced this one
       const list = res.data?.models || [];
       setLiveModels(list);
@@ -539,7 +539,7 @@ export default function AISettings() {
                   <button type="button" className="btn-secondary"
                     style={{ fontSize: "12px", padding: "8px 12px", whiteSpace: "nowrap" }}
                     disabled={modelsLoading}
-                    onClick={() => loadModels(form.apiProvider, (form.apiKey || "").trim(), form.apiBaseUrl)}>
+                    onClick={() => loadModels(form.apiProvider, (form.apiKey || "").trim(), form.apiBaseUrl, true)}>
                     Refresh models
                   </button>
                 </div>

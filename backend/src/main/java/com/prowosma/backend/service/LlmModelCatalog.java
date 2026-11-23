@@ -12,7 +12,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
 /**
@@ -35,6 +38,10 @@ public class LlmModelCatalog {
     private static final Pattern PREVIEW = Pattern.compile("(?i)(preview|exp|experimental|beta)");
     private static final Pattern OPENAI_CHAT = Pattern.compile("^(gpt-|chatgpt-|o\\d).*");
     private static final int MAX_PAGES = 5;
+    private static final int MAX_PROBES = 16;                       // models tested per lookup
+    private static final long CACHE_MS = 10 * 60 * 1000L;
+    private record Cached(long at, List<String> models) {}
+    private final Map<String, Cached> cache = new ConcurrentHashMap<>();
 
     private final AISettingsService settingsService;
     private final FieldEncryptionService crypto;
@@ -51,7 +58,10 @@ public class LlmModelCatalog {
      * @param typedKey a key typed in the page (not saved yet), or null/blank to use the saved key
      * @param baseUrl  CUSTOM only: the chat endpoint address from AI Settings
      */
-    public Models list(String provider, String typedKey, String baseUrl) {
+    public Models list(String provider, String typedKey, String baseUrl) { return list(provider, typedKey, baseUrl, false); }
+
+    /** @param refresh true = skip the 10-minute memory of an earlier answer for this key */
+    public Models list(String provider, String typedKey, String baseUrl, boolean refresh) {
         String p = provider == null || provider.isBlank() ? "ANTHROPIC" : provider.trim().toUpperCase(Locale.ROOT);
         if (!Set.of("ANTHROPIC", "OPENAI", "GEMINI", "CUSTOM").contains(p))
             throw new LlmException(Kind.NOT_CONFIGURED, "Unknown AI provider.");
@@ -67,13 +77,97 @@ public class LlmModelCatalog {
         }
         if (key.isEmpty() && !p.equals("CUSTOM")) throw new LlmException(Kind.NOT_CONFIGURED, "Enter the API key to load the available models.");
 
+        String cacheKey = p + ":" + sha(key + "|" + (baseUrl == null ? "" : baseUrl));
+        Cached hit = cache.get(cacheKey);
+        if (!refresh && hit != null && System.currentTimeMillis() - hit.at() < CACHE_MS) return new Models(p, hit.models());
+
         List<String> ids = switch (p) {
-            case "GEMINI" -> gemini(key);
+            case "GEMINI" -> workingOnly(key, order(gemini(key)));
             case "OPENAI" -> openai("https://api.openai.com/v1/models", key, true);
             case "ANTHROPIC" -> anthropic(key);
             default -> custom(baseUrl, key);
         };
-        return new Models(p, order(ids));
+        List<String> ordered = order(ids);
+        cache.put(cacheKey, new Cached(System.currentTimeMillis(), ordered));
+        return new Models(p, ordered);
+    }
+
+    // ── "listed" is not "usable": ask each Gemini model for one tiny reply and keep only the ones that answer ──
+
+    /** Google lists models it then refuses ("no longer available to new users", quota 0 on a free key). Only offer models that really answer. */
+    private List<String> workingOnly(String key, List<String> candidates) {
+        if (candidates.isEmpty()) throw new LlmException(Kind.BAD_RESPONSE, "This key has no Gemini chat models. Create a key at aistudio.google.com/apikey.");
+        List<String> tryThese = candidates.subList(0, Math.min(MAX_PROBES, candidates.size()));
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        Map<String, Probe> results = new ConcurrentHashMap<>();
+        try {
+            List<Callable<Void>> jobs = new ArrayList<>();
+            for (String id : tryThese) jobs.add(() -> { results.put(id, probe(key, id)); return null; });
+            pool.invokeAll(jobs, 40, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            pool.shutdownNow();
+        }
+        List<String> ok = new ArrayList<>();
+        String why = null;
+        for (String id : tryThese) {
+            Probe pr = results.get(id);
+            if (pr != null && pr.usable()) ok.add(id);
+            else if (pr != null && why == null && pr.message() != null) why = pr.message();
+        }
+        if (ok.isEmpty()) {
+            if (results.isEmpty()) throw new LlmException(Kind.NETWORK, "Google didn't answer in time. Try Refresh models in a minute.");
+            throw new LlmException(Kind.BAD_RESPONSE, "None of this key's models accepted a test request."
+                    + (why == null ? "" : " Google said: " + why + (why.matches(".*[.!?…]$") ? "" : "."))
+                    + " Create a new key at aistudio.google.com/apikey, or turn on billing for it.");
+        }
+        return ok;
+    }
+
+    record Probe(boolean usable, int status, String message) {}
+
+    private Probe probe(String key, String id) {
+        Map<String, String> h = new LinkedHashMap<>();
+        h.put("x-goog-api-key", key);
+        h.put("Content-Type", "application/json");
+        String body = "{\"systemInstruction\":{\"parts\":[{\"text\":\"Reply with one word.\"}]},"
+                + "\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Hi\"}]}],\"generationConfig\":{\"maxOutputTokens\":16}}";
+        try {
+            LlmHttp.Result r = http.send("POST", "https://generativelanguage.googleapis.com/v1beta/models/" + id + ":generateContent", h, body, allowPrivateHosts);
+            if (r.status() >= 200 && r.status() < 300) return new Probe(true, r.status(), null);
+            String msg = providerMessage(r.body(), key);
+            // A passing rate limit still means the model works; "limit: 0" means this key has no quota for it at all.
+            boolean passingLimit = r.status() == 429 && !(r.body() != null && r.body().contains("limit: 0"));
+            return new Probe(passingLimit, r.status(), msg);
+        } catch (IOException | RuntimeException e) {
+            return new Probe(false, 0, null);
+        }
+    }
+
+    /** error.message from a provider reply, shortened and with the key removed. Null when there isn't one. */
+    public static String providerMessage(String body, String key) {
+        if (body == null || body.isBlank()) return null;
+        try {
+            String m = new ObjectMapper().readTree(body).path("error").path("message").asText("");
+            if (m.isBlank()) return null;
+            if (key != null && !key.isBlank()) m = m.replace(key, "***");
+            m = m.replaceAll("\\s+", " ").trim();
+            return m.length() > 220 ? m.substring(0, 220) + "…" : m;
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static String sha(String x) {
+        try {
+            byte[] d = MessageDigest.getInstance("SHA-256").digest(x.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 12; i++) sb.append(String.format("%02x", d[i]));
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     // ── providers ─────────────────────────────────────────────────────────────

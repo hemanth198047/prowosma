@@ -22,6 +22,8 @@ class LlmModelCatalogTest {
     private final List<String[]> calls = new ArrayList<>();   // {url, key-header}
     private int status = 200;
     private String body = "{}";
+    private final Map<String, Integer> generateStatus = new HashMap<>();   // model id -> status of a test generateContent call
+    private final Map<String, String> generateBody = new HashMap<>();
 
     private LlmModelCatalog catalog(AISettings saved) {
         AISettingsService svc = mock(AISettingsService.class);
@@ -29,6 +31,10 @@ class LlmModelCatalogTest {
         FieldEncryptionService crypto = mock(FieldEncryptionService.class);
         when(crypto.decrypt("enc")).thenReturn("SAVED-KEY");
         LlmHttp http = (method, url, headers, b, allowPrivate) -> {
+            if ("POST".equals(method) && url.contains(":generateContent")) {              // a model test call
+                String id = url.replaceAll(".*/models/", "").replace(":generateContent", "");
+                return new LlmHttp.Result(generateStatus.getOrDefault(id, 200), generateBody.getOrDefault(id, "{}"));
+            }
             calls.add(new String[]{url, String.valueOf(headers.getOrDefault("x-goog-api-key", headers.getOrDefault("Authorization", headers.get("x-api-key"))))});
             return new LlmHttp.Result(status, body);
         };
@@ -50,6 +56,36 @@ class LlmModelCatalogTest {
         var r = catalog(new AISettings()).list("gemini", "TYPED", null);
         assertThat(r.models()).containsExactly("gemini-2.5-flash", "gemini-2.5-pro", "gemini-3-flash-preview");
         assertThat(calls.get(0)[1]).isEqualTo("TYPED");
+    }
+
+    @Test @DisplayName("Gemini: a model Google lists but refuses (404 'no longer available', quota 0) is NOT offered")
+    void geminiOnlyWhatWorks() {
+        body = """
+            {"models":[
+              {"name":"models/gemini-2.5-flash","supportedGenerationMethods":["generateContent"]},
+              {"name":"models/gemini-2.5-pro","supportedGenerationMethods":["generateContent"]},
+              {"name":"models/gemini-3.8-flash","supportedGenerationMethods":["generateContent"]},
+              {"name":"models/gemini-3.1-flash-lite","supportedGenerationMethods":["generateContent"]}
+            ]}""";
+        generateStatus.put("gemini-2.5-flash", 404);
+        generateBody.put("gemini-2.5-flash", "{\"error\":{\"message\":\"This model is no longer available to new users.\"}}");
+        generateStatus.put("gemini-2.5-pro", 429);
+        generateBody.put("gemini-2.5-pro", "{\"error\":{\"message\":\"Quota exceeded ... limit: 0\"}}");
+        generateStatus.put("gemini-3.1-flash-lite", 429);                                  // a passing rate limit: the model works
+        generateBody.put("gemini-3.1-flash-lite", "{\"error\":{\"message\":\"Too many requests\"}}");
+        var r = catalog(new AISettings()).list("GEMINI", "K", null, true);
+        assertThat(r.models()).containsExactly("gemini-3.1-flash-lite", "gemini-3.8-flash");
+    }
+
+    @Test @DisplayName("Gemini: when NO model answers, the error says why in Google's words — and never contains the key")
+    void geminiNoneWork() {
+        body = "{\"models\":[{\"name\":\"models/gemini-2.5-flash\",\"supportedGenerationMethods\":[\"generateContent\"]}]}";
+        generateStatus.put("gemini-2.5-flash", 404);
+        generateBody.put("gemini-2.5-flash", "{\"error\":{\"message\":\"no longer available to new users (key SECRETKEY)\"}}");
+        assertThatThrownBy(() -> catalog(new AISettings()).list("GEMINI", "SECRETKEY", null, true))
+                .isInstanceOf(LlmException.class)
+                .hasMessageContaining("no longer available to new users")
+                .hasMessageNotContaining("SECRETKEY");
     }
 
     @Test @DisplayName("a typed key wins; a blank key uses the saved key ONLY for the provider it was saved for")
