@@ -16,6 +16,10 @@ export const toggleAI = (enabled) =>
 export const toggleAIFeature = (key) =>
   client.patch(`/ai/settings/features/${key}`).then(notifyChanged);
 
+// Which models can this key use? Asks the provider itself (admin only). Blank apiKey = use the saved key for the same provider.
+// Always resolves with { models: [...] } or { models: [], error: "reason" }.
+export const listAIModels = (data) => client.post("/ai/settings/models", data);
+
 export const generateTasks = (data) => client.post("/ai/task-assistant", data);
 export const adviseGoal = (data) => client.post("/ai/goal-advisor", data);
 export const prioritizeTasks = () => client.post("/ai/prioritize", {});

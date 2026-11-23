@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import SecretInput from "../components/ui/SecretInput";
 import {
   getAISettings,
   saveAISettings,
   toggleAI,
   toggleAIFeature,
+  listAIModels,
 } from "../api/ai";
 import PageHeader from "../components/PageHeader";
 
@@ -174,7 +175,7 @@ const PROVIDERS = [
   {
     value: "GEMINI",
     label: "Google Gemini",
-    models: ["gemini-pro", "gemini-1.5-pro"],
+    models: ["gemini-2.5-flash", "gemini-2.5-pro"],   // fallback only: the real list is fetched from the provider
     keyHint: "AIza...",
   },
   {
@@ -206,6 +207,41 @@ export default function AISettings() {
   const [saved, setSaved] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Models the provider says this key can use (fetched live, so the list never goes stale).
+  const [liveModels, setLiveModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState("");
+  const [modelNotice, setModelNotice] = useState("");
+  const modelReq = useRef(0);
+  const latest = useRef({ form: null, settings: null });   // read inside the async loader without re-creating it
+
+  latest.current = { form, settings };
+  const loadModels = useCallback(async (provider, apiKey, apiBaseUrl) => {
+    const id = ++modelReq.current;
+    setModelsLoading(true);
+    setModelsError("");
+    try {
+      const res = await listAIModels({ apiProvider: provider, apiKey, apiBaseUrl });
+      if (id !== modelReq.current) return;                       // a newer request replaced this one
+      const list = res.data?.models || [];
+      setLiveModels(list);
+      setModelsError(list.length ? "" : (res.data?.error || "No models were returned for this key."));
+      const f = latest.current.form;
+      if (list.length && f && f.apiProvider === provider && !list.includes(f.model)) {
+        // Only explain it when the unavailable model is the one that was SAVED (not a default we filled in after a provider switch).
+        const wasSaved = f.model && f.model === latest.current.settings?.model;
+        setModelNotice(wasSaved ? `The saved model "${f.model}" isn't available for this key, so ${list[0]} was selected. Click Save to keep it.` : "");
+        setForm((cur) => (cur.apiProvider === provider ? { ...cur, model: list[0] } : cur));
+      }
+    } catch (e) {
+      if (id !== modelReq.current) return;
+      setLiveModels([]);
+      setModelsError("Couldn't load the model list. You can type a model name instead.");
+    } finally {
+      if (id === modelReq.current) setModelsLoading(false);
+    }
+  }, []);
 
   const setPrimaryProvider = (providerValue) => {
     const p = PROVIDERS.find(pr => pr.value === providerValue);
@@ -244,6 +280,18 @@ export default function AISettings() {
     };
     fetchSettings();
   }, []);
+
+  // Load the model list when a key is typed (after a short pause), or when the saved key / endpoint already covers this provider.
+  useEffect(() => {
+    if (!settings) return;
+    const typed = (form.apiKey || "").trim();
+    const savedKeyUsable = settings.apiKeySaved && (settings.apiProvider || "ANTHROPIC") === form.apiProvider;
+    const custom = form.apiProvider === "CUSTOM";
+    const ready = custom ? (form.apiBaseUrl || "").trim().length > 8 : (typed.length >= 10 || savedKeyUsable);
+    if (!ready) { setLiveModels([]); setModelsError(""); return; }
+    const t = setTimeout(() => loadModels(form.apiProvider, typed, form.apiBaseUrl), 600);
+    return () => clearTimeout(t);
+  }, [settings, form.apiProvider, form.apiKey, form.apiBaseUrl, loadModels]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -466,30 +514,40 @@ export default function AISettings() {
             )}
           </div>
 
-          {selectedProvider.models.length > 0 ? (
-            <div className="form-group">
-              <label style={{ fontWeight: 600 }} htmlFor={"aisettings-model"}>Model</label>
-              <select
-                value={form.model}
-                onChange={(e) => set("model", e.target.value)} id={"aisettings-model"}
-              >
-                {selectedProvider.models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="form-group">
-              <label htmlFor={"aisettings-model-name"}>Model Name</label>
-              <input
-                value={form.model}
-                onChange={(e) => set("model", e.target.value)}
-                placeholder="e.g. llama3, mistral" id={"aisettings-model-name"}
-              />
-            </div>
-          )}
+          {(() => {
+            // Live list from the provider when we have it; otherwise a small fallback list (or free text for Custom).
+            const options = liveModels.length > 0 ? liveModels : selectedProvider.models;
+            const withCurrent = form.model && !options.includes(form.model) && liveModels.length === 0 ? [form.model, ...options] : options;
+            return (
+              <div className="form-group">
+                <label style={{ fontWeight: 600 }} htmlFor={"aisettings-model"}>
+                  Model
+                  {modelsLoading && <span style={{ marginLeft: 8, fontSize: 11, color: "var(--gray-500)" }}>Loading models…</span>}
+                  {!modelsLoading && liveModels.length > 0 && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: "var(--success)" }}>{liveModels.length} available for this key</span>
+                  )}
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {withCurrent.length > 0 ? (
+                    <select value={form.model} onChange={(e) => { set("model", e.target.value); setModelNotice(""); }} id={"aisettings-model"}>
+                      {withCurrent.map((m) => (<option key={m} value={m}>{m}</option>))}
+                    </select>
+                  ) : (
+                    <input value={form.model} onChange={(e) => set("model", e.target.value)}
+                      placeholder="e.g. llama3, mistral" id={"aisettings-model"} />
+                  )}
+                  <button type="button" className="btn-secondary"
+                    style={{ fontSize: "12px", padding: "8px 12px", whiteSpace: "nowrap" }}
+                    disabled={modelsLoading}
+                    onClick={() => loadModels(form.apiProvider, (form.apiKey || "").trim(), form.apiBaseUrl)}>
+                    Refresh models
+                  </button>
+                </div>
+                {modelNotice && <p style={{ fontSize: "11px", color: "var(--warning, #b45309)", marginTop: "5px" }}>{modelNotice}</p>}
+                {modelsError && <p style={{ fontSize: "11px", color: "var(--gray-500)", marginTop: "5px" }}>{modelsError}</p>}
+              </div>
+            );
+          })()}
 
           <div
             className="form-group"
