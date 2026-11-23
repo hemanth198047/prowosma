@@ -30,6 +30,7 @@ public class AIController {
     private final TaskService taskService;
     private final NotificationService notificationService;
     private final WorkspaceContext workspaceContext;
+    private final LlmModelCatalog modelCatalog;
 
     // ── Settings ──────────────────────────────────────────────
 
@@ -51,6 +52,21 @@ public class AIController {
     @PostMapping("/settings")
     public Map<String, Object> saveSettings(@RequestBody AISettings settings) {
         return aiSettingsService.view(aiSettingsService.save(settings));
+    }
+
+    /**
+     * Which models can this key use? Asks the provider itself, so the model list in AI Settings is never out of date.
+     * Admin-only (RoleGuardFilter covers /api/ai/settings*). A blank key uses the saved key for the same provider.
+     * Always answers 200 with either {models:[...]} or {error:"plain-language reason", models:[]} so the page can fall back to typing a name.
+     */
+    @PostMapping("/settings/models")
+    public Map<String, Object> listModels(@RequestBody Map<String, String> body) {
+        try {
+            LlmModelCatalog.Models m = modelCatalog.list(body.get("apiProvider"), body.get("apiKey"), body.get("apiBaseUrl"));
+            return Map.of("provider", m.provider(), "models", m.models());
+        } catch (com.prowosma.backend.integration.LlmException e) {
+            return Map.of("models", List.of(), "error", e.getMessage(), "kind", e.getKind().name());
+        }
     }
 
     @PatchMapping("/settings/toggle")

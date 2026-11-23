@@ -78,7 +78,9 @@ public class AIService {
                     ));
                 }
                 case "GEMINI" -> {
-                    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+                    // the model chosen in AI Settings (it is picked from the provider's own list); never a hard-coded name that a provider can retire
+                    String gemModel = (settings.getModel() != null && settings.getModel().matches("^gemini-[A-Za-z0-9._-]{1,80}$")) ? settings.getModel() : "gemini-2.5-flash";
+                    url = "https://generativelanguage.googleapis.com/v1beta/models/" + gemModel + ":generateContent";
                     headers.set("x-goog-api-key", apiKey);          // a header, not ?key= — URLs are written to logs
                     body.put("contents", List.of(Map.of("parts", List.of(Map.of("text", systemPrompt + "\n" + userMessage)))));
                 }
