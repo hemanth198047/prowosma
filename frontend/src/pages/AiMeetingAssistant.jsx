@@ -16,7 +16,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import { getTeamMembers } from "../api/team";
 import { getProjects } from "../api/projects";
 import {
-  getUmaDashboard, getUmaMeeting, getUmaProviders, detectUmaLink, uploadUmaRecording, addUmaRecording,
+  getUmaDashboard, getUmaMeeting, detectUmaLink, uploadUmaRecording, addUmaRecording,
   importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
   cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
@@ -50,9 +50,6 @@ const TONE = {
   REVIEW_READY: "attention", COMPLETED: "success", FAILED: "danger", CANCELLED: "neutral",
 };
 const SOURCE = { FIREFLIES_IMPORT: "Fireflies", RECORDING_UPLOAD: "Recording", TRANSCRIPT_IMPORT: "Transcript", MEETING_LINK: "Meeting link", BROWSER_CAPTURE: "Browser capture" };
-const STATE_TEXT = {
-  VERIFIED: "Works — tested", IMPLEMENTED: "Built in", POSSIBLE: "Possible later (needs setup)", UNAVAILABLE: "Not available",
-};
 const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,.mkv,.mpeg,.mpga,audio/*,video/*";
 const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
 
@@ -748,36 +745,6 @@ function MeetingTimeline({ data, select }) {
   );
 }
 
-function ProviderCards() {
-  const [providers, setProviders] = useState(null);
-  useEffect(() => { getUmaProviders().then((r) => setProviders(r.data)).catch(() => setProviders([])); }, []);
-  if (!providers?.length) return null;
-  return (
-    <details className="uma-providers">
-      <summary>What works with each meeting app</summary>
-      <p className="uma-fine">What each meeting app supports today.</p>
-      <div className="uma-pgrid">
-        {providers.filter((p) => p.id !== "OTHER").map((p) => (
-          <div key={p.id} className="uma-pcard">
-            <h3>{p.name}</h3>
-            <ul>
-              {p.capabilities.map((c) => {
-                const ok = c.state === "VERIFIED" || c.state === "IMPLEMENTED";
-                return (
-                  <li key={c.key} className={ok ? "ok" : c.state === "UNAVAILABLE" ? "no" : "later"} title={c.note || ""}>
-                    {ok ? <Check size={13} aria-hidden="true" /> : <X size={13} aria-hidden="true" />}
-                    <span>{c.label}</span><em>{STATE_TEXT[c.state] || c.state}{c.state !== "VERIFIED" && c.note ? ` — ${c.note}` : ""}</em>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </details>
-  );
-}
-
 function HowItWorks() {
   // Closed unless the person opened it before - it should never push the meetings down the page.
   const [open, setOpen] = useState(() => { try { return localStorage.getItem("uma.howItWorks") === "open"; } catch { return false; } });
@@ -963,7 +930,6 @@ function Dashboard({ openDialog, projects = [] }) {
         <WhereWeStand projects={projects.filter(OPEN_PROJECT)} />
         <MeetingTrends />
       </div>
-      <ProviderCards />
     </>
   );
 }
