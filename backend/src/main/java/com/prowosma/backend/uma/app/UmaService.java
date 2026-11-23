@@ -728,7 +728,19 @@ public class UmaService {
 
     public UmaMeeting retry(Ctx c, String id) {
         UmaMeeting m = manageable(c, id);
-        if (m.getStatus() != UmaStatus.FAILED) throw new UmaException(HttpStatus.CONFLICT, "NOT_FAILED", "Only a meeting that needs attention can be retried.");
+        UmaStatus st = m.getStatus();
+        if (st == UmaStatus.ANALYZING || st == UmaStatus.QUEUED || st == UmaStatus.TRANSCRIBING) {
+            // "Try again now" while the app is waiting between automatic attempts (for example after changing the AI model in AI Settings).
+            boolean analysis = st == UmaStatus.ANALYZING;
+            String type = analysis ? UmaPipeline.ANALYZE : UmaPipeline.TRANSCRIBE;
+            queue.cancelType(c.org(), id, type);                       // only the one waiting its turn; a step that is running right now is left alone
+            queue.enqueue(c.org(), id, type, c.caller().email());
+            m.setStatusDetail("Trying again now…");
+            m = store.save(m);
+            store.audit(c.org(), id, c.caller().email(), "RETRIED_NOW", analysis ? "analysis" : "transcription");
+            return m;
+        }
+        if (st != UmaStatus.FAILED) throw new UmaException(HttpStatus.CONFLICT, "NOT_FAILED", "Only a meeting that needs attention can be retried.");
         boolean transcribe = m.getFailedStage() == UmaStatus.TRANSCRIBING || m.getFailedStage() == UmaStatus.QUEUED
                 || (m.getTranscript() == null && m.getRecording() != null);
         if (transcribe) {
@@ -751,6 +763,23 @@ public class UmaService {
         m = store.transition(c.org(), id, UmaStatus.ANALYZING, c.caller().email(), "Writing a new version of the summary…", "regenerate");
         queue.enqueue(c.org(), id, UmaPipeline.ANALYZE, c.caller().email());
         store.audit(c.org(), id, c.caller().email(), "REGENERATED", null);
+        return m;
+    }
+
+    /** "Stop processing": stops the work but KEEPS the meeting, its transcript and recording. It shows as "Needs attention" with Retry, so nothing is lost. */
+    public UmaMeeting stop(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        UmaStatus st = m.getStatus();
+        if (st != UmaStatus.QUEUED && st != UmaStatus.TRANSCRIBING && st != UmaStatus.ANALYZING)
+            throw new UmaException(HttpStatus.CONFLICT, "NOT_PROCESSING", "This meeting isn't being processed.");
+        queue.cancel(c.org(), id);
+        UmaStatus stage = st == UmaStatus.ANALYZING ? UmaStatus.ANALYZING : UmaStatus.TRANSCRIBING;
+        m = store.transition(c.org(), id, UmaStatus.FAILED, c.caller().email(), "Processing was stopped.", "stopped");
+        m.setErrorCode("STOPPED");
+        m.setRecoveryHint("Nothing was lost. Press Retry when you want to continue.");
+        m.setFailedStage(stage);
+        m = store.save(m);
+        store.audit(c.org(), id, c.caller().email(), "STOPPED", null);
         return m;
     }
 

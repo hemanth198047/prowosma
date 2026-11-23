@@ -18,7 +18,7 @@ import { getProjects } from "../api/projects";
 import {
   getUmaDashboard, getUmaMeeting, detectUmaLink, uploadUmaRecording, addUmaRecording, attachUmaTranscript,
   importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
-  cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
+  cancelUmaMeeting, stopUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
   getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
@@ -1430,7 +1430,7 @@ function Detail({ id, team, projects }) {
                 onSelect: () => run(() => shareUmaMeeting(id, { visibility: m.visibility === "WORKSPACE" ? "PRIVATE" : "WORKSPACE" }),
                   m.visibility === "WORKSPACE" ? "Only you and admins can see it now." : "Everyone in the workspace can see it now.") },
               { label: "Mark as done", hidden: m.status !== "REVIEW_READY", onSelect: () => run(() => completeUmaMeeting(id), "Marked as done.") },
-              { label: "Stop processing", hidden: !WORKING.has(m.status), onSelect: () => run(() => cancelUmaMeeting(id), "Stopped.") },
+              { label: "Stop processing", hidden: !WORKING.has(m.status), onSelect: () => run(() => stopUmaMeeting(id), "Stopped. Your meeting is kept; press Retry to continue.") },
               "divider",
               { label: "Delete meeting", danger: true, onSelect: async () => {
                 const ok = await confirm({ title: "Delete this meeting?", message: "Its transcript, summary and recording are deleted. Tasks already created stay.", confirmText: "Delete", danger: true });
@@ -1449,6 +1449,10 @@ function Detail({ id, team, projects }) {
             <div className="uma-progress"><span style={{ width: `${Math.max(5, m.progressPercent || 0)}%` }} /></div>
             <small>You can leave this page; it keeps going.</small>
           </div>
+          {d.canManage && m.status !== "CAPTURING" && (
+            <button type="button" className="btn-secondary pg-btn" onClick={() => run(() => retryUmaMeeting(id), "Trying again…")} disabled={busy}>
+              <RefreshCw size={14} aria-hidden="true" />Retry now</button>
+          )}
         </div>
       )}
       {m.status === "FAILED" && (
