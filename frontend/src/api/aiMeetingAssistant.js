@@ -37,12 +37,14 @@ export const importUmaTranscriptFile = (file, { title, projectId, meetingAt, tim
   if (projectId) form.append("projectId", projectId);
   if (meetingAt) form.append("meetingAt", meetingAt);
   if (timezone) form.append("timezone", timezone);
-  return client.post(`${BASE}/meetings/transcript`, form);
+  return client.post(`${BASE}/meetings/transcript`, form, MULTIPART);
 };
+// The shared client defaults to JSON, which would turn a FormData into an empty JSON body; files must go as multipart.
+const MULTIPART = { headers: { "Content-Type": "multipart/form-data" } };
 export const attachUmaTranscript = (id, file) => {
   const form = new FormData();
   form.append("file", file);
-  return client.post(`${BASE}/meetings/${id}/transcript`, form);
+  return client.post(`${BASE}/meetings/${id}/transcript`, form, MULTIPART);
 };
 export const registerUmaLink = (data) => client.post(`${BASE}/meetings/link`, data);
 
