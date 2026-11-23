@@ -104,9 +104,18 @@ public class UmaAutomation {
             queue.dead(job, "NOBODY_JOINED");
             return;
         }
+        var claim = fireflies.claimSend(m, "automatic");
+        m = store.meeting(org, m.getId()).orElse(m);
+        if (!claim.granted()) {                       // someone sent it already (a person, or another entry for the same link): never send a second one
+            note(m, com.prowosma.backend.uma.core.UmaFireflies.describe(claim).replaceAll(" If it still hasn't joined.*$", ""));
+            queue.succeed(job);
+            store.audit(org, m.getId(), "system", "FIREFLIES_AUTO_JOIN_SKIPPED", "already sent");
+            return;
+        }
         try {
             fireflies.sendNotetaker(org, m.getMeetingUrl(), m.getTitle());
         } catch (UmaException e) {
+            fireflies.release(org, m.getId(), claim);
             boolean early = "FIREFLIES_BAD_REQUEST".equals(e.getCode()) || e.getStatus() == HttpStatus.SERVICE_UNAVAILABLE
                     || e.getStatus() == HttpStatus.TOO_MANY_REQUESTS;
             if (early && Instant.now().isBefore(start.plus(JOIN_PATIENCE))) {
@@ -154,8 +163,9 @@ public class UmaAutomation {
     }
 
     private void note(UmaMeeting m, String text) {
-        m.setStatusDetail(text);
-        store.save(m);
+        UmaMeeting fresh = store.meeting(m.getOrganizationId(), m.getId()).orElse(m);   // never save a stale copy over fields another request just wrote
+        fresh.setStatusDetail(text);
+        store.save(fresh);
     }
 
     /** Adds and updates people's upcoming Google Meet meetings from their calendars (those who switched it on). Runs every few minutes. */

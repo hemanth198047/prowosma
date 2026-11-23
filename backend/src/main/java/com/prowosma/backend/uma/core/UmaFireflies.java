@@ -11,7 +11,9 @@ import com.prowosma.backend.uma.model.UmaSegment;
 import com.prowosma.backend.uma.model.UmaSettings;
 import com.prowosma.backend.uma.model.UmaStatus;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
@@ -131,6 +133,70 @@ public class UmaFireflies {
 
     public Optional<FirefliesApi.Transcript> transcript(String org, String id) {
         try { return api.transcript(requireKey(org), id); } catch (FirefliesException e) { throw toUma(e); }
+    }
+
+    /** A notetaker joins a call once. Sending it again within this time (by anyone, or from another entry for the same link) is refused. */
+    public static final java.time.Duration RESEND_AFTER = java.time.Duration.ofMinutes(10);
+    /** Another entry for the SAME meeting link (two people added the same calendar event) shares the send. */
+    public static final java.time.Duration SAME_LINK_WINDOW = java.time.Duration.ofMinutes(30);
+
+    /** What happened when asking for the right to send. {@code by}/{@code at} say who already sent it when it is refused. */
+    public record Claim(boolean granted, String by, Instant at, UmaMeeting.FirefliesLink previous) {}
+
+    static String linkKey(String url) {
+        if (url == null) return null;
+        String u = url.trim().toLowerCase(java.util.Locale.ROOT);
+        int q = u.indexOf('?'); if (q >= 0) u = u.substring(0, q);
+        int h = u.indexOf('#'); if (h >= 0) u = u.substring(0, h);
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        return u;
+    }
+
+    /**
+     * Takes, atomically in the database, the right to send the notetaker for this meeting. Two people clicking together, a double click, or the
+     * automatic send racing a manual one: exactly one gets {@code granted}. The others learn who sent it and when. If sending then fails, call
+     * {@link #release} so the next attempt isn't blocked.
+     */
+    public Claim claimSend(UmaMeeting m, String by) {
+        String org = m.getOrganizationId();
+        Instant now = Instant.now();
+        // another entry for the same link that already sent it
+        String key = linkKey(m.getMeetingUrl());
+        if (key != null) {
+            Query q = new Query(Criteria.where("organizationId").is(org).and("_id").ne(m.getId())
+                    .and("fireflies.notetakerSentAt").gte(now.minus(SAME_LINK_WINDOW)));
+            for (UmaMeeting o : mongo.find(q, UmaMeeting.class))
+                if (key.equals(linkKey(o.getMeetingUrl())) && o.getFireflies() != null)
+                    return new Claim(false, o.getFireflies().getNotetakerSentBy(), o.getFireflies().getNotetakerSentAt(), null);
+        }
+        Query q = new Query(new Criteria().andOperator(
+                Criteria.where("_id").is(m.getId()).and("organizationId").is(org),
+                new Criteria().orOperator(Criteria.where("fireflies.notetakerSentAt").exists(false),
+                        Criteria.where("fireflies.notetakerSentAt").is(null),
+                        Criteria.where("fireflies.notetakerSentAt").lt(now.minus(RESEND_AFTER)))));
+        Update u = new Update()
+                .set("fireflies.notetakerSentAt", now).set("fireflies.notetakerSentBy", by);
+        UmaMeeting before = mongo.findAndModify(q, u, FindAndModifyOptions.options().returnNew(false), UmaMeeting.class);
+        if (before != null) return new Claim(true, by, now, before.getFireflies());
+        UmaMeeting cur = mongo.findById(m.getId(), UmaMeeting.class);
+        UmaMeeting.FirefliesLink f = cur == null ? null : cur.getFireflies();
+        return new Claim(false, f == null ? null : f.getNotetakerSentBy(), f == null ? null : f.getNotetakerSentAt(), null);
+    }
+
+    /** The send failed: give the right back (restoring what was there before). */
+    public void release(String org, String meetingId, Claim claim) {
+        UmaMeeting.FirefliesLink prev = claim.previous();
+        Update u = new Update();
+        if (prev == null || prev.getNotetakerSentAt() == null) u.unset("fireflies.notetakerSentAt").unset("fireflies.notetakerSentBy");
+        else u.set("fireflies.notetakerSentAt", prev.getNotetakerSentAt()).set("fireflies.notetakerSentBy", prev.getNotetakerSentBy());
+        mongo.updateFirst(new Query(Criteria.where("_id").is(meetingId).and("organizationId").is(org)), u, UmaMeeting.class);
+    }
+
+    public static String describe(Claim c) {
+        String who = c.by() == null || "automatic".equals(c.by()) ? "Prowosma" : c.by();
+        String when = c.at() == null ? "a moment ago" : java.time.Duration.between(c.at(), Instant.now()).toMinutes() + " minute(s) ago";
+        return "Fireflies' notetaker was already sent to this meeting by " + who + " (" + when + "). It only needs to be sent once. "
+                + "If it still hasn't joined, you can send it again after " + RESEND_AFTER.toMinutes() + " minutes.";
     }
 
     public void sendNotetaker(String org, String meetingUrl, String title) {

@@ -506,7 +506,15 @@ public class UmaService {
         if (m.getMeetingUrl() == null) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_LINK", "This meeting has no link for the notetaker to join.");
         if (m.getStatus() != UmaStatus.CREATED && m.getStatus() != UmaStatus.FAILED)
             throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content.");
-        fireflies.sendNotetaker(c.org(), m.getMeetingUrl(), m.getTitle());
+        var claim = fireflies.claimSend(m, c.caller().email());
+        if (!claim.granted()) throw new UmaException(HttpStatus.CONFLICT, "ALREADY_SENT", com.prowosma.backend.uma.core.UmaFireflies.describe(claim));
+        try {
+            fireflies.sendNotetaker(c.org(), m.getMeetingUrl(), m.getTitle());
+        } catch (RuntimeException e) {
+            fireflies.release(c.org(), id, claim);
+            throw e;
+        }
+        m = manageable(c, id);                                      // the claim wrote to the meeting: continue from its current state
         if (m.getStatus() == UmaStatus.FAILED) m = store.transition(c.org(), id, UmaStatus.CREATED, c.caller().email(), null, "notetaker sent again");
         UmaMeeting.FirefliesLink f = m.getFireflies() == null ? new UmaMeeting.FirefliesLink() : m.getFireflies();
         f.setNotetakerSentAt(Instant.now()); f.setNotetakerSentBy(c.caller().email()); f.setChecks(0);

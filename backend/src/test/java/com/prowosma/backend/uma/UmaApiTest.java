@@ -823,6 +823,58 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(detail(id).at("/meeting/status").asText()).isEqualTo("REVIEW_READY");
     }
 
+    private long notetakerRequests() { return ff().requests.stream().filter(b -> b.contains("addToLiveMeeting")).count(); }
+
+    @Test
+    void fireflies_manyPeopleClickingSendAtOnce_sendsTheNotetakerOnlyOnce() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        String id = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Weekly sync\"}")).andReturn()).get("id").asText();
+        long before = notetakerRequests();
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(8);
+        java.util.List<java.util.concurrent.Future<Integer>> results = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++)
+            results.add(pool.submit(() -> mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId))
+                    .andReturn().getResponse().getStatus()));
+        int ok = 0, conflict = 0;
+        for (var f : results) { int st = f.get(); if (st == 200) ok++; else if (st == 409) conflict++; }
+        pool.shutdown();
+        assertThat(ok).as("exactly one request is allowed to send").isEqualTo(1);
+        assertThat(conflict).as("the others are told it was already sent").isEqualTo(7);
+        assertThat(notetakerRequests() - before).as("Fireflies was asked once").isEqualTo(1);
+        MvcResult again = mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn();
+        assertThat(again.getResponse().getStatus()).isEqualTo(409);
+        assertThat(again.getResponse().getContentAsString()).contains("already sent");
+        assertThat(notetakerRequests() - before).isEqualTo(1);
+    }
+
+    @Test
+    void fireflies_twoEntriesForTheSameLink_shareOneSend() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        String body = "{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Weekly sync\"}";
+        String a = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn()).get("id").asText();
+        String b = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn()).get("id").asText();
+        long before = notetakerRequests();
+        assertThat(mvc.perform(as(post(BASE + "/meetings/" + a + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn().getResponse().getStatus()).isEqualTo(200);
+        assertThat(mvc.perform(as(post(BASE + "/meetings/" + b + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn().getResponse().getStatus()).isEqualTo(409);
+        assertThat(notetakerRequests() - before).isEqualTo(1);
+    }
+
+    @Test
+    void fireflies_aFailedSend_doesNotBlockTheNextAttempt() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        String id = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://meet.google.com/abc-defg-hij\",\"title\":\"Weekly sync\"}")).andReturn()).get("id").asText();
+        MvcResult first;
+        ff().refuseJoins = 1;                                   // Fireflies refuses the first join
+        first = mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn();
+        assertThat(first.getResponse().getStatus()).isNotEqualTo(200);
+        assertThat(mvc.perform(as(post(BASE + "/meetings/" + id + "/fireflies/notetaker"), ownerToken(), workspaceId)).andReturn().getResponse().getStatus()).isEqualTo(200);
+    }
+
     @Test
     void oneCaptureRouteGivingUp_doesNotFailTheMeetingWhileTheOtherIsOnItsWay() throws Exception {
         enable(ownerToken(), workspaceId);
