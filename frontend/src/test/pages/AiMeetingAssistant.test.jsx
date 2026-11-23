@@ -291,7 +291,7 @@ describe("AI Meeting Assistant (simulated API)", () => {
     api.getUmaDashboard.mockResolvedValue(dash());
     at("/ai-meeting-assistant");
     fireEvent.click((await screen.findAllByRole("button", { name: /Upload recording/ }))[0]);
-    const dialog = screen.getByRole("dialog", { name: "Upload a recording" });
+    const dialog = screen.getByRole("dialog", { name: "Upload a recording or transcript" });
     const file = new File(["abc"], "sync.mp3", { type: "audio/mpeg" });
     fireEvent.change(dialog.querySelector('input[type="file"]'), { target: { files: [file] } });
     fireEvent.click(within(dialog).getByRole("button", { name: /^Upload$/ }));

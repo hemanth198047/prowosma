@@ -300,11 +300,31 @@ public class UmaService {
     }
 
     public UmaMeeting importTranscript(Ctx c, String text, MultipartFile file, String title, String projectId, Instant meetingAt, String timezone) {
-        String content; String hint = null; String fileName = file == null ? null : file.getOriginalFilename();
+        String fileName = file == null ? null : file.getOriginalFilename();
+        TranscriptParser.Parsed parsed = readTranscript(text, file);
+        UmaMeeting m = newMeeting(c, title != null && !title.isBlank() ? title : (fileName != null ? TranscriptFileReader.titleFromFilename(fileName) : "Imported meeting"),
+                "TRANSCRIPT_IMPORT", projectId, meetingAt, timezone);
+        m = store.save(m);
+        return applyTranscript(c, m, parsed, "TRANSCRIPT_IMPORTED");
+    }
+
+    /** Gives an EXISTING meeting its transcript from a file or pasted text (for example one downloaded from Fireflies when the automatic fetch is stuck). */
+    public UmaMeeting attachTranscript(Ctx c, String id, String text, MultipartFile file) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CREATED && m.getStatus() != UmaStatus.FAILED)
+            throw new UmaException(HttpStatus.CONFLICT, "HAS_CONTENT", "This meeting already has its content. Add a new meeting for another transcript.");
+        TranscriptParser.Parsed parsed = readTranscript(text, file);
+        queue.cancel(c.org(), id);                                   // stop waiting for the notetaker / Google transcript
+        m.setErrorCode(null); m.setRecoveryHint(null); m.setFailedStage(null);
+        return applyTranscript(c, m, parsed, "TRANSCRIPT_ATTACHED");
+    }
+
+    private TranscriptParser.Parsed readTranscript(String text, MultipartFile file) {
+        String content; String hint = null;
         if (file != null && !file.isEmpty()) {
             if (file.getSize() > 25L * 1024 * 1024) throw new UmaException(HttpStatus.CONTENT_TOO_LARGE, "FILE_TOO_LARGE", "That transcript file is larger than 25 MB.");
             try {
-                TranscriptFileReader.Content read = TranscriptFileReader.read(file.getBytes(), fileName);
+                TranscriptFileReader.Content read = TranscriptFileReader.read(file.getBytes(), file.getOriginalFilename());
                 content = read.text(); hint = read.formatHint();
             } catch (IOException e) {
                 throw new UmaException(HttpStatus.BAD_REQUEST, "UNREADABLE_FILE", "That file couldn't be read.");
@@ -313,15 +333,14 @@ public class UmaService {
             }
         } else content = text;
         if (content == null || content.isBlank()) throw new UmaException(HttpStatus.BAD_REQUEST, "EMPTY_TRANSCRIPT", "Paste the transcript or choose a file.");
-
         TranscriptParser.Parsed parsed;
         try { parsed = TranscriptParser.parse(content, hint); }
         catch (TranscriptParser.TranscriptFormatException e) { throw new UmaException(HttpStatus.BAD_REQUEST, e.getCode(), e.getMessage()); }
         if (parsed.segments().isEmpty()) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_TEXT", "No spoken text could be found in that transcript.");
+        return parsed;
+    }
 
-        UmaMeeting m = newMeeting(c, title != null && !title.isBlank() ? title : (fileName != null ? TranscriptFileReader.titleFromFilename(fileName) : "Imported meeting"),
-                "TRANSCRIPT_IMPORT", projectId, meetingAt, timezone);
-        m = store.save(m);
+    private UmaMeeting applyTranscript(Ctx c, UmaMeeting m, TranscriptParser.Parsed parsed, String auditAction) {
         List<UmaSegment> segs = new ArrayList<>();
         int seq = 0;
         boolean speakers = false;
@@ -341,7 +360,7 @@ public class UmaService {
         store.save(m);
         m = store.transition(c.org(), m.getId(), UmaStatus.ANALYZING, c.caller().email(), "Writing the summary and finding decisions and actions…", "transcript imported");
         queue.enqueue(c.org(), m.getId(), UmaPipeline.ANALYZE, c.caller().email());
-        store.audit(c.org(), m.getId(), c.caller().email(), "TRANSCRIPT_IMPORTED", segs.size() + " lines" + (parsed.warnings().isEmpty() ? "" : ", " + parsed.warnings().size() + " warnings"));
+        store.audit(c.org(), m.getId(), c.caller().email(), auditAction, segs.size() + " lines" + (parsed.warnings().isEmpty() ? "" : ", " + parsed.warnings().size() + " warnings"));
         return m;
     }
 

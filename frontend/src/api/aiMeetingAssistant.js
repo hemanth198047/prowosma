@@ -39,6 +39,11 @@ export const importUmaTranscriptFile = (file, { title, projectId, meetingAt, tim
   if (timezone) form.append("timezone", timezone);
   return client.post(`${BASE}/meetings/transcript`, form);
 };
+export const attachUmaTranscript = (id, file) => {
+  const form = new FormData();
+  form.append("file", file);
+  return client.post(`${BASE}/meetings/${id}/transcript`, form);
+};
 export const registerUmaLink = (data) => client.post(`${BASE}/meetings/link`, data);
 
 export const retryUmaMeeting      = (id) => client.post(`${BASE}/meetings/${id}/retry`);

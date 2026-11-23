@@ -167,6 +167,17 @@ public class UmaController {
         }
     }
 
+    @PostMapping(value = "/meetings/{id}/transcript", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UmaMeeting attachFile(@PathVariable String id, @RequestParam(value = "file", required = false) MultipartFile file,
+                                 @RequestParam(required = false) String text, Authentication auth) {
+        return service.attachTranscript(ctx(auth), id, text, file);
+    }
+
+    @PostMapping(value = "/meetings/{id}/transcript", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public UmaMeeting attachText(@PathVariable String id, @RequestBody TranscriptBody b, Authentication auth) {
+        return service.attachTranscript(ctx(auth), id, b.text(), null);
+    }
+
     // ── browser capture ──
     public record CaptureBody(String meetingId, String title, String projectId, String meetingAt, String timezone, boolean consent) {}
 

@@ -16,7 +16,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import { getTeamMembers } from "../api/team";
 import { getProjects } from "../api/projects";
 import {
-  getUmaDashboard, getUmaMeeting, detectUmaLink, uploadUmaRecording, addUmaRecording,
+  getUmaDashboard, getUmaMeeting, detectUmaLink, uploadUmaRecording, addUmaRecording, attachUmaTranscript,
   importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
   cancelUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
@@ -50,8 +50,11 @@ const TONE = {
   REVIEW_READY: "attention", COMPLETED: "success", FAILED: "danger", CANCELLED: "neutral",
 };
 const SOURCE = { FIREFLIES_IMPORT: "Fireflies", RECORDING_UPLOAD: "Recording", TRANSCRIPT_IMPORT: "Transcript", MEETING_LINK: "Meeting link", BROWSER_CAPTURE: "Browser capture" };
-const AUDIO_ACCEPT = ".mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,.mkv,.mpeg,.mpga,audio/*,video/*";
-const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.json,text/plain,text/vtt";
+const AUDIO_ACCEPT = ".vtt,.srt,.txt,.docx,.pdf,.json,.mp3,.wav,.m4a,.mp4,.webm,.ogg,.oga,.opus,.aac,.flac,.mov,.mkv,.mpeg,.mpga,audio/*,video/*";
+const TRANSCRIPT_ACCEPT = ".vtt,.srt,.txt,.docx,.pdf,.json,text/plain,text/vtt";
+const TRANSCRIPT_EXT = /\.(vtt|srt|txt|md|docx|pdf|json)$/i;
+const isTranscriptFile = (f) => !!f && TRANSCRIPT_EXT.test(f.name || "");
+const MAX_TRANSCRIPT_MB = 25;
 
 function Pill({ status, label }) {
   const tone = ["Waiting for transcript", "Scheduled", "In progress", "Getting transcript"].includes(label) ? "info" : TONE[status] || "neutral";
@@ -165,18 +168,27 @@ function UploadDialog({ onClose, onDone, projects, readiness, existingId }) {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!file) return setError("Choose a recording.");
-    if (file.size > maxMb * 1024 * 1024) return setError(`That recording is larger than ${maxMb} MB. Export only the audio, or split it.`);
-    if (!consent) return setError("Please confirm that everyone knew the meeting was recorded.");
+    if (!file) return setError("Choose a recording or a transcript file.");
+    const asTranscript = isTranscriptFile(file);
+    if (asTranscript && file.size > MAX_TRANSCRIPT_MB * 1024 * 1024) return setError(`Transcript files up to ${MAX_TRANSCRIPT_MB} MB can be added. Split it into parts.`);
+    if (!asTranscript && file.size > maxMb * 1024 * 1024) return setError(`That recording is larger than ${maxMb} MB. Export only the audio, or split it.`);
+    if (!asTranscript && !consent) return setError("Please confirm that everyone knew the meeting was recorded.");
     setProgress(0);
     try {
-      const r = existingId
+      const r = asTranscript
+        ? (existingId
+          ? await attachUmaTranscript(existingId, file)
+          : await importUmaTranscriptFile(file, {
+            title: title.trim() || undefined, projectId: projectId || undefined,
+            meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz(),
+          }))
+        : existingId
         ? await addUmaRecording(existingId, file, true, setProgress)
         : await uploadUmaRecording(file, {
           title: title.trim() || undefined, projectId: projectId || undefined,
           meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz(), consent: true,
         }, setProgress);
-      toast("Uploaded. We'll let you know when the summary is ready.", "success");
+      toast(asTranscript ? "Transcript added. Writing the summary now." : "Uploaded. We'll let you know when the summary is ready.", "success");
       onDone(r.data);
     } catch (err) {
       setError(apiErrorMessage(err, "The upload didn't finish. Check your connection and try again."));
@@ -185,7 +197,7 @@ function UploadDialog({ onClose, onDone, projects, readiness, existingId }) {
   };
 
   return (
-    <Dialog title={existingId ? "Add the recording" : "Upload a recording"} onClose={busy ? () => {} : onClose}>
+    <Dialog title={existingId ? "Add a recording or transcript" : "Upload a recording or transcript"} onClose={busy ? () => {} : onClose}>
       <form onSubmit={submit} className="uma-form">
         {readiness && !readiness.transcriptionReady && (
           <p className="uma-note uma-note--warn" role="status"><AlertTriangle size={14} aria-hidden="true" /> {readiness.transcriptionReason} You can still upload; it will be transcribed once that is set up.</p>
@@ -193,19 +205,21 @@ function UploadDialog({ onClose, onDone, projects, readiness, existingId }) {
         <label className="uma-drop">
           <input type="file" accept={AUDIO_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} disabled={busy} />
           <Upload size={18} aria-hidden="true" />
-          <span>{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "Choose an audio or video file"}</span>
-          <small>MP3, M4A, WAV, MP4, WebM, OGG, FLAC or MOV, up to {maxMb} MB. Audio only is enough.</small>
+          <span>{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "Choose a recording or a transcript file"}</span>
+          <small>Recording: MP3, M4A, WAV, MP4, WebM, OGG, FLAC or MOV, up to {maxMb} MB. Transcript: JSON, PDF, Word (.docx), .txt, .vtt or .srt.</small>
         </label>
         {!existingId && (
           <CommonFields title={title} setTitle={setTitle} at={at} setAt={setAt} projectId={projectId} setProjectId={setProjectId}
             projects={projects} titlePlaceholder={file ? file.name.replace(/\.[^.]+$/, "") : "e.g. Weekly launch sync"} />
         )}
-        <label className="uma-check">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy} />
-          <span>Everyone in this meeting knew it was being recorded and transcribed.</span>
-        </label>
-        <p className="uma-fine">The recording is sent to your workspace's speech-to-text server, and the transcript to your AI model.
-          The recording file is deleted after it has been transcribed.</p>
+        {!isTranscriptFile(file) && (<>
+          <label className="uma-check">
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy} />
+            <span>Everyone in this meeting knew it was being recorded and transcribed.</span>
+          </label>
+          <p className="uma-fine">The recording is sent to your workspace's speech-to-text server, and the transcript to your AI model.
+            The recording file is deleted after it has been transcribed.</p>
+        </>)}
         {error && <p className="uma-error" role="alert">{error}</p>}
         {busy && (
           <div className="uma-progress" role="progressbar" aria-valuenow={progress ?? 0} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress">
@@ -215,7 +229,7 @@ function UploadDialog({ onClose, onDone, projects, readiness, existingId }) {
         <div className="uma-dialog-actions">
           <button type="button" className="btn-secondary pg-btn" onClick={onClose} disabled={busy}>Cancel</button>
           <button type="submit" className="btn-primary pg-btn" disabled={busy}>
-            {busy ? <><Loader2 size={14} className="uma-spin" aria-hidden="true" />Uploading {progress != null ? `${progress}%` : ""}</> : <><Upload size={14} aria-hidden="true" />Upload</>}
+            {busy ? <><Loader2 size={14} className="uma-spin" aria-hidden="true" />{isTranscriptFile(file) ? "Adding…" : `Uploading ${progress != null ? `${progress}%` : ""}`}</> : <><Upload size={14} aria-hidden="true" />Upload</>}
           </button>
         </div>
       </form>
@@ -237,7 +251,7 @@ function ImportDialog({ onClose, onDone, projects }) {
     e.preventDefault();
     setError("");
     if (!file && !text.trim()) return setError("Paste the transcript or choose a file.");
-    if (file && file.size > 1024 * 1024) return setError("Transcript files up to 1 MB can be imported here. Paste the text instead.");
+    if (file && file.size > MAX_TRANSCRIPT_MB * 1024 * 1024) return setError(`Transcript files up to ${MAX_TRANSCRIPT_MB} MB can be imported here. Split it into parts.`);
     setBusy(true);
     const meta = { title: title.trim() || undefined, projectId: projectId || undefined, meetingAt: at ? new Date(at).toISOString() : undefined, timezone: tz() };
     try {
@@ -253,7 +267,7 @@ function ImportDialog({ onClose, onDone, projects }) {
   return (
     <Dialog title="Import a transcript" onClose={onClose} wide>
       <form onSubmit={submit} className="uma-form">
-        <p className="uma-hint">From Zoom, Teams, Google Meet, Webex or any notetaker: a .vtt, .srt, .txt or .docx file, or pasted text.
+        <p className="uma-hint">From Zoom, Teams, Google Meet, Webex or any notetaker: a .json, .pdf, .docx, .vtt, .srt or .txt file, or pasted text.
           Speaker names are kept when the file has them.</p>
         <label className="uma-field"><span>Transcript file</span>
           <input type="file" accept={TRANSCRIPT_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} />

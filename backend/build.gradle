@@ -127,6 +127,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	implementation 'org.apache.poi:poi-ooxml:5.3.0'
+	implementation 'org.apache.pdfbox:pdfbox:3.0.8' // text out of uploaded PDF transcripts (text only: nothing in the PDF is executed or fetched)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test' // Spring Boot 4's modularization split MockMvc auto-config (incl. @AutoConfigureMockMvc) out of spring-boot-starter-test into its own test starter
 	testImplementation 'org.springframework.security:spring-security-test'

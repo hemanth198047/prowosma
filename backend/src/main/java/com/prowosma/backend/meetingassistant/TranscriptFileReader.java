@@ -2,6 +2,9 @@ package com.prowosma.backend.meetingassistant;
 
 import com.prowosma.backend.meetingassistant.TranscriptParser.TranscriptFormatException;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -22,7 +25,7 @@ import java.util.zip.ZipInputStream;
  * Turns an uploaded transcript FILE into plain text for {@link TranscriptParser}: .txt / .vtt / .srt / .md (any common text encoding) and Word (.docx —
  * what Google Meet transcripts saved to Drive and Teams transcripts downloaded from the meeting usually are). Pure logic, no dependencies.
  * The file is treated strictly as DATA: a .docx is only unzipped in memory (never to disk, with a hard size cap against zip bombs), only its text is read,
- * and XML entities / DTDs are switched off. PDFs, old .doc, .rtf and other formats are refused with a message that says what to do instead.
+ * and XML entities / DTDs are switched off. PDFs (text layer only) and JSON exports (Fireflies, Whisper and similar) are read too. Old .doc, .rtf and other formats are refused with a message that says what to do instead.
  */
 public final class TranscriptFileReader {
 
@@ -38,14 +41,17 @@ public final class TranscriptFileReader {
         if (data == null || data.length == 0) throw new TranscriptFormatException("EMPTY_TRANSCRIPT", "That file is empty.");
         String ext = extensionOf(filename);
 
-        if (startsWith(data, '%', 'P', 'D', 'F') || ext.equals("pdf"))
-            throw new TranscriptFormatException("UNSUPPORTED_FILE", "PDF files can't be read yet. Open it and save or download it as a Word (.docx) or text (.txt) file, or paste the text instead.");
+        if (startsWith(data, '%', 'P', 'D', 'F') || ext.equals("pdf")) {
+            if (!startsWith(data, '%', 'P', 'D', 'F')) throw new TranscriptFormatException("UNSUPPORTED_FILE", "That file ends in .pdf but isn't a PDF.");
+            return new Content(pdfText(data), "TEXT");
+        }
         if (startsWith(data, 0xD0, 0xCF, 0x11, 0xE0) || ext.equals("doc"))
-            throw new TranscriptFormatException("UNSUPPORTED_FILE", "Old Word files (.doc) can't be read. Save it as .docx or .txt, or paste the text instead.");
+            throw new TranscriptFormatException("UNSUPPORTED_FILE", "Old Word files (.doc) can't be read. Save it as .docx or .pdf, or paste the text instead.");
         if (startsWith(data, '{', '\\', 'r', 't', 'f') || ext.equals("rtf"))
-            throw new TranscriptFormatException("UNSUPPORTED_FILE", "Rich Text files (.rtf) can't be read. Save it as .docx or .txt, or paste the text instead.");
-        if (ext.equals("json") || ext.equals("xls") || ext.equals("xlsx") || ext.equals("csv") || ext.equals("pptx") || ext.equals("odt"))
-            throw new TranscriptFormatException("UNSUPPORTED_FILE", "That kind of file can't be read. Use a .txt, .vtt, .srt or .docx transcript, or paste the text instead.");
+            throw new TranscriptFormatException("UNSUPPORTED_FILE", "Rich Text files (.rtf) can't be read. Save it as .docx or .pdf, or paste the text instead.");
+        if (ext.equals("json")) return jsonContent(data);
+        if (ext.equals("xls") || ext.equals("xlsx") || ext.equals("csv") || ext.equals("pptx") || ext.equals("odt"))
+            throw new TranscriptFormatException("UNSUPPORTED_FILE", "That kind of file can't be read. Use a .txt, .vtt, .srt, .json, .pdf or .docx transcript, or paste the text instead.");
 
         boolean zip = startsWith(data, 'P', 'K', 0x03, 0x04);
         if (zip || ext.equals("docx")) {
@@ -134,6 +140,133 @@ public final class TranscriptFileReader {
             bos.write(buf, 0, n);
         }
         return bos.toByteArray();
+    }
+
+    // ── PDF ──────────────────────────────────────────────────────────────────
+
+    static final int MAX_PDF_PAGES = 1000;
+
+    /** The text layer of a PDF. Nothing in it is executed, fetched or opened. A scanned PDF has no text layer and is refused with advice. */
+    static String pdfText(byte[] data) {
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(data)) {
+            if (doc.isEncrypted()) throw new TranscriptFormatException("UNSUPPORTED_FILE", "That PDF is password-protected. Remove the password, or paste the text instead.");
+            if (doc.getNumberOfPages() > MAX_PDF_PAGES)
+                throw new TranscriptFormatException("TRANSCRIPT_TOO_LARGE", "That PDF has more than " + MAX_PDF_PAGES + " pages. Split the transcript into parts.");
+            String text = new org.apache.pdfbox.text.PDFTextStripper().getText(doc);
+            if (text == null || text.isBlank())
+                throw new TranscriptFormatException("UNSUPPORTED_FILE", "That PDF has no readable text (it looks like a scan). Download the transcript as .txt, .vtt, .srt, .json or .docx, or paste the text.");
+            return text;
+        } catch (TranscriptFormatException e) {
+            throw e;
+        } catch (IOException | RuntimeException e) {
+            throw new TranscriptFormatException("UNSUPPORTED_FILE", "That PDF couldn't be read. It may be damaged or password-protected. Try .docx or .txt, or paste the text.");
+        }
+    }
+
+    // ── JSON ─────────────────────────────────────────────────────────────────
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final String[] TEXT_KEYS = {"text", "sentence", "content", "transcript", "raw_text", "rawText", "message", "body", "utterance"};
+    private static final String[] SPEAKER_KEYS = {"speaker_name", "speakerName", "speaker", "name", "participant", "author", "user", "who", "speaker_id", "speakerId"};
+    private static final String[] START_KEYS = {"start_time", "startTime", "start", "start_ms", "startMs", "offset", "timestamp", "from", "time"};
+
+    /**
+     * A JSON export (Fireflies, Whisper, Otter-style, or a plain list of lines) read as a transcript: finds the list of spoken lines wherever it sits,
+     * and writes "[hh:mm:ss] Speaker: text" lines (times and names only when present) for the parser.
+     */
+    static Content jsonContent(byte[] data) {
+        JsonNode root;
+        try {
+            root = JSON.readTree(decode(data));
+        } catch (IOException | RuntimeException e) {
+            throw new TranscriptFormatException("UNSUPPORTED_FILE", "That JSON file couldn't be read. It may be damaged or cut off. Try .txt, .vtt, .srt or .docx, or paste the text.");
+        }
+        JsonNode lines = root == null ? null : findLines(root);
+        if (lines != null) {
+            String t = linesToText(lines);
+            if (t != null) return new Content(t, "TEXT");
+        }
+        String longest = root == null ? null : longestString(root, 0);
+        if (longest != null && longest.length() >= 20) return new Content(longest, "TEXT");
+        throw new TranscriptFormatException("UNSUPPORTED_FILE", "No transcript text was found in that JSON file. Download it as .txt, .vtt, .srt or .docx instead, or paste the text.");
+    }
+
+    private static String textOf(JsonNode o) {
+        for (String k : TEXT_KEYS) { JsonNode v = o.get(k); if (v != null && v.isTextual() && !v.asText().isBlank()) return v.asText(); }
+        return null;
+    }
+
+    /** Breadth-first: the first array in which most items are objects with a text field. */
+    private static JsonNode findLines(JsonNode root) {
+        java.util.ArrayDeque<JsonNode> queue = new java.util.ArrayDeque<>();
+        java.util.ArrayDeque<Integer> depth = new java.util.ArrayDeque<>();
+        queue.add(root); depth.add(0);
+        while (!queue.isEmpty()) {
+            JsonNode n = queue.poll(); int d = depth.poll();
+            if (n.isArray() && n.size() > 0) {
+                int withText = 0;
+                for (JsonNode e : n) if (e.isObject() && textOf(e) != null) withText++;
+                if (withText > 0 && withText * 2 >= n.size()) return n;
+            }
+            if (d < 6 && n.isContainerNode()) for (JsonNode c : n) { queue.add(c); depth.add(d + 1); }
+        }
+        return null;
+    }
+
+    private static String longestString(JsonNode n, int depth) {
+        if (depth > 8) return null;
+        if (n.isTextual()) return n.asText();
+        String best = null;
+        if (n.isContainerNode()) for (JsonNode c : n) {
+            String s = longestString(c, depth + 1);
+            if (s != null && (best == null || s.length() > best.length())) best = s;
+        }
+        return best;
+    }
+
+    private static String speakerOf(JsonNode o) {
+        for (String k : SPEAKER_KEYS) {
+            JsonNode v = o.get(k);
+            if (v == null || v.isNull()) continue;
+            if (v.isTextual() && !v.asText().isBlank()) return v.asText().strip().replace(':', ' ');
+            if (v.isNumber()) return "Speaker " + v.asInt();
+            if (v.isObject()) for (String nk : new String[]{"name", "displayName", "display_name", "email"}) {
+                JsonNode nv = v.get(nk);
+                if (nv != null && nv.isTextual() && !nv.asText().isBlank()) return nv.asText().strip().replace(':', ' ');
+            }
+        }
+        return null;
+    }
+
+    private static String linesToText(JsonNode arr) {
+        java.util.List<String> who = new java.util.ArrayList<>(), text = new java.util.ArrayList<>();
+        java.util.List<Double> start = new java.util.ArrayList<>();
+        boolean msKey = false;
+        for (JsonNode e : arr) {
+            if (!e.isObject()) continue;
+            String t = textOf(e);
+            if (t == null) continue;
+            Double st = null;
+            for (String k : START_KEYS) {
+                JsonNode v = e.get(k);
+                if (v != null && v.isNumber()) { st = v.asDouble(); msKey |= k.toLowerCase(Locale.ROOT).endsWith("ms"); break; }
+            }
+            who.add(speakerOf(e)); text.add(t.replaceAll("\\s+", " ").strip()); start.add(st);
+        }
+        if (text.isEmpty()) return null;
+        double max = start.stream().filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).max().orElse(0);
+        boolean ms = msKey || max > 36000;                       // plain numbers: seconds, unless too large to be (36000 s = 10 h)
+        boolean timed = start.stream().allMatch(java.util.Objects::nonNull);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < text.size(); i++) {
+            if (timed) {
+                long sec = Math.max(0, Math.round(ms ? start.get(i) / 1000.0 : start.get(i)));
+                out.append(String.format(Locale.ROOT, "[%02d:%02d:%02d] ", sec / 3600, (sec / 60) % 60, sec % 60));
+            }
+            if (who.get(i) != null) out.append(who.get(i)).append(": ");
+            out.append(text.get(i)).append('\n');
+        }
+        return out.toString();
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
