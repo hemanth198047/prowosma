@@ -273,6 +273,8 @@ public class UmaController {
 
     @PostMapping("/meetings/{id}/retry") public UmaMeeting retry(@PathVariable String id, Authentication auth) { return service.retry(ctx(auth), id); }
     @PostMapping("/meetings/{id}/regenerate") public UmaMeeting regenerate(@PathVariable String id, Authentication auth) { return service.regenerate(ctx(auth), id); }
+    /** The person pressed Join in Prowosma: make sure Fireflies' notetaker is on its way (unless it was switched off for this meeting). */
+    @PostMapping("/meetings/{id}/started") public UmaMeeting started(@PathVariable String id, Authentication auth) { return service.startedFromProwosma(ctx(auth), id); }
     @PostMapping("/meetings/{id}/stop") public UmaMeeting stop(@PathVariable String id, Authentication auth) { return service.stop(ctx(auth), id); }
     @PostMapping("/meetings/{id}/cancel") public UmaMeeting cancel(@PathVariable String id, Authentication auth) { return service.cancel(ctx(auth), id); }
     @PostMapping("/meetings/{id}/complete") public UmaMeeting complete(@PathVariable String id, Authentication auth) { return service.complete(ctx(auth), id); }

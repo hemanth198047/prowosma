@@ -678,6 +678,22 @@ public class UmaService {
         return m;
     }
 
+    /**
+     * The meeting was started from Prowosma (Join pressed): the Fireflies notetaker is sent automatically, nobody has to remember to.
+     * Does nothing if Fireflies isn't connected, the meeting isn't waiting for content, someone switched it off for this meeting, or it was already sent.
+     */
+    public UmaMeeting startedFromProwosma(Ctx c, String id) {
+        UmaMeeting m = manageable(c, id);
+        if (m.getStatus() != UmaStatus.CREATED || m.getMeetingUrl() == null || m.isFirefliesOptOut() || fireflies.key(c.org()).isEmpty()) return m;
+        if (m.getFireflies() != null && m.getFireflies().getNotetakerSentAt() != null) return m;
+        m.setAutoFireflies(true);
+        m = store.save(m);
+        // the join job waits for the first person in the call (Google Meet) or sends straight away; the send itself is claimed once per meeting and link
+        queue.enqueueAt(c.org(), id, UmaPipeline.FIREFLIES_JOIN, c.caller().email(), Instant.now());
+        store.audit(c.org(), id, c.caller().email(), "FIREFLIES_AUTO_ON_START", null);
+        return store.meeting(c.org(), id).orElse(m);
+    }
+
     /** Switches the automatic Fireflies join on or off for a meeting that hasn't happened yet. */
     public UmaMeeting setAutoFireflies(Ctx c, String id, boolean on) {
         UmaMeeting m = manageable(c, id);
@@ -685,6 +701,7 @@ public class UmaService {
         if (on && fireflies.key(c.org()).isEmpty())
             throw new UmaException(HttpStatus.CONFLICT, "NO_FIREFLIES", "Fireflies isn't connected for this workspace.", "An admin connects it under Connections.");
         m.setAutoFireflies(on);
+        m.setFirefliesOptOut(!on);
         m = store.save(m);
         if (!on) queue.cancelType(c.org(), id, UmaPipeline.FIREFLIES_JOIN);
         automation.plan(m);

@@ -47,6 +47,7 @@ public class UmaMeeting {
     private String meetingType;                    // STANDUP | PLANNING | REVIEW | RETRO | CLIENT | ONE_ON_ONE | OTHER (optional)
     private String agenda;                         // optional, typed by a person (notes meetings)
     private boolean autoFireflies;            // send the Fireflies notetaker automatically when it starts
+    private boolean firefliesOptOut;          // someone switched it off for this meeting on purpose: starting the meeting won't switch it back on
     // What Prowosma has seen of the meeting itself (from Google Meet, or from Fireflies being in it)
     private String liveState;                 // null (not seen yet) | IN_PROGRESS | ENDED
     private Instant startedAt;

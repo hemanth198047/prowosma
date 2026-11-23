@@ -18,7 +18,7 @@ import { getProjects } from "../api/projects";
 import {
   getUmaDashboard, getUmaMeeting, detectUmaLink, uploadUmaRecording, addUmaRecording, attachUmaTranscript,
   importUmaTranscriptText, importUmaTranscriptFile, registerUmaLink, retryUmaMeeting, regenerateUmaMeeting,
-  cancelUmaMeeting, stopUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
+  cancelUmaMeeting, stopUmaMeeting, startedUmaMeeting, completeUmaMeeting, deleteUmaMeeting, shareUmaMeeting, editUmaSegment, editUmaAction,
   approveUmaAction, rejectUmaAction, approveUmaActions, askUma, exportUma,
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
   getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
@@ -1592,7 +1592,8 @@ function MeetingPanel({ m, d, id, ffConnected, busy, run, nowTick, onRecord, onA
       </div>
       <div className="uma-mp-actions">
         {m.meetingUrl && live && (
-          <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"><Video size={15} aria-hidden="true" />Join meeting</a>
+          <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"
+            onClick={() => { run(() => startedUmaMeeting(id)); }}><Video size={15} aria-hidden="true" />Join meeting</a>
         )}
         {m.calendarLink && <a className="uma-link" href={m.calendarLink} target="_blank" rel="noreferrer noopener">Open in Google Calendar</a>}
       </div>

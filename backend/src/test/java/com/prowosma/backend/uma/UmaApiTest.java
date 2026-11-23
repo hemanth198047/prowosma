@@ -850,6 +850,35 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     }
 
     @Test
+    void fireflies_pressingJoinInProwosma_sendsTheNotetakerByItself_once() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        String id = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://zoom.us/j/123456789\",\"title\":\"Weekly sync\",\"autoFireflies\":false}")).andReturn()).get("id").asText();
+        long before = notetakerRequests();
+        for (int i = 0; i < 3; i++)                                           // Join pressed again and again, by different people
+            assertThat(mvc.perform(as(post(BASE + "/meetings/" + id + "/started"), ownerToken(), workspaceId)).andReturn().getResponse().getStatus()).isEqualTo(200);
+        dueNow();
+        pipeline.drain();
+        assertThat(notetakerRequests() - before).as("sent automatically, exactly once").isEqualTo(1);
+        assertThat(detail(id).at("/meeting/fireflies/notetakerSentBy").asText()).isEqualTo("automatic");
+    }
+
+    @Test
+    void fireflies_switchedOffOnPurpose_isNotSwitchedBackOnByJoining() throws Exception {
+        enable(ownerToken(), workspaceId);
+        connectFireflies();
+        String id = json(mvc.perform(as(post(BASE + "/meetings/link"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://zoom.us/j/123456789\",\"title\":\"Weekly sync\"}")).andReturn()).get("id").asText();
+        mvc.perform(as(put(BASE + "/meetings/" + id + "/automation"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON).content("{\"autoFireflies\":false}")).andReturn();
+        long before = notetakerRequests();
+        mvc.perform(as(post(BASE + "/meetings/" + id + "/started"), ownerToken(), workspaceId)).andReturn();
+        dueNow();
+        pipeline.drain();
+        assertThat(notetakerRequests() - before).isZero();
+    }
+
+    @Test
     void fireflies_twoEntriesForTheSameLink_shareOneSend() throws Exception {
         enable(ownerToken(), workspaceId);
         connectFireflies();

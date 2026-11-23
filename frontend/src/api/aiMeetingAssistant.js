@@ -50,6 +50,7 @@ export const registerUmaLink = (data) => client.post(`${BASE}/meetings/link`, da
 
 export const retryUmaMeeting      = (id) => client.post(`${BASE}/meetings/${id}/retry`);
 export const regenerateUmaMeeting = (id) => client.post(`${BASE}/meetings/${id}/regenerate`);
+export const startedUmaMeeting    = (id) => client.post(`${BASE}/meetings/${id}/started`);
 export const stopUmaMeeting       = (id) => client.post(`${BASE}/meetings/${id}/stop`);
 export const cancelUmaMeeting     = (id) => client.post(`${BASE}/meetings/${id}/cancel`);
 export const completeUmaMeeting   = (id) => client.post(`${BASE}/meetings/${id}/complete`);

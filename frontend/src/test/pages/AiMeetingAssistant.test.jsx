@@ -26,7 +26,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
-    "regenerateUmaMeeting", "cancelUmaMeeting", "stopUmaMeeting", "completeUmaMeeting", "deleteUmaMeeting", "shareUmaMeeting", "editUmaSegment",
+    "regenerateUmaMeeting", "cancelUmaMeeting", "stopUmaMeeting", "startedUmaMeeting", "completeUmaMeeting", "deleteUmaMeeting", "shareUmaMeeting", "editUmaSegment",
     "rejectUmaAction", "approveUmaActions", "exportUma", "getUmaFirefliesRecent", "importUmaFireflies",
     "startUmaCapture", "uploadUmaPiece", "finishUmaCapture", "saveUmaFirefliesKey", "removeUmaFireflies", "getUmaGoogle",
     "authorizeUmaGoogle", "disconnectUmaGoogle", "createUmaNotes", "editUmaSummary", "restoreUmaSummary", "logUmaDecision",
