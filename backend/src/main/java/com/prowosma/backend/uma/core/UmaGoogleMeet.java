@@ -31,6 +31,8 @@ public class UmaGoogleMeet {
     private static final Pattern CODE = Pattern.compile("meet\\.google\\.com/([a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#]|$)");
     static final Duration ENDED_PATIENCE = Duration.ofMinutes(10);
     static final Duration NO_TRANSCRIPT_GRACE = Duration.ofHours(2);
+    /** A call Google still lists as open this long after it began is treated as over (someone's device never left, or the attendee list is empty). */
+    static final Duration STUCK_OPEN_LIMIT = Duration.ofHours(8);
     /** After the last person leaves, wait this long before calling the meeting over, in case they rejoin (a dropped connection). */
     static final Duration REJOIN_GRACE = Duration.ofMinutes(2);
     /** Notetaker bots: they keep Google's call open but are not people, so they never keep a meeting "in progress". */
@@ -146,7 +148,9 @@ public class UmaGoogleMeet {
             ConferenceSelector.Conference conf = pick.get();
             // Google keeps the call "in progress" until everyone leaves or the host ends it for everyone - and a notetaker bot counts as someone.
             // So look at the people: when every real person has left, the meeting is over even if a notetaker is still connected.
-            if (conf.end() == null) {
+            boolean stuckOpen = conf.end() == null && conf.start() != null && now.isAfter(conf.start().plus(STUCK_OPEN_LIMIT));
+            Instant endRef = conf.end() != null ? conf.end() : stuckOpen ? conf.start().plus(STUCK_OPEN_LIMIT) : now;
+            if (conf.end() == null && !stuckOpen) {
                 List<GoogleMeetApi.Attendee> everyone = api.listAttendance(token, conf.name());
                 List<GoogleMeetApi.Attendee> people = everyone.stream().filter(a -> !isNotetaker(a)).toList();
                 boolean allLeft = !people.isEmpty() && people.stream().allMatch(a -> a.lastLeft() != null);
@@ -164,12 +168,12 @@ public class UmaGoogleMeet {
             List<GoogleMeetApi.TranscriptInfo> ready = all.stream()
                     .filter(t -> "FILE_GENERATED".equals(t.state()) || ("ENDED".equals(t.state()) && t.end() != null && t.end().isBefore(now.minus(ENDED_PATIENCE))))
                     .sorted(Comparator.comparing(t -> t.start() == null ? Instant.MAX : t.start())).toList();
-            if (ready.size() < all.size()) return Check.waitLive("The meeting ended. Google is preparing its transcript.", Duration.ofMinutes(1), "ENDED", conf.start(), conf.end());
+            if (ready.size() < all.size()) return Check.waitLive("The meeting ended. Google is preparing its transcript.", Duration.ofMinutes(1), "ENDED", conf.start(), endRef);
             if (ready.isEmpty()) {
-                if (now.isAfter(conf.end().plus(NO_TRANSCRIPT_GRACE)))
+                if (now.isAfter(endRef.plus(NO_TRANSCRIPT_GRACE)))
                     return Check.fail("NO_TRANSCRIPT", "Google Meet has no transcript for this meeting. Transcription has to be turned on during the meeting.",
                             "Upload the recording, or send the Fireflies notetaker next time.");
-                return Check.waitLive("The meeting ended; waiting for a transcript.", Duration.ofMinutes(2), "ENDED", conf.start(), conf.end());
+                return Check.waitLive("The meeting ended; waiting for a transcript.", Duration.ofMinutes(2), "ENDED", conf.start(), endRef);
             }
             Map<String, String> names = api.listParticipants(token, conf.name());
             List<UmaSegment> segs = new ArrayList<>();
@@ -195,7 +199,7 @@ public class UmaGoogleMeet {
             m.setGoogle(g);
             m.setLiveState("ENDED"); m.setLiveSource("Google Meet");
             if (m.getStartedAt() == null) m.setStartedAt(conf.start());
-            if (m.getEndedAt() == null) m.setEndedAt(conf.end());
+            if (m.getEndedAt() == null) m.setEndedAt(endRef);
             UmaMeeting.TranscriptInfo info = new UmaMeeting.TranscriptInfo();
             info.setOrigin("GOOGLE_MEET"); info.setEngine("Google Meet"); info.setSegmentCount(segs.size());
             info.setSpeakersKnown(segs.stream().anyMatch(x -> x.getSpeaker() != null)); info.setUpdatedAt(Instant.now());

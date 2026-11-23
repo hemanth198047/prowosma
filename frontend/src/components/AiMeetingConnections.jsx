@@ -76,7 +76,13 @@ export default function AiMeetingConnections({ isAdmin, onClose, onChanged }) {
             <h3>Google <span className="uma-fine">- your own Google account</span></h3>
             <p className="uma-hint">Schedule Google Meet meetings from here, add your upcoming Meet meetings automatically, and have Google Meet's transcript read after each meeting.</p>
             {!google ? <Loader2 size={14} className="uma-spin" aria-label="Loading" /> : !google.configured ? (
-              <p className="uma-note uma-note--warn">Google sign-in isn't set up on the server yet. An admin adds the Google OAuth client (see the setup guide). Redirect address to register in Google Cloud: <code>{google.redirectUri}</code></p>
+              <div className="uma-note uma-note--warn">
+                <p>Google isn't switched on for this service yet. Your Prowosma administrator can do this in a few minutes. Until then, you can still upload or paste a transcript.</p>
+                <details>
+                  <summary className="uma-fine">Details for the administrator</summary>
+                  <p className="uma-fine">Add the Google client ID and secret to the server, and allow this address in the Google app: <code>{google.redirectUri}</code></p>
+                </details>
+              </div>
             ) : google.connected && !google.legacyConnection ? (
               <>
                 <div className="uma-conn-row">
@@ -110,7 +116,7 @@ export default function AiMeetingConnections({ isAdmin, onClose, onChanged }) {
                 {google.legacyConnection && <span className="uma-fine">Connected on the Meeting Platforms page for transcripts only. Connect here to also schedule meetings and use your calendar.</span>}
                 {google.status === "NEEDS_REAUTH" && <span className="uma-fine">Google asked for a new sign-in.</span>}
                 <button type="button" className="btn-primary pg-btn" onClick={connectGoogle} disabled={busy === "g" || google.canStoreTokens === false}>Connect Google account</button>
-                {google.canStoreTokens === false && <span className="uma-fine">The server needs ENCRYPTION_KEY before sign-ins can be saved.</span>}
+                {google.canStoreTokens === false && <span className="uma-fine">Sign-ins can't be saved yet. Ask your Prowosma administrator to finish the security setup.</span>}
               </div>
             )}
           </section>

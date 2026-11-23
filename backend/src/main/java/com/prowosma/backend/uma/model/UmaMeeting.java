@@ -93,6 +93,8 @@ public class UmaMeeting {
         private String notetakerSentBy;
         private Instant lastCheckAt;
         private int checks;
+        private boolean seen;                     // Fireflies has been in the call or listed a transcript at least once
+        private Instant preparingSince;           // when Fireflies first listed the transcript without text (to stop waiting on it)
     }
 
     @Data

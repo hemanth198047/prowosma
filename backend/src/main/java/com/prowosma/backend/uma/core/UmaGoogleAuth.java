@@ -62,10 +62,10 @@ public class UmaGoogleAuth {
     }
 
     private void requireReady() {
-        if (!configured()) throw new UmaException(HttpStatus.CONFLICT, "GOOGLE_NOT_CONFIGURED", "Google sign-in isn't set up on the server yet.",
-                "An admin adds the Google OAuth client ID and secret to the server (see the setup guide).");
-        if (!crypto.isActive()) throw new UmaException(HttpStatus.CONFLICT, "ENCRYPTION_NOT_CONFIGURED", "The server can't store sign-ins safely yet.",
-                "An admin sets ENCRYPTION_KEY on the server (start-all does this for you locally).");
+        if (!configured()) throw new UmaException(HttpStatus.CONFLICT, "GOOGLE_NOT_CONFIGURED", "Google isn't switched on for this service yet.",
+                "Ask your Prowosma administrator to switch on the Google connection. Until then you can upload or paste the transcript.");
+        if (!crypto.isActive()) throw new UmaException(HttpStatus.CONFLICT, "ENCRYPTION_NOT_CONFIGURED", "Sign-ins can't be saved safely yet.",
+                "Ask your Prowosma administrator to finish the security setup (the server's encryption key).");
     }
 
     public String authorizeUrl(String org, String email) {

@@ -32,7 +32,10 @@ public class UmaPipeline {
     public static final String FETCH_GOOGLE = "FETCH_GOOGLE";
     public static final String FETCH_TEAMS = "FETCH_TEAMS";
     public static final String FIREFLIES_JOIN = "FIREFLIES_JOIN";
-    static final java.time.Duration FIREFLIES_GIVE_UP = java.time.Duration.ofHours(24);
+    static final java.time.Duration FIREFLIES_GIVE_UP = java.time.Duration.ofHours(24);                 // absolute cap
+    static final java.time.Duration FIREFLIES_PREPARING_PATIENCE = java.time.Duration.ofMinutes(30);    // listed by Fireflies but no text yet
+    static final java.time.Duration FIREFLIES_NO_SHOW_GRACE = java.time.Duration.ofMinutes(45);         // after the planned end, never seen at all
+    static final java.time.Duration FIREFLIES_STUCK_IN_CALL = java.time.Duration.ofMinutes(90);         // everyone left, notetaker still connected
 
     private final UmaJobQueue queue;
     private final UmaStore store;
@@ -154,6 +157,28 @@ public class UmaPipeline {
         boolean live = d.kind() == com.prowosma.backend.meetingassistant.FirefliesMatcher.Kind.LIVE;
         boolean preparing = d.kind() == com.prowosma.backend.meetingassistant.FirefliesMatcher.Kind.MATCH;   // listed, no text yet
         f.setInMeeting(live);
+        Instant now = Instant.now();
+        if (live || preparing) f.setSeen(true);
+        // Never wait forever on Fireflies: each waiting state has its own limit, and then the meeting says plainly what to do.
+        if (preparing) { if (f.getPreparingSince() == null) f.setPreparingSince(now); }
+        else if (live) f.setPreparingSince(null);
+        if (preparing && Duration.between(f.getPreparingSince(), now).compareTo(FIREFLIES_PREPARING_PATIENCE) > 0) {
+            store.save(m);
+            fail(job, m, "FIREFLIES_STUCK", "Fireflies has been preparing this transcript for over 30 minutes and still hasn't sent the text.",
+                    "This is on Fireflies' side. Open the meeting in Fireflies: if the transcript is there, use Import from Fireflies. "
+                    + "If not, upload the recording or transcript. Retry checks Fireflies again.", false);
+            return;
+        }
+        if (!live && !preparing && !f.isSeen()) {
+            Instant planned = m.getMeetingEndAt() != null ? m.getMeetingEndAt()
+                    : m.getMeetingAt() != null ? m.getMeetingAt().plus(Duration.ofHours(2)) : sent.plus(Duration.ofHours(3));
+            if (now.isAfter(planned.plus(FIREFLIES_NO_SHOW_GRACE))) {
+                store.save(m);
+                fail(job, m, "FIREFLIES_NO_SHOW", "Fireflies never joined or recorded this meeting.",
+                        "Check that the notetaker was let into the call. If Fireflies has a transcript, use Import from Fireflies; otherwise upload the recording or transcript.", false);
+                return;
+            }
+        }
         if (live && !"ENDED".equals(m.getLiveState())) {
             m.setLiveState("IN_PROGRESS");
             if (m.getLiveSource() == null) m.setLiveSource("Fireflies");
@@ -166,6 +191,12 @@ public class UmaPipeline {
         boolean peopleGone = live && "ENDED".equals(m.getLiveState()) && "Google Meet".equals(m.getLiveSource());
         if (peopleGone) {
             Duration after = m.getEndedAt() == null ? Duration.ZERO : Duration.between(m.getEndedAt(), Instant.now());
+            if (after.compareTo(FIREFLIES_STUCK_IN_CALL) > 0) {
+                store.save(m);
+                fail(job, m, "FIREFLIES_STILL_IN_CALL", "Everyone left over " + after.toMinutes() + " minutes ago but the Fireflies notetaker is still in the call.",
+                        "In Google Meet the organiser can remove it (People → Fireflies → Remove from call); its transcript then arrives. Retry checks again, or upload the transcript.", false);
+                return;
+            }
             m.setStatusDetail(after.compareTo(Duration.ofMinutes(20)) < 0
                     ? "Everyone has left. Fireflies is still connected; its transcript arrives once it leaves (it normally leaves by itself within a few minutes)."
                     : "Everyone left " + after.toMinutes() + " minutes ago but Fireflies is still connected. In Google Meet, the organiser can remove it "
