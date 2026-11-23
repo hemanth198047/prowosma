@@ -6,6 +6,8 @@ import client from "../api/client";
 export function RoleProvider({ children }) {
   const { user, activeWorkspace } = useAuth();
   const [role, setRole] = useState(null);
+  // The role on the person's member record. For the workspace creator (shown as Manager) this can be Admin, and both are shown.
+  const [memberRole, setMemberRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resolutionError, setResolutionError] = useState(false);
   // Which user+workspace the current role belongs to. Right after sign-in
@@ -21,6 +23,7 @@ export function RoleProvider({ children }) {
       setResolutionError(false);
       if (!user || !activeWorkspace) {
         setRole(null);
+        setMemberRole(null);
         setResolvedFor(null);
         setLoading(false);
         return;
@@ -31,9 +34,14 @@ export function RoleProvider({ children }) {
         setRole("OWNER");
         setResolvedFor(key);
         setLoading(false);
+        try {
+          const r = await client.get(`/team/by-email?email=${encodeURIComponent(user.email)}&workspaceId=${activeWorkspace.id}`);
+          setMemberRole(r.data?.role && r.data.role !== "OWNER" ? r.data.role : null);
+        } catch { setMemberRole(null); }
         return;
       }
 
+      setMemberRole(null);
       // Look up TeamMember record — pass workspaceId explicitly so the backend
       // scopes correctly regardless of X-Workspace-Id header timing
       try {
@@ -89,7 +97,7 @@ export function RoleProvider({ children }) {
 
   return (
     <RoleContext.Provider value={{
-      role, loading: loading || (key !== null && resolvedFor !== key), resolutionError, resolved,
+      role, memberRole, loading: loading || (key !== null && resolvedFor !== key), resolutionError, resolved,
       isOwner, isAdmin,
       canCreate, canEdit, canDelete, canView,
       canManageSettings, canManageMembers,

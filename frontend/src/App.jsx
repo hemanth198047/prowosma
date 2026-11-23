@@ -149,7 +149,7 @@ function UpgradeCTA() {
 
 function UserMenu() {
   const { user, logoutUser } = useAuth();
-  const { role } = useRole();
+  const { role, memberRole } = useRole();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -178,7 +178,7 @@ function UserMenu() {
       <div className="user-avatar-btn" onClick={() => setOpen((o) => !o)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); (() => setOpen((o) => !o))?.(e); } }}>
         <div className="user-avatar">{initials}</div>
         <span className="user-name">{user.name}</span>
-        <RoleBadge role={role} />
+        <RoleBadge role={role} memberRole={memberRole} />
         <span style={{ fontSize: "10px", color: "#aaa" }}>▼</span>
       </div>
       {open && (
