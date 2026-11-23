@@ -163,4 +163,51 @@ class AISettingsServiceTest {
         ctx.setWorkspaceId("ws1");
         assertThat(svc.plainKey(svc.get())).isEqualTo(SECRET);
     }
+
+    private static AISettings.Backup backup(String id, String key, String url) {
+        AISettings.Backup b = new AISettings.Backup();
+        b.setId(id); b.setLabel("Groq"); b.setApiProvider("CUSTOM"); b.setApiKey(key); b.setApiBaseUrl(url); b.setModel("llama-3.3-70b-versatile");
+        return b;
+    }
+    private static final String GROQ = "https://api.groq.com/openai/v1/chat/completions";
+
+    @Test @DisplayName("backup keys are encrypted, never shown, and a blank key keeps the saved one for the same backup")
+    void backupKeys() {
+        AISettingsService svc = service(CRYPTO);
+        AISettings in = request(true, SECRET);
+        in.setBackups(new ArrayList<>(List.of(backup(null, "gsk_BACKUP_SECRET", GROQ))));
+        AISettings saved = svc.save(in);
+        String id = saved.getBackups().get(0).getId();
+        assertThat(id).isNotBlank();
+        assertThat(saved.getBackups().get(0).getApiKey()).isNotEqualTo("gsk_BACKUP_SECRET");
+        assertThat(svc.view(saved).toString()).doesNotContain("gsk_BACKUP_SECRET").contains("apiKeySaved=true");
+
+        AISettings again = request(true, "");
+        again.setBackups(new ArrayList<>(List.of(backup(id, "", GROQ))));
+        AISettings kept = svc.save(again);
+        assertThat(CRYPTO.decrypt(kept.getBackups().get(0).getApiKey())).isEqualTo("gsk_BACKUP_SECRET");
+
+        AISettings moved = request(true, "");
+        moved.setBackups(new ArrayList<>(List.of(backup(id, "", "https://evil.example.com/v1/chat/completions"))));
+        assertThat(svc.save(moved).getBackups().get(0).getApiKey()).as("a saved key is never sent somewhere it wasn't saved for").isNull();
+    }
+
+    @Test @DisplayName("an older page that doesn't send backups leaves them alone; too many or invalid ones are refused")
+    void backupLimits() {
+        AISettingsService svc = service(CRYPTO);
+        AISettings in = request(true, SECRET);
+        in.setBackups(new ArrayList<>(List.of(backup(null, "k1", GROQ))));
+        svc.save(in);
+        AISettings old = request(true, "");
+        old.setBackups(null);
+        assertThat(svc.save(old).getBackups()).hasSize(1);
+
+        AISettings many = request(true, "");
+        many.setBackups(new ArrayList<>(List.of(backup(null, "a", GROQ), backup(null, "b", GROQ), backup(null, "c", GROQ), backup(null, "d", GROQ))));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> svc.save(many)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("up to 3");
+
+        AISettings plainHttp = request(true, "");
+        plainHttp.setBackups(new ArrayList<>(List.of(backup(null, "a", "http://insecure.example.com/v1/chat/completions"))));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> svc.save(plainHttp)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

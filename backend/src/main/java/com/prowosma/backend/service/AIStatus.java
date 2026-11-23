@@ -38,6 +38,8 @@ public final class AIStatus {
         out.put("configured", enabled && problem == null);
         out.put("provider", provider);
         out.put("model", model);
+        long backups = s == null || s.getBackups() == null ? 0 : s.getBackups().stream().filter(b -> b != null && b.getApiKey() != null && !b.getApiKey().isBlank()).count();
+        out.put("backupCount", backups);                                            // how many, never which or their keys
         out.put("features", s == null || s.getFeatures() == null ? Map.of() : s.getFeatures());     // on/off switches only, nothing sensitive
         out.put("message", switch (state) {
             case "ON" -> "AI is on for this workspace.";

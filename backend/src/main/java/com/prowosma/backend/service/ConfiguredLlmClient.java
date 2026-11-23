@@ -10,6 +10,7 @@ import com.prowosma.backend.integration.OutboundUrlPolicy;
 import com.prowosma.backend.model.AISettings;
 import com.prowosma.backend.repository.AISettingsRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ import java.util.regex.Pattern;
  * and tasks. It reads settings by explicit organization id, so it works in background jobs. The key is only ever
  * placed in a request header, never in a URL, a log line or an error message.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConfiguredLlmClient implements LlmClient {
@@ -113,37 +115,108 @@ public class ConfiguredLlmClient implements LlmClient {
         };
     }
 
+    // ── backup providers ──────────────────────────────────────────────────────
+
+    /** One place requests can go: the main provider (idx 0) or a backup. The key is still encrypted here; it is decrypted only when sending. */
+    private record Target(int idx, String provider, String encKey, String baseUrl, String model, String label) {
+        boolean needsModelName() { return provider.equals("GEMINI") || provider.equals("CUSTOM"); }
+    }
+
+    private static final long COOL_MS = 5 * 60 * 1000L;          // a target that just failed is tried last for a while, so people don't wait on it
+    private static final long COOL_AUTH_MS = 15 * 60 * 1000L;
+    private static final int MAX_OTHER_MODELS_BACKUP = 2;
+    private final Map<String, Long> cooling = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private List<Target> targets(AISettings s) {
+        List<Target> out = new ArrayList<>();
+        String model = s.getModel() == null || s.getModel().isBlank() ? null : s.getModel().trim();
+        out.add(new Target(0, provider(s), s.getApiKey(), s.getApiBaseUrl(), model, "main provider"));
+        if (s.getBackups() != null) {
+            int i = 1;
+            for (AISettings.Backup b : s.getBackups()) {
+                if (b == null || b.getApiKey() == null || b.getApiKey().isBlank()) continue;
+                String p = b.getApiProvider() == null || b.getApiProvider().isBlank() ? "CUSTOM" : b.getApiProvider().trim().toUpperCase(Locale.ROOT);
+                if (p.equals("CUSTOM")) {
+                    try { OutboundUrlPolicy.parseHttps(b.getApiBaseUrl(), "AI endpoint"); } catch (RuntimeException e) { continue; }
+                }
+                String m = b.getModel() == null || b.getModel().isBlank() ? null : b.getModel().trim();
+                if (m != null && !MODEL.matcher(m).matches()) m = null;
+                out.add(new Target(i++, p, b.getApiKey(), b.getApiBaseUrl(), m, b.getLabel() == null || b.getLabel().isBlank() ? p : b.getLabel()));
+            }
+        }
+        return out;
+    }
+
+    private static String coolKey(String org, Target t) {
+        return org + "#" + t.idx() + "#" + Objects.hash(t.provider(), t.baseUrl(), t.encKey(), t.model());      // changes when the admin changes the entry
+    }
+
     public Result complete(String org, String system, String user, int maxOutputTokens, String featureKey) {
         String reason = notReadyReason(org, featureKey);
         if (reason != null) throw new LlmException(Kind.NOT_CONFIGURED, reason);
         AISettings s = settings(org);
-        String configured = s.getModel() == null || s.getModel().isBlank() ? null : s.getModel().trim();
-        Pref pref = working.get(org);
+        List<Target> all = targets(s);
+        if (all.size() == 1) return completeOn(org, all.get(0), system, user, maxOutputTokens, MAX_OTHER_MODELS);
+
+        // Targets that failed recently go to the back of the line; the rest keep the order the admin chose.
+        long now = System.currentTimeMillis();
+        List<Target> order = new ArrayList<>(), later = new ArrayList<>();
+        for (Target t : all) (cooling.getOrDefault(coolKey(org, t), 0L) > now ? later : order).add(t);
+        order.addAll(later);
+
+        LlmException firstFailure = null;
+        for (Target t : order) {
+            try {
+                Result r = completeOn(org, t, system, user, maxOutputTokens, t.idx() == 0 ? MAX_OTHER_MODELS : MAX_OTHER_MODELS_BACKUP);
+                cooling.remove(coolKey(org, t));
+                return r;
+            } catch (LlmException e) {
+                if (e.getKind() == Kind.NOT_CONFIGURED && t.idx() == 0) throw e;
+                cooling.put(coolKey(org, t), System.currentTimeMillis() + (e.getKind() == Kind.AUTH ? COOL_AUTH_MS : COOL_MS));
+                log.warn("AI provider \"{}\" didn't work ({}); trying the next one", t.label(), e.getKind());
+                if (firstFailure == null) firstFailure = e;
+            }
+        }
+        String msg = firstFailure.getMessage();
+        throw new LlmException(firstFailure.getKind(), msg + (msg.endsWith(".") ? " " : ". ") + "Your backup AI providers were tried too and didn't work either.");
+    }
+
+    /** One provider, with its own automatic model choice (see below). Throws when nothing on this provider answers. */
+    private Result completeOn(String org, Target t, String system, String user, int maxOutputTokens, int maxOthers) {
+        String configured = t.model();
+        String prefKey = org + "#" + t.idx();
+        Pref pref = working.get(prefKey);
         String first = pref != null && pref.until() > System.currentTimeMillis() && Objects.equals(pref.configured(), configured) ? pref.model() : configured;
+        String key = crypto.decrypt(t.encKey()).trim();
+        if (first == null && t.needsModelName()) {
+            // A backup saved without a model name: take the provider's first listed one.
+            List<String> listed = candidatesFor(t, key);
+            if (listed.isEmpty()) throw new LlmException(Kind.BAD_RESPONSE, "No AI models were found for the \"" + t.label() + "\" key.");
+            first = listed.get(0);
+        }
         LlmException firstFailure;
         try {
-            return send(s, first, system, user, maxOutputTokens);
+            return send(t, first, system, user, maxOutputTokens);
         } catch (LlmException e) {
             if (!otherModelMayHelp(e)) throw e;
             firstFailure = e;
         }
         // The chosen model is busy, retired, or out of quota for this key: use one that works, without waiting for an admin to change the setting.
-        working.remove(org);
+        working.remove(prefKey);
         List<String> others = new ArrayList<>();
         if (configured != null && !configured.equals(first)) others.add(configured);
         try {
-            String key = crypto.decrypt(s.getApiKey()).trim();
-            for (String m : catalog.candidates(provider(s), key, s.getApiBaseUrl()))
+            for (String m : candidatesFor(t, key))
                 if (!m.equals(first) && !others.contains(m)) others.add(m);
         } catch (RuntimeException listFailed) {
             if (others.isEmpty()) throw firstFailure;               // couldn't even list alternatives: say what went wrong with the first
         }
         int tried = 0;
         for (String m : others) {
-            if (tried++ >= MAX_OTHER_MODELS) break;
+            if (tried++ >= maxOthers) break;
             try {
-                Result r = send(s, m, system, user, maxOutputTokens);
-                working.put(org, new Pref(m, configured, System.currentTimeMillis() + PREF_MS));
+                Result r = send(t, m, system, user, maxOutputTokens);
+                working.put(prefKey, new Pref(m, configured, System.currentTimeMillis() + PREF_MS));
                 return r;
             } catch (LlmException e) {
                 if (e.getKind() == Kind.AUTH) throw e;
@@ -153,10 +226,12 @@ public class ConfiguredLlmClient implements LlmClient {
         throw firstFailure;
     }
 
+    private List<String> candidatesFor(Target t, String key) { return catalog.candidates(t.provider(), key, t.baseUrl()); }
+
     /** One call to the provider with the given model (null = the provider's default). */
-    private Result send(AISettings s, String model, String system, String user, int maxOutputTokens) {
-        String provider = provider(s);
-        String key = crypto.decrypt(s.getApiKey()).trim();
+    private Result send(Target t, String model, String system, String user, int maxOutputTokens) {
+        String provider = t.provider();
+        String key = crypto.decrypt(t.encKey()).trim();
 
         String url;
         Map<String, String> headers = new LinkedHashMap<>();
@@ -165,10 +240,11 @@ public class ConfiguredLlmClient implements LlmClient {
         switch (provider) {
             case "OPENAI", "CUSTOM" -> {
                 boolean custom = provider.equals("CUSTOM");
-                url = custom ? s.getApiBaseUrl().trim() : "https://api.openai.com/v1/chat/completions";
+                url = custom ? t.baseUrl().trim() : "https://api.openai.com/v1/chat/completions";
                 headers.put("Authorization", "Bearer " + key);
                 body.put("model", model != null ? model : "gpt-4o-mini");
-                body.put("max_completion_tokens", maxOutputTokens);
+                // OpenAI's newer models require max_completion_tokens; the other OpenAI-style services (Groq, Mistral, OpenRouter, Cerebras, Ollama…) all accept the older max_tokens.
+                body.put(custom ? "max_tokens" : "max_completion_tokens", maxOutputTokens);
                 body.put("messages", List.of(Map.of("role", "system", "content", system), Map.of("role", "user", "content", user)));
             }
             case "GEMINI" -> {

@@ -8,6 +8,8 @@ import {
   listAIModels,
 } from "../api/ai";
 import PageHeader from "../components/PageHeader";
+import BackupProviders from "../components/BackupProviders";
+import { backupsFromServer, backupsForServer } from "../utils/backupProviders";
 
 import "../styles/pages/ai.css";
 import { useToast } from "../components/ToastContext";
@@ -202,6 +204,7 @@ export default function AISettings() {
   const [providerKeys, setProviderKeys] = useState({
     ANTHROPIC: "", OPENAI: "", GEMINI: "", CUSTOM: "",
   });
+  const [backups, setBackups] = useState([]);       // backup providers (keys typed here are only sent on Save; saved ones are never sent back)
   const [testResult, setTestResult] = useState(null); // null | "ok" | "fail"
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -271,6 +274,7 @@ export default function AISettings() {
             apiProvider: provider,
             apiBaseUrl: res.data.apiBaseUrl || "",
           });
+          setBackups(backupsFromServer(res.data.backups));
           // Pre-fill the key for the saved provider
           setProviderKeys(prev => ({ ...prev, [provider]: res.data.apiKey || "" }));
         }
@@ -296,12 +300,15 @@ export default function AISettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await saveAISettings({ ...settings, ...form });
+      const res = await saveAISettings({ ...settings, ...form, backups: backupsForServer(backups) });
       setSettings(res.data || {});
+      setBackups(backupsFromServer(res.data?.backups));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       console.error(e);
+      const d = e?.response?.data;
+      showToast((typeof d?.message === "string" && d.message) || (typeof d?.error === "string" && d.error) || "Couldn't save the AI settings. Please check your connection and try again.", "error");
     } finally {
       setSaving(false);
     }
@@ -604,6 +611,8 @@ export default function AISettings() {
           </span>
         </div>
       </div>
+
+      <BackupProviders rows={backups} onChange={setBackups} />
 
       {/* Feature Toggles */}
       <div className="ai-features-section">

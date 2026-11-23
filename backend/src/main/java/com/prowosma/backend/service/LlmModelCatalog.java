@@ -35,6 +35,7 @@ public class LlmModelCatalog {
             "(?i)(embed|tts|speech|whisper|transcri|audio|realtime|image|imagen|dall-e|veo|lyria|moderation|aqa|"
             + "robotics|computer-use|omni|live|native-audio|nano-banana|antigravity|deep-research|customtools|"
             + "davinci|babbage|search-preview|gemma|codex-mini-latest)");
+    private static final Pattern CUSTOM_NOT_CHAT = Pattern.compile("(?i)(embed|tts|speech|whisper|transcri|audio|realtime|image|dall-e|moderation|guard|rerank|ocr)");
     private static final Pattern PREVIEW = Pattern.compile("(?i)(preview|exp|experimental|beta)");
     private static final Pattern OPENAI_CHAT = Pattern.compile("^(gpt-|chatgpt-|o\\d).*");
     private static final int MAX_PAGES = 5;
@@ -61,7 +62,10 @@ public class LlmModelCatalog {
     public Models list(String provider, String typedKey, String baseUrl) { return list(provider, typedKey, baseUrl, false); }
 
     /** @param refresh true = skip the 10-minute memory of an earlier answer for this key */
-    public Models list(String provider, String typedKey, String baseUrl, boolean refresh) {
+    public Models list(String provider, String typedKey, String baseUrl, boolean refresh) { return list(provider, typedKey, baseUrl, refresh, null); }
+
+    /** @param backupId when the key is blank, use the key saved for this backup provider (only if it points at the same provider and address) */
+    public Models list(String provider, String typedKey, String baseUrl, boolean refresh, String backupId) {
         String p = provider == null || provider.isBlank() ? "ANTHROPIC" : provider.trim().toUpperCase(Locale.ROOT);
         if (!Set.of("ANTHROPIC", "OPENAI", "GEMINI", "CUSTOM").contains(p))
             throw new LlmException(Kind.NOT_CONFIGURED, "Unknown AI provider.");
@@ -74,6 +78,13 @@ public class LlmModelCatalog {
             // Never send the saved key to a provider/endpoint it wasn't saved for.
             boolean sameTarget = savedProvider.equals(p) && (!p.equals("CUSTOM") || sameUrl(savedBase, baseUrl));
             if (sameTarget && saved.getApiKey() != null && !saved.getApiKey().isBlank()) key = crypto.decrypt(saved.getApiKey()).trim();
+        }
+        if (key.isEmpty() && backupId != null && !backupId.isBlank() && saved.getBackups() != null) {
+            for (AISettings.Backup b : saved.getBackups()) {
+                boolean sameTarget = backupId.equals(b.getId()) && p.equals(b.getApiProvider() == null ? "CUSTOM" : b.getApiProvider().trim().toUpperCase(Locale.ROOT))
+                        && (!p.equals("CUSTOM") || sameUrl(b.getApiBaseUrl(), baseUrl));
+                if (sameTarget && b.getApiKey() != null && !b.getApiKey().isBlank()) key = crypto.decrypt(b.getApiKey()).trim();
+            }
         }
         if (key.isEmpty() && !p.equals("CUSTOM")) throw new LlmException(Kind.NOT_CONFIGURED, "Enter the API key to load the available models.");
 
@@ -249,7 +260,14 @@ public class LlmModelCatalog {
         String u = baseUrl.trim().replaceAll("/+$", "");
         String models = u.matches("(?i).*/chat/completions$") ? u.replaceFirst("(?i)/chat/completions$", "/models")
                 : u.matches("(?i).*/v1$") ? u + "/models" : u.replaceAll("(?i)/[^/]+$", "/models");
-        return openai(models, key, false);
+        List<String> all = openai(models, key, false), out = new ArrayList<>();
+        boolean openRouter = u.toLowerCase(Locale.ROOT).contains("openrouter.ai");
+        for (String id : all) {
+            if (CUSTOM_NOT_CHAT.matcher(id).find()) continue;                       // speech, embeddings, safety models… are not chat models
+            if (openRouter && !id.endsWith(":free")) continue;                      // never wander onto OpenRouter's paid models by itself
+            out.add(id);
+        }
+        return out.isEmpty() ? all : out;
     }
 
     // ── plumbing ──────────────────────────────────────────────────────────────
