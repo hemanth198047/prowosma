@@ -35,6 +35,7 @@ public class ConfiguredLlmClient implements LlmClient {
     private final AISettingsRepository settingsRepo;
     private final FieldEncryptionService crypto;
     private final LlmHttp http;
+    private final LlmModelCatalog catalog;
     private final ObjectMapper om = new ObjectMapper();
 
     @Value("${app.integrations.allow-private-hosts:false}")
@@ -94,13 +95,68 @@ public class ConfiguredLlmClient implements LlmClient {
     @Override
     public Result complete(String org, String system, String user, int maxOutputTokens) { return complete(org, system, user, maxOutputTokens, FEATURE); }
 
+    // ── automatic model choice ────────────────────────────────────────────────
+
+    /** A model that worked when the chosen one didn't; used first for a while so the next request doesn't wait for the same failure. */
+    private record Pref(String model, String configured, long until) {}
+    private static final long PREF_MS = 30 * 60 * 1000L;
+    private static final int MAX_OTHER_MODELS = 4;
+    private final Map<String, Pref> working = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Pattern MODEL_PROBLEM = Pattern.compile("(?i)(isn't available|no quota|not found|no longer available|not supported|does not exist|overloaded)");
+
+    /** Would a different model plausibly succeed? (Not for a bad key, a missing setup, or no network.) */
+    private static boolean otherModelMayHelp(LlmException e) {
+        return switch (e.getKind()) {
+            case RATE_LIMITED, SERVER, INPUT_TOO_LARGE -> true;
+            case BAD_RESPONSE -> e.getMessage() != null && MODEL_PROBLEM.matcher(e.getMessage()).find();
+            default -> false;
+        };
+    }
+
     public Result complete(String org, String system, String user, int maxOutputTokens, String featureKey) {
         String reason = notReadyReason(org, featureKey);
         if (reason != null) throw new LlmException(Kind.NOT_CONFIGURED, reason);
         AISettings s = settings(org);
+        String configured = s.getModel() == null || s.getModel().isBlank() ? null : s.getModel().trim();
+        Pref pref = working.get(org);
+        String first = pref != null && pref.until() > System.currentTimeMillis() && Objects.equals(pref.configured(), configured) ? pref.model() : configured;
+        LlmException firstFailure;
+        try {
+            return send(s, first, system, user, maxOutputTokens);
+        } catch (LlmException e) {
+            if (!otherModelMayHelp(e)) throw e;
+            firstFailure = e;
+        }
+        // The chosen model is busy, retired, or out of quota for this key: use one that works, without waiting for an admin to change the setting.
+        working.remove(org);
+        List<String> others = new ArrayList<>();
+        if (configured != null && !configured.equals(first)) others.add(configured);
+        try {
+            String key = crypto.decrypt(s.getApiKey()).trim();
+            for (String m : catalog.candidates(provider(s), key, s.getApiBaseUrl()))
+                if (!m.equals(first) && !others.contains(m)) others.add(m);
+        } catch (RuntimeException listFailed) {
+            if (others.isEmpty()) throw firstFailure;               // couldn't even list alternatives: say what went wrong with the first
+        }
+        int tried = 0;
+        for (String m : others) {
+            if (tried++ >= MAX_OTHER_MODELS) break;
+            try {
+                Result r = send(s, m, system, user, maxOutputTokens);
+                working.put(org, new Pref(m, configured, System.currentTimeMillis() + PREF_MS));
+                return r;
+            } catch (LlmException e) {
+                if (e.getKind() == Kind.AUTH) throw e;
+                if (!otherModelMayHelp(e)) throw e;
+            }
+        }
+        throw firstFailure;
+    }
+
+    /** One call to the provider with the given model (null = the provider's default). */
+    private Result send(AISettings s, String model, String system, String user, int maxOutputTokens) {
         String provider = provider(s);
         String key = crypto.decrypt(s.getApiKey()).trim();
-        String model = s.getModel() == null || s.getModel().isBlank() ? null : s.getModel().trim();
 
         String url;
         Map<String, String> headers = new LinkedHashMap<>();

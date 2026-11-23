@@ -92,6 +92,26 @@ public class LlmModelCatalog {
         return new Models(p, ordered);
     }
 
+    /**
+     * Models to try when the chosen one is busy or unavailable, for a given key (no request context needed, so background jobs can use it).
+     * Listed only, not tested: the real call that follows is the test. Cached with the rest.
+     */
+    public List<String> candidates(String provider, String key, String baseUrl) {
+        String p = provider == null || provider.isBlank() ? "ANTHROPIC" : provider.trim().toUpperCase(Locale.ROOT);
+        String cacheKey = "C:" + p + ":" + sha(key + "|" + (baseUrl == null ? "" : baseUrl));
+        Cached hit = cache.get(cacheKey);
+        if (hit != null && System.currentTimeMillis() - hit.at() < CACHE_MS) return hit.models();
+        List<String> ids = switch (p) {
+            case "GEMINI" -> gemini(key);
+            case "OPENAI" -> openai("https://api.openai.com/v1/models", key, true);
+            case "ANTHROPIC" -> anthropic(key);
+            default -> custom(baseUrl, key);
+        };
+        List<String> ordered = order(ids);
+        cache.put(cacheKey, new Cached(System.currentTimeMillis(), ordered));
+        return ordered;
+    }
+
     // ── "listed" is not "usable": ask each Gemini model for one tiny reply and keep only the ones that answer ──
 
     /** Google lists models it then refuses ("no longer available to new users", quota 0 on a free key). Only offer models that really answer. */

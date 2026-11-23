@@ -161,14 +161,14 @@ public class AIService {
         };
     }
 
-    /** One call to the configured model; a short hiccup (busy, brief outage) is retried once before the person is told. */
+    /** One call to the configured model. A busy or retired model is replaced by a working one inside the client; a dropped connection is retried once. */
     private ConfiguredLlmClient.Result strict(String system, String user, int tokens, String featureKey) {
         String org = workspaceContext.getWorkspaceId();
         for (int attempt = 1; ; attempt++) {
             try {
                 return llm.complete(org, system, user, tokens, featureKey);
             } catch (com.prowosma.backend.integration.LlmException e) {
-                if (attempt == 1 && e.isTransient()) {
+                if (attempt == 1 && e.getKind() == com.prowosma.backend.integration.LlmException.Kind.NETWORK) {      // busy/overloaded models are handled inside the client by switching model
                     try { Thread.sleep(1500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw explain(e); }
                     continue;
                 }
