@@ -45,7 +45,7 @@ public class ReminderService {
         List<Task> overdue = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
                 .filter(t -> t.getDueDate() != null
                         && t.getDueDate().isBefore(now)
-                        && !"DONE".equals(t.getStatus()))
+                        && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .collect(Collectors.toList());
 
         // Today tasks
@@ -60,14 +60,14 @@ public class ReminderService {
                 .filter(t -> t.getDueDate() != null
                         && t.getDueDate().isAfter(endOfDay)
                         && t.getDueDate().isBefore(tomorrow.toLocalDate().atTime(23, 59, 59))
-                        && !"DONE".equals(t.getStatus()))
+                        && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .collect(Collectors.toList());
 
         // Overdue projects
         List<Project> overdueProjects = projectRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
                 .filter(p -> p.getDueDate() != null
                         && p.getDueDate().isBefore(now)
-                        && !"DONE".equals(p.getStatus()))
+                        && !com.prowosma.backend.model.Task.isFinished(p.getStatus()))
                 .collect(Collectors.toList());
 
         // Overdue goals

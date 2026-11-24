@@ -67,7 +67,7 @@ public class DashboardController {
         long done        = tasks.stream().filter(t -> "DONE".equals(t.getStatus())).count();
         long overdue     = tasks.stream().filter(t ->
             t.getDueDate() != null && t.getDueDate().isBefore(now)
-            && !"DONE".equals(t.getStatus())).count();
+            && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
 
         long activeProj  = projects.stream().filter(p -> "ACTIVE".equals(p.getStatus())).count();
         long activeGoals = goals.stream().filter(g -> "ACTIVE".equals(g.getStatus())).count();
@@ -75,7 +75,7 @@ public class DashboardController {
         // Overdue task list (lightweight — id + title + dueDate only)
         var overdueList = tasks.stream()
             .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
-                      && !"DONE".equals(t.getStatus()))
+                      && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
             .limit(10)
             .map(t -> Map.of("id", t.getId(), "title", t.getTitle(),
                              "dueDate", t.getDueDate().toString()))

@@ -249,7 +249,7 @@ public class IntegrationService {
         String calendarId = integration.getConfig().get("calendarId");
         if (calendarId == null) throw new RuntimeException("Google Calendar ID is required");
         List<Task> dueTasks = taskRepository.findByOrganizationId(workspaceContext.getWorkspaceId()).stream()
-                .filter(t -> t.getDueDate() != null && !"DONE".equals(t.getStatus()))
+                .filter(t -> t.getDueDate() != null && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .toList();
         integration.setLastSyncAt(LocalDateTime.now());
         integrationRepository.save(integration);

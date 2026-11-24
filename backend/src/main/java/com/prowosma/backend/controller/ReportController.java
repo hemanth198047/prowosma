@@ -96,7 +96,7 @@ public class ReportController {
         report.put("overdueCount", allTasks.stream()
                 .filter(t -> t.getDueDate() != null &&
                         t.getDueDate().isBefore(LocalDateTime.now()) &&
-                        !"DONE".equals(t.getStatus())).count());
+                        !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count());
         return report;
     }
 }

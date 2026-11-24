@@ -72,13 +72,13 @@ public class RiskAdjustedPlanningService {
         int riskScore = 0;
 
         long overdueTasks = tasks.stream()
-            .filter(t -> !"DONE".equals(t.getStatus()) && t.getDueDate() != null
+            .filter(t -> !com.prowosma.backend.model.Task.isFinished(t.getStatus()) && t.getDueDate() != null
                 && t.getDueDate().isBefore(LocalDateTime.now())).count();
         if (overdueTasks > 0) { riskFactors.add(overdueTasks + " overdue tasks"); riskScore += Math.min(25, overdueTasks * 3); }
 
         long blockedTasks = tasks.stream()
             .filter(t -> t.getBlockedByTaskIds() != null && !t.getBlockedByTaskIds().isEmpty()
-                && !"DONE".equals(t.getStatus())).count();
+                && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
         if (blockedTasks > 0) { riskFactors.add(blockedTasks + " blocked tasks"); riskScore += Math.min(20, (int) blockedTasks * 4); }
 
         if (velocityTrend < -15) { riskFactors.add(String.format("Velocity declining %.0f%%", Math.abs(velocityTrend))); riskScore += 20; }

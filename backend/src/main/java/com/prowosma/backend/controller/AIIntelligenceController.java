@@ -55,7 +55,7 @@ public class AIIntelligenceController {
             long done    = tasks.stream().filter(t -> "DONE".equals(t.getStatus())).count();
             long overdue = tasks.stream().filter(t -> t.getDueDate() != null
                 && t.getDueDate().isBefore(LocalDateTime.now())
-                && !"DONE".equals(t.getStatus())).count();
+                && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
             double pct   = total > 0 ? (double) done / total * 100 : 0;
             int riskScore = (int) Math.min(100, (100 - pct) * 0.7 + overdue * 15);
             String level  = riskScore >= 70 ? "HIGH" : riskScore >= 40 ? "MEDIUM" : "LOW";
@@ -87,7 +87,7 @@ public class AIIntelligenceController {
 
         List<Task> overdue = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent()).stream()
             .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
-                      && !"DONE".equals(t.getStatus()))
+                      && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
             .sorted(Comparator.comparing(Task::getDueDate))
             .limit(20).collect(Collectors.toList());
 
@@ -176,7 +176,7 @@ public class AIIntelligenceController {
         List<Task> all = visibility.filterTasks(taskRepository.findByOrganizationId(orgId, org.springframework.data.domain.PageRequest.of(0, 2000)).getContent());
 
         long overdue = all.stream().filter(t -> t.getDueDate() != null
-            && t.getDueDate().isBefore(LocalDateTime.now()) && !"DONE".equals(t.getStatus())).count();
+            && t.getDueDate().isBefore(LocalDateTime.now()) && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
         long todo    = all.stream().filter(t -> "TODO".equals(t.getStatus())).count();
         long done    = all.stream().filter(t -> "DONE".equals(t.getStatus())).count();
 

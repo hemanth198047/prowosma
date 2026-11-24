@@ -63,7 +63,7 @@ public class AnalyticsController {
         long overdue    = tasks.stream()
                 .filter(t -> t.getDueDate() != null
                           && t.getDueDate().isBefore(now)
-                          && !"DONE".equals(t.getStatus())).count();
+                          && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
 
         // Avg task age in days (non-done tasks)
         double avgAge = tasks.stream()
@@ -163,7 +163,7 @@ public class AnalyticsController {
         for (int i = 29; i >= 0; i -= 2) {
             LocalDateTime day  = now.minusDays(i).truncatedTo(ChronoUnit.DAYS);
             long remaining = tasks.stream()
-                    .filter(t -> !"DONE".equals(t.getStatus())
+                    .filter(t -> !com.prowosma.backend.model.Task.isFinished(t.getStatus())
                               || (t.getUpdatedAt() != null && t.getUpdatedAt().isAfter(day)))
                     .count();
             // Ideal line
@@ -225,7 +225,7 @@ public class AnalyticsController {
             long overdue  = pt.stream()
                     .filter(t -> t.getDueDate() != null
                               && t.getDueDate().isBefore(now)
-                              && !"DONE".equals(t.getStatus())).count();
+                              && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
 
             // Score: 0-100
             int completionScore = total == 0 ? 50 : (int)(done * 100 / total);
@@ -320,7 +320,7 @@ public class AnalyticsController {
             long active    = assigned.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus())).count();
             long todo      = assigned.stream().filter(t -> "TODO".equals(t.getStatus())).count();
             long overdue   = assigned.stream()
-                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now) && !"DONE".equals(t.getStatus()))
+                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now) && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .count();
             int completionRate = total == 0 ? 0 : (int)((done * 100) / total);
             String loadLevel = active > 8 ? "HIGH" : active > 4 ? "MEDIUM" : "LOW";
@@ -380,7 +380,7 @@ public class AnalyticsController {
             long total    = pTasks.size();
             long done     = pTasks.stream().filter(t -> "DONE".equals(t.getStatus())).count();
             long overdue  = pTasks.stream()
-                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now) && !"DONE".equals(t.getStatus()))
+                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now) && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .count();
             int health = total == 0 ? 100
                 : (int)(done * 100 / total) - (int)(overdue * 50 / Math.max(1, total));

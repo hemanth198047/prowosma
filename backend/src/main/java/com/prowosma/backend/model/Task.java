@@ -10,6 +10,13 @@ import java.util.List;
 @Data
 @Document(collection = "tasks")
 public class Task {
+    /** Statuses that mean "no longer open": such a task is never overdue, never "due today", never reminded about. */
+    public static final java.util.List<String> FINISHED_STATUSES = java.util.List.of("DONE", "CANCELLED", "CANCELED", "CLOSED", "COMPLETED", "COMPLETE", "RESOLVED");
+
+    public static boolean isFinished(String status) {
+        return status != null && FINISHED_STATUSES.contains(status.trim().toUpperCase(java.util.Locale.ROOT));
+    }
+
     @Id
     private String id;
     private String organizationId;

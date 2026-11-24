@@ -7,6 +7,8 @@
  * f = { status, priority, project, assignee, due, search }   ("" = any)
  * ctx = { now, projectIds(projectId) -> [ids incl. sub-projects] }
  */
+import { isFinishedStatus } from "./overdue";
+
 export function dueWindows(now = new Date()) {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfWeek = new Date(startOfToday);
@@ -21,7 +23,7 @@ export function matchesDue(t, due, now = new Date()) {
   const { startOfToday, endOfWeek, endOfMonth } = dueWindows(now);
   const d = t.dueDate ? new Date(t.dueDate) : null;
   switch (due) {
-    case "overdue": return !!(d && d < now && t.status !== "DONE");
+    case "overdue": return !!(d && d < now && !isFinishedStatus(t.status));
     case "today": return !!(d && d.toDateString() === now.toDateString());
     case "week": return !!(d && d >= startOfToday && d <= endOfWeek);
     case "month": return !!(d && d >= startOfToday && d <= endOfMonth);

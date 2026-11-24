@@ -612,17 +612,24 @@ export default function Tasks() {
     }
   };
 
+  // Changes only the status (a PATCH), instead of re-sending the whole task: that kept failing quietly on some tasks, so a task people
+  // had closed stayed open and overdue with no message. Now the screen shows the new status at once and says so if it could not be saved.
   const handleStatusUpdate = async (task, newStatus) => {
-    await updateTask(task.id, { ...task, status: newStatus });
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)));
+    try {
+      await patchTask(task.id, { status: newStatus });
+    } catch (err) {
+      showToast(apiErrorMessage(err, "Couldn't change the status. The task is unchanged."), "error");
+    }
     load();
   };
 
   const handleBulkStatus = async (status) => {
-    await Promise.all([...selectedIds].map(id => {
-      const t = tasks.find(t => t.id === id);
-      return t ? updateTask(id, { ...t, status }) : null;
-    }));
-    showToast(`${selectedIds.size} task${selectedIds.size > 1 ? "s" : ""} updated to ${status.replace("_", " ")}`, "success");
+    const results = await Promise.allSettled([...selectedIds].map((id) => patchTask(id, { status })));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const ok = results.length - failed;
+    if (ok) showToast(`${ok} task${ok > 1 ? "s" : ""} updated to ${status.replace("_", " ")}`, "success");
+    if (failed) showToast(`${failed} task${failed > 1 ? "s" : ""} could not be changed.`, "error");
     clearSelection(); load();
   };
 

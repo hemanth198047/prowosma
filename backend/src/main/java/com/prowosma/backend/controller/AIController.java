@@ -727,7 +727,7 @@ public class AIController {
         long inProg    = tasks.stream().filter(t -> "IN_PROGRESS".equals(t.getStatus())).count();
         long overdue   = tasks.stream().filter(t ->
             t.getDueDate() != null && t.getDueDate().isBefore(java.time.LocalDateTime.now())
-            && !"DONE".equals(t.getStatus())).count();
+            && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
         long atRiskGoals = goals.stream().filter(g -> g.getConfidence() < 50).count();
 
         String summary = String.format(
@@ -931,7 +931,7 @@ public class AIController {
 
         // Overdue rate
         long overdue = tasks.stream().filter(t -> t.getDueDate() != null
-            && t.getDueDate().isBefore(now) && !"DONE".equals(t.getStatus())).count();
+            && t.getDueDate().isBefore(now) && !com.prowosma.backend.model.Task.isFinished(t.getStatus())).count();
         double overdueRate = tasks.isEmpty() ? 0 : Math.round(overdue * 100.0 / tasks.size());
 
         List<Map<String, Object>> bottlenecks = new ArrayList<>();

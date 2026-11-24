@@ -102,7 +102,7 @@ public class DesktopAlerts extends AbstractMongoEventListener<Task> {
         Task t = event.getSource();
         Set<String> was = t.getId() == null ? null : before.get().remove(t.getId());
         try {
-            if (t.getId() == null || t.getAssigneeIds() == null || t.getAssigneeIds().isEmpty() || "DONE".equals(t.getStatus())) return;
+            if (t.getId() == null || t.getAssigneeIds() == null || t.getAssigneeIds().isEmpty() || com.prowosma.backend.model.Task.isFinished(t.getStatus())) return;
             String me = actor();
             for (String id : t.getAssigneeIds()) {
                 if (was != null && was.contains(id)) continue;                       // already on it before this change
@@ -130,11 +130,11 @@ public class DesktopAlerts extends AbstractMongoEventListener<Task> {
         int sent = 0;
         LocalDateTime utcNow = LocalDateTime.ofInstant(now, ZoneOffset.UTC);
         // Due within the next hour.
-        Query soon = new Query(Criteria.where("status").ne("DONE").and("assigneeIds.0").exists(true)
+        Query soon = new Query(Criteria.where("status").nin(com.prowosma.backend.model.Task.FINISHED_STATUSES).and("assigneeIds.0").exists(true)
                 .and("dueDate").gt(utcNow).lte(utcNow.plusHours(1))).limit(500);
         for (Task t : mongo.find(soon, Task.class)) sent += tellAssignees(t, "due:" + t.getId() + ":" + t.getDueDate(), "Due within the hour", t.getTitle());
         // Became overdue in the last day (older ones were already known about before this feature, so they aren't re-announced).
-        Query late = new Query(Criteria.where("status").ne("DONE").and("assigneeIds.0").exists(true)
+        Query late = new Query(Criteria.where("status").nin(com.prowosma.backend.model.Task.FINISHED_STATUSES).and("assigneeIds.0").exists(true)
                 .and("dueDate").lte(utcNow).gt(utcNow.minusDays(1))).limit(500);
         for (Task t : mongo.find(late, Task.class)) sent += tellAssignees(t, "overdue:" + t.getId() + ":" + t.getDueDate(), "Overdue", t.getTitle());
         // Attendance nudges.

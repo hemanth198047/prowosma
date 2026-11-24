@@ -74,13 +74,13 @@ public class DigestService {
 
         List<Task> overdue = taskRepo.findByOrganizationId(orgId).stream()
             .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
-                && !"DONE".equals(t.getStatus()))
+                && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
             .collect(Collectors.toList());
 
         List<Task> dueToday = taskRepo.findByOrganizationId(orgId).stream()
             .filter(t -> t.getDueDate() != null
                 && t.getDueDate().toLocalDate().equals(now.toLocalDate())
-                && !"DONE".equals(t.getStatus()))
+                && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
             .collect(Collectors.toList());
 
         // Previously only in the now-retired ReminderService — folded in
@@ -90,12 +90,12 @@ public class DigestService {
         List<Task> dueTomorrow = taskRepo.findByOrganizationId(orgId).stream()
             .filter(t -> t.getDueDate() != null
                 && t.getDueDate().isAfter(endOfDay) && t.getDueDate().isBefore(tomorrowEnd)
-                && !"DONE".equals(t.getStatus()))
+                && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
             .collect(Collectors.toList());
 
         List<Project> overdueProjects = projectRepo.findByOrganizationId(orgId).stream()
             .filter(p -> p.getDueDate() != null && p.getDueDate().isBefore(now)
-                && !"DONE".equals(p.getStatus()))
+                && !com.prowosma.backend.model.Task.isFinished(p.getStatus()))
             .collect(Collectors.toList());
 
         List<Goal> overdueGoals = goalRepo.findByOrganizationId(orgId).stream()
@@ -141,7 +141,7 @@ public class DigestService {
 
             List<Task> overdue = taskRepo.findByOrganizationId(orgId).stream()
                 .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
-                    && !"DONE".equals(t.getStatus()))
+                    && !com.prowosma.backend.model.Task.isFinished(t.getStatus()))
                 .collect(Collectors.toList());
 
             String html = buildWeeklyHtml(ws.getName(), now, completed, atRiskGoals, overdue);

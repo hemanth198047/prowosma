@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { isFinishedStatus } from "../utils/overdue";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -541,8 +542,8 @@ export default function Dashboard() {
       const eod = new Date(); eod.setHours(23,59,59,999);
       setDashTasks({
         active:  all.filter(t => t.status === "IN_PROGRESS"),
-        overdue: all.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE"),
-        today:   all.filter(t => { if (!t.dueDate) return false; const d = new Date(t.dueDate); return d >= now && d <= eod && t.status !== "DONE"; }),
+        overdue: all.filter(t => t.dueDate && new Date(t.dueDate) < now && !isFinishedStatus(t.status)),
+        today:   all.filter(t => { if (!t.dueDate) return false; const d = new Date(t.dueDate); return d >= now && d <= eod && !isFinishedStatus(t.status); }),
       });
     }).catch(() => {});
   }, [activeWorkspace?.id]);
