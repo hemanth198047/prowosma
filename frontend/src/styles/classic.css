@@ -24593,7 +24593,7 @@ html[data-design="classic"] .dz-ov-row {
 html[data-design="classic"] .dz-ov-list li:last-child .dz-ov-row { border-bottom: 0; }
 html[data-design="classic"] .dz-ov-row:hover { background: var(--gray-50, var(--bg-hover)); }
 html[data-design="classic"] .dz-ov-name { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html[data-design="classic"] .dz-ov-row .dz-num { width: 36px; text-align: right; font-size: 13px; color: var(--text-secondary); }
+html[data-design="classic"] .dz-ov-row .dz-num { flex: none; min-width: 44px; white-space: nowrap; text-align: right; font-size: 13px; color: var(--text-secondary); }
 html[data-design="classic"] .dz-more { border: 0; background: none; padding: 10px 0 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--brand-600); cursor: pointer; }
 html[data-design="classic"] .dz-dot { flex: none; width: 8px; height: 8px; border-radius: 2px; }
 html[data-design="classic"] .dz-dot-ring { background: transparent; box-shadow: inset 0 0 0 2px var(--viz-progress, #C17D22); border-radius: 50%; }
@@ -24710,7 +24710,7 @@ html[data-design="classic"] .dz-sub { color: var(--text-muted); font-weight: 400
 html[data-design="classic"] .dz-drow-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-muted); align-items: center; }
 html[data-design="classic"] .dz-drow-desc { font-size: 13px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html[data-design="classic"] .dz-drow-end { flex: none; display: flex; align-items: center; gap: 8px; padding-top: 4px; }
-html[data-design="classic"] .dz-drow-end .dz-num { width: 36px; text-align: right; font-size: 13px; color: var(--text-secondary); }
+html[data-design="classic"] .dz-drow-end .dz-num { flex: none; min-width: 44px; white-space: nowrap; text-align: right; font-size: 13px; color: var(--text-secondary); }
 html[data-design="classic"] .dz-drow .dz-due { padding-top: 3px; }
 html[data-design="classic"] .dz-pill { display: inline-flex; padding: 1px 6px; border-radius: 4px; font-size: 12px; font-weight: 500; background: var(--gray-100, var(--bg-hover)); color: var(--text-secondary); }
 html[data-design="classic"] .dz-pill-done, html[data-design="classic"] .dz-pill-completed, html[data-design="classic"] .dz-pill-achieved { color: var(--success-text, #047857); }
