@@ -25,6 +25,7 @@ public class Meeting {
     // Where the meeting happens: a room name or a meeting link (Teams, Zoom,
     // Meet...). Shown on the calendar; a link gets a "Join" button.
     private String location;
+    private LocalDateTime invitesResentAt;        // when the invitations were last sent again by hand (limits repeats)
     private String docId;
     private List<String> attendees = new ArrayList<>();
 

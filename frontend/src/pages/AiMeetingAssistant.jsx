@@ -6,7 +6,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle, ArrowLeft, CalendarPlus, Check, CheckCircle2, Circle, Download, FileText, Link2, Loader2, MessageSquare,
-  Plug, Plus, RefreshCw, Send, Settings, Sparkles, Trash2, Upload, Video, X,
+  Mail, Plug, Plus, RefreshCw, Send, Settings, Sparkles, Trash2, Upload, Video, X,
   NotebookPen,
 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
@@ -23,7 +23,7 @@ import {
   getUmaFirefliesRecent, importUmaFireflies, getUmaFireflies, sendUmaNotetaker, fetchUmaGoogle,
   getUmaGoogle, scheduleUmaMeeting, setUmaAutoFireflies, checkUmaMeeting, startUmaInstantMeeting,
   getUmaMicrosoft, getUmaAutomationSettings, saveUmaWorkspaceAutomation, saveUmaMyPreferences, decideUmaProject,
-  deleteUmaMeetings, previewUmaCleanup, clearUmaOldMeetings,
+  deleteUmaMeetings, previewUmaCleanup, clearUmaOldMeetings, resendUmaInvites,
 } from "../api/aiMeetingAssistant";
 import AiMeetingRecorder from "../components/AiMeetingRecorder";
 import AiMeetingConnections from "../components/AiMeetingConnections";
@@ -714,6 +714,11 @@ function MeetingRow({ m, select }) {
       <span className="uma-mrow-meta">
         {SOURCE[m.source] || m.source}{m.meetingAt ? ` · ${when(m.meetingAt)}` : ""}{m.durationMs ? ` · ${minutes(m.durationMs)}` : ""}
       </span>
+      {m.joinable && m.meetingUrl && (
+        <a className="btn-primary pg-btn uma-mrow-join" href={m.meetingUrl} target="_blank" rel="noreferrer noopener" aria-label={`Join ${m.title}`}>
+          <Video size={13} aria-hidden="true" />Join
+        </a>
+      )}
       <span className="uma-mrow-status">
         <Pill status={m.status} label={m.statusLabel} />
         {WORKING.has(m.status) && m.progressPercent != null && <span className="uma-mrow-pct">{m.progressPercent}%</span>}
@@ -1532,7 +1537,28 @@ const hhmm = (iso) => (iso ? new Date(iso).toLocaleTimeString([], { timeStyle: "
  * The one place that says, in plain words, where a meeting stands before its summary exists:
  * Scheduled -> In progress -> Ended, getting the transcript. One Join button; backup actions only while it can still help.
  */
+/** Still worth showing Join: not over and not long past (until half an hour after the planned end; four hours after the start when no end is known). */
+function stillJoinable(m, nowTick) {
+  if (!m.meetingAt || m.status !== "CREATED" || m.liveState === "ENDED") return false;
+  const end = m.meetingEndAt ? new Date(m.meetingEndAt).getTime() : new Date(m.meetingAt).getTime() + 4 * 3600000;
+  return new Date(nowTick).getTime() <= end + 30 * 60000;
+}
+
+/** What to tell the person after "Resend invites": who got a Google invitation, who got an e-mail, who could not be reached. */
+function resendMessage(r) {
+  const added = r?.addedToCalendar?.length || 0, mailed = r?.emailed?.length || 0, failed = r?.failed || [];
+  const parts = [];
+  if (added) parts.push(`${added} added to the Google Calendar event (Google sends their invitation)`);
+  if (mailed) parts.push(`${mailed} e-mailed the details`);
+  const ok = parts.length ? `${parts.join(" and ")}.` : "";
+  if (failed.length) return { kind: "error", text: `${ok ? ok + " " : ""}Not delivered: ${failed.join(", ")}. Check the mail settings on the server.` };
+  return { kind: "success", text: ok || "Nothing needed sending." };
+}
+
 function MeetingPanel({ m, d, id, ffConnected, busy, run, nowTick, onRecord, onAdd }) {
+  const { show: toast } = useToast();
+  const confirm = useConfirm();
+  const [resending, setResending] = useState(false);
   const c = d.capture || {};
   const future = m.meetingAt && new Date(m.meetingAt) > new Date(nowTick);
   const phase = c.phase || (future ? "SCHEDULED" : c.pending?.length ? "STARTED" : "NONE");
@@ -1591,9 +1617,20 @@ function MeetingPanel({ m, d, id, ffConnected, busy, run, nowTick, onRecord, onA
         )}
       </div>
       <div className="uma-mp-actions">
-        {m.meetingUrl && live && (
+        {m.meetingUrl && (live || (phase === "NONE" && stillJoinable(m, nowTick))) && (
           <a className="btn-primary pg-btn" href={m.meetingUrl} target="_blank" rel="noreferrer noopener"
-            onClick={() => { run(() => startedUmaMeeting(id)); }}><Video size={15} aria-hidden="true" />Join meeting</a>
+            onClick={() => { if (d.canManage) run(() => startedUmaMeeting(id)); }}><Video size={15} aria-hidden="true" />Join meeting</a>
+        )}
+        {d.canManage && m.attendees?.length > 0 && (live || (phase === "NONE" && stillJoinable(m, nowTick))) && (
+          <button type="button" className="btn-secondary pg-btn" disabled={resending || busy}
+            onClick={async () => {
+              const ok = await confirm({ title: "Resend invites?", message: `Everyone on “${m.title}” will get the invitation again.`, confirmText: "Resend" });
+              if (!ok) return;
+              setResending(true);
+              try { const { data } = await resendUmaInvites(id); const r = resendMessage(data); toast(r.text, r.kind); }
+              catch (e) { toast(apiErrorMessage(e, "Couldn't resend the invites."), "error"); }
+              finally { setResending(false); }
+            }}><Mail size={15} aria-hidden="true" />{resending ? "Sending…" : "Resend invites"}</button>
         )}
         {m.calendarLink && <a className="uma-link" href={m.calendarLink} target="_blank" rel="noreferrer noopener">Open in Google Calendar</a>}
       </div>

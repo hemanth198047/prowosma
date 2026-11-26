@@ -67,6 +67,65 @@ public class UmaCalendar {
         return e;
     }
 
+    /**
+     * Puts people who are missing from the Google event onto it; Google sends each of them its own invitation (and from then on they are
+     * "invited", so Meet lets them in without asking the host). Returns the addresses added. People already on the event are left untouched.
+     */
+    public List<String> addMissingAttendees(String org, String email, String eventId, Collection<String> wanted) {
+        requireCalendar(org, email);
+        String token = auth.accessToken(org, email);
+        JsonNode ev = call("GET", BASE + "/" + enc(eventId), token, null);
+        Set<String> have = new HashSet<>();
+        ArrayNode all = om.createArrayNode();
+        for (JsonNode a : ev.path("attendees")) { all.add(a); if (a.hasNonNull("email")) have.add(a.get("email").asText().trim().toLowerCase(Locale.ROOT)); }
+        List<String> added = new ArrayList<>();
+        for (String w : wanted) {
+            String a = w == null ? "" : w.trim().toLowerCase(Locale.ROOT);
+            if (a.isEmpty() || !have.add(a)) continue;
+            all.addObject().put("email", a);
+            added.add(a);
+        }
+        if (added.isEmpty()) return added;
+        ObjectNode body = om.createObjectNode();
+        body.set("attendees", all);
+        call("PATCH", BASE + "/" + enc(eventId) + "?sendUpdates=all", token, body.toString());
+        return added;
+    }
+
+    /** One event of the person's Google Calendar, as the calendar page shows it. */
+    public record Entry(String id, String title, Instant start, Instant end, boolean allDay, String startDate, String endDate,
+                        String meetUrl, String htmlLink, String myResponse, String location) {}
+
+    /**
+     * Everything on the person's primary Google Calendar between {@code from} and {@code until} - meetings and plain events, timed and
+     * all-day - so the Prowosma calendar can show what Google Calendar shows. Cancelled events and ones the person declined are left out.
+     */
+    public List<Entry> listEvents(String org, String email, Instant from, Instant until) {
+        requireCalendar(org, email);
+        String token = auth.accessToken(org, email);
+        List<Entry> out = new ArrayList<>();
+        String page = null;
+        for (int i = 0; i < 4; i++) {
+            String url = BASE + "?singleEvents=true&orderBy=startTime&maxResults=250&timeMin=" + enc(from.toString()) + "&timeMax=" + enc(until.toString())
+                    + (page == null ? "" : "&pageToken=" + enc(page));
+            JsonNode r = call("GET", url, token, null);
+            for (JsonNode n : r.path("items")) {
+                if ("cancelled".equals(n.path("status").asText())) continue;
+                String mine = null;
+                for (JsonNode a : n.path("attendees")) if (a.path("self").asBoolean(false)) mine = a.path("responseStatus").asText(null);
+                if ("declined".equals(mine)) continue;
+                Event e = toEvent(n);
+                String sd = n.path("start").path("date").asText(null), ed = n.path("end").path("date").asText(null);
+                boolean allDay = sd != null && e.start() == null;
+                if (e.start() == null && !allDay) continue;
+                out.add(new Entry(e.id(), e.title(), e.start(), e.end(), allDay, sd, ed, e.meetUrl(), e.htmlLink(), mine, n.path("location").asText(null)));
+            }
+            page = r.path("nextPageToken").asText(null);
+            if (page == null) break;
+        }
+        return out;
+    }
+
     /** Upcoming events with a Google Meet link, between now and {@code until}. */
     public List<Event> upcomingMeet(String org, String email, Instant from, Instant until) {
         String token = auth.accessToken(org, email);

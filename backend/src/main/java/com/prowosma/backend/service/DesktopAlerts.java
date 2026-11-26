@@ -30,7 +30,7 @@ import java.util.*;
  * <ul>
  *   <li>a task was assigned to you (from any screen, the meeting assistant included) - not when you assigned it to yourself;</li>
  *   <li>a task of yours is due within the hour, and when it becomes overdue;</li>
- *   <li>Attendance (when the workspace has it on): you haven't clocked in after your start time, or you're still clocked in well after your end.</li>
+ *   <li>Attendance: you haven't clocked in after your start time, or you're still clocked in well after your end.</li>
  * </ul>
  * Each alert is sent once: a row in {@code alerts_sent} (unique key) records it. Nothing is sent unless push is configured on the
  * server (VAPID keys) and the person turned notifications on in their browser.
@@ -39,6 +39,8 @@ import java.util.*;
 @Component
 public class DesktopAlerts extends AbstractMongoEventListener<Task> {
     static final String SENT = "alerts_sent";
+    /** How long before the start a meeting reminder goes out. */
+    static final long MEETING_LEAD_MINUTES = 15;
 
     private final MongoTemplate mongo;
     private final PersonalAlertService alerts;
@@ -46,14 +48,15 @@ public class DesktopAlerts extends AbstractMongoEventListener<Task> {
     private final WorkspaceRepository workspaces;
     private final AttendanceService attendance;
     private final AttendanceFeature attendanceFeature;
+    private final MeetingNotifier meetingNotifier;
 
     @Value("${app.alerts.jobs-enabled:true}")
     private boolean jobsEnabled = true;
 
     public DesktopAlerts(MongoTemplate mongo, PersonalAlertService alerts, TeamMemberRepository members, WorkspaceRepository workspaces,
-                         AttendanceService attendance, AttendanceFeature attendanceFeature) {
+                         AttendanceService attendance, AttendanceFeature attendanceFeature, MeetingNotifier meetingNotifier) {
         this.mongo = mongo; this.alerts = alerts; this.members = members; this.workspaces = workspaces;
-        this.attendance = attendance; this.attendanceFeature = attendanceFeature;
+        this.attendance = attendance; this.attendanceFeature = attendanceFeature; this.meetingNotifier = meetingNotifier;
         try { mongo.indexOps(SENT).ensureIndex(new Index().on("key", org.springframework.data.domain.Sort.Direction.ASC).unique()); }
         catch (RuntimeException e) { log.warn("alerts: index not created: {}", e.getClass().getSimpleName()); }
     }
@@ -137,12 +140,23 @@ public class DesktopAlerts extends AbstractMongoEventListener<Task> {
         Query late = new Query(Criteria.where("status").nin(com.prowosma.backend.model.Task.FINISHED_STATUSES).and("assigneeIds.0").exists(true)
                 .and("dueDate").lte(utcNow).gt(utcNow.minusDays(1))).limit(500);
         for (Task t : mongo.find(late, Task.class)) sent += tellAssignees(t, "overdue:" + t.getId() + ":" + t.getDueDate(), "Overdue", t.getTitle());
+        // Meetings that start within the next quarter of an hour (or began in the last five minutes, for anyone who is late to the sweep).
+        Query meetingsSoon = new Query(Criteria.where("status").is("SCHEDULED").and("meetingDate").gte(utcNow.minusMinutes(5)).lte(utcNow.plusMinutes(MEETING_LEAD_MINUTES))).limit(500);
+        for (com.prowosma.backend.model.Meeting m : mongo.find(meetingsSoon, com.prowosma.backend.model.Meeting.class)) {
+            long left = Math.max(0, Duration.between(utcNow, m.getMeetingDate()).toMinutes());
+            for (String address : MeetingNotifier.recipients(m)) {
+                if (!firstTime("meeting:" + m.getId() + ":" + m.getMeetingDate() + ":" + address)) continue;
+                meetingNotifier.remind(m, address, left);
+                sent++;
+            }
+        }
         // Attendance nudges.
         for (Workspace ws : workspaces.findAll()) {
             if (ws.getId() == null || !attendanceFeature.isOn(ws.getId())) continue;
             for (AttendanceService.Reminder r : attendance.reminders(ws.getId(), now)) {
                 if (!firstTime("att:" + ws.getId() + ":" + r.email() + ":" + r.kind() + ":" + r.date())) continue;
                 alerts.tell(r.email(), r.title(), r.body(), "/attendance");
+                if (r.kind().startsWith("CLOCK_IN")) alerts.tellByEmail(r.email(), r.title(), r.body(), "/attendance");   // also by e-mail: the people who most need it are not in the app
                 sent++;
             }
         }

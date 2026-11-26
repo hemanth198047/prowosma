@@ -19,6 +19,9 @@ export const getMeeting       = (id)    => client.get(`/meetings/${id}`);
 export const createMeeting    = (data)  => client.post("/meetings", data);
 export const updateMeeting    = (id, data) => client.put(`/meetings/${id}`, data);
 export const deleteMeeting    = (id)    => client.delete(`/meetings/${id}`);
+// Mail the invitation again (to everyone, or just `emails`). Resolves { sent: [], failed: [] }.
+export const resendMeetingInvites = (id, emails) =>
+  client.post(`/meetings/${id}/resend-invites`, emails?.length ? { emails } : {});
 export const completeMeeting  = (id)    => client.post(`/meetings/${id}/complete`);
 export const addActionItem    = (id, data) => client.post(`/meetings/${id}/action-items`, data);
 export const toggleActionItem = (id, itemId) => client.patch(`/meetings/${id}/action-items/${itemId}/toggle`);

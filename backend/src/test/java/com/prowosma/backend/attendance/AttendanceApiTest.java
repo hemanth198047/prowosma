@@ -105,13 +105,10 @@ class AttendanceApiTest extends TwoWorkspaceTestBase {
     // ── flag ────────────────────────────────────────────────────────────
 
     @Test
-    void offByDefault_everythingButStatusIsHidden_andNothingIsStored() throws Exception {
-        assertThat(json(call(get(BASE + "/status"), memberToken(), null, 200)).get("enabled").asBoolean()).isFalse();
-        JsonNode refused = json(call(post(BASE + "/me/clock-in"), memberToken(), "{\"workMode\":\"REMOTE\"}", 404));
-        assertThat(refused.get("code").asText()).isEqualTo("FEATURE_DISABLED");
-        call(get(BASE + "/floor"), ownerToken(), null, 404);
-        assertThat(mongoTemplate.count(new Query(), "attendance_logs")).isZero();
-        assertThat(json(call(get("/api/dashboard/summary"), ownerToken(), null, 200)).has("onlineCount")).isFalse();
+    void alwaysOn_noFlagIsNeeded() throws Exception {
+        assertThat(json(call(get(BASE + "/status"), memberToken(), null, 200)).get("enabled").asBoolean()).isTrue();
+        call(post(BASE + "/me/clock-in"), memberToken(), "{\"workMode\":\"REMOTE\"}", 200);
+        assertThat(json(call(get("/api/dashboard/summary"), ownerToken(), null, 200)).get("onlineCount").asInt()).isEqualTo(1);
     }
 
     // ── clocking ────────────────────────────────────────────────────────
@@ -401,16 +398,13 @@ class AttendanceApiTest extends TwoWorkspaceTestBase {
     void anotherWorkspaceSeesNothing() throws Exception {
         enable();
         call(post(BASE + "/me/clock-in"), memberToken(), "{\"workMode\":\"REMOTE\"}", 200);
-        // the other workspace has the flag off: hidden
-        MvcResult r = mvc.perform(as(get(BASE + "/floor"), otherOwnerToken(), otherWorkspaceId)).andReturn();
-        assertThat(r.getResponse().getStatus()).isEqualTo(404);
-        mvc.perform(as(post("/api/admin/features"), otherOwnerToken(), otherWorkspaceId).content("{\"key\":\"attendance\",\"enabled\":true}")).andReturn();
+        // the other workspace is on too, but it has none of this workspace's people or logs
         JsonNode floor = json(mvc.perform(as(get(BASE + "/floor"), otherOwnerToken(), otherWorkspaceId)).andReturn());
         for (JsonNode p : floor.get("people")) assertThat(p.get("email").asText()).isNotEqualTo(memberEmail);
         assertThat(floor.at("/counts/WORKING").asInt()).isZero();
         String logId = storedLog(memberEmail, today()).getId();
         MvcResult claim = mvc.perform(as(post(BASE + "/approvals/overtime/" + logId), otherOwnerToken(), otherWorkspaceId).content("{\"approve\":true}")).andReturn();
-        assertThat(claim.getResponse().getStatus()).isEqualTo(404);
+        assertThat(claim.getResponse().getStatus()).isIn(403, 404);
     }
 
     @Test

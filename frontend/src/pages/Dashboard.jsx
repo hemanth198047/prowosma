@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import MeetingPulseCard from "../components/MeetingPulseCard";
+import AttendanceCard from "../components/AttendanceCard";
 
 import "../styles/pages/dashboard.css";
 import "../styles/pages/dashboard-v3.css";
@@ -671,6 +672,7 @@ export default function Dashboard() {
         <div className="dz-col">
           <ChartsPanel summary={summary} navigate={navigate} />
           <AiHub summary={summary} totalOverdue={totalOverdue} completionRate={completionRate} navigate={navigate} tiles={aiTiles} />
+          <AttendanceCard />
           <div className="dz-pulse"><MeetingPulseCard /></div>
         </div>
       </div>

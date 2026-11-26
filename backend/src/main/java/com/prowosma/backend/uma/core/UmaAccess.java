@@ -52,6 +52,9 @@ public class UmaAccess {
         if (c.admin()) return true;
         if (c.email() != null && c.email().equalsIgnoreCase(m.getCreatedBy())) return true;
         if (m.getSharedWith() != null && m.getSharedWith().stream().anyMatch(s -> s.equalsIgnoreCase(c.email()))) return true;
+        // Someone who was invited to the meeting can open it (and so can reach its Join link). Meetings start out private to whoever made them,
+        // which used to hide a meeting from the very people it was scheduled with: they got "not found" and never saw it in their list.
+        if (c.email() != null && m.getAttendees() != null && m.getAttendees().stream().anyMatch(a -> a != null && a.trim().equalsIgnoreCase(c.email()))) return true;
         return !c.restricted() && "WORKSPACE".equals(m.getVisibility()) && !"NONE".equals(c.role());
     }
 

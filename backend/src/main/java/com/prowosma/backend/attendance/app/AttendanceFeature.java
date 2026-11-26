@@ -5,25 +5,23 @@ import com.prowosma.backend.repository.WorkspaceConfigRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-/** The {@code attendance} feature flag: off until an admin turns it on (Admin Centre → Feature flags). */
+/**
+ * Attendance is part of the product for every workspace and every person: there is no switch to turn on any more. {@code FLAG} is kept only so that
+ * an old "attendance" entry in a workspace's saved feature flags is recognised and ignored.
+ */
 @Component
 public class AttendanceFeature {
     public static final String FLAG = "attendance";
 
-    private final WorkspaceConfigRepository configs;
+    public AttendanceFeature(WorkspaceConfigRepository configs) { }
 
-    public AttendanceFeature(WorkspaceConfigRepository configs) { this.configs = configs; }
-
+    /** On for every workspace; false only when there is no workspace to speak of. */
     public boolean isOn(String workspaceId) {
-        if (workspaceId == null) return false;
-        return configs.findByWorkspaceId(workspaceId)
-                .map(c -> c.getFeatureFlags() != null && Boolean.TRUE.equals(c.getFeatureFlags().get(FLAG)))
-                .orElse(false);
+        return workspaceId != null && !workspaceId.isBlank();
     }
 
     public void require(String workspaceId) {
         if (!isOn(workspaceId))
-            throw new AttendanceException(HttpStatus.NOT_FOUND, "FEATURE_DISABLED",
-                    "Attendance isn't turned on for this workspace. An admin can turn it on under Admin Centre → Feature flags.");
+            throw new AttendanceException(HttpStatus.NOT_FOUND, "NO_WORKSPACE", "Choose a workspace first.");
     }
 }

@@ -71,7 +71,7 @@ function LinkedDocsPanel({ taskId, allDocs }) {
   );
 }
 
-function TaskForm({ initial, projects, onSave, onCancel }) {
+function TaskForm({ initial, projects, teamMembers = [], onSave, onCancel }) {
   const confirm = useConfirm();
   const [formSaving, setFormSaving] = useState(false);
   const [form, setForm] = useState(
@@ -84,10 +84,15 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
       dueDate: "",
       tags: "",
       recurrence: "NONE",
+      assigneeIds: [],
       customFieldValues: {},
     },
   );
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const toggleAssignee = (id) => setForm((f) => {
+    const cur = f.assigneeIds || [];
+    return { ...f, assigneeIds: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] };
+  });
 
   return (
     <div className="modal-overlay">
@@ -132,6 +137,23 @@ function TaskForm({ initial, projects, onSave, onCancel }) {
                 </optgroup>
               ))}
           </select>
+        </div>
+        <div className="form-group">
+          <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
+            <legend style={{ padding: 0 }} className="field-label">Assignees</legend>
+            {teamMembers.length === 0 ? (
+              <p className="field-hint" style={{ margin: 0 }}>No team members yet. Invite people from the Team page first.</p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", maxHeight: 140, overflowY: "auto" }}>
+                {teamMembers.map((m) => (
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                    <input type="checkbox" checked={(form.assigneeIds || []).includes(m.id)} onChange={() => toggleAssignee(m.id)} />
+                    {m.name || m.email}
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
         </div>
         <div className="form-row">
           <div className="form-group">
@@ -565,8 +587,25 @@ export default function Tasks() {
     // the form stays open (with whatever was typed still in it) so the
     // person can fix it and retry instead of having to start over.
     try {
-      if (editing) await updateTask(editing.id, payload);
-      else await createTask(payload);
+      if (editing) {
+        await updateTask(editing.id, payload);
+        // PUT only stores title, description, status, priority, due date and tags. The rest of the form (assignees, project,
+        // type, severity, SLA, custom fields) used to be dropped silently, so the form looked saved but nothing changed.
+        const rest = {
+          assigneeIds: payload.assigneeIds || [],
+          projectId: payload.projectId || null,
+          type: payload.type, severity: payload.severity,
+          slaHours: payload.slaHours ?? null,
+          customFieldValues: payload.customFieldValues || {},
+        };
+        Object.keys(rest).forEach((k) => rest[k] === undefined && delete rest[k]);
+        try { await patchTask(editing.id, rest); }
+        catch (err) {
+          load();
+          showToast(apiErrorMessage(err, "The task was saved, but its assignees or project could not be."), "error");
+          return;
+        }
+      } else await createTask(payload);
       setShowForm(false);
       setEditing(null);
       load();
@@ -605,10 +644,23 @@ export default function Tasks() {
   const handlePatchField = async (id, fields) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...fields } : t)));
     try {
-      await patchTask(id, fields);
+      const res = await patchTask(id, fields);
+      const saved = res?.data;
+      // The server's copy is the truth. If it did not keep what was sent (e.g. the assignees), say so instead of showing a change that is not there.
+      if (saved && fields.assigneeIds && JSON.stringify([...(saved.assigneeIds || [])].sort()) !== JSON.stringify([...fields.assigneeIds].sort())) {
+        load();
+        showToast("The assignment was not saved. Please try again.", "error");
+        return false;
+      }
+      if (saved && saved.id === id) {
+        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...saved } : t)));
+        setDrawerTask((d) => (d && d.id === id ? { ...d, ...saved } : d));
+      }
+      return true;
     } catch (err) {
       load(); // fields didn't actually save - resync with the server and let the user see the real state
       showToast(apiErrorMessage(err, "Couldn't save that change"), "error");
+      return false;
     }
   };
 
@@ -1033,6 +1085,7 @@ export default function Tasks() {
         <TaskForm
           initial={editing}
           projects={projects}
+          teamMembers={teamMembers}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditing(null); }}
         />

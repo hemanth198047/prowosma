@@ -104,6 +104,12 @@ export function isLink(text) {
   return /^https?:\/\/\S+$/i.test((text || "").trim());
 }
 
+/** The meeting link inside a location such as "Room 3 - https://meet.google.com/abc", or null. Used so a Join button still shows when people typed more than the bare link. */
+export function extractLink(text) {
+  const m = /https?:\/\/[^\s<>"']+/i.exec(text || "");
+  return m ? m[0] : null;
+}
+
 /** "HH:mm" options every `step` minutes for the time pickers. */
 export function timeOptions(step = 15) {
   const out = [];
@@ -150,4 +156,38 @@ export function parseAttendees(text) {
       seen.add(k);
       return true;
     });
+}
+
+/** A meeting of the AI Meeting Assistant as a timed calendar block. Read-only here: it is opened in the assistant. */
+export function assistantToEvent(m) {
+  const start = new Date(m.meetingAt);
+  if (Number.isNaN(start.getTime())) return null;
+  const endRaw = m.meetingEndAt ? new Date(m.meetingEndAt) : null;
+  const end = endRaw && endRaw > start ? endRaw : new Date(start.getTime() + 30 * 60000);
+  return {
+    id: `uma-${m.id}`, title: m.title || "(No title)", start, end, allDay: false, editable: false,
+    backgroundColor: "#0f9d8a", borderColor: "#0f9d8a", textColor: "#fff",
+    classNames: ["cal-ev-meeting"],
+    extendedProps: { type: "uma", itemId: m.id, item: m },
+  };
+}
+
+/**
+ * One event of the person's Google Calendar, drawn the way Google draws it: at its time (or in the all-day row), and lighter while the
+ * person hasn't answered the invitation. umaId is set when the AI Meeting Assistant tracks the same meeting (clicking it opens that page).
+ */
+export function googleToEvent(g, umaId) {
+  if (!g || !g.id) return null;
+  const pending = g.myResponse === "needsAction";
+  const base = {
+    id: `google-${g.id}`, title: g.title || "(No title)", editable: false,
+    backgroundColor: pending ? "#e6f6f3" : "#0f9d8a", borderColor: "#0f9d8a", textColor: pending ? "#0b6e61" : "#fff",
+    classNames: ["cal-ev-meeting", pending ? "cal-ev-pending" : ""].filter(Boolean),
+    extendedProps: { type: "google", itemId: g.id, item: g, umaId: umaId || null },
+  };
+  if (g.allDay) return g.startDate ? { ...base, start: g.startDate, end: g.endDate || undefined, allDay: true } : null;
+  const start = new Date(g.start);
+  if (Number.isNaN(start.getTime())) return null;
+  const end = g.end ? new Date(g.end) : null;
+  return { ...base, start, end: end && end > start ? end : new Date(start.getTime() + 30 * 60000), allDay: false };
 }

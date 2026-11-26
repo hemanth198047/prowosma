@@ -11,6 +11,8 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("../../api/attendance", () => api);
 
+const desktop = vi.hoisted(() => ({ show: vi.fn() }));
+vi.mock("../../utils/desktopNotify", () => ({ showDesktopNotification: (n) => desktop.show(n) }));
 import ClockWidget from "../../components/ClockWidget";
 import { resetAttendanceEnabled, resetMyAttendance } from "../../hooks/useAttendance";
 
@@ -48,6 +50,17 @@ describe("top-bar clock", () => {
     await Promise.resolve();
     expect(container).toBeEmptyDOMElement();
     expect(api.getMyAttendance).not.toHaveBeenCalled();
+  });
+
+  it("when the start time has passed and you have not clocked in, it pops up on the desktop and says so on screen, once", async () => {
+    desktop.show.mockReset(); try { sessionStorage.clear(); } catch { /* ignore */ }
+    api.getMyAttendance.mockResolvedValue({ data: me({ today: { dayType: "WORKDAY", expectedStart: new Date(Date.now() - 3600000).toISOString(), expectedEnd: later(8), graceMinutes: 15, onLeave: false } }) });
+    show();
+    await waitFor(() => expect(desktop.show).toHaveBeenCalledTimes(1));
+    expect(desktop.show).toHaveBeenCalledWith(expect.objectContaining({ title: "You haven't clocked in", url: "/attendance" }));
+    expect(toastShow).toHaveBeenCalledWith(expect.stringContaining("You haven't clocked in yet"), "error");
+    await act(async () => { await new Promise((r) => setTimeout(r, 1200)); });
+    expect(desktop.show).toHaveBeenCalledTimes(1);
   });
 
   it("asks where you're working before clocking in, then sends it with the project", async () => {

@@ -44,6 +44,7 @@ public class UmaService {
     private final com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet;
     private final UmaAutomation automation;
     private final com.prowosma.backend.uma.core.UmaCalendar calendar;
+    private final com.prowosma.backend.service.MeetingNotifier notifier;
     private final com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth;
     private final com.prowosma.backend.service.ProjectService projectService;
     private final UmaPostMeeting postMeeting;
@@ -59,7 +60,9 @@ public class UmaService {
                       com.prowosma.backend.uma.core.UmaFireflies fireflies, com.prowosma.backend.uma.core.UmaGoogleMeet googleMeet,
                       UmaAutomation automation, com.prowosma.backend.uma.core.UmaCalendar calendar, com.prowosma.backend.uma.core.UmaGoogleAuth googleAuth,
                       com.prowosma.backend.service.ProjectService projectService, UmaPostMeeting postMeeting,
-                      com.prowosma.backend.uma.core.UmaTeams teams, com.prowosma.backend.uma.core.UmaMicrosoftAuth microsoft) {
+                      com.prowosma.backend.uma.core.UmaTeams teams, com.prowosma.backend.uma.core.UmaMicrosoftAuth microsoft,
+                      com.prowosma.backend.service.MeetingNotifier notifier) {
+        this.notifier = notifier;
         this.feature = feature; this.access = access; this.store = store; this.queue = queue; this.providers = providers;
         this.files = files; this.taskWriter = taskWriter; this.intelligence = intelligence; this.transcriber = transcriber; this.mongo = mongo;
         this.members = members; this.users = users; this.fireflies = fireflies; this.googleMeet = googleMeet;
@@ -157,12 +160,28 @@ public class UmaService {
         r.put("statusDetail", m.getStatusDetail());
         r.put("progressPercent", m.getProgressPercent());
         r.put("meetingAt", m.getMeetingAt());
+        r.put("meetingEndAt", m.getMeetingEndAt());
+        r.put("calendarEventId", m.getCalendarEventId());
         r.put("createdAt", m.getCreatedAt());
         r.put("createdBy", m.getCreatedBy());
         r.put("durationMs", m.getRecording() == null ? null : m.getRecording().getDurationMs());
         r.put("projectId", m.getProjectId());
         r.put("meetingType", m.getMeetingType());
+        r.put("meetingUrl", joinable(m, Instant.now()) ? m.getMeetingUrl() : null);
+        r.put("joinable", joinable(m, Instant.now()));
         return r;
+    }
+
+    /**
+     * Whether a "Join" link makes sense now: the meeting has a link, is not cancelled or over, and it is not long past. There is no "too early" rule:
+     * anyone may open the link before the start (Google Meet itself decides who is let in); it stays available until half an hour after the planned end.
+     */
+    static boolean joinable(UmaMeeting m, Instant now) {
+        if (m.getMeetingUrl() == null || m.getMeetingUrl().isBlank()) return false;
+        if (m.getStatus() == UmaStatus.CANCELLED || m.getStatus() == UmaStatus.FAILED || "ENDED".equals(m.getLiveState())) return false;
+        if (m.getStatus() != UmaStatus.CREATED) return false;
+        Instant end = m.getMeetingEndAt() != null ? m.getMeetingEndAt() : m.getMeetingAt() == null ? null : m.getMeetingAt().plusSeconds(4 * 3600L);
+        return end == null || !now.isAfter(end.plusSeconds(30 * 60L));
     }
 
     /** Where a meeting without content stands, in one word: SCHEDULED, IN_PROGRESS, ENDED, STARTED (should be running, nothing seen) or NONE. */
@@ -692,6 +711,68 @@ public class UmaService {
         queue.enqueueAt(c.org(), id, UmaPipeline.FIREFLIES_JOIN, c.caller().email(), Instant.now());
         store.audit(c.org(), id, c.caller().email(), "FIREFLIES_AUTO_ON_START", null);
         return store.meeting(c.org(), id).orElse(m);
+    }
+
+    /** The caller's own Google Calendar for a date range (at most 62 days), for the calendar page. Needs their Google account connected. */
+    public List<Map<String, Object>> googleCalendarEvents(Ctx c, Instant from, Instant to) {
+        if (from == null || to == null || !to.isAfter(from) || java.time.Duration.between(from, to).toDays() > 62)
+            throw new UmaException(HttpStatus.BAD_REQUEST, "BAD_RANGE", "Choose a date range of at most 62 days.");
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (var e : calendar.listEvents(c.org(), c.caller().email(), from, to)) {
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("id", e.id()); r.put("title", e.title()); r.put("start", e.start()); r.put("end", e.end());
+            r.put("allDay", e.allDay()); r.put("startDate", e.startDate()); r.put("endDate", e.endDate());
+            r.put("meetUrl", e.meetUrl()); r.put("htmlLink", e.htmlLink()); r.put("myResponse", e.myResponse()); r.put("location", e.location());
+            out.add(r);
+        }
+        return out;
+    }
+
+    /**
+     * "Resend invites" for a scheduled meeting. Google meetings: anyone on Prowosma's list who is missing from the Google Calendar event is added to
+     * it (Google then sends the real invitation, and Meet treats them as invited); everyone else gets an e-mail with the time and the join link.
+     * Returns who was added to the calendar, who was e-mailed and who could not be reached. Limited to once a minute per meeting.
+     */
+    public Map<String, Object> resendInvites(Ctx c, String id, Collection<String> only) {
+        UmaMeeting m = manageable(c, id);
+        Instant now = Instant.now();
+        if (m.getStatus() != UmaStatus.CREATED || m.getMeetingUrl() == null)
+            throw new UmaException(HttpStatus.CONFLICT, "NOT_SCHEDULED", "Only a meeting that is still scheduled can be sent again.");
+        if (m.getMeetingEndAt() != null && now.isAfter(m.getMeetingEndAt())) throw new UmaException(HttpStatus.CONFLICT, "OVER", "That meeting is already over.");
+        if (m.getInvitesResentAt() != null && m.getInvitesResentAt().isAfter(now.minusSeconds(60)))
+            throw new UmaException(HttpStatus.TOO_MANY_REQUESTS, "TOO_SOON", "The invitations were just sent. Wait a minute before sending them again.");
+        String me = c.caller().email() == null ? "" : c.caller().email().trim().toLowerCase(Locale.ROOT);
+        Set<String> chosen = new LinkedHashSet<>();
+        Set<String> onMeeting = new LinkedHashSet<>();
+        for (String a : m.getAttendees() == null ? List.<String>of() : m.getAttendees()) if (a != null && !a.isBlank()) onMeeting.add(a.trim().toLowerCase(Locale.ROOT));
+        Set<String> narrow = new HashSet<>();
+        if (only != null) for (String a : only) if (a != null) narrow.add(a.trim().toLowerCase(Locale.ROOT));
+        for (String a : onMeeting) if (!a.equals(me) && (narrow.isEmpty() || narrow.contains(a))) chosen.add(a);
+        if (chosen.isEmpty()) throw new UmaException(HttpStatus.BAD_REQUEST, "NO_ONE", "There is nobody on this meeting to invite.");
+        if (chosen.size() > com.prowosma.backend.service.MeetingNotifier.RESEND_LIMIT)
+            throw new UmaException(HttpStatus.BAD_REQUEST, "TOO_MANY", "Send to at most " + com.prowosma.backend.service.MeetingNotifier.RESEND_LIMIT + " people at a time.");
+
+        List<String> addedToCalendar = new ArrayList<>();
+        String calendarNote = null;
+        String ev = m.getCalendarEventId();
+        if (ev != null && !ev.startsWith("ms:") && !"MS_TEAMS".equals(m.getProvider())) {
+            try { addedToCalendar.addAll(calendar.addMissingAttendees(c.org(), c.caller().email(), ev, chosen)); }
+            catch (UmaException e) { calendarNote = e.getMessage(); }
+            catch (RuntimeException e) { calendarNote = "Google Calendar couldn't be updated."; }
+        }
+        List<String> mail = chosen.stream().filter(a -> !addedToCalendar.contains(a)).toList();
+        Map<String, Boolean> sent = notifier.resendInvite(m.getTitle(), m.getMeetingAt(), m.getMeetingEndAt(), m.getMeetingUrl(), "/meetings/" + m.getId(), mail, c.caller().email());
+        List<String> emailed = new ArrayList<>(), failed = new ArrayList<>();
+        sent.forEach((a, ok) -> (ok ? emailed : failed).add(a));
+        m.setInvitesResentAt(now);
+        store.save(m);
+        store.audit(c.org(), id, c.caller().email(), "INVITES_RESENT", addedToCalendar.size() + " added to the calendar, " + emailed.size() + " e-mailed, " + failed.size() + " failed");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("addedToCalendar", addedToCalendar);
+        out.put("emailed", emailed);
+        out.put("failed", failed);
+        out.put("calendarNote", calendarNote);
+        return out;
     }
 
     /** Switches the automatic Fireflies join on or off for a meeting that hasn't happened yet. */

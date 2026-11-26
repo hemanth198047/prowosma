@@ -42,6 +42,7 @@ public class UmaMeeting {
     private FirefliesLink fireflies;
     private Instant meetingEndAt;             // when it is planned to end (scheduled / calendar meetings)
     private String calendarEventId;           // Google Calendar event this meeting came from or created
+    private Instant invitesResentAt;         // last time someone pressed "Resend invites" (limits how often)
     private String calendarLink;              // the event in Google Calendar
     private List<String> attendees = new ArrayList<>();
     private String meetingType;                    // STANDUP | PLANNING | REVIEW | RETRO | CLIENT | ONE_ON_ONE | OTHER (optional)

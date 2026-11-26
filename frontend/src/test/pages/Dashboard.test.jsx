@@ -11,6 +11,12 @@ vi.mock("../../api/tasks", () => ({ getTasks: () => Promise.resolve({ data: [{ i
 vi.mock("../../api/client", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 vi.mock("../../hooks/useAuth", () => ({ useAuth: () => ({ user: { name: "Bo Chen" }, activeWorkspace: { id: "w1" } }) }));
 vi.mock("../../components/ToastContext", () => ({ useToast: () => ({ show: vi.fn() }) }));
+const attendance = vi.hoisted(() => ({ me: vi.fn(), status: vi.fn(), clockIn: vi.fn() }));
+vi.mock("../../api/attendance", () => ({
+  getAttendanceStatus: () => attendance.status(), getMyAttendance: () => attendance.me(), clockIn: (b) => attendance.clockIn(b),
+  clockOut: vi.fn(), startBreak: vi.fn(), endBreak: vi.fn(), reportIdle: vi.fn(),
+}));
+vi.mock("../../api/projects", () => ({ getProjects: () => Promise.resolve({ data: [] }) }));
 vi.mock("recharts", () => {
   const Box = ({ children }) => <div>{children}</div>;
   return { ResponsiveContainer: Box, PieChart: Box, Pie: Box, Cell: () => null, Tooltip: () => null };
@@ -20,6 +26,12 @@ import Dashboard from "../../pages/Dashboard";
 const PROJECTS = Array.from({ length: 6 }, (_, i) => ({ id: `p${i + 1}`, name: `Film ${i + 1}`, progress: 10 * i, status: "ACTIVE", description: i === 0 ? "Wedding film for the Sharmas" : "" }));
 
 describe("Dashboard", () => {
+  beforeEach(() => {
+    attendance.status.mockResolvedValue({ data: { enabled: true } });
+    attendance.me.mockResolvedValue({ data: { state: "OFF", log: null, date: "2026-11-26", timezone: "UTC", shift: { start: "10:00", end: "19:00", graceMinutes: 15 },
+      today: { dayType: "WORKDAY", onLeave: false, expectedStart: "2000-01-01T10:00:00Z", graceMinutes: 15 }, rules: { askWorkMode: false, locationMode: "OFF", workModes: ["IN_OFFICE", "REMOTE"] } } });
+    attendance.clockIn.mockResolvedValue({ data: { state: "WORKING", log: { sessions: [{ in: new Date().toISOString() }], breaks: [] }, today: {}, rules: { locationMode: "OFF" } } });
+  });
   beforeEach(() => summary.mockResolvedValue({ data: {
     totalTasks: 4, todoTasks: 2, inProgressTasks: 1, doneTasks: 1, totalProjects: 6,
     projectsWithProgress: PROJECTS, activeGoalList: [{ id: "g1", title: "Ship 10 films", progress: 40, status: "ACTIVE" }],
@@ -72,5 +84,15 @@ describe("Dashboard", () => {
     expect(within(charts).getByText("25%")).toBeInTheDocument();          // 1 of 4 done
     fireEvent.click(within(charts).getByRole("tab", { name: "Goals" }));
     expect(within(charts).getByText("Ship 10 films")).toBeInTheDocument();
+  });
+
+  it("shows Attendance to everyone, reminds a person who has not clocked in, and clocks in from the dashboard", async () => {
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
+    const card = await screen.findByRole("region", { name: "Attendance" });
+    expect(await within(card).findByRole("alert")).toHaveTextContent("You haven't clocked in yet");
+    fireEvent.click(within(card).getByRole("button", { name: /Clock in/ }));
+    await vi.waitFor(() => expect(attendance.clockIn).toHaveBeenCalled());
+    expect(await within(card).findByText(/Clocked in/)).toBeInTheDocument();
+    expect(within(card).queryByRole("alert")).not.toBeInTheDocument();
   });
 });

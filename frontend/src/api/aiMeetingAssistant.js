@@ -7,6 +7,10 @@ const fresh = { _noCache: true };
 
 export const getUmaStatus     = ()      => client.get(`${BASE}/status`, fresh);
 export const getUmaDashboard  = ()      => client.get(`${BASE}/dashboard`, fresh);
+// Send the invitation again. Resolves { addedToCalendar: [], emailed: [], failed: [], calendarNote }.
+export const resendUmaInvites = (id, emails) => client.post(`${BASE}/meetings/${id}/resend-invites`, emails?.length ? { emails } : {});
+// The signed-in person's own Google Calendar between two Dates (409 with a code like GOOGLE_NOT_CONNECTED when Google isn't connected).
+export const getUmaGoogleEvents = (from, to) => client.get(`${BASE}/google-calendar/events`, { params: { from: from.toISOString(), to: to.toISOString() }, ...fresh });
 export const getUmaProviders  = ()      => client.get(`${BASE}/providers`, fresh);
 export const detectUmaLink    = (url)   => client.post(`${BASE}/detect-link`, { url });
 export const getUmaMeeting    = (id)    => client.get(`${BASE}/meetings/${id}`, fresh);

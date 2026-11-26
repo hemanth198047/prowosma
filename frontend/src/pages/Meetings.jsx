@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAccess } from "../hooks/useAccess";
 import {
-  getMeetings, createMeeting, updateMeeting, deleteMeeting,
+  getMeetings, getMeeting, createMeeting, updateMeeting, deleteMeeting,
   extractMeeting, markActionConverted,
   getMeetingsPrepare, getMeetingContinuity, getMeetingWhatsChanged,
   upsertProjectDiscussion, addActionItemForProject, carryActionItemIntoMeeting,
@@ -17,6 +17,7 @@ import { getProjects }   from "../api/projects";
 import { getTeamMembers }from "../api/team";
 import { useAuth }       from "../hooks/useAuth";
 import { useToast }      from "../components/ToastContext";
+import { apiErrorMessage } from "../utils/apiError";
 import { useConfirm } from "../hooks/useConfirm";
 import PageHeader        from "../components/PageHeader";
 import MeetingContinuityPanel from "../components/MeetingContinuityPanel";
@@ -677,14 +678,21 @@ export default function Meetings() {
     const projectIdParam = searchParams.get("projectId");
     const openParam       = searchParams.get("open");
 
-    if (openParam && meetings.length > 0) {
+    if (openParam && !loading) {
+      const clearParam = () => setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete("open"); return p; }, { replace: true });
       const target = meetings.find(m => m.id === openParam);
       if (target) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- deep-link open, mirrors this file's own load-on-mount pattern above
         setEditing(target);
         setShowForm(true);
+        clearParam();
+      } else {
+        // Not on the page that was loaded (an older or far-future meeting): ask the server for that one meeting instead of silently doing nothing.
+        clearParam();
+        getMeeting(openParam)
+          .then((res) => { setEditing(res.data); setShowForm(true); })
+          .catch((err) => toast(apiErrorMessage(err, "Couldn't open that meeting. It may have been deleted, or you may not have access to it."), "error"));
       }
-      setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete("open"); return p; }, { replace: true });
       return;
     }
 
@@ -695,7 +703,7 @@ export default function Meetings() {
       setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete("projectId"); return p; }, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meetings, projects, searchParams]);
+  }, [meetings, projects, searchParams, loading]);
 
   const handleSave = async (payload) => {
     if (editing) await updateMeeting(editing.id, payload);

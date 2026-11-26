@@ -658,7 +658,7 @@ public class AttendanceService {
         return switch (status) { case "WORKING" -> 0; case "ON_BREAK" -> 1; case "LATE_NOT_IN" -> 2; case "NOT_IN" -> 3; case "DONE" -> 4; case "ON_LEAVE" -> 5; default -> 6; };
     }
 
-    /** A nudge for one person: CLOCK_IN (their start time passed and they haven't clocked in) or CLOCK_OUT (well past their end, still in). */
+    /** A nudge for one person: CLOCK_IN_START (the day has begun), CLOCK_IN (their start time passed and they haven't clocked in) or CLOCK_OUT (well past their end, still in). */
     public record Reminder(String email, String kind, String date, String title, String body) {}
 
     /**
@@ -697,6 +697,10 @@ public class AttendanceService {
             applyCallTime(plan, org, p.email(), today);
             if (plan.getExpectedStart() == null) continue;
             Instant due = plan.getExpectedStart().plus(Duration.ofMinutes(plan.getGraceMinutes()));
+            // A friendly nudge when the day begins (before they count as late), then the "you haven't clocked in" one once the grace has passed.
+            if (!now.isBefore(plan.getExpectedStart()) && now.isBefore(due))
+                out.add(new Reminder(p.email(), "CLOCK_IN_START", today.toString(), "Time to clock in",
+                        "Your day starts at " + plan.getExpectedStart().atZone(zone).toLocalTime() + ". Open Prowosma and clock in."));
             if (now.isAfter(due) && now.isBefore(due.plus(window)))
                 out.add(new Reminder(p.email(), "CLOCK_IN", today.toString(), "You haven't clocked in",
                         "Your day started at " + plan.getExpectedStart().atZone(zone).toLocalTime() + ". Open Prowosma to clock in."));

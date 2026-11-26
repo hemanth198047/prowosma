@@ -36,6 +36,8 @@ public class MeetingController {
     private final com.prowosma.backend.repository.RaidRepository raidRepository;
     private final com.prowosma.backend.repository.DecisionRepository decisionRepository;
     private final com.prowosma.backend.service.AvailabilityService availabilityService;
+    private final com.prowosma.backend.service.MeetingNotifier meetingNotifier;
+    private final com.prowosma.backend.service.OwnershipService ownershipService;
 
     @GetMapping
     public PagedResponse<Meeting> getAll(
@@ -98,12 +100,16 @@ public class MeetingController {
         meeting.setStatus("SCHEDULED");
         if (meeting.getActionItems() == null) meeting.setActionItems(new ArrayList<>());
         if (meeting.getAttendees()   == null) meeting.setAttendees(new ArrayList<>());
-        return meetingService.create(meeting, auth.getName());
+        Meeting saved = meetingService.create(meeting, auth.getName());
+        meetingNotifier.invite(saved, com.prowosma.backend.service.MeetingNotifier.newlyAdded(List.of(), saved.getAttendees()), auth.getName());
+        return saved;
     }
 
     @PutMapping("/{id}")
-    public Meeting update(@PathVariable String id, @RequestBody Map<String, Object> patch) {
-        return meetingRepository.findById(id).map(m -> {
+    public Meeting update(@PathVariable String id, @RequestBody Map<String, Object> patch, Authentication auth) {
+        List<String> attendeesBefore = new ArrayList<>();
+        Meeting updated = meetingRepository.findById(id).map(m -> {
+            if (m.getAttendees() != null) attendeesBefore.addAll(m.getAttendees());
             if (patch.containsKey("title"))       m.setTitle((String) patch.get("title"));
             if (patch.containsKey("description")) m.setDescription((String) patch.get("description"));
             if (patch.containsKey("agenda"))      m.setAgenda((String) patch.get("agenda"));
@@ -145,6 +151,48 @@ public class MeetingController {
             m.setUpdatedAt(LocalDateTime.now());
             return meetingRepository.save(m);
         }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found: " + id));
+        // Only people who were just added get an invitation, not everyone again each time the meeting is edited.
+        meetingNotifier.invite(updated, com.prowosma.backend.service.MeetingNotifier.newlyAdded(attendeesBefore, updated.getAttendees()),
+                auth == null ? null : auth.getName());
+        return updated;
+    }
+
+    /**
+     * Sends the invitation e-mail again, for a meeting whose invitations were never sent (or got lost). Body (optional): {"emails": [...]} to
+     * pick some of the attendees; without it, every attendee gets it. Only the person who made the meeting, or an admin, may do this, at most
+     * once a minute per meeting. Answers who the mail server accepted and who it did not.
+     */
+    @PostMapping("/{id}/resend-invites")
+    public Map<String, Object> resendInvites(@PathVariable String id, @RequestBody(required = false) Map<String, Object> body, Authentication auth) {
+        Meeting m = meetingRepository.findById(id)
+                .filter(x -> java.util.Objects.equals(x.getWorkspaceId(), workspaceContext.getWorkspaceId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found: " + id));
+        if (auth == null || !ownershipService.canModify(auth.getName(), m.getCreatedBy()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the person who made this meeting, or an admin, can send its invitations again.");
+        if ("CANCELLED".equals(m.getStatus()) || "COMPLETED".equals(m.getStatus()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This meeting is " + m.getStatus().toLowerCase() + ", so there is nothing to invite people to.");
+        if (m.getInvitesResentAt() != null && m.getInvitesResentAt().isAfter(LocalDateTime.now().minusMinutes(1)))
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "The invitations were just sent again. Please wait a minute before trying again.");
+
+        Set<String> everyone = new LinkedHashSet<>(com.prowosma.backend.service.MeetingNotifier.newlyAdded(List.of(), m.getAttendees()));
+        everyone.remove(auth.getName() == null ? "" : auth.getName().trim().toLowerCase(Locale.ROOT));       // the organizer already knows
+        Set<String> chosen = everyone;
+        if (body != null && body.get("emails") instanceof List<?> picked && !picked.isEmpty()) {
+            Set<String> wanted = com.prowosma.backend.service.MeetingNotifier.newlyAdded(List.of(),
+                    picked.stream().map(String::valueOf).toList());
+            chosen = new LinkedHashSet<>(everyone);
+            chosen.retainAll(wanted);                                                                    // only people actually on this meeting
+        }
+        if (chosen.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is nobody to invite: add attendees to the meeting first.");
+        if (chosen.size() > com.prowosma.backend.service.MeetingNotifier.RESEND_LIMIT)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose at most " + com.prowosma.backend.service.MeetingNotifier.RESEND_LIMIT + " people at a time.");
+
+        Map<String, Boolean> outcome = meetingNotifier.resend(m, chosen, auth.getName());
+        m.setInvitesResentAt(LocalDateTime.now());
+        meetingRepository.save(m);
+        List<String> sent = outcome.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).toList();
+        List<String> failed = outcome.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
+        return Map.of("sent", sent, "failed", failed);
     }
 
     /** Add a typed ActionItem */

@@ -138,3 +138,21 @@
   .att-search { flex: 1 1 100%; height: 44px; font-size: 16px; }
   .att-toggle { height: 40px; }
 }
+
+/* Attendance card on the dashboard: compact, sits in the right-hand column under the AI hub, never taller than its content. */
+.att-card { padding: 16px; margin-bottom: 0; align-content: start; gap: 10px; min-width: 0; }
+.att-card-head { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin: 0; }
+.att-card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.att-card-title svg { color: var(--text-muted); }
+.att-card-link { font-size: 13px; }
+.att-card-timer { margin: 0; }
+.att-card .att-note { font-size: 12.5px; padding: 6px 10px; }
+.att-card .att-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.att-card .att-form > :not(.att-field):not(.att-in) { grid-column: 1 / -1; }
+.att-card .att-form .att-sub { display: none; }
+.att-card .att-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.att-card .att-modes legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.att-card .att-mode { padding: 5px 10px; font-size: 12.5px; border-radius: var(--radius-full); flex: 0 0 auto; }
+.att-card .att-field { min-width: 0; }
+.att-card .att-field select { width: 100%; }
+.att-card .att-in { width: auto; white-space: nowrap; }

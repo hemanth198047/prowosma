@@ -86,9 +86,15 @@ export default function TaskDrawer({ task, projects, teamMembers, allTasks, onCl
   const save = async (fields) => {
     const key = Object.keys(fields)[0];
     setSavingField(key);
+    const before = local;
     setLocal((prev) => ({ ...prev, ...fields }));
     try {
-      await onUpdate(task.id, fields);
+      // The page answers false when the server refused the change: put the old value back so this panel never shows something that was not saved.
+      const ok = await onUpdate(task.id, fields);
+      if (ok === false) setLocal(before);
+    } catch (e) {
+      setLocal(before);
+      throw e;
     } finally {
       setSavingField(null);
     }

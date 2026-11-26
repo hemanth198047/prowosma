@@ -136,6 +136,20 @@ public class UmaController {
                 b.timezone(), b.attendees(), b.description(), b.projectId(), Boolean.TRUE.equals(b.autoFireflies()), b.platform()));
     }
 
+    /** What is on the caller's Google Calendar between from and to (ISO instants). */
+    @GetMapping("/google-calendar/events")
+    public List<Map<String, Object>> googleCalendarEvents(@RequestParam String from, @RequestParam String to, Authentication auth) {
+        return service.googleCalendarEvents(ctx(auth), instant(from), instant(to));
+    }
+
+    public record ResendBody(List<String> emails) {}
+
+    /** Sends the invitation again to the people on a scheduled meeting (adds them to the Google event if they are missing from it). */
+    @PostMapping("/meetings/{id}/resend-invites")
+    public Map<String, Object> resendInvites(@PathVariable String id, @RequestBody(required = false) ResendBody b, Authentication auth) {
+        return service.resendInvites(ctx(auth), id, b == null ? null : b.emails());
+    }
+
     public record InstantBody(String title, Integer durationMinutes, String timezone, List<String> attendees, String projectId, Boolean autoFireflies, String platform) {}
 
     /** "Meet now": a Google Meet starting right away, with invitations and the same automation as a scheduled meeting. */

@@ -24565,7 +24565,10 @@ html[data-design="classic"] .dz-chip-v { font-weight: 600; color: var(--text-pri
 html[data-design="classic"] .dz-chip--alert { border-color: color-mix(in srgb, var(--danger-text, #b91c1c) 35%, transparent); background: color-mix(in srgb, var(--danger-text, #b91c1c) 6%, var(--bg-card)); }
 html[data-design="classic"] .dz-chip--alert svg, html[data-design="classic"] .dz-chip--alert .dz-chip-v { color: var(--danger-text, #b91c1c); }
 html[data-design="classic"] .dz-cols { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
-html[data-design="classic"] .dz-col { display: grid; gap: 16px; min-width: 0; }
+html[data-design="classic"] .dz-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+html[data-design="classic"] .dz-ov-list { grid-template-columns: minmax(0, 1fr); }
+html[data-design="classic"] .dz-ov-list > li { min-width: 0; }
+html[data-design="classic"] .dz-barlist { grid-template-columns: minmax(0, 1fr); }
 html[data-design="classic"] .dz-tabs { display: flex; gap: 4px; margin-right: auto; border-bottom: 1px solid var(--border); flex: 1; }
 html[data-design="classic"] .dz-tab {
   position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; margin-bottom: -1px;
@@ -24726,7 +24729,9 @@ html[data-design="classic"] .dz-pill-done, html[data-design="classic"] .dz-pill-
   html[data-design="classic"] .dz-sc { min-height: 52px; }
   html[data-design="classic"] .dz-taskchart { grid-template-columns: minmax(0, 1fr); }
   html[data-design="classic"] .dz-sheet { width: 100%; border-left: 0; }
-  html[data-design="classic"] .dz-ov-row { min-height: 48px; }
+  html[data-design="classic"] .dz-ov-row { min-height: 48px; gap: 10px; }
+  html[data-design="classic"] .dz-ov-row .dz-num { width: 40px; flex: none; }
+  html[data-design="classic"] .dz-card { overflow-x: clip; }
   html[data-design="classic"] .dz-bar { width: 56px; }
 }
 @media (min-width: 1101px) and (min-height: 680px) {
@@ -24737,7 +24742,7 @@ html[data-design="classic"] .dz-pill-done, html[data-design="classic"] .dz-pill-
   html[data-design="classic"] .dz-cols { height: 100%; min-height: 0; align-items: stretch; }
   html[data-design="classic"] .dz-col { min-height: 0; }
   html[data-design="classic"] .dz-col:first-child { grid-template-rows: minmax(0, 1fr) auto; }
-  html[data-design="classic"] .dz-col:last-child { grid-template-rows: auto auto minmax(0, 1fr); }
+  html[data-design="classic"] .dz-col:last-child { grid-template-rows: auto auto auto minmax(120px, 1fr); overflow-y: auto; }
   html[data-design="classic"] .dz-work { min-height: 0; overflow: hidden; }
   html[data-design="classic"] .dz-work-panel { flex: 1; min-height: 0; overflow: hidden; }
   html[data-design="classic"] .dz-pulse { min-height: 0; overflow: hidden; }

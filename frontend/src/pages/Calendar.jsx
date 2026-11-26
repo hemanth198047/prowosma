@@ -9,8 +9,10 @@ import { getTasks } from "../api/tasks";
 import { getProjects } from "../api/projects";
 import { getGoals } from "../api/goals";
 import { getTeamMembers } from "../api/team";
-import { createMeeting, deleteMeeting, getMeetingsInRange, updateMeeting } from "../api/meetings";
+import { createMeeting, deleteMeeting, getMeetingsInRange, resendMeetingInvites, updateMeeting } from "../api/meetings";
+import { getUmaDashboard, getUmaGoogleEvents } from "../api/aiMeetingAssistant";
 import { unwrapList } from "../api/client";
+import { apiErrorMessage } from "../utils/apiError";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import MeetingEditor from "../components/calendar/MeetingEditor";
@@ -18,7 +20,7 @@ import EventPeek from "../components/calendar/EventPeek";
 import MiniMonth from "../components/calendar/MiniMonth";
 import { toServerDateTime } from "../utils/serverTime";
 import {
-  isLink, meetingEnd, meetingStart, meetingToEvent, minutesBetween,
+  assistantToEvent, googleToEvent, isLink, meetingEnd, meetingStart, meetingToEvent, minutesBetween,
   nextHalfHour, slotFromClick, slotFromSelection,
 } from "../utils/calendarMeetings";
 import "../styles/pages/calendar.css";
@@ -34,6 +36,7 @@ const LAYER_KEY = "prowosma.calendar.layers";
 
 const LAYERS = [
   { id: "meeting", label: "Meetings", color: "#5b5fee" },
+  { id: "google", label: "Google & AI Assistant", color: "#0f9d8a" },
   { id: "task", label: "Tasks", color: "var(--brand-500)" },
   { id: "project", label: "Projects", color: "var(--warning)" },
   { id: "goal", label: "Goals", color: "var(--purple)" },
@@ -94,15 +97,19 @@ export default function Calendar() {
   const [title, setTitle] = useState("");
   const [range, setRange] = useState(null);
   const [current, setCurrent] = useState(() => new Date());
-  const [layers, setLayers] = useState(() => ({ meeting: true, task: true, project: true, goal: true, ...readStored(LAYER_KEY, {}) }));
+  const [layers, setLayers] = useState(() => ({ meeting: true, google: true, task: true, project: true, goal: true, ...readStored(LAYER_KEY, {}) }));
 
   const [meetings, setMeetings] = useState([]);
   const [meetingsBlocked, setMeetingsBlocked] = useState(false);
+  const [googleEvents, setGoogleEvents] = useState([]);       // the person's own Google Calendar, as Google has it
+  const [googleNote, setGoogleNote] = useState("");           // why Google events are not shown (not connected yet)
+  const [assistantMeetings, setAssistantMeetings] = useState([]); // meetings of the AI Meeting Assistant, incl. ones synced from Google Calendar
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [goals, setGoals] = useState([]);
   const [team, setTeam] = useState([]);
 
+  const googleReq = useRef(0);
   const [peek, setPeek] = useState(null);
   const [editor, setEditor] = useState(null); // { meeting | null, slot }
 
@@ -121,6 +128,33 @@ export default function Calendar() {
       setGoals(unwrapList(g));
       setTeam(unwrapList(tm));
     });
+  }, []);
+
+  // Meetings known to the AI Meeting Assistant (scheduled there, or synced from the person's Google Calendar). Quietly empty when the
+  // assistant is off or not allowed for this person.
+  const loadAssistantMeetings = useCallback(async () => {
+    try {
+      const { data } = await getUmaDashboard();
+      const rows = new Map();
+      [...(data?.upcoming || []), ...(data?.inProgress || []), ...(data?.recent || [])].forEach((r) => { if (r?.id && !rows.has(r.id)) rows.set(r.id, r); });
+      setAssistantMeetings([...rows.values()].filter((r) => r.meetingAt && r.status !== "CANCELLED" && r.status !== "FAILED"));
+    } catch { setAssistantMeetings([]); }
+  }, []);
+
+  const loadGoogleEvents = useCallback(async (start, end) => {
+    const req = ++googleReq.current;
+    try {
+      const { data } = await getUmaGoogleEvents(start, end);
+      if (req !== googleReq.current) return;
+      setGoogleEvents(Array.isArray(data) ? data : []);
+      setGoogleNote("");
+    } catch (e) {
+      if (req !== googleReq.current) return;
+      setGoogleEvents([]);
+      const code = e?.response?.data?.code;
+      setGoogleNote(["GOOGLE_NOT_CONNECTED", "GOOGLE_NO_CALENDAR", "GOOGLE_REAUTH_REQUIRED"].includes(code)
+        ? "Connect your Google account (Meetings → Connections) to see your Google Calendar here." : "");
+    }
   }, []);
 
   const loadMeetings = useCallback(async (start, end) => {
@@ -143,6 +177,13 @@ export default function Calendar() {
   const events = useMemo(() => {
     const out = [];
     if (layers.meeting) meetings.forEach((m) => { const ev = meetingToEvent(m); if (ev) out.push(ev); });
+    if (layers.google) {
+      const tracked = new Map(assistantMeetings.filter((m) => m.calendarEventId).map((m) => [m.calendarEventId, m.id]));
+      const seen = new Set(googleEvents.map((g) => g.id));
+      googleEvents.forEach((g) => { const ev = googleToEvent(g, tracked.get(g.id)); if (ev) out.push(ev); });
+      // meetings the assistant knows that are not in the Google list (Teams meetings, or Google not connected here)
+      assistantMeetings.filter((m) => !m.calendarEventId || !seen.has(m.calendarEventId)).forEach((m) => { const ev = assistantToEvent(m); if (ev) out.push(ev); });
+    }
     if (layers.task) tasks.filter((t) => t.dueDate).forEach((t) => out.push({
       id: `task-${t.id}`, title: t.title, start: t.dueDate.slice(0, 10), allDay: true, editable: false,
       backgroundColor: taskColor(t), borderColor: "transparent", textColor: "#fff",
@@ -160,14 +201,15 @@ export default function Calendar() {
       classNames: ["cal-ev-item"], extendedProps: { type: "goal", itemId: g.id, item: g },
     }));
     return out;
-  }, [meetings, tasks, projects, goals, layers]);
+  }, [meetings, assistantMeetings, googleEvents, tasks, projects, goals, layers]);
 
   const counts = useMemo(() => ({
     meeting: meetings.length,
+    google: googleEvents.length + assistantMeetings.filter((m) => !m.calendarEventId || !googleEvents.some((g) => g.id === m.calendarEventId)).length,
     task: tasks.filter((t) => t.dueDate).length,
     project: projects.filter((p) => p.dueDate).length,
     goal: goals.filter((g) => g.targetDate).length,
-  }), [meetings, tasks, projects, goals]);
+  }), [meetings, assistantMeetings, googleEvents, tasks, projects, goals]);
 
   const busyDays = useMemo(
     () => new Set(meetings.map((m) => meetingStart(m)?.toDateString()).filter(Boolean)),
@@ -193,6 +235,8 @@ export default function Calendar() {
 
   const openItem = (type, itemId) => {
     if (type === "meeting") navigate(`/meetings/earlier?open=${itemId}`);
+    else if (type === "uma") navigate(`/meetings/${itemId}`);
+    else if (type === "google") { /* handled in openGoogle */ }
     else if (type === "task") navigate(`/tasks?highlight=${itemId}&hcolor=6366f1`);
     else if (type === "project") navigate(`/tasks?projectId=${itemId}`);
     else if (type === "goal") navigate(`/goals?highlight=${itemId}&hcolor=8b5cf6`);
@@ -213,6 +257,8 @@ export default function Calendar() {
     setRange({ start: info.start, end: info.end });
     setCurrent(api()?.getDate() || info.start);
     loadMeetings(info.start, info.end);
+    loadAssistantMeetings();
+    loadGoogleEvents(info.start, info.end);
   };
 
   const onDateClick = () => setPeek(null);
@@ -220,6 +266,13 @@ export default function Calendar() {
   const onEventClick = (info) => {
     info.jsEvent.preventDefault();
     const { type, meeting, item } = info.event.extendedProps;
+    if (type === "uma") { openItem(type, item.id); return; }
+    if (type === "google") {
+      const { umaId } = info.event.extendedProps;
+      if (umaId) navigate(`/meetings/${umaId}`);
+      else if (item.htmlLink) window.open(item.htmlLink, "_blank", "noopener,noreferrer");
+      return;
+    }
     setPeek({
       key: `${info.event.id}-${Date.now()}`,
       type,
@@ -310,6 +363,28 @@ export default function Calendar() {
     }
   };
 
+  // Mail the invitation again — for meetings whose invites never went out (or got lost).
+  const handleResend = async (meeting) => {
+    const people = (meeting.attendees || []).length;
+    if (!people) { toast.show("This meeting has no attendees to invite.", "error"); return; }
+    const ok = await confirm({
+      title: "Resend invites?",
+      message: `Everyone on “${meeting.title}” will get the invitation email again.`,
+      confirmText: "Resend",
+    });
+    if (!ok) return;
+    try {
+      const { data } = await resendMeetingInvites(meeting.id);
+      const sent = data?.sent?.length || 0;
+      const failed = data?.failed || [];
+      if (failed.length && !sent) toast.show(`Couldn't email ${failed.join(", ")}. Check the mail settings on the server.`, "error");
+      else if (failed.length) toast.show(`Invites sent to ${sent}. Not delivered: ${failed.join(", ")}.`, "error");
+      else toast.show(`Invites sent to ${sent} ${sent === 1 ? "person" : "people"}`, "success");
+    } catch (err) {
+      toast.show(apiErrorMessage(err, "Couldn't resend the invites."), "error");
+    }
+  };
+
   const toggleLayer = (id) => setLayers((l) => {
     const next = { ...l, [id]: !l[id] };
     writeStored(LAYER_KEY, next);
@@ -370,6 +445,7 @@ export default function Calendar() {
               <span className="cal-layer-count">{counts[l.id]}</span>
             </label>
           ))}
+          {googleNote && layers.google && <p className="cal-layers-note">{googleNote}</p>}
           {meetingsBlocked && <p className="cal-layers-note">Meetings aren&apos;t part of your access.</p>}
         </div>
         <p className="cal-tip">
@@ -459,6 +535,7 @@ export default function Calendar() {
           onClose={() => setPeek(null)}
           onEdit={() => { setEditor({ meeting: peek.item, slot: null }); setPeek(null); }}
           onDelete={() => handleDelete(peek.item)}
+          onResend={peek.item?.attendees?.length && peek.item.status === "SCHEDULED" ? () => handleResend(peek.item) : null}
           onOpen={() => { const { type, item } = peek; setPeek(null); openItem(type, item.id); }}
         />
       )}
@@ -472,6 +549,7 @@ export default function Calendar() {
           meetings={meetings}
           onSave={handleSave}
           onDelete={() => handleDelete(editor.meeting)}
+          onResend={editor.meeting?.attendees?.length && editor.meeting.status === "SCHEDULED" ? () => handleResend(editor.meeting) : null}
           onClose={() => setEditor(null)}
           onOpenFull={editor.meeting ? () => { const id = editor.meeting.id; setEditor(null); navigate(`/meetings/earlier?open=${id}`); } : null}
         />

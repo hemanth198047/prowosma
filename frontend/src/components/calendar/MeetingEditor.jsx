@@ -1,7 +1,7 @@
 import { apiErrorMessage } from "../../utils/apiError";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Users, Clock, MapPin, AlignLeft, Folder, Tag, AlertTriangle, Video, Trash2, CalendarSearch } from "lucide-react";
+import { X, Users, Clock, MapPin, AlignLeft, Folder, Tag, AlertTriangle, Video, Trash2, CalendarSearch, Mail } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getAvailability } from "../../api/meetings";
 import { parseAvailability, statusFor } from "../../utils/availability";
@@ -53,7 +53,7 @@ function TimeSelect({ id, value, onChange, label }) {
  * Outlook-style "New event / Edit event" form.
  * Esc = close (asks first if there are unsaved changes), Ctrl/⌘+Enter or Ctrl/⌘+S = save.
  */
-export default function MeetingEditor({ meeting, slot, projects, team, meetings, onSave, onDelete, onClose, onOpenFull }) {
+export default function MeetingEditor({ meeting, slot, projects, team, meetings, onSave, onDelete, onClose, onOpenFull, onResend }) {
   const confirm = useConfirm();
   const [form, setForm] = useState(() => initialForm(meeting, slot));
   const [saving, setSaving] = useState(false);
@@ -420,6 +420,11 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
             {meeting && (
               <button type="button" className="btn cal-btn-ghost cal-danger-text" onClick={onDelete} disabled={saving}>
                 <Trash2 size={15} /> Delete
+              </button>
+            )}
+            {meeting && onResend && (
+              <button type="button" className="btn cal-btn-ghost" onClick={onResend} disabled={saving}>
+                <Mail size={15} /> Resend invites
               </button>
             )}
             {meeting && onOpenFull && (

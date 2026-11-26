@@ -9,6 +9,8 @@ import {
 import client from "../api/client";
 import { useToast } from "./ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
+import { awayFromApp, desktopAllowed, notificationUrl, showDesktopNotification } from "../utils/desktopNotify";
+import { getPushState } from "../utils/push";
 import { AlarmClock as IcAlarmClock, AtSign as IcAtSign, Bell as IcBell, CheckCheck as IcCheckCheck, CircleCheck as IcCircleCheck, CircleX as IcCircleX, ClipboardList as IcClipboardList, Folder as IcFolder, Footprints as IcFootprints, Info as IcInfo, Mail as IcMail, Pin as IcPin, PinOff as IcPinOff, Target as IcTarget, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert, User as IcUser, X as IcX, Zap as IcZap } from "lucide-react";
 import { statusText } from "../utils/statusText";
 
@@ -70,14 +72,40 @@ export default function NotificationBell() {
   const ref      = useRef(null);
   const navigate = useNavigate();
 
-  const loadCount = useCallback(async () => {
-    try { const r = await getUnreadCount(); setUnreadCount(r.data.count); } catch { /* background poll — fail silently, badge just won't update this cycle */ }
+  // Pop-ups on the desktop for notifications that arrive while the person is away from Prowosma (another window, or minimised).
+  const seenRef = useRef(null);          // ids already known; null until the first look, so old notifications never pop up
+  const lastCountRef = useRef(null);
+  const pushOnRef = useRef(false);       // when the server pushes this device, its own categories are not repeated here
+  useEffect(() => { getPushState().then((st) => { pushOnRef.current = !!st.subscribed; }).catch(() => {}); }, []);
+
+  const popUpNew = useCallback(async () => {
+    if (!desktopAllowed()) return;
+    try {
+      const list = (await getNotifications()).data || [];
+      if (seenRef.current === null) { seenRef.current = new Set(list.map((n) => n.id)); return; }
+      const fresh = list.filter((n) => !n.read && !seenRef.current.has(n.id));
+      list.forEach((n) => seenRef.current.add(n.id));
+      if (!awayFromApp()) return;
+      const wanted = fresh.filter((n) => !(pushOnRef.current && (n.category === "ASSIGNMENT" || n.category === "MENTION")));
+      if (wanted.length > 3) await showDesktopNotification({ title: `${wanted.length} new notifications`, body: wanted.slice(0, 3).map((n) => n.title).join(" · "), url: "/", tag: "prowosma-many" });
+      else for (const n of wanted) await showDesktopNotification({ title: n.title || "Prowosma", body: n.message || "", url: notificationUrl(n), tag: `n-${n.id}` });
+    } catch { /* a missed pop-up is not worth an error */ }
   }, []);
+
+  const loadCount = useCallback(async () => {
+    try {
+      const r = await getUnreadCount();
+      setUnreadCount(r.data.count);
+      const before = lastCountRef.current;
+      lastCountRef.current = r.data.count;
+      if (before === null || r.data.count > before) popUpNew();    // first look: remember what is there; later: something new arrived
+    } catch { /* background poll — fail silently, badge just won't update this cycle */ }
+  }, [popUpNew]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard load-on-mount pattern; loadCount sets state after its own async call
     loadCount();
-    const interval = setInterval(loadCount, 30000);
+    const interval = setInterval(loadCount, 15000);
     return () => clearInterval(interval);
   }, [loadCount]);
 
@@ -180,7 +208,7 @@ export default function NotificationBell() {
     <div className="notif-bell-wrapper" ref={ref}>
       <button type="button" className="notif-bell-btn" onClick={() => setOpen(o => !o)}
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} aria-expanded={open}>
-        <IcBell size={16} strokeWidth={1.5} aria-hidden="true" />
+        <IcBell size={22} strokeWidth={1.75} aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="notif-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}

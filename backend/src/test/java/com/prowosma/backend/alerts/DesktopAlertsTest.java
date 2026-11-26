@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {"app.alerts.jobs-enabled=false", "app.attendance.jobs-enabled=false", "app.uma.jobs-enabled=false", "app.meeting-assistant.jobs-enabled=false"})
 class DesktopAlertsTest extends ProwosmaTestBase {
     @MockitoBean PersonalAlertService alerts;
+    @MockitoBean com.prowosma.backend.service.MeetingNotifier meetings;
     @Autowired DesktopAlerts desktop;
     @Autowired AttendanceService attendance;
 
@@ -93,20 +94,24 @@ class DesktopAlertsTest extends ProwosmaTestBase {
     }
 
     @Test
-    void attendance_notClockedInAfterTheStart_isNudgedOnce_onlyWhenAttendanceIsOn() throws Exception {
+    void attendance_isNudgedWhenTheDayStarts_andAgainWhenLate_eachOnce_withoutAnyFlag_andByEmailToo() {
         ZoneId zone = attendance.zone(workspaceId);
-        // Thursday 19 Nov 2026, 10:30 local: the built-in shift starts at 10:00 with 15 minutes' grace
-        Instant at = LocalDateTime.of(2026, 11, 19, 10, 30).atZone(zone).toInstant();
-        desktop.sweepAt(at);
-        verify(alerts, never()).tell(any(), eq("You haven't clocked in"), any(), any());     // feature off
+        // Thursday 19 Nov 2026: the built-in shift starts at 10:00 with 15 minutes' grace
+        Instant start = LocalDateTime.of(2026, 11, 19, 10, 2).atZone(zone).toInstant();
+        desktop.sweepAt(start);
+        desktop.sweepAt(start.plusSeconds(120));
+        verify(alerts, times(1)).tell(eq(memberEmail), eq("Time to clock in"), contains("10:00"), eq("/attendance"));
+        verify(alerts, times(1)).tellByEmail(eq(memberEmail), eq("Time to clock in"), contains("10:00"), eq("/attendance"));
+        verify(alerts, never()).tell(any(), eq("You haven't clocked in"), any(), any());
 
-        mvc.perform(as(post("/api/admin/features"), ownerToken()).content("{\"key\":\"attendance\",\"enabled\":true}")).andReturn();
-        desktop.sweepAt(at);
-        desktop.sweepAt(at.plusSeconds(120));
+        Instant late = LocalDateTime.of(2026, 11, 19, 10, 30).atZone(zone).toInstant();
+        desktop.sweepAt(late);
+        desktop.sweepAt(late.plusSeconds(120));
         verify(alerts, times(1)).tell(eq(memberEmail), eq("You haven't clocked in"), contains("10:00"), eq("/attendance"));
-        // before the start + grace: nobody is nudged on another day
+        verify(alerts, times(1)).tellByEmail(eq(memberEmail), eq("You haven't clocked in"), contains("10:00"), eq("/attendance"));
+        // nobody is nudged on a day with no shift or after the 3-hour window
         reset(alerts);
-        desktop.sweepAt(LocalDateTime.of(2026, 11, 20, 10, 5).atZone(zone).toInstant());
+        desktop.sweepAt(LocalDateTime.of(2026, 11, 19, 14, 0).atZone(zone).toInstant());
         verify(alerts, never()).tell(any(), eq("You haven't clocked in"), any(), any());
     }
 
@@ -124,5 +129,26 @@ class DesktopAlertsTest extends ProwosmaTestBase {
         mvc.perform(as(post("/api/channels/" + dm + "/messages"), ownerToken()).content("{\"content\":\"Call me when free\"}")).andReturn();
         verify(alerts, times(1)).tell(eq(memberEmail), any(), eq("Call me when free"), eq("/channels"));
         verify(alerts, never()).tell(eq(ownerEmail), any(), eq("Call me when free"), any());
+    }
+
+    @Test
+    void aMeetingStartingSoonRemindsEachPersonOnce_butNotOneThatIsFarOffOrCancelled() {
+        LocalDateTime now = LocalDateTime.of(2026, 11, 19, 9, 0);
+        mongoTemplate.remove(new Query(), com.prowosma.backend.model.Meeting.class);
+        mongoTemplate.save(meeting("soon", "SCHEDULED", now.plusMinutes(10)));
+        mongoTemplate.save(meeting("later", "SCHEDULED", now.plusHours(3)));
+        mongoTemplate.save(meeting("cancelled", "CANCELLED", now.plusMinutes(10)));
+        mongoTemplate.save(meeting("done", "COMPLETED", now.plusMinutes(10)));
+        int first = desktop.sweepAt(now.toInstant(ZoneOffset.UTC));
+        assertThat(first).isEqualTo(2);                       // the organizer and the attendee of "soon"
+        verify(meetings, times(2)).remind(argThat(m -> "soon".equals(m.getTitle())), anyString(), eq(10L));
+        assertThat(desktop.sweepAt(now.plusMinutes(2).toInstant(ZoneOffset.UTC))).isZero();   // each person once
+    }
+
+    private com.prowosma.backend.model.Meeting meeting(String title, String status, LocalDateTime when) {
+        var m = new com.prowosma.backend.model.Meeting();
+        m.setWorkspaceId(workspaceId); m.setTitle(title); m.setStatus(status); m.setMeetingDate(when);
+        m.setCreatedBy("organizer@example.com"); m.setAttendees(List.of(memberEmail));
+        return m;
     }
 }

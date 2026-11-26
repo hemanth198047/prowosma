@@ -482,3 +482,6 @@
   .sa-legend { display: none; }
   .cal-ed-assist-btn { margin-left: 0; }
 }
+
+/* Google Calendar events you haven't answered yet: outlined, like Google draws them. */
+.cal-grid .fc .cal-ev-pending { border-style: solid; border-width: 1px; border-left-width: 3px; }

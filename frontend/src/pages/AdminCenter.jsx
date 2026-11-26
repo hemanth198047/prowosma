@@ -629,7 +629,6 @@ const DEFAULT_FLAGS = [
   { key:"ai_assistant",      label:"AI assistant",        desc:"Enable AI chat and generation features",   group:"AI" },
   { key:"ai_prioritization", label:"AI Prioritization",   desc:"Daily AI-ranked task list",               group:"AI" },
   { key:"universalMeetingAssistant", label:"Meetings", desc:"Meetings: notes, recordings, transcripts and meeting links turned into summaries, decisions and action items. On unless turned off.", group:"Knowledge" },
-  { key:"attendance", label:"Attendance (clock-in)", desc:"Clock in/out in the top bar, breaks, shifts, call times, leave, corrections, overtime and payroll export. Off until turned on.", group:"Work", offByDefault:true },
   { key:"burnout_detection", label:"Burnout Detection",   desc:"Workload pattern analysis alerts",        group:"AI" },
   { key:"collab_editing",    label:"Collaborative Docs",  desc:"Real-time multi-user document editing",   group:"Collaboration" },
   { key:"sprint_module",     label:"Sprint / Agile",      desc:"Sprint planning and burndown charts",     group:"Work" },

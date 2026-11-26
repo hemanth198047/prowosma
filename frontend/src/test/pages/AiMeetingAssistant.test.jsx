@@ -22,7 +22,7 @@ const api = vi.hoisted(() => ({
   getUmaFireflies: vi.fn(), sendUmaNotetaker: vi.fn(), fetchUmaGoogle: vi.fn(),
   getUmaGoogle: vi.fn(), checkUmaMeeting: vi.fn(), startUmaInstantMeeting: vi.fn(), detectUmaLink: vi.fn(), registerUmaLink: vi.fn(), scheduleUmaMeeting: vi.fn(), setUmaAutoFireflies: vi.fn(),
   getUmaMicrosoft: vi.fn(), getUmaAutomationSettings: vi.fn(), saveUmaMyPreferences: vi.fn(), saveUmaWorkspaceAutomation: vi.fn(), decideUmaProject: vi.fn(),
-  deleteUmaMeetings: vi.fn(), previewUmaCleanup: vi.fn(), clearUmaOldMeetings: vi.fn(),
+  deleteUmaMeetings: vi.fn(), previewUmaCleanup: vi.fn(), clearUmaOldMeetings: vi.fn(), startedUmaMeeting: vi.fn(), resendUmaInvites: vi.fn(),
 }));
 vi.mock("../../api/aiMeetingAssistant", () => ({
   ...Object.fromEntries(["addUmaRecording", "importUmaTranscriptText", "importUmaTranscriptFile", "completeUmaGoogle", "setUmaGooglePrefs", "syncUmaCalendar",
@@ -255,6 +255,24 @@ describe("AI Meeting Assistant (simulated API)", () => {
     expect(screen.queryByRole("button", { name: /Get Google Meet/ })).not.toBeInTheDocument();
   });
 
+  it("Resend invites: shown for a meeting with people on it, and says who got what", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: false } });
+    api.resendUmaInvites.mockResolvedValue({ data: { addedToCalendar: ["bob@x.com"], emailed: ["ann@x.com"], failed: ["cy@x.com"] } });
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ attendees: ["ann@x.com", "bob@x.com", "cy@x.com"] }, { phase: "SCHEDULED", pending: [] }));
+    at("/ai-meeting-assistant/x1");
+    fireEvent.click(await screen.findByRole("button", { name: /Resend invites/ }));
+    await waitFor(() => expect(api.resendUmaInvites).toHaveBeenCalledWith("x1"));
+    await waitFor(() => expect(toastShow).toHaveBeenCalledWith(expect.stringMatching(/1 added to the Google Calendar event.*1 e-mailed.*Not delivered: cy@x\.com/), "error"));
+  });
+
+  it("Resend invites: not offered when nobody is on the meeting", async () => {
+    api.getUmaFireflies.mockResolvedValue({ data: { connected: false } });
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ attendees: [] }, { phase: "SCHEDULED", pending: [] }));
+    at("/ai-meeting-assistant/x1");
+    expect(await screen.findByText(/^Starts /)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Resend invites/ })).not.toBeInTheDocument();
+  });
+
   it("during the meeting: says how it ends, and offers Fireflies again only if it isn't in the call", async () => {
     api.getUmaFireflies.mockResolvedValue({ data: { connected: true } });
     api.sendUmaNotetaker.mockResolvedValue({ data: {} });
@@ -278,6 +296,42 @@ describe("AI Meeting Assistant (simulated API)", () => {
     expect(screen.queryByRole("button", { name: /Record from this browser/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Check now" }));
     await waitFor(() => expect(api.checkUmaMeeting).toHaveBeenCalledWith("x1"));
+  });
+
+  it("an invited person (not the organizer) can still join, and Join does not try a change they may not make", async () => {
+    api.getUmaMeeting.mockResolvedValue({ data: { ...linkMeeting({ meetingAt: "2099-01-01T10:00:00Z" }, { phase: "SCHEDULED", pending: [] }).data, canManage: false } });
+    at("/ai-meeting-assistant/x1");
+    const join = await screen.findByRole("link", { name: /Join meeting/ });
+    expect(join).toHaveAttribute("href", "https://meet.google.com/abc-defg-hij");
+    fireEvent.click(join);
+    expect(api.startedUmaMeeting).not.toHaveBeenCalled();
+  });
+
+  it("the organizer's Join still tells the server the meeting was started", async () => {
+    api.startedUmaMeeting.mockResolvedValue({ data: {} });
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ meetingAt: "2099-01-01T10:00:00Z" }, { phase: "SCHEDULED", pending: [] }));
+    at("/ai-meeting-assistant/x1");
+    fireEvent.click(await screen.findByRole("link", { name: /Join meeting/ }));
+    await waitFor(() => expect(api.startedUmaMeeting).toHaveBeenCalledWith("x1"));
+  });
+
+  it("a meeting that started a few minutes ago with nothing pending still offers Join", async () => {
+    const started = new Date(Date.now() - 10 * 60000).toISOString();
+    const ends = new Date(Date.now() + 50 * 60000).toISOString();
+    api.getUmaMeeting.mockResolvedValue(linkMeeting({ meetingAt: started, meetingEndAt: ends }, { phase: "NONE", pending: [] }));
+    at("/ai-meeting-assistant/x1");
+    expect(await screen.findByRole("link", { name: /Join meeting/ })).toBeInTheDocument();
+  });
+
+  it("the list shows a Join link on a meeting that can be joined", async () => {
+    api.getUmaDashboard.mockResolvedValue(dash({ upcoming: [
+      { id: "a", title: "Client call", source: "MEETING_LINK", status: "CREATED", statusLabel: "Scheduled", meetingAt: "2099-01-01T10:00:00Z", joinable: true, meetingUrl: "https://meet.google.com/abc-defg-hij" },
+      { id: "b", title: "Old call", source: "MEETING_LINK", status: "CREATED", statusLabel: "Scheduled", meetingAt: "2099-01-02T10:00:00Z", joinable: false },
+    ] }));
+    at("/ai-meeting-assistant");
+    const join = await screen.findByRole("link", { name: "Join Client call" });
+    expect(join).toHaveAttribute("href", "https://meet.google.com/abc-defg-hij");
+    expect(screen.queryByRole("link", { name: "Join Old call" })).not.toBeInTheDocument();
   });
 
   it("says plainly what setup is missing", async () => {

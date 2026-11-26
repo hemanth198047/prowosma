@@ -46,7 +46,7 @@
 
 /* ── Layout: two columns ──────────────────────────────────────────── */
 .dz-cols { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
-.dz-col { display: grid; gap: 16px; min-width: 0; }
+.dz-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
 
 /* ── Work overview (tabs) ─────────────────────────────────────────── */
 .dz-tabs { display: flex; gap: 4px; margin-right: auto; border-bottom: 1px solid var(--border); flex: 1; }
@@ -64,7 +64,8 @@
 }
 .dz-expand:hover { color: var(--text-primary); border-color: var(--border-strong, var(--text-muted)); }
 .dz-subtabs { margin-bottom: 8px; }
-.dz-ov-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.dz-ov-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+.dz-ov-list > li { min-width: 0; }
 .dz-ov-row {
   display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 8px; margin: 0 -8px; width: calc(100% + 16px);
   border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; cursor: pointer; text-align: left;
@@ -165,7 +166,7 @@
 .dz-legend-row .dz-num, .dz-legend-total .dz-num { font-weight: 600; }
 .dz-legend-sep { height: 1px; margin: 4px 6px; background: var(--border); }
 .dz-legend-total { display: flex; justify-content: space-between; padding: 4px 6px 0; font-size: 13px; color: var(--text-secondary); }
-.dz-barlist { list-style: none; margin: 0; padding: 0; display: grid; max-height: 260px; overflow-y: auto; }
+.dz-barlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); max-height: 260px; overflow-y: auto; }
 .dz-barlist button {
   width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 38% 40px; align-items: center; gap: 12px; min-height: 34px;
   padding: 0 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; color: var(--text-primary); cursor: pointer; text-align: left;
@@ -224,7 +225,9 @@
   .dz-sc { min-height: 52px; }
   .dz-taskchart { grid-template-columns: minmax(0, 1fr); }
   .dz-sheet { width: 100%; border-left: 0; }
-  .dz-ov-row { min-height: 48px; }
+  .dz-ov-row { min-height: 48px; gap: 10px; }
+  .dz-ov-row .dz-num { width: 40px; flex: none; }
+  .dz-card { overflow-x: clip; }
   .dz-bar { width: 56px; }
 }
 
@@ -240,7 +243,7 @@
   .dz-cols { height: 100%; min-height: 0; align-items: stretch; }
   .dz-col { min-height: 0; }
   .dz-col:first-child { grid-template-rows: minmax(0, 1fr) auto; }
-  .dz-col:last-child { grid-template-rows: auto auto minmax(0, 1fr); }
+  .dz-col:last-child { grid-template-rows: auto auto auto minmax(120px, 1fr); overflow-y: auto; }
   .dz-work { min-height: 0; overflow: hidden; }
   .dz-work-panel { flex: 1; min-height: 0; overflow: hidden; }
   .dz-pulse { min-height: 0; overflow: hidden; }

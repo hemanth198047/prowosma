@@ -30,7 +30,8 @@ export function useAttendanceEnabled() {
     }
     entry.promise.then((v) => {
       if (v === null) flagCache.delete(key);
-      if (live) setAnswer({ key, enabled: v === true });
+      // Attendance is part of the product for everyone now. Only an explicit "no" from the server hides it; a failed check does not.
+      if (live) setAnswer({ key, enabled: v !== false });
     });
     return () => { live = false; };
   }, [key, who, ws]);

@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { X, Clock, MapPin, Users, Pencil, Trash2, Video, ExternalLink, Folder, User, AlignLeft } from "lucide-react";
-import { formatRange, isLink, MEETING_TYPES } from "../../utils/calendarMeetings";
+import { X, Clock, MapPin, Users, Pencil, Trash2, Video, ExternalLink, Folder, User, AlignLeft, Mail } from "lucide-react";
+import { extractLink, formatRange, MEETING_TYPES } from "../../utils/calendarMeetings";
 import { detectPlatform } from "../../utils/conferenceLink";
 
 const PEEK_W = 340;
@@ -27,7 +27,7 @@ function place(rect, height) {
  * Outlook-style preview card for one calendar item.
  * Closes on Esc, on a click outside it, and when the calendar scrolls.
  */
-export default function EventPeek({ peek, projectName, teamName, onClose, onEdit, onDelete, onOpen }) {
+export default function EventPeek({ peek, projectName, teamName, onClose, onEdit, onDelete, onOpen, onResend }) {
   const ref = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -58,7 +58,7 @@ export default function EventPeek({ peek, projectName, teamName, onClose, onEdit
 
   const { type, item, start, end, color } = peek;
   const isMeeting = type === "meeting";
-  const link = isMeeting && isLink(item.location) ? item.location.trim() : null;
+  const link = isMeeting ? extractLink(item.location) : null;
   const platform = link ? detectPlatform(link) : null;
   const typeLabel = isMeeting ? MEETING_TYPES.find((t) => t.value === item.meetingType)?.label || "Meeting" : null;
 
@@ -90,6 +90,11 @@ export default function EventPeek({ peek, projectName, teamName, onClose, onEdit
               <button type="button" className="cal-icon-btn" onClick={onEdit} aria-label="Edit meeting" title="Edit (double-click)">
                 <Pencil size={15} />
               </button>
+              {onResend && (
+                <button type="button" className="cal-icon-btn" onClick={onResend} aria-label="Resend invites" title="Resend invites">
+                  <Mail size={15} />
+                </button>
+              )}
               <button type="button" className="cal-icon-btn cal-danger-text" onClick={onDelete} aria-label="Delete meeting" title="Delete">
                 <Trash2 size={15} />
               </button>

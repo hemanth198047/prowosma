@@ -9,6 +9,7 @@ import { clockIn, clockOut, endBreak, reportIdle, startBreak } from "../api/atte
 import {
   BREAK_LABEL, MODE_LABEL, currentPosition, hms, publishMyAttendance, timeIn, useAttendanceEnabled, useMyAttendance, workedMs,
 } from "../hooks/useAttendance";
+import { showDesktopNotification } from "../utils/desktopNotify";
 import "../styles/pages/attendance.css";
 
 const ACTIVITY = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "wheel"];
@@ -82,6 +83,17 @@ function Clock() {
 
   useIdleWatch(data, act, setIdlePrompt);
   const reminder = useEndOfDayReminder(data, now);
+  const lateForClockIn = !!data && data.state === "OFF" && !data.log?.sessions?.length && data.today?.dayType === "WORKDAY" && !data.today?.onLeave
+    && !!data.today?.expectedStart && now > Date.parse(data.today.expectedStart) + (data.today.graceMinutes || 0) * 60000;
+  // An on-screen reminder, once a day, for anyone who has the app open and has not clocked in yet (the e-mail and phone reminders cover people who do not).
+  useEffect(() => {
+    if (!lateForClockIn) return;
+    const key = `att:clockin-reminded:${data.date}`;
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { /* private mode: remind again next time, that is fine */ }
+    const text = `Your day started at ${timeIn(data.today.expectedStart, data.timezone)}. Open Prowosma and clock in.`;
+    toast(`You haven't clocked in yet. ${text}`, "error");
+    showDesktopNotification({ title: "You haven't clocked in", body: text, url: "/attendance", tag: `clock-in-${data.date}` });   // shows even when the window is minimised
+  }, [lateForClockIn, data?.date]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) return null;
   const { state, log, today, rules, timezone } = data;
@@ -160,7 +172,7 @@ function Today({ data, now }) {
   );
 }
 
-function ClockInForm({ data, busy, act, onDone }) {
+export function ClockInForm({ data, busy, act, onDone }) {
   const { rules, today, timezone: tz } = data;
   const [mode, setMode] = useState(data.log?.workMode || "");
   const [projectId, setProjectId] = useState(data.log?.projectId || today?.callTime?.projectId || "");
