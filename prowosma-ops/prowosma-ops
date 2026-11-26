@@ -282,6 +282,12 @@ deploy_frontend() {
   [ -f "$dir/$FRONTEND_DIST/index.html" ] || die "[frontend] no $FRONTEND_DIST/index.html after build (set FRONTEND_DIST?)"
   rel="$REL_DIR/frontend/$id"; mkdir -p "$rel"; cp -a "$dir/$FRONTEND_DIST" "$rel/www"
   prev=$(current_release frontend)
+  # Keep the previous build's /assets files (up to 14 days old) in the new release: a browser tab opened before this deploy still asks for them,
+  # and without them "open Meetings" fails with "Something went wrong" until the person reloads. index.html is never carried over.
+  if [ -n "$prev" ] && [ -d "$prev/www/assets" ] && [ -d "$rel/www/assets" ]; then
+    find "$prev/www/assets" -type f -mtime -14 -exec cp -an {} "$rel/www/assets/" \; 2>/dev/null || true
+    log "[frontend] kept the previous build's assets for tabs that are still open"
+  fi
   ensure_link frontend "$FRONTEND_WEBROOT" "$rel/www" www
   reload_nginx
   if [ -n "$FRONTEND_CHECK_URL" ] && ! wait_healthy "$FRONTEND_CHECK_URL" 30; then

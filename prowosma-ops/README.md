@@ -63,3 +63,11 @@ Rollback in docker mode goes back one version (`:previous`).
 ## Instant deploys instead of the 2-minute timer (optional)
 
 Add a GitHub Actions job that SSHes in and runs `prowosma-ops auto` after each push to `main`. The timer can stay as a safety net.
+
+## Open browser tabs survive a deploy
+
+A tab opened before a deploy still asks for the files of the old build. Three things keep that from showing "Something went wrong":
+
+- **Old assets stay.** `deploy` copies the previous build's `/assets` files (up to 14 days old) into the new release, so an open tab can still load its pages. `index.html` is never carried over.
+- **The app notices.** Every build publishes `/version.json`; the app checks it every 5 minutes and when the tab comes to the front, and shows "A new version of Prowosma is ready — Refresh". If a page of the old build is gone anyway, the app reloads itself once.
+- **nginx must not answer a missing asset with the HTML page.** In the server's nginx config use `try_files $uri =404;` inside `location /assets/`, and `Cache-Control: no-cache` for `/index.html`, `/sw.js` and `/version.json` (see `frontend/nginx.conf`).

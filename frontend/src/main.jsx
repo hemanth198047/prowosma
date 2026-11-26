@@ -9,12 +9,15 @@ import { initErrorTracking, ErrorTrackingBoundary } from './config/errorTracking
 import { ErrorFallback } from './components/ErrorFallback.jsx'
 import './i18n' // must run before any component using useTranslation() renders
 import { applyDesign, currentDesign } from './utils/design'
+import { installStaleAppGuards } from './utils/staleApp'
+import UpdateBanner from './components/UpdateBanner.jsx'
 
 // Classic or New design (?design=classic|new, or the person's saved choice). New needs no extra download.
 applyDesign(currentDesign())
 
 // No-op unless VITE_SENTRY_DSN is set — see src/config/errorTracking.js.
 initErrorTracking()
+installStaleAppGuards()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -30,6 +33,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         }}
       >
         <App />
+        <UpdateBanner />
       </Auth0Provider>
     </ErrorTrackingBoundary>
   </React.StrictMode>,

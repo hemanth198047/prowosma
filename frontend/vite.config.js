@@ -1,9 +1,22 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+import { execSync } from "node:child_process";
+
+// One id per build. The app embeds it and also publishes it as /version.json, so a page that was opened before a deploy can notice the new version.
+const BUILD_ID = process.env.APP_VERSION || (() => {
+  let sha = "";
+  try { sha = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a git checkout */ }
+  return `${sha || "build"}-${Date.now().toString(36)}`;
+})();
+const versionFile = () => ({
+  name: "prowosma-version-file", apply: "build",
+  generateBundle() { this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version: BUILD_ID }) }); },
+});
+
 export default defineConfig({
-  plugins: [react()],
-  define: { global: "globalThis" },
+  plugins: [react(), versionFile()],
+  define: { global: "globalThis", __APP_VERSION__: JSON.stringify(BUILD_ID) },
   server: {
     port: 5173,
     allowedHosts: ["cosigner-saddlebag-anthem.ngrok-free.dev"],

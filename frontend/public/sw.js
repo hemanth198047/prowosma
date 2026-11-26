@@ -13,13 +13,14 @@ if (IS_DEV) {
   self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 } else {
   // ── Production only ─────────────────────────────────────────
-  const STATIC = 'prowosma-static-v1';
+  // v2: the v1 cache could hold an HTML page saved under the name of a script of an older build; a new name drops all of it.
+  const STATIC = 'prowosma-static-v2';
   const API    = 'prowosma-api-v1';
 
   self.addEventListener('install', (e) => {
     e.waitUntil(
       caches.open(STATIC)
-        .then(c => c.addAll(['/', '/index.html', '/manifest.json']))
+        .then(c => c.addAll(['/manifest.json']))
         .catch(() => {})
         .then(() => self.skipWaiting())
     );
@@ -72,10 +73,16 @@ if (IS_DEV) {
       return;
     }
 
-    // Navigation — network first, /index.html fallback
+    // Navigation — network first, /index.html fallback (kept fresh: the copy saved here is always the newest page that loaded)
     if (request.mode === 'navigate') {
       e.respondWith(
-        fetch(request).catch(async () => {
+        fetch(request).then(res => {
+          if (res.ok && (res.headers.get('content-type') || '').includes('text/html')) {
+            const copy = res.clone();
+            caches.open(STATIC).then(c => c.put('/index.html', copy));
+          }
+          return res;
+        }).catch(async () => {
           const cached = await caches.match('/index.html');
           return cached || new Response('<h1>Offline</h1>',
             { status: 200, headers: { 'Content-Type': 'text/html' } });
@@ -84,19 +91,34 @@ if (IS_DEV) {
       return;
     }
 
-    // Static assets — cache first
+    // Built files (/assets/…) carry a hash of their content in the name, so they never change: cache first. But only keep a real file —
+    // when a file of an older build is gone, the server may answer with the app's HTML page instead, and keeping THAT under the file's name
+    // would break the page until someone cleared the browser's data.
+    if (url.pathname.startsWith('/assets/')) {
+      e.respondWith(
+        caches.match(request).then(cached => cached ||
+          fetch(request).then(res => {
+            const type = res.headers.get('content-type') || '';
+            if (res.ok && !type.includes('text/html')) {
+              const resClone = res.clone();
+              caches.open(STATIC).then(c => c.put(request, resClone));
+            }
+            return res;
+          })
+        )
+      );
+      return;
+    }
+
+    // Everything else (icons, manifest, …) — network first, cached copy only when offline
     e.respondWith(
-      caches.match(request).then(cached => cached ||
-        fetch(request).then(res => {
-          // Same fix as the API handler above — clone before the async
-          // caches.open() gap, not inside its .then() callback.
-          if (res.ok) {
-            const resClone = res.clone();
-            caches.open(STATIC).then(c => c.put(request, resClone));
-          }
-          return res;
-        })
-      )
+      fetch(request).then(res => {
+        if (res.ok && !(res.headers.get('content-type') || '').includes('text/html')) {
+          const resClone = res.clone();
+          caches.open(STATIC).then(c => c.put(request, resClone));
+        }
+        return res;
+      }).catch(async () => (await caches.match(request)) || Response.error())
     );
   });
 
