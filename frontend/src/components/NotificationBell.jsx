@@ -1,5 +1,5 @@
 import { respondApproval } from "../api/automations";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Fragment, useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getNotifications, getUnreadCount,
@@ -13,6 +13,7 @@ import { awayFromApp, desktopAllowed, notificationUrl, showDesktopNotification }
 import { getPushState } from "../utils/push";
 import { AlarmClock as IcAlarmClock, AtSign as IcAtSign, Bell as IcBell, CheckCheck as IcCheckCheck, CircleCheck as IcCircleCheck, CircleX as IcCircleX, ClipboardList as IcClipboardList, Folder as IcFolder, Footprints as IcFootprints, Info as IcInfo, Mail as IcMail, Pin as IcPin, PinOff as IcPinOff, Target as IcTarget, Trash2 as IcTrash2, TriangleAlert as IcTriangleAlert, User as IcUser, X as IcX, Zap as IcZap } from "lucide-react";
 import { statusText } from "../utils/statusText";
+import "../styles/notification-center.css";
 
 // Tone of the icon tile. Only warnings and errors carry colour; everything else stays neutral.
 const TYPE_TONE = { INFO:"neutral", SUCCESS:"neutral", WARNING:"warning", ERROR:"danger" };
@@ -35,6 +36,17 @@ const whenText = (iso) => {
   const date = d.toLocaleDateString([], d.getFullYear() === now.getFullYear() ? { month:"short", day:"numeric" } : { month:"short", day:"numeric", year:"numeric" });
   return `${date}, ${time}`;
 };
+/** Day heading for the list: Today / Yesterday / Earlier. */
+const dayBucket = (iso) => {
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return "Earlier";
+  const start = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((start(new Date()) - start(d)) / 86400000);
+  return diff <= 0 ? "Today" : diff === 1 ? "Yesterday" : "Earlier";
+};
+/** Things that want a decision or an answer from the person: approvals, assignments, mentions, high priority, warnings. */
+const needsAction = (n) => !n.read && (n.entityType === "APPROVAL" || n.category === "ASSIGNMENT" || n.category === "MENTION" || n.priority === "HIGH" || n.type === "WARNING" || n.type === "ERROR");
+const OPEN_LABEL = { TASK: "Open task", PROJECT: "Open project", GOAL: "Open goal" };
+
 const TYPE_ICON  = { INFO:<IcInfo size={16} strokeWidth={1.5} aria-hidden="true" />, WARNING:<IcTriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />, SUCCESS:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, ERROR:<IcCircleX size={16} strokeWidth={1.5} aria-hidden="true" /> };
 const ENTITY_ICON= { TASK:<IcCircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />, PROJECT:<IcFolder size={16} strokeWidth={1.5} aria-hidden="true" />, GOAL:<IcTarget size={16} strokeWidth={1.5} aria-hidden="true" />, SPRINT:<IcFootprints size={16} strokeWidth={1.5} aria-hidden="true" />, AUTOMATION:<IcZap size={16} strokeWidth={1.5} aria-hidden="true" />, APPROVAL:<IcClipboardList size={16} strokeWidth={1.5} aria-hidden="true" /> };
 
@@ -69,6 +81,8 @@ export default function NotificationBell() {
   const [selectedIds,   setSelectedIds]   = useState([]);
   const [sortBy,        setSortBy]        = useState("newest");  // newest | priority | type
   const [snoozeMenuId,  setSnoozeMenuId]  = useState(null);
+  const [ring,          setRing]          = useState(false);   // the bell shakes for a few seconds when something new arrives
+  const ringTimer = useRef(null);
   const ref      = useRef(null);
   const navigate = useNavigate();
 
@@ -98,6 +112,11 @@ export default function NotificationBell() {
       setUnreadCount(r.data.count);
       const before = lastCountRef.current;
       lastCountRef.current = r.data.count;
+      if (before !== null && r.data.count > before) {
+        setRing(true);
+        clearTimeout(ringTimer.current);
+        ringTimer.current = setTimeout(() => setRing(false), 3500);
+      }
       if (before === null || r.data.count > before) popUpNew();    // first look: remember what is there; later: something new arrived
     } catch { /* background poll — fail silently, badge just won't update this cycle */ }
   }, [popUpNew]);
@@ -109,12 +128,26 @@ export default function NotificationBell() {
     return () => clearInterval(interval);
   }, [loadCount]);
 
+  useEffect(() => () => clearTimeout(ringTimer.current), []);
+
+  // The number is also in the browser tab, so it is seen when Prowosma is in the background.
+  const baseTitle = useRef(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    if (baseTitle.current === null) baseTitle.current = document.title.replace(/^\(\d+\+?\)\s*/, "");
+    document.title = unreadCount > 0 ? `(${unreadCount > 99 ? "99+" : unreadCount}) ${baseTitle.current}` : baseTitle.current;
+    return () => { if (baseTitle.current !== null) document.title = baseTitle.current; };
+  }, [unreadCount]);
+
   useEffect(() => {
     if (!open) return;
     const load = async () => {
       try {
         const notifRes = await getNotifications();
-        setNotifications(notifRes.data || []);
+        const list = notifRes.data || [];
+        setNotifications(list);
+        // Opening the inbox starts with what needs the person, when there is anything.
+        setActiveGroup(list.some(needsAction) ? "ACTION" : "ALL");
       } catch { /* panel open — user can retry by reopening it */ }
     };
     load();
@@ -132,6 +165,7 @@ export default function NotificationBell() {
   const filtered = notifications
     .filter(n => {
       if (activeGroup === "ALL")     return true;
+      if (activeGroup === "ACTION")  return needsAction(n);
       if (activeGroup === "UNREAD")  return !n.read;
       if (activeGroup === "PINNED")  return n.pinned;
       return n.category === activeGroup;
@@ -190,11 +224,20 @@ export default function NotificationBell() {
     if (routes[n.entityType]) { navigate(routes[n.entityType]); setOpen(false); }
   };
 
+  // "Open" button on a row: where this notification points, if it points anywhere.
+  const destination = (n) => { const u = notificationUrl(n); return u && u !== "/" ? u : null; };
+  const openIt = async (n) => {
+    if (!n.read) await handleMarkRead(n.id);
+    const u = destination(n);
+    if (u) { navigate(u); setOpen(false); }
+  };
+
   const toggleSelect = (id) => setSelectedIds(prev =>
     prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
   );
 
   const groups = [
+    { key:"ACTION",     label:"Needs action", count: notifications.filter(needsAction).length },
     { key:"ALL",        label:"All",         count: notifications.length },
     { key:"UNREAD",     label:"Unread",      count: notifications.filter(n=>!n.read).length },
     { key:"PINNED",     label:"Pinned",      count: notifications.filter(n=>n.pinned).length },
@@ -206,11 +249,11 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-wrapper" ref={ref}>
-      <button type="button" className="notif-bell-btn" onClick={() => setOpen(o => !o)}
+      <button type="button" className={`notif-bell-btn nc-bell${unreadCount > 0 ? " has-unread" : ""}${ring ? " is-ringing" : ""}`} onClick={() => setOpen(o => !o)}
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} aria-expanded={open}>
-        <IcBell size={22} strokeWidth={1.75} aria-hidden="true" />
+        <IcBell size={20} strokeWidth={2} aria-hidden="true" className="nc-bell-icon" />
         {unreadCount > 0 && (
-          <span className="notif-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+          <span className="nc-bell-count" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}
       </button>
 
@@ -264,11 +307,15 @@ export default function NotificationBell() {
 
           {/* Notification list */}
           <div className={`nb-list${selectedIds.length ? " is-selecting" : ""}`}>
-            {filtered.length > 0 ? filtered.map(n => {
+            {filtered.length > 0 ? filtered.map((n, i) => {
+              const bucket = sortBy === "newest" && activeGroup !== "PINNED" ? dayBucket(n.createdAt) : null;
+              const showDay = bucket && (i === 0 || bucket !== dayBucket(filtered[i - 1].createdAt));
               const isSelected = selectedIds.includes(n.id);
               const tone = TYPE_TONE[n.type] || "neutral";
               return (
-                <div key={n.id}
+                <Fragment key={n.id}>
+                {showDay && <div className="nc-day" role="presentation">{bucket}</div>}
+                <div
                   className={`nb-item${!n.read ? " is-unread" : ""}${isSelected ? " is-selected" : ""}`}
                   onClick={() => handleClick(n)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleClick(n); } }}>
 
@@ -306,6 +353,12 @@ export default function NotificationBell() {
                           }}>Reject</button>
                       </div>
                     )}
+                    {!n.read && n.entityType !== "APPROVAL" && (
+                      <div className="nc-row-actions" onClick={e => e.stopPropagation()} role="presentation">
+                        {destination(n) && <button type="button" className="nb-btn nb-btn--primary" onClick={() => openIt(n)}>{OPEN_LABEL[n.entityType] || "Open"}</button>}
+                        <button type="button" className="nb-btn" onClick={() => handleMarkRead(n.id)}>Mark read</button>
+                      </div>
+                    )}
                     <div className="nb-meta">
                       {!n.read && <span className="nb-dot" aria-label="Unread" />}
                       <time dateTime={n.createdAt}>{whenText(n.createdAt)}</time>
@@ -333,13 +386,14 @@ export default function NotificationBell() {
                       onClick={() => handleDelete(n.id)}><IcX size={15} strokeWidth={1.5} aria-hidden="true" /></button>
                   </div>
                 </div>
+                </Fragment>
               );
             }) : (
               <div className="nb-empty">
                 <span className="nb-icon nb-icon--neutral" aria-hidden="true">
                   {activeGroup === "PINNED" ? <IcPin size={16} strokeWidth={1.5} /> : activeGroup === "UNREAD" ? <IcMail size={16} strokeWidth={1.5} /> : <IcBell size={16} strokeWidth={1.5} />}
                 </span>
-                <p>{activeGroup === "UNREAD" ? "All caught up" : "Nothing here"}</p>
+                <p>{activeGroup === "UNREAD" || activeGroup === "ACTION" ? "All caught up" : "Nothing here"}</p>
               </div>
             )}
           </div>

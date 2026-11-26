@@ -1,0 +1,43 @@
+/* Notification centre: a bell you can't miss, and an inbox that says what needs you. Loaded after the older bell styles, so it is specific on purpose. */
+
+/* ── The bell: a pill with the count written out, not a tiny badge on an icon ── */
+.app .topbar .notif-bell-btn.nc-bell,
+.notif-bell-btn.nc-bell {
+  width: auto !important; min-width: 42px; height: 40px !important; padding: 0 12px !important; gap: 8px;
+  display: inline-flex !important; align-items: center; justify-content: center; border-radius: 999px !important;
+  border: 1px solid transparent; position: relative;
+}
+.app .topbar .notif-bell-btn.nc-bell.has-unread,
+.notif-bell-btn.nc-bell.has-unread {
+  background: #dc2626 !important; border-color: #dc2626; color: #fff !important; box-shadow: 0 2px 8px rgba(220, 38, 38, .35);
+}
+.notif-bell-btn.nc-bell.has-unread:hover { background: #b91c1c !important; }
+.nc-bell-count { font-size: 15px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.nc-bell-icon { flex: none; transform-origin: 50% 0; }
+.nc-bell.is-ringing .nc-bell-icon { animation: nc-ring 0.9s ease-in-out 3; }
+.nc-bell.is-ringing { animation: nc-pulse 1.2s ease-out 3; }
+@keyframes nc-ring {
+  0%, 100% { transform: rotate(0); } 15% { transform: rotate(18deg); } 30% { transform: rotate(-16deg); }
+  45% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 75% { transform: rotate(4deg); }
+}
+@keyframes nc-pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .55); } 100% { box-shadow: 0 0 0 14px rgba(220, 38, 38, 0); } }
+@media (prefers-reduced-motion: reduce) { .nc-bell.is-ringing, .nc-bell.is-ringing .nc-bell-icon { animation: none; } }
+
+/* ── The inbox panel: roomier, grouped by day, with the next step on each row ── */
+.notif-panel.nb-panel { width: 440px !important; max-width: calc(100vw - 16px); }
+.notif-panel.nb-panel .nb-list { max-height: min(62vh, 540px); }
+.nc-day { position: sticky; top: 0; z-index: 1; padding: 6px 16px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted, #64748b); background: var(--bg-card, #fff); border-bottom: 1px solid var(--border, #e5e7eb); }
+.nc-row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.nc-row-actions .nb-btn { min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; }
+.nb-item.is-unread { border-left: 3px solid var(--brand-500, #4f46e5); }
+.notif-panel.nb-panel .nb-tab { font-size: 13px; }
+.notif-panel.nb-panel .nb-link { font-size: 13px; font-weight: 600; }
+[data-theme="dark"] .nc-day { background: #1e293b; }
+
+/* On a phone the inbox is a sheet across the screen. */
+@media (max-width: 700px) {
+  .notif-panel.nb-panel { position: fixed !important; left: 8px !important; right: 8px !important; top: 64px !important; width: auto !important; max-width: none; }
+  .notif-panel.nb-panel .nb-list { max-height: calc(100vh - 190px); }
+  .nc-row-actions .nb-btn { min-height: 40px; flex: 1 1 auto; }
+}
