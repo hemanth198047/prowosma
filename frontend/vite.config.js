@@ -4,19 +4,23 @@ import react from "@vitejs/plugin-react";
 import { execSync } from "node:child_process";
 
 // One id per build. The app embeds it and also publishes it as /version.json, so a page that was opened before a deploy can notice the new version.
-const BUILD_ID = process.env.APP_VERSION || (() => {
-  let sha = "";
-  try { sha = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a git checkout */ }
-  return `${sha || "build"}-${Date.now().toString(36)}`;
-})();
+let COMMIT = process.env.APP_COMMIT || "";
+if (!COMMIT) { try { COMMIT = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a git checkout */ } }
+const BUILT_AT = new Date().toISOString();
+// The number people see: "v1.<n>". Change MAJOR by hand for a big release (v2.x); <n> goes up by itself with every change that is saved to the repo.
+const MAJOR = process.env.APP_MAJOR || "1";
+let COUNT = process.env.APP_BUILD_NUMBER || "";
+if (!COUNT) { try { COUNT = execSync("git rev-list --count HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a git checkout */ } }
+const RELEASE = COUNT ? `${MAJOR}.${COUNT}` : "";
+const BUILD_ID = process.env.APP_VERSION || `${COMMIT || "build"}-${Date.now().toString(36)}`;
 const versionFile = () => ({
   name: "prowosma-version-file", apply: "build",
-  generateBundle() { this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version: BUILD_ID }) }); },
+  generateBundle() { this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version: BUILD_ID, commit: COMMIT, builtAt: BUILT_AT, release: RELEASE }) }); },
 });
 
 export default defineConfig({
   plugins: [react(), versionFile()],
-  define: { global: "globalThis", __APP_VERSION__: JSON.stringify(BUILD_ID) },
+  define: { global: "globalThis", __APP_VERSION__: JSON.stringify(BUILD_ID), __APP_COMMIT__: JSON.stringify(COMMIT), __APP_RELEASE__: JSON.stringify(RELEASE), __APP_BUILT_AT__: JSON.stringify(BUILT_AT) },
   server: {
     port: 5173,
     allowedHosts: ["cosigner-saddlebag-anthem.ngrok-free.dev"],

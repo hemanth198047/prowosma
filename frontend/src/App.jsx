@@ -107,6 +107,7 @@ import Sops      from "./pages/Sops";
 import { usePWA } from "./hooks/usePWA";
 import { Gem as IcGem } from "lucide-react";
 import { applyDesign, activeDesign, DESIGNS, DESIGN_CHANGED_EVENT } from "./utils/design";
+import AppVersion from "./components/AppVersion";
 
 
 /* ── Classic / New design, in the user menu ─────────────────────── */
@@ -436,6 +437,7 @@ function AppShell() {
                   <img src="/logo-icon.png" alt="" className="sb-brand-img" />
                   <span className="sb-brand-name">Prowosma</span>
                 </Link>
+                <AppVersion />
                 <button
                   className="menu-close"
                   onClick={() => setMenuOpen(false)}

@@ -231,3 +231,19 @@
 [data-theme="dark"] .app .sidebar a.sb-link { color: var(--sidebar-text); }
 [data-theme="dark"] .app .sidebar a.sb-link:hover { color: #fff; background: rgba(255,255,255,0.06); }
 [data-theme="dark"] .app .sidebar a.sb-link.active { color: #fff; background: var(--sidebar-active-bg); }
+
+/* ── Version pill (next to the brand name, top of the sidebar) ──────────── */
+.app-version {
+  flex-shrink: 0; margin-left: 8px; padding: 2px 9px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.8); font: inherit; font-size: 11px; font-weight: 600;
+  line-height: 1.5; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer;
+}
+.app-version:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.app-version:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; }
+.app-version-current { background: rgba(34, 197, 94, 0.2); border-color: rgba(134, 239, 172, 0.5); color: #bbf7d0; }
+.app-version-stale { background: #facc15; border-color: #facc15; color: #422006; animation: app-version-pulse 1.6s ease-in-out infinite; }
+.app-version-unknown { background: rgba(248, 113, 113, 0.2); border-color: rgba(252, 165, 165, 0.5); color: #fecaca; }
+@keyframes app-version-pulse { 50% { box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.28); } }
+@media (prefers-reduced-motion: reduce) { .app-version-stale { animation: none; } }
+/* keep the pill right after the name; the close button (mobile) stays at the far end */
+.sidebar-top.sb-brand .app-version { margin-right: auto; }
