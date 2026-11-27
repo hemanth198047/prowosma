@@ -666,6 +666,12 @@ public class UmaService {
         m.setAutoFireflies(autoFireflies);
         m = store.save(m);
         store.audit(c.org(), m.getId(), c.caller().email(), "MEETING_SCHEDULED", people.size() + " invited");
+        // The calendar sends its own invitation, but company mail servers (Titan / GoDaddy...) can drop it: also e-mail the guests ourselves.
+        // Guests on gmail.com are skipped for Google meetings: Google's own invitation always reaches them, and they would get it twice.
+        boolean google = !"MS_TEAMS".equals(provider);
+        List<String> guests = people.stream().filter(a -> !(google && com.prowosma.backend.service.MeetingNotifier.isGoogleMailbox(a))).toList();
+        try { notifier.inviteScheduled(t, start, end, timezone, m.getMeetingUrl(), "/meetings/" + m.getId(), guests, c.caller().email()); }
+        catch (RuntimeException ignored) { /* best effort: the calendar's own invitation still goes out */ }
         automation.plan(m);
         return store.meeting(c.org(), m.getId()).orElse(m);
     }
@@ -760,7 +766,9 @@ public class UmaService {
             catch (UmaException e) { calendarNote = e.getMessage(); }
             catch (RuntimeException e) { calendarNote = "Google Calendar couldn't be updated."; }
         }
-        List<String> mail = chosen.stream().filter(a -> !addedToCalendar.contains(a)).toList();
+        // Everyone also gets our own e-mail: Google's invitation to someone just added to the event may be dropped by a company mail server.
+        // Only gmail.com guests who were just added are skipped, since Google's invitation reliably reaches them.
+        List<String> mail = chosen.stream().filter(a -> !(addedToCalendar.contains(a) && com.prowosma.backend.service.MeetingNotifier.isGoogleMailbox(a))).toList();
         Map<String, Boolean> sent = notifier.resendInvite(m.getTitle(), m.getMeetingAt(), m.getMeetingEndAt(), m.getMeetingUrl(), "/meetings/" + m.getId(), mail, c.caller().email());
         List<String> emailed = new ArrayList<>(), failed = new ArrayList<>();
         sent.forEach((a, ok) -> (ok ? emailed : failed).add(a));

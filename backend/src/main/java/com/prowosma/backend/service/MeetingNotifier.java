@@ -107,17 +107,46 @@ public class MeetingNotifier {
      */
     public Map<String, Boolean> resendInvite(String title, java.time.Instant start, java.time.Instant end, String joinLink, String openPath,
                                             Collection<String> to, String organizer) {
+        return sendInvite("Invitation (sent again): ", title, start, end, null, joinLink, openPath, to, organizer);
+    }
+
+    /** True for addresses Google itself hosts (gmail.com / googlemail.com): Google Calendar's own invitation reliably reaches them. */
+    public static boolean isGoogleMailbox(String address) {
+        if (address == null) return false;
+        String a = address.trim().toLowerCase(Locale.ROOT);
+        return a.endsWith("@gmail.com") || a.endsWith("@googlemail.com");
+    }
+
+    /**
+     * Prowosma's own invitation for a meeting that was just scheduled in Google Calendar or Teams, sent in the background to every guest except the
+     * organizer. The calendar's invitation can be dropped or sent to junk by company mail servers (Titan / GoDaddy, for one), and when that happens
+     * the guest never hears about the meeting; this e-mail carries the time (in the organizer's time zone) and the join link, so they always do.
+     * Returns how many e-mails were queued.
+     */
+    public int inviteScheduled(String title, java.time.Instant start, java.time.Instant end, String timezone, String joinLink, String openPath,
+                               Collection<String> to, String organizer) {
+        if (!inviteEmails || to == null || to.isEmpty()) return 0;
+        String from = organizer == null ? "" : organizer.trim().toLowerCase(Locale.ROOT);
+        List<String> targets = to.stream().filter(a -> a != null && !a.isBlank() && !a.trim().equalsIgnoreCase(from)).map(a -> a.trim().toLowerCase(Locale.ROOT)).distinct().toList();
+        if (targets.isEmpty()) return 0;
+        String subject = "Invitation: " + safeSubject(title);
+        String html = inviteHtml(title, start, end, timezone, joinLink, openPath, organizer);
+        for (String addr : targets) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    if (!email.sendHtmlEmail(addr, null, subject, html)) log.warn("[Meeting] invitation to a guest was not delivered (see the e-mail log)");
+                } catch (RuntimeException e) { log.warn("[Meeting] invitation failed: {}", e.getClass().getSimpleName()); }
+            });
+        }
+        return targets.size();
+    }
+
+    private Map<String, Boolean> sendInvite(String subjectPrefix, String title, java.time.Instant start, java.time.Instant end, String timezone,
+                                            String joinLink, String openPath, Collection<String> to, String organizer) {
         Map<String, Boolean> result = new LinkedHashMap<>();
         if (to == null) return result;
-        String when = start == null ? "Time to be confirmed" : WHEN.format(start.atOffset(ZoneOffset.UTC)) + " UTC"
-                + (end == null ? "" : " (" + Math.max(1, java.time.Duration.between(start, end).toMinutes()) + " min)");
-        String where = joinLink == null ? "" : joinLink.trim();
-        String html = "<div style=\"font-family:Arial,sans-serif;max-width:520px\"><h2>You are invited to a meeting</h2>"
-                + "<p><b>" + HtmlUtils.htmlEscape(safeSubject(title)) + "</b></p><p><b>When:</b> " + HtmlUtils.htmlEscape(when) + "</p>"
-                + (where.isEmpty() ? "" : "<p><b>Join:</b> " + linkify(where) + "</p>")
-                + (organizer == null || organizer.isBlank() ? "" : "<p>Organizer: " + HtmlUtils.htmlEscape(organizer) + "</p>")
-                + "<p><a href=\"" + frontendUrl.replaceAll("/+$", "") + HtmlUtils.htmlEscape(openPath == null ? "/meetings" : openPath) + "\">Open in Prowosma</a></p></div>";
-        String subject = "Invitation (sent again): " + safeSubject(title);
+        String html = inviteHtml(title, start, end, timezone, joinLink, openPath, organizer);
+        String subject = subjectPrefix + safeSubject(title);
         int n = 0;
         for (String addr : to) {
             if (n++ >= RESEND_LIMIT) break;
@@ -127,6 +156,20 @@ public class MeetingNotifier {
             result.put(addr, ok);
         }
         return result;
+    }
+
+    private String inviteHtml(String title, java.time.Instant start, java.time.Instant end, String timezone, String joinLink, String openPath, String organizer) {
+        java.time.ZoneId zone = ZoneOffset.UTC;
+        try { if (timezone != null && !timezone.isBlank()) zone = java.time.ZoneId.of(timezone.trim()); } catch (RuntimeException ignored) { /* unknown zone: show UTC */ }
+        String when = start == null ? "Time to be confirmed"
+                : DateTimeFormatter.ofPattern("EEE d MMM yyyy, HH:mm z", Locale.ENGLISH).format(start.atZone(zone))
+                + (end == null ? "" : " (" + Math.max(1, java.time.Duration.between(start, end).toMinutes()) + " min)");
+        String where = joinLink == null ? "" : joinLink.trim();
+        return "<div style=\"font-family:Arial,sans-serif;max-width:520px\"><h2>You are invited to a meeting</h2>"
+                + "<p><b>" + HtmlUtils.htmlEscape(safeSubject(title)) + "</b></p><p><b>When:</b> " + HtmlUtils.htmlEscape(when) + "</p>"
+                + (where.isEmpty() ? "" : "<p><b>Join:</b> " + linkify(where) + "</p>")
+                + (organizer == null || organizer.isBlank() ? "" : "<p>Organizer: " + HtmlUtils.htmlEscape(organizer) + "</p>")
+                + "<p><a href=\"" + frontendUrl.replaceAll("/+$", "") + HtmlUtils.htmlEscape(openPath == null ? "/meetings" : openPath) + "\">Open in Prowosma</a></p></div>";
     }
 
     /** One person's "starting soon" reminder: a push notification, and an e-mail unless switched off. */

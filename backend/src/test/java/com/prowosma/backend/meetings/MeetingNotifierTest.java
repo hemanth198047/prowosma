@@ -119,4 +119,35 @@ class MeetingNotifierTest {
         verify(mail).sendHtmlEmail(eq("ann@x.com"), any(), contains("sent again"), html.capture());
         assertThat(html.getValue()).contains("href=\"https://meet.google.com/abc-defg-hij\"").contains("30 min").contains("/meetings/u1").doesNotContain("<b>Again");
     }
+
+    @Test
+    void scheduledMeetingGuestsGetOurOwnInvitation_inTheOrganizersTimeZone_butNotTheOrganizer() throws Exception {
+        when(mail.sendHtmlEmail(any(), any(), any(), any())).thenReturn(true);
+        int queued = notifier.inviteScheduled("Kick-off", java.time.Instant.parse("2026-11-26T13:30:00Z"), java.time.Instant.parse("2026-11-26T14:00:00Z"),
+                "Asia/Kolkata", "https://meet.google.com/abc-defg-hij", "/meetings/u1", List.of("Ann@Company.in", "ann@company.in", "boss@x.com", "bob@titan.example"), "Boss@x.com");
+        assertThat(queued).isEqualTo(2);
+        Thread.sleep(400);
+        var html = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(mail).sendHtmlEmail(eq("ann@company.in"), any(), eq("Invitation: Kick-off"), html.capture());
+        verify(mail).sendHtmlEmail(eq("bob@titan.example"), any(), eq("Invitation: Kick-off"), anyString());
+        verify(mail, never()).sendHtmlEmail(eq("boss@x.com"), any(), any(), any());
+        assertThat(html.getValue()).contains("19:00 IST").contains("https://meet.google.com/abc-defg-hij").contains("30 min");
+    }
+
+    @Test
+    void scheduledInvitationFallsBackToUtcForAnUnknownZone_andCanBeSwitchedOff() {
+        when(mail.sendHtmlEmail(any(), any(), any(), any())).thenReturn(true);
+        var res = notifier.resendInvite("T", java.time.Instant.parse("2026-11-26T13:30:00Z"), null, null, null, List.of("ann@x.com"), null);
+        assertThat(res).containsEntry("ann@x.com", true);
+        ReflectionTestUtils.setField(notifier, "inviteEmails", false);
+        assertThat(notifier.inviteScheduled("T", null, null, "Not/AZone", null, null, List.of("ann@x.com"), "boss@x.com")).isZero();
+    }
+
+    @Test
+    void onlyGmailAddressesCountAsGoogleMailboxes() {
+        assertThat(MeetingNotifier.isGoogleMailbox("Ann@GMAIL.com")).isTrue();
+        assertThat(MeetingNotifier.isGoogleMailbox("ann@googlemail.com")).isTrue();
+        assertThat(MeetingNotifier.isGoogleMailbox("ann@company.in")).isFalse();
+        assertThat(MeetingNotifier.isGoogleMailbox(null)).isFalse();
+    }
 }
