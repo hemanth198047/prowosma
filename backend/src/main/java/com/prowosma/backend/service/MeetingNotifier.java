@@ -21,6 +21,8 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Service
 public class MeetingNotifier {
+    /** Where a meeting of this kind opens in the app (the page that understands ?open=); /meetings is the assistant's own dashboard and ignores it. */
+    static final String OPEN_PATH = "/meetings/earlier?open=";
     private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("EEE d MMM yyyy, HH:mm", Locale.ENGLISH);
 
     private final EmailService email;
@@ -175,7 +177,7 @@ public class MeetingNotifier {
     /** One person's "starting soon" reminder: a push notification, and an e-mail unless switched off. */
     public void remind(Meeting m, String address, long minutesLeft) {
         String when = minutesLeft <= 0 ? "now" : "in " + minutesLeft + " min";
-        alerts.tell(address, "Meeting starting " + when, safeSubject(m.getTitle()), "/meetings?open=" + m.getId());
+        alerts.tell(address, "Meeting starting " + when, safeSubject(m.getTitle()), OPEN_PATH + m.getId());
         if (!reminderEmails) return;
         String subject = "Starting " + when + ": " + safeSubject(m.getTitle());
         String html = body(m, "Your meeting starts " + when, "");
@@ -192,16 +194,32 @@ public class MeetingNotifier {
 
     private String body(Meeting m, String heading, String extra) {
         LocalDateTime start = m.getMeetingDate();
-        String when = start == null ? "Time to be confirmed" : WHEN.format(start.atOffset(ZoneOffset.UTC)) + " UTC"
+        String when = start == null ? "Time to be confirmed" : whenText(start, m.getTimezone())
                 + (m.getDurationMins() == null ? "" : " (" + m.getDurationMins() + " min)");
         String where = m.getLocation() == null ? "" : m.getLocation().trim();
         String whereHtml = where.isEmpty() ? "" : "<p><b>Where:</b> " + linkify(where) + "</p>";
-        String open = frontendUrl.replaceAll("/+$", "") + "/meetings?open=" + HtmlUtils.htmlEscape(String.valueOf(m.getId()));
+        String open = frontendUrl.replaceAll("/+$", "") + OPEN_PATH + HtmlUtils.htmlEscape(String.valueOf(m.getId()));
         return "<div style=\"font-family:Arial,sans-serif;max-width:520px\"><h2>" + HtmlUtils.htmlEscape(heading) + "</h2>"
                 + "<p><b>" + HtmlUtils.htmlEscape(safeSubject(m.getTitle())) + "</b></p>"
                 + "<p><b>When:</b> " + HtmlUtils.htmlEscape(when) + "</p>" + whereHtml
                 + (extra.isEmpty() ? "" : "<p>" + extra + "</p>")
                 + "<p><a href=\"" + open + "\">Open in Prowosma</a></p></div>";
+    }
+
+    /**
+     * "Mon 30 Nov 2026, 15:00 IST (09:30 UTC)": the time where the organizer is, so most guests need no conversion, plus UTC so anyone can work out
+     * their own. Without a usable zone: UTC only.
+     */
+    public static String whenText(LocalDateTime utcStart, String timezone) {
+        java.time.ZonedDateTime utc = utcStart.atOffset(ZoneOffset.UTC).toZonedDateTime();
+        String asUtc = WHEN.format(utc) + " UTC";
+        if (timezone == null || timezone.isBlank()) return asUtc;
+        try {
+            java.time.ZoneId zone = java.time.ZoneId.of(timezone.trim());
+            if (zone.getRules().getOffset(utc.toInstant()).getTotalSeconds() == 0) return asUtc;
+            return DateTimeFormatter.ofPattern("EEE d MMM yyyy, HH:mm z", Locale.ENGLISH).format(utc.withZoneSameInstant(zone))
+                    + " (" + DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH).format(utc) + " UTC)";
+        } catch (RuntimeException e) { return asUtc; }
     }
 
     /** Escapes the text, and turns a web address in it into a link (http/https only, so nothing else can be injected). */

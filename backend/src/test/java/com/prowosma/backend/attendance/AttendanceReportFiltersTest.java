@@ -153,12 +153,12 @@ class AttendanceReportFiltersTest extends TwoWorkspaceTestBase {
     }
 
     @Test
-    void workspacesTheyArentIn_orWithoutAttendance_areRefused() throws Exception {
+    void workspacesTheyArentIn_areRefused_andAttendanceCantBeSwitchedOff() throws Exception {
         // a person who isn't a member of the other workspace
         call(get(BASE + "/report?workspace=" + otherWorkspaceId), token(designerEmail), workspaceId, null, 403);
-        // attendance switched off there
+        // attendance is part of every workspace now: an old "off" flag is ignored, so the report is still available
         call(post("/api/admin/features"), otherOwnerToken(), otherWorkspaceId, "{\"key\":\"attendance\",\"enabled\":false}", 200);
-        call(get(BASE + "/report?workspace=" + otherWorkspaceId), ownerToken(), workspaceId, null, 403);
+        call(get(BASE + "/report?workspace=" + otherWorkspaceId), ownerToken(), workspaceId, null, 200);
     }
 
     @Test

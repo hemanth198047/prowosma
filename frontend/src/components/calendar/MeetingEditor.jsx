@@ -15,6 +15,7 @@ import {
   meetingStart, meetingEnd, parseAttendees, timeOptions,
 } from "../../utils/calendarMeetings";
 import { detectPlatform } from "../../utils/conferenceLink";
+import { browserZone } from "../../utils/browserZone";
 import DateInput from "../DateInput";
 
 const TIME_OPTIONS = timeOptions(15);
@@ -202,6 +203,7 @@ export default function MeetingEditor({ meeting, slot, projects, team, meetings,
         title: form.title.trim(),
         attendees: [...new Set(attendees)],
         meetingDate: toServerDateTime(start),
+        timezone: browserZone(),     // so invitation e-mails can say the time where the organizer is
         durationMins,
         location: form.location.trim(),
         meetingType: form.meetingType,

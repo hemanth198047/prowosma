@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -76,6 +77,7 @@ class UmaApiTest extends TwoWorkspaceTestBase {
     @Autowired com.prowosma.backend.uma.core.UmaGoogleHttp umaGoogleHttp;
     UmaGoogleHttpFake cal() { return (UmaGoogleHttpFake) umaGoogleHttp; }
     @Autowired UmaFakes.Ai ai;
+    @MockitoBean com.prowosma.backend.service.EmailService mailServer;
 
     String raviId;
 
@@ -949,6 +951,189 @@ class UmaApiTest extends TwoWorkspaceTestBase {
         assertThat(r.getResponse().getStatus()).isEqualTo(409);
         assertThat(json(r).get("code").asText()).isEqualTo("GOOGLE_NOT_CONNECTED");
     }
+
+    // ── scheduling: our own invitation e-mails, resend, calendar listing, validation ──
+
+    java.time.Instant inOneHour() { return java.time.Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MINUTES); }
+
+    MvcResult schedule(String token, Map<String, Object> body) throws Exception {
+        return mvc.perform(as(post(BASE + "/meetings/schedule"), token, workspaceId).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsString(body))).andReturn();
+    }
+
+    java.util.Set<String> mailedTo(int calls) {
+        org.mockito.ArgumentCaptor<String> to = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(mailServer, org.mockito.Mockito.timeout(5000).times(calls)).sendHtmlEmail(to.capture(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+        return to.getAllValues().stream().map(String::toLowerCase).collect(java.util.stream.Collectors.toSet());
+    }
+
+    @Test
+    void scheduling_alsoEmailsEveryGuestOurselves_exceptTheOrganizerAndGmailGuests_withTheTimeInTheOrganizersZone() throws Exception {
+        org.mockito.Mockito.when(mailServer.sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        java.time.Instant start = inOneHour();
+        MvcResult r = schedule(ownerToken(), Map.of("title", "Titan test", "start", start.toString(), "durationMinutes", 30, "timezone", "Asia/Kolkata",
+                "attendees", List.of("a@wilmarcs.services", "B@wilmarcs.services", "c@wilmarcs.services", "someone@gmail.com", ownerEmail)));
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(mailedTo(3)).containsExactlyInAnyOrder("a@wilmarcs.services", "b@wilmarcs.services", "c@wilmarcs.services");
+        org.mockito.ArgumentCaptor<String> subject = org.mockito.ArgumentCaptor.forClass(String.class), html = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(mailServer, org.mockito.Mockito.atLeastOnce()).sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), subject.capture(), html.capture());
+        assertThat(subject.getValue()).contains("Titan test");
+        assertThat(html.getValue()).contains("https://meet.google.com/abc-defg-hij").contains("IST");
+        // and the calendar still got the whole list, so Google's own invitation goes out too
+        assertThat(cal().requests.stream().filter(q -> "POST".equals(q.method()) && q.url().contains("/events")).findFirst().orElseThrow().body())
+                .contains("a@wilmarcs.services").contains("someone@gmail.com");
+    }
+
+    @Test
+    void scheduling_aMailServerFailure_doesNotLoseTheMeeting() throws Exception {
+        org.mockito.Mockito.when(mailServer.sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenThrow(new RuntimeException("smtp down"));
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        MvcResult r = schedule(ownerToken(), Map.of("title", "Still saved", "start", inOneHour().toString(), "attendees", List.of("a@x.test")));
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(mongoTemplate.getCollection("uma_meetings").countDocuments(new org.bson.Document("title", "Still saved"))).isEqualTo(1);
+    }
+
+    @Test
+    void scheduling_rulesAreEnforced_andNothingIsCreatedWhenARuleFails() throws Exception {
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        java.time.Instant ok = inOneHour();
+        assertThat(json(schedule(ownerToken(), Map.of("title", "x", "start", ok.minusSeconds(7200).toString()))).get("code").asText()).isEqualTo("IN_THE_PAST");
+        assertThat(json(schedule(ownerToken(), Map.of("title", "x", "start", ok.toString(), "durationMinutes", 1))).get("code").asText()).isEqualTo("BAD_DURATION");
+        assertThat(json(schedule(ownerToken(), Map.of("title", "x", "start", ok.toString(), "durationMinutes", 721))).get("code").asText()).isEqualTo("BAD_DURATION");
+        assertThat(json(schedule(ownerToken(), Map.of("title", "x", "start", ok.toString(), "attendees", List.of("a@x.test", "oops")))).get("code").asText()).isEqualTo("BAD_EMAIL");
+        List<String> many = new java.util.ArrayList<>();
+        for (int i = 0; i < 101; i++) many.add("p" + i + "@x.test");
+        assertThat(json(schedule(ownerToken(), Map.of("title", "x", "start", ok.toString(), "attendees", many))).get("code").asText()).isEqualTo("TOO_MANY");
+        assertThat(schedule(ownerToken(), Map.of("title", "x", "start", ok.toString(), "autoFireflies", true)).getResponse().getStatus()).as("Fireflies not connected").isEqualTo(409);
+        MvcResult noTime = schedule(ownerToken(), Map.of("title", "x"));
+        assertThat(noTime.getResponse().getStatus()).isEqualTo(400);
+        assertThat(cal().requests.stream().noneMatch(q -> "POST".equals(q.method()) && q.url().contains("/events"))).as("Google was never asked").isTrue();
+        assertThat(mongoTemplate.getCollection("uma_meetings").countDocuments()).isZero();
+    }
+
+    @Test
+    void scheduling_aGuestListWithDuplicatesAndCapitals_isCleaned() throws Exception {
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        MvcResult r = schedule(ownerToken(), Map.of("title", "Dupes", "start", inOneHour().toString(), "attendees", List.of("Ann@X.test", "ann@x.test", " ANN@x.test ", "")));
+        assertThat(r.getResponse().getStatus()).isEqualTo(201);
+        assertThat(json(r).get("attendees")).hasSize(1);
+        assertThat(json(r).get("attendees").get(0).asText()).isEqualTo("ann@x.test");
+    }
+
+    @Test
+    void resend_addsWhoeverIsMissingFromTheCalendarEvent_andEmailsTheRest_onceAMinute() throws Exception {
+        org.mockito.Mockito.when(mailServer.sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        MvcResult r = schedule(ownerToken(), Map.of("title", "Resend me", "start", inOneHour().toString(), "attendees", List.of("a@acme.test", "b@acme.test", "g@gmail.com")));
+        String id = json(r).get("id").asText();
+        mailedTo(2);
+        org.mockito.Mockito.clearInvocations(mailServer);
+        cal().requests.clear();
+        // Google's event only has the organizer: the three guests were "lost" on the way
+        MvcResult res = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), ownerToken(), workspaceId)).andReturn();
+        assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(200);
+        JsonNode out = json(res);
+        List<String> added = new java.util.ArrayList<>(); out.get("addedToCalendar").forEach(n -> added.add(n.asText()));
+        List<String> emailed = new java.util.ArrayList<>(); out.get("emailed").forEach(n -> emailed.add(n.asText()));
+        assertThat(added).containsExactlyInAnyOrder("a@acme.test", "b@acme.test", "g@gmail.com");
+        assertThat(emailed).containsExactlyInAnyOrder("a@acme.test", "b@acme.test");          // the gmail guest gets Google's own invitation
+        assertThat(out.get("failed")).isEmpty();
+        assertThat(cal().requests.stream().anyMatch(q -> "PATCH".equals(q.method()) && q.url().contains("sendUpdates=all") && q.body().contains("g@gmail.com"))).isTrue();
+        // straight away again
+        MvcResult again = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), ownerToken(), workspaceId)).andReturn();
+        assertThat(again.getResponse().getStatus()).isEqualTo(429);
+        assertThat(json(again).get("code").asText()).isEqualTo("TOO_SOON");
+    }
+
+    @Test
+    void resend_whenGoogleCantBeUpdated_theEmailsStillGoOut_andTheNoteSaysWhy() throws Exception {
+        org.mockito.Mockito.when(mailServer.sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        String id = json(schedule(ownerToken(), Map.of("title", "Calendar down", "start", inOneHour().toString(), "attendees", List.of("a@acme.test", "g@gmail.com")))).get("id").asText();
+        mailedTo(1);
+        org.mockito.Mockito.clearInvocations(mailServer);
+        cal().calendarStatus = 500;
+        MvcResult res = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), ownerToken(), workspaceId)).andReturn();
+        assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(200);
+        JsonNode out = json(res);
+        assertThat(out.get("addedToCalendar")).isEmpty();
+        assertThat(out.get("calendarNote").asText()).isNotBlank();
+        List<String> emailed = new java.util.ArrayList<>(); out.get("emailed").forEach(n -> emailed.add(n.asText()));
+        assertThat(emailed).containsExactlyInAnyOrder("a@acme.test", "g@gmail.com");     // Google couldn't be updated, so nobody is skipped
+    }
+
+    @Test
+    void resend_canBeNarrowedToSomePeople_andRefusesWhenThereIsNobody() throws Exception {
+        org.mockito.Mockito.when(mailServer.sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        String id = json(schedule(ownerToken(), Map.of("title", "Narrow", "start", inOneHour().toString(), "attendees", List.of("a@acme.test", "b@acme.test")))).get("id").asText();
+        mailedTo(2);
+        org.mockito.Mockito.clearInvocations(mailServer);
+        MvcResult res = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), ownerToken(), workspaceId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"emails\":[\"B@acme.test\"]}")).andReturn();
+        assertThat(res.getResponse().getStatus()).isEqualTo(200);
+        assertThat(json(res).get("emailed")).hasSize(1);
+        assertThat(json(res).get("emailed").get(0).asText()).isEqualTo("b@acme.test");
+        String solo = json(schedule(ownerToken(), Map.of("title", "Solo", "start", inOneHour().plusSeconds(7200).toString(), "attendees", List.of(ownerEmail)))).get("id").asText();
+        MvcResult none = mvc.perform(as(post(BASE + "/meetings/" + solo + "/resend-invites"), ownerToken(), workspaceId)).andReturn();
+        assertThat(none.getResponse().getStatus()).isEqualTo(400);
+        assertThat(json(none).get("code").asText()).isEqualTo("NO_ONE");
+        MvcResult missing = mvc.perform(as(post(BASE + "/meetings/does-not-exist/resend-invites"), ownerToken(), workspaceId)).andReturn();
+        assertThat(missing.getResponse().getStatus()).isIn(403, 404);
+    }
+
+    @Test
+    void resend_isRefusedForOtherPeoplesMeetings_andOtherWorkspaces() throws Exception {
+        enable(ownerToken(), workspaceId);
+        signInGoogle();
+        String id = json(schedule(ownerToken(), Map.of("title", "Mine", "start", inOneHour().toString(), "attendees", List.of("a@acme.test")))).get("id").asText();
+        org.mockito.Mockito.clearInvocations(mailServer);
+        MvcResult other = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), otherOwnerToken(), otherWorkspaceId)).andReturn();
+        assertThat(other.getResponse().getStatus()).isIn(403, 404);
+        MvcResult member = mvc.perform(as(post(BASE + "/meetings/" + id + "/resend-invites"), memberToken(), workspaceId)).andReturn();
+        assertThat(member.getResponse().getStatus()).as(member.getResponse().getContentAsString()).isIn(403, 404);
+        org.mockito.Mockito.verify(mailServer, org.mockito.Mockito.after(300).never()).sendHtmlEmail(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void googleCalendarListing_showsTheEvents_rejectsBadRanges_andNeedsAConnection() throws Exception {
+        enable(ownerToken(), workspaceId);
+        java.time.Instant from = java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MINUTES), to = from.plusSeconds(86400 * 7L);
+        MvcResult notYet = mvc.perform(as(get(BASE + "/google-calendar/events").param("from", from.toString()).param("to", to.toString()), ownerToken(), workspaceId)).andReturn();
+        assertThat(notYet.getResponse().getStatus()).isEqualTo(409);
+        signInGoogle();
+        cal().calendarItems = "[" + UmaGoogleHttpFake.event("e1", "Board sync", from.plusSeconds(3600), from.plusSeconds(5400), "https://meet.google.com/zzz-zzzz-zzz", "confirmed") + ","
+                + UmaGoogleHttpFake.event("e2", "Cancelled one", from.plusSeconds(7200), from.plusSeconds(9000), null, "cancelled") + "]";
+        MvcResult ok = mvc.perform(as(get(BASE + "/google-calendar/events").param("from", from.toString()).param("to", to.toString()), ownerToken(), workspaceId)).andReturn();
+        assertThat(ok.getResponse().getStatus()).as(ok.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(json(ok)).hasSize(1);
+        assertThat(json(ok).get(0).get("title").asText()).isEqualTo("Board sync");
+        assertThat(json(ok).get(0).get("meetUrl").asText()).isEqualTo("https://meet.google.com/zzz-zzzz-zzz");
+        for (String[] bad : new String[][]{{to.toString(), from.toString()}, {from.toString(), from.plusSeconds(86400L * 90).toString()}}) {
+            MvcResult r = mvc.perform(as(get(BASE + "/google-calendar/events").param("from", bad[0]).param("to", bad[1]), ownerToken(), workspaceId)).andReturn();
+            assertThat(r.getResponse().getStatus()).isEqualTo(400);
+            assertThat(json(r).get("code").asText()).isEqualTo("BAD_RANGE");
+        }
+        cal().calendarStatus = 500;
+        MvcResult down = mvc.perform(as(get(BASE + "/google-calendar/events").param("from", from.toString()).param("to", to.toString()), ownerToken(), workspaceId)).andReturn();
+        assertThat(down.getResponse().getStatus()).as("Google failing is reported plainly").isBetween(400, 599);
+        assertThat(down.getResponse().getContentAsString()).doesNotContain("tok-123");
+    }
+
 
     void dueNow() {
         mongoTemplate.updateMulti(new Query(Criteria.where("status").is("QUEUED")),

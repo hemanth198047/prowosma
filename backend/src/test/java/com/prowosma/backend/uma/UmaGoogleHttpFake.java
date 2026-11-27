@@ -16,8 +16,11 @@ class UmaGoogleHttpFake extends UmaGoogleHttp {
     final List<Req> requests = new CopyOnWriteArrayList<>();
     volatile String calendarItems = "[]";      // JSON array returned by events.list
     volatile boolean grantCalendar = true;
+    /** Who is on the one event this fake keeps (ev-new): what events.get returns and what events.patch replaces. */
+    volatile String eventAttendees = "[{\"email\":\"owner@acme.test\"}]";
+    volatile int calendarStatus = 200;         // set to e.g. 500 to make events.list / events.get / events.patch fail
 
-    void reset() { requests.clear(); calendarItems = "[]"; grantCalendar = true; }
+    void reset() { requests.clear(); calendarItems = "[]"; grantCalendar = true; eventAttendees = "[{\"email\":\"owner@acme.test\"}]"; calendarStatus = 200; }
 
     static String event(String id, String title, Instant start, Instant end, String meet, String status) {
         return """
@@ -45,6 +48,15 @@ class UmaGoogleHttpFake extends UmaGoogleHttp {
             return new GoogleHttp.Result(200, event("ev-new", "x", java.time.OffsetDateTime.parse(start).toInstant(),
                     java.time.OffsetDateTime.parse(end).toInstant(), "https://meet.google.com/abc-defg-hij", "confirmed"));
         }
+        if (url.contains("/calendar/v3/calendars/primary/events/")) {
+            if (calendarStatus != 200) return new GoogleHttp.Result(calendarStatus, "{}");
+            if ("PATCH".equals(method)) {
+                eventAttendees = body.replaceAll("(?s).*\"attendees\":(\\[.*\\]).*", "$1");
+                return new GoogleHttp.Result(200, "{}");
+            }
+            return new GoogleHttp.Result(200, "{\"id\":\"ev-new\",\"status\":\"confirmed\",\"attendees\":" + eventAttendees + "}");
+        }
+        if (url.contains("/calendar/v3/calendars/primary/events") && "GET".equals(method) && calendarStatus != 200) return new GoogleHttp.Result(calendarStatus, "{}");
         if (url.contains("/calendar/v3/calendars/primary/events") && "GET".equals(method)) return new GoogleHttp.Result(200, "{\"items\":" + calendarItems + "}");
         return new GoogleHttp.Result(404, "{}");
     }

@@ -16,6 +16,7 @@ import { apiErrorMessage } from "../utils/apiError";
 import { useToast } from "../components/ToastContext";
 import { useConfirm } from "../hooks/useConfirm";
 import MeetingEditor from "../components/calendar/MeetingEditor";
+import { browserZone } from "../utils/browserZone";
 import EventPeek from "../components/calendar/EventPeek";
 import MiniMonth from "../components/calendar/MiniMonth";
 import { toServerDateTime } from "../utils/serverTime";
@@ -309,7 +310,7 @@ export default function Calendar() {
     if (type !== "meeting") { info.revert(); return; }
     const start = info.event.start;
     const end = info.event.end || new Date(start.getTime() + (meeting.durationMins || 30) * 60000);
-    const patch = { meetingDate: toServerDateTime(start), durationMins: minutesBetween(start, end) };
+    const patch = { meetingDate: toServerDateTime(start), durationMins: minutesBetween(start, end), timezone: browserZone() };
     try {
       const res = await updateMeeting(meeting.id, patch);
       const saved = res?.data?.id ? res.data : { ...meeting, ...patch };

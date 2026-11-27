@@ -65,6 +65,6 @@ class AIStatusTest {
         Map<String, Object> s = AIStatus.of(settings(true, "sk-ant-SUPERSECRET-123", "CUSTOM", "https://internal.corp.example/llm", "m"));
         String all = s.toString();
         assertThat(all).doesNotContain("SUPERSECRET").doesNotContain("sk-ant").doesNotContain("internal.corp.example");
-        assertThat(s.keySet()).containsExactlyInAnyOrder("state", "enabled", "configured", "provider", "model", "message");
+        assertThat(s.keySet()).containsExactlyInAnyOrder("state", "enabled", "configured", "provider", "model", "backupCount", "features", "message");
     }
 }

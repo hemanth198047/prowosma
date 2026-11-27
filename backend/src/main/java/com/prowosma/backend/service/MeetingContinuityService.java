@@ -115,7 +115,7 @@ public class MeetingContinuityService {
 
     public Map<String, Object> getWhatsChanged(String meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("Meeting not found: " + meetingId));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Meeting not found: " + meetingId));
 
         Map<String, Object> result = new LinkedHashMap<>();
         if (meeting.getPreviousMeetingId() == null) {
@@ -197,7 +197,7 @@ public class MeetingContinuityService {
 
     public Map<String, Object> getMeetingSummary(String meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new IllegalArgumentException("Meeting not found: " + meetingId));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Meeting not found: " + meetingId));
 
         List<String> actionItemIds = meeting.getProjectDiscussions().stream()
                 .flatMap(pd -> pd.getActionItemIds().stream()).distinct().toList();

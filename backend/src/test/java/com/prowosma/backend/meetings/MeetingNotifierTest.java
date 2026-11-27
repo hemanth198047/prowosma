@@ -45,7 +45,8 @@ class MeetingNotifierTest {
         int queued = notifier.invite(meeting(), List.of("ann@x.com", "boss@x.com"), "boss@x.com");
         assertThat(queued).isEqualTo(1);
         Thread.sleep(300);
-        verify(mail, times(1)).sendHtmlEmail(eq("ann@x.com"), any(), eq("Invitation: Sprint review"), contains("Open in Prowosma"));
+        verify(mail, times(1)).sendHtmlEmail(eq("ann@x.com"), any(), eq("Invitation: Sprint review"), contains("/meetings/earlier?open=m1"));
+        verify(mail, times(1)).sendHtmlEmail(eq("ann@x.com"), any(), any(), contains("Open in Prowosma"));
         verify(mail, never()).sendHtmlEmail(eq("boss@x.com"), any(), any(), any());
     }
 
@@ -81,7 +82,8 @@ class MeetingNotifierTest {
     @Test
     void remindSendsAPushAndAnEmail_andTheEmailCanBeSwitchedOff() throws Exception {
         notifier.remind(meeting(), "ann@x.com", 10);
-        verify(alerts).tell(eq("ann@x.com"), eq("Meeting starting in 10 min"), eq("Sprint review"), contains("m1"));
+        // the notification must open the page that understands ?open= (the assistant dashboard at /meetings ignores it)
+        verify(alerts).tell(eq("ann@x.com"), eq("Meeting starting in 10 min"), eq("Sprint review"), eq("/meetings/earlier?open=m1"));
         Thread.sleep(300);
         verify(mail).sendHtmlEmail(eq("ann@x.com"), any(), contains("Starting in 10 min"), any());
 
@@ -149,5 +151,35 @@ class MeetingNotifierTest {
         assertThat(MeetingNotifier.isGoogleMailbox("ann@googlemail.com")).isTrue();
         assertThat(MeetingNotifier.isGoogleMailbox("ann@company.in")).isFalse();
         assertThat(MeetingNotifier.isGoogleMailbox(null)).isFalse();
+    }
+
+    @Test
+    void theTimeIsWrittenWhereTheOrganizerIs_withUtcAlongside_andFallsBackToUtc() {
+        java.time.LocalDateTime t = java.time.LocalDateTime.of(2026, 11, 30, 9, 30);
+        assertThat(MeetingNotifier.whenText(t, "Asia/Kolkata")).isEqualTo("Mon 30 Nov 2026, 15:00 IST (09:30 UTC)");
+        assertThat(MeetingNotifier.whenText(t, "Asia/Calcutta")).as("the old name Chrome reports for Kolkata").isEqualTo("Mon 30 Nov 2026, 15:00 IST (09:30 UTC)");
+        assertThat(MeetingNotifier.whenText(t, "America/New_York")).isEqualTo("Mon 30 Nov 2026, 04:30 EST (09:30 UTC)");
+        assertThat(MeetingNotifier.whenText(java.time.LocalDateTime.of(2026, 7, 1, 9, 30), "America/New_York")).contains("05:30 EDT").contains("(09:30 UTC)");
+        assertThat(MeetingNotifier.whenText(t, null)).isEqualTo("Mon 30 Nov 2026, 09:30 UTC");
+        assertThat(MeetingNotifier.whenText(t, " ")).isEqualTo("Mon 30 Nov 2026, 09:30 UTC");
+        assertThat(MeetingNotifier.whenText(t, "Mars/Olympus")).isEqualTo("Mon 30 Nov 2026, 09:30 UTC");
+        assertThat(MeetingNotifier.whenText(t, "UTC")).isEqualTo("Mon 30 Nov 2026, 09:30 UTC");
+        // a date line that crosses midnight in the organizer's zone shows the organizer's date, not UTC's
+        assertThat(MeetingNotifier.whenText(java.time.LocalDateTime.of(2026, 11, 30, 20, 0), "Asia/Kolkata")).startsWith("Tue 1 Dec 2026, 01:30 IST");
+    }
+
+    @Test
+    void invitationAndReminderEmailsCarryTheOrganizersTime() throws Exception {
+        when(mail.sendHtmlEmail(any(), any(), any(), any())).thenReturn(true);
+        Meeting m = meeting();
+        m.setMeetingDate(java.time.LocalDateTime.of(2026, 11, 30, 9, 30));
+        m.setTimezone("Asia/Kolkata");
+        notifier.invite(m, List.of("ann@x.com"), "boss@x.com");
+        Thread.sleep(300);
+        verify(mail).sendHtmlEmail(eq("ann@x.com"), any(), any(), contains("15:00 IST (09:30 UTC)"));
+        reset(mail);
+        notifier.remind(m, "ann@x.com", 10);
+        Thread.sleep(300);
+        verify(mail).sendHtmlEmail(eq("ann@x.com"), any(), any(), contains("15:00 IST (09:30 UTC)"));
     }
 }

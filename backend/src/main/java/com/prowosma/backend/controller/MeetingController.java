@@ -98,6 +98,7 @@ public class MeetingController {
     public Meeting create(@RequestBody Meeting meeting, Authentication auth) {
         meeting.setWorkspaceId(workspaceContext.getWorkspaceId());
         meeting.setStatus("SCHEDULED");
+        meeting.setTimezone(cleanZone(meeting.getTimezone()));
         if (meeting.getActionItems() == null) meeting.setActionItems(new ArrayList<>());
         if (meeting.getAttendees()   == null) meeting.setAttendees(new ArrayList<>());
         Meeting saved = meetingService.create(meeting, auth.getName());
@@ -120,6 +121,7 @@ public class MeetingController {
             if (patch.containsKey("durationMins") && patch.get("durationMins") instanceof Number)
                 m.setDurationMins(((Number) patch.get("durationMins")).intValue());
             if (patch.containsKey("location"))    m.setLocation((String) patch.get("location"));
+            if (patch.get("timezone") instanceof String z && cleanZone(z) != null) m.setTimezone(cleanZone(z));
             if (patch.containsKey("meetingDate") && patch.get("meetingDate") != null) {
                 LocalDateTime when = parseUtc(String.valueOf(patch.get("meetingDate")));
                 if (when == null)
@@ -242,7 +244,12 @@ public class MeetingController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable String id) {
-        meetingRepository.deleteById(id);
+        // The tenant guard already leaves another workspace's meeting untouched, but it answered "deleted" all the same. Say what happened:
+        // a meeting that isn't in this workspace (or doesn't exist) is "not found", so the screen doesn't claim a delete that never was.
+        Meeting m = meetingRepository.findById(id)
+                .filter(x -> java.util.Objects.equals(x.getWorkspaceId(), workspaceContext.getWorkspaceId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found: " + id));
+        meetingRepository.delete(m);
         return ResponseEntity.ok(Map.of("message", "Meeting deleted"));
     }
 
@@ -449,6 +456,12 @@ public class MeetingController {
      * (taken as already UTC, matching how create() stores it). Null if
      * unparseable.
      */
+    /** A time zone id we can use, or null: anything else (unknown, too long, not text) is ignored rather than stored. */
+    static String cleanZone(String raw) {
+        if (raw == null || raw.isBlank() || raw.length() > 64) return null;
+        try { return java.time.ZoneId.of(raw.trim()).getId(); } catch (RuntimeException e) { return null; }
+    }
+
     static LocalDateTime parseUtc(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String s = raw.trim();

@@ -84,7 +84,9 @@ const EMPTY = {
 
 function MeetingFormModal({ initial, prefill, projects, wsId, onSave, onCancel }) {
   const [form, setForm]     = useState(() => initial
-    ? { ...initial, attendees: initial.attendees?.join(", ") || "",
+    // A meeting made from the calendar has no notes, agenda or summary at all (null): the form needs text there, or opening it crashes.
+    ? { ...initial, title: initial.title ?? "", agenda: initial.agenda ?? "", notes: initial.notes ?? "", summary: initial.summary ?? "",
+        attendees: Array.isArray(initial.attendees) ? initial.attendees.join(", ") : "",
         meetingDate: toLocalInputValue(parseServerDateTime(initial.meetingDate)),
         meetingType: initial.meetingType || "OTHER" }
     : { ...EMPTY, ...(prefill?.form || {}) });
@@ -705,7 +707,7 @@ export default function Meetings() {
         // Not on the page that was loaded (an older or far-future meeting): ask the server for that one meeting instead of silently doing nothing.
         clearParam();
         getMeeting(openParam)
-          .then((res) => { setEditing(res.data); setShowForm(true); })
+          .then((res) => { setEditing(cleanMeeting(res.data || {})); setShowForm(true); })
           .catch((err) => toast(apiErrorMessage(err, "Couldn't open that meeting. It may have been deleted, or you may not have access to it."), "error"));
       }
       return;

@@ -25,6 +25,9 @@ public class Meeting {
     // Where the meeting happens: a room name or a meeting link (Teams, Zoom,
     // Meet...). Shown on the calendar; a link gets a "Join" button.
     private String location;
+    // The time zone (IANA, e.g. "Asia/Kolkata") of whoever scheduled it: only used to write the time in invitation and reminder e-mails. The time itself
+    // is always stored in UTC (meetingDate).
+    private String timezone;
     private LocalDateTime invitesResentAt;        // when the invitations were last sent again by hand (limits repeats)
     private String docId;
     private List<String> attendees = new ArrayList<>();

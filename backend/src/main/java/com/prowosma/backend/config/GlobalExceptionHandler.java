@@ -69,6 +69,32 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * The request itself was wrong (unreadable JSON, a date or number that isn't one, a wrong method or content type): the caller's mistake,
+     * so 4xx with a plain message. Without these, Spring's own exceptions fell into the catch-all below and a mistyped request looked like
+     * a server failure (500), which is how "Something went wrong" reports start.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.debug("Unreadable request body: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body(errorBody("INVALID_REQUEST",
+                "The request could not be read. Check the values you sent (for example dates) and try again.", null));
+    }
+
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body(errorBody("INVALID_REQUEST", "The value given for '" + ex.getName() + "' is not valid.", null));
+    }
+
+    @ExceptionHandler({org.springframework.web.HttpRequestMethodNotSupportedException.class,
+            org.springframework.web.HttpMediaTypeNotSupportedException.class,
+            org.springframework.web.HttpMediaTypeNotAcceptableException.class})
+    public ResponseEntity<Map<String, Object>> handleWrongKindOfRequest(Exception ex) {
+        HttpStatus status = ex instanceof org.springframework.web.ErrorResponse er ? HttpStatus.resolve(er.getStatusCode().value()) : null;
+        if (status == null) status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(errorBody("INVALID_REQUEST", status.getReasonPhrase(), null));
+    }
+
     /** IllegalArgumentException → 400 */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {

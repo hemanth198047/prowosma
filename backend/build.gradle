@@ -132,6 +132,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test' // Spring Boot 4's modularization split MockMvc auto-config (incl. @AutoConfigureMockMvc) out of spring-boot-starter-test into its own test starter
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring4x:4.24.0' // spring3x targets pre-4.0 Spring Boot's MongoProperties location (org.springframework.boot.autoconfigure.mongo.MongoProperties, removed in 4.0's modularization) — spring4x targets the current one (org.springframework.boot.mongodb.autoconfigure.MongoProperties)
+	// A MongoDB-compatible server written in Java, used instead of Flapdoodle's downloaded mongod when TEST_MONGO_JAVA=true (see JavaMongoSession). Lets the whole test-suite run where mongod can't be downloaded.
+	testImplementation 'de.bwaldvogel:mongo-java-server:1.47.0'
+	testImplementation 'org.junit.platform:junit-platform-launcher'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
