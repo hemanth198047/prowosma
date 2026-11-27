@@ -24121,6 +24121,17 @@ html[data-design="classic"] .uma-mrow-title:hover { color: var(--brand-600); }
 html[data-design="classic"] .uma-mrow-meta { grid-area: meta; color: var(--text-muted); font-size: 12.5px; }
 html[data-design="classic"] .uma-mrow-status { grid-area: status; display: flex; align-items: center; gap: 8px; }
 html[data-design="classic"] .uma-mrow-pct { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+html[data-design="classic"] .uma-mrow { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "title join status" "meta join status"; align-items: center; column-gap: 14px; }
+html[data-design="classic"] .uma-mrow--pick { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "check title join status" "check meta join status"; }
+html[data-design="classic"] .uma-mrow-status { min-width: 92px; justify-content: flex-end; }
+/* Join: a compact button in its own slot (not a full-width bar). Soft tint at rest, solid on hover/focus. */
+html[data-design="classic"] .uma-mrow-join { grid-area: join; align-self: center; justify-self: end; display: inline-flex; align-items: center; gap: 6px; width: auto; min-height: 0; height: 30px; padding: 0 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; line-height: 1; white-space: nowrap; text-decoration: none; color: var(--brand-700, #3730a3); background: var(--brand-50, #eef2ff); border: 1px solid var(--brand-200, #c7d2fe); box-shadow: none; transition: background .15s, color .15s, border-color .15s; }
+html[data-design="classic"] .uma-mrow-join:hover, .uma-mrow-join:focus-visible { color: #fff; background: var(--brand-600, #4f46e5); border-color: var(--brand-600, #4f46e5); }
+@media (max-width: 640px) {
+  html[data-design="classic"] .uma-mrow, html[data-design="classic"] .uma-mrow--pick { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title status" "meta join"; }
+  html[data-design="classic"] .uma-mrow--pick { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "check title status" "check meta join"; }
+  html[data-design="classic"] .uma-mrow-status { min-width: 0; }
+}
 html[data-design="classic"] .uma-side { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card); padding: 14px; position: sticky; top: 12px; }
 html[data-design="classic"] .uma-plist li { padding: 8px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
 html[data-design="classic"] .uma-plist li:first-child { border-top: 0; }
@@ -24301,7 +24312,6 @@ html[data-design="classic"] .uma-project-actions { display: flex; flex-wrap: wra
 html[data-design="classic"] .uma-project-actions select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); min-height: 34px; }
 html[data-design="classic"] .uma-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; }
 html[data-design="classic"] .uma-toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-html[data-design="classic"] .uma-mrow--pick { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "check title status" "check meta status"; }
 html[data-design="classic"] .uma-mrow-check { grid-area: check; align-self: center; margin: 0; width: 16px; height: 16px; accent-color: var(--brand-500); }
 html[data-design="classic"] .uma-danger-btn { background: var(--danger, #dc2626); border-color: var(--danger, #dc2626); }
 html[data-design="classic"] .uma-danger-btn:hover:not(:disabled) { filter: brightness(.95); }
