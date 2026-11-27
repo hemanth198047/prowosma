@@ -176,7 +176,7 @@ export default function TimeTracking() {
       const [rep, invRes, projRes] = await Promise.all([
         getTimeReport(params), getInvoices(), getProjects(),
       ]);
-      setReport(rep.data);
+      setReport(rep.data && typeof rep.data === "object" && !Array.isArray(rep.data) ? rep.data : null);
       setInvoices(unwrapList(invRes));
       setProjects(unwrapList(projRes));
     } catch (e) { console.error(e); }
@@ -333,7 +333,7 @@ export default function TimeTracking() {
                       <span>Task</span><span>Project</span><span>Description</span>
                       <span>Time</span><span>Billable</span><span>Amount</span><span>Logged by</span>
                     </div>
-                    {report.entries.map((e, i) => (
+                    {(report.entries || []).map((e, i) => (
                       <div key={i} className="tt-entries-row">
                         <span className="tt-task-name" title={e.taskTitle}>{e.taskTitle}</span>
                         <span className="tt-project-name">{e.projectName || "—"}</span>

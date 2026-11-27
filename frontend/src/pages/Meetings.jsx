@@ -647,10 +647,11 @@ export default function Meetings() {
         getProjects(),
         getTeamMembers(),
       ]);
-      const ml = mr.data?.data ?? mr.data ?? [];
-      setMeetings(ml);
+      // Whatever else the server sent (an error body, an empty answer) must never reach .filter() below and blank the page.
+      const raw = mr.data?.data ?? mr.data;
+      setMeetings(Array.isArray(raw) ? raw : Array.isArray(raw?.content) ? raw.content : []);
       setProjects(Array.isArray(pr.data) ? pr.data : []);
-      setMembers(Array.isArray(tr.data) ? tr.data : (tr.data?.data ?? []));
+      setMembers(Array.isArray(tr.data) ? tr.data : (Array.isArray(tr.data?.data) ? tr.data.data : []));
     } catch (e) { if (e?.response?.status !== 404) toast?.("Failed to load meetings", "error"); }
     finally { setLoading(false); }
   }, [wsId, toast]);

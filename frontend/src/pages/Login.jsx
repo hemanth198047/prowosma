@@ -46,6 +46,9 @@ export default function Login() {
   // completeTwoFactorLogin on the backend) — the password already checked
   // out, this is just the 6-digit authenticator code.
   const [twoFactorCode, setTwoFactorCode] = useState("");
+  // Proof that the password step passed (from the server, valid five minutes). Sent back with the code, so a mistyped code can be retried
+  // without typing the password again.
+  const [twoFactorToken, setTwoFactorToken] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading,      setLoading]      = useState(false);
@@ -85,16 +88,20 @@ export default function Login() {
     try {
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
       if (mode === "login") { try { localStorage.setItem(LAST_EMAIL, form.email.trim()); } catch { /* private mode */ } }
+      // Spaces around the address (autofill adds them) must not matter; capital letters are handled by the server.
+      const typedEmail = form.email.trim();
       const payload  = mode === "login"
-        ? { email: form.email, password: form.password, remember }
-        : { name: form.name, email: form.email, password: form.password };
+        ? { email: typedEmail, password: form.password, remember }
+        : { name: form.name, email: typedEmail, password: form.password };
       const res = await axios.post(`${API}${endpoint}`, payload);
 
       // Password checked out, but this account has 2FA enabled — the
       // backend deliberately withheld a real token (see AuthService.login)
       // and just wants the authenticator code next. Don't try to treat
       // this response as a session; hand off to the code-entry step.
-      if (res.data?.twoFactorRequired) {
+      if (res.data?.requiresTwoFactor || res.data?.twoFactorRequired) {
+        setTwoFactorToken(res.data.twoFactorToken || "");   // empty with an older server: the e-mail based step below is used instead
+        setTwoFactorCode("");
         setMode("twoFactor");
         setError("");
         return;
@@ -154,28 +161,32 @@ export default function Login() {
   };
 
   const handleTwoFactorSubmit = async () => {
+    if (loading) return;
     setError("");
-    if (!twoFactorCode.trim()) {
+    const code = twoFactorCode.trim();
+    if (!code) {
       setError(t("login.twoFactor.errors.codeRequired", "Enter your 6-digit code"));
       return;
     }
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/auth/login/2fa`, {
-        email: form.email,
-        code: twoFactorCode.trim(),
-        remember,
-      });
+      // A challenge from step 1 when the server gave one (the code can then be retyped after a typo); otherwise the older e-mail based step.
+      const body = twoFactorToken ? { twoFactorToken, code } : { email: form.email.trim(), code, remember };
+      const res = await axios.post(`${API}/auth/login/2fa`, body);
       await completeLogin(res.data, { showWorkspaceConfirmation: true });
     } catch (err) {
-      // A rejected/expired code doesn't get another free attempt against
-      // the same password-verified window (see AuthService.
-      // completeTwoFactorLogin) — send them back to re-enter the password
-      // rather than leaving them stuck retyping a code that can never
-      // succeed anymore.
-      setError(err.response?.data?.message || t("login.twoFactor.errors.failed", "Invalid or expired code. Please log in again."));
-      setMode("login");
-      setTwoFactorCode("");
+      const message = err.response?.data?.message;
+      const gone = /expired|log in again/i.test(message || "");
+      if (gone || !twoFactorToken) {
+        // The five minutes ran out (or the older step, which allows one try): start again from the password.
+        setError(message || t("login.twoFactor.errors.failed", "Invalid or expired code. Please log in again."));
+        setMode("login");
+        setTwoFactorToken("");
+        setTwoFactorCode("");
+      } else {
+        // A wrong code, or too many wrong codes: say so and stay here, so it can be typed again.
+        setError(message || t("login.twoFactor.errors.failed", "That code didn't work. Check it and try again."));
+      }
     } finally {
       setLoading(false);
     }
@@ -209,24 +220,26 @@ export default function Login() {
     return (
       <Frame t={t}>
         <h1 className="auth-title">{t("login.twoFactor.heading", "Two-step verification")}</h1>
-        <p className="auth-sub">{t("login.twoFactor.subtitle", "Enter the 6-digit code from your authenticator app")}</p>
+        <p className="auth-sub">{t("login.twoFactor.subtitle", "Enter the 6-digit code from your authenticator app, or one of your backup codes.")}</p>
         {error && <div className="auth-error" role="alert">{error}</div>}
         <form className="auth-form" noValidate onSubmit={(e) => { e.preventDefault(); handleTwoFactorSubmit(); }}>
           <div className="auth-field">
-            <label className="auth-label" htmlFor="two-factor-code">{t("login.twoFactor.codeLabel", "Authentication code")}</label>
+            <label className="auth-label" htmlFor="two-factor-code">{t("login.twoFactor.codeLabel", "Verification code")}</label>
+            {/* Plain text on purpose: a backup code has letters and a dash, and must be typeable. */}
             <input id="two-factor-code" className="auth-input" type="text"
-              inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              autoComplete="one-time-code" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go"
               placeholder="123456" value={twoFactorCode}
-              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))} />
+              onChange={(e) => setTwoFactorCode(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleTwoFactorSubmit(); } }} />
           </div>
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? t("login.pleaseWait") : t("login.twoFactor.submit", "Verify & sign in")}
+          <button type="submit" className="auth-submit" disabled={loading || !twoFactorCode.trim()}>
+            {loading ? t("login.twoFactor.verifying", "Verifying...") : t("login.twoFactor.submit", "Verify →")}
           </button>
         </form>
         <p className="auth-switch">
           <button type="button" className="auth-link"
-            onClick={() => { setMode("login"); setError(""); setTwoFactorCode(""); }}>
-            {t("login.twoFactor.backToSignIn", "Back to sign in")}
+            onClick={() => { setMode("login"); setError(""); setTwoFactorCode(""); setTwoFactorToken(""); }}>
+            {t("login.twoFactor.back", "← Back to sign in")}
           </button>
         </p>
       </Frame>
@@ -324,7 +337,8 @@ export default function Login() {
                 <input id="auth-password" className="auth-input" name="password" type={showPw ? "text" : "password"}
                   value={form.password}
                   autoComplete={isLogin ? "current-password" : "new-password"} enterKeyHint="go"
-                  onChange={handleChange} />
+                  onChange={handleChange}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !loading) { e.preventDefault(); handleSubmit(); } }} />
                 <button type="button" className="auth-pw-toggle" onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? t("login.hidePassword", "Hide password") : t("login.showPassword", "Show password")} aria-pressed={showPw}>
                   {showPw ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}

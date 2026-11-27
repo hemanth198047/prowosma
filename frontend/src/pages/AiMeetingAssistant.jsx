@@ -878,7 +878,14 @@ function Dashboard({ openDialog, projects = [] }) {
   const [selected, setSelected] = useState(() => new Set());
   const [clearing, setClearing] = useState(false);
   const select = picking ? { selected, toggle: (id) => setSelected((s0) => { const n = new Set(s0); n.has(id) ? n.delete(id) : n.add(id); return n; }) } : null;
-  const load = useCallback(() => getUmaDashboard().then((r) => { setData(r.data); setError(""); })
+  // The list fields are always arrays, whatever the server sent (an older server, an error body): a missing one must never blank the page.
+  const load = useCallback(() => getUmaDashboard().then((r) => {
+    const d = r.data && typeof r.data === "object" && !Array.isArray(r.data) ? r.data : {};
+    const list = (k) => (Array.isArray(d[k]) ? d[k] : []);
+    setData({ ...d, upcoming: list("upcoming"), inProgress: list("inProgress"), recent: list("recent"), awaitingReview: list("awaitingReview"),
+      pendingActions: list("pendingActions"), failed: list("failed") });
+    setError("");
+  })
     .catch((e) => setError(apiErrorMessage(e, "The meeting list couldn't be loaded."))), []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {

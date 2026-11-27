@@ -14,6 +14,7 @@ import { backupsFromServer, backupsForServer } from "../utils/backupProviders";
 import "../styles/pages/ai.css";
 import { useToast } from "../components/ToastContext";
 import { Bot as IcBot, Brain as IcBrain, Calendar as IcCalendar, ChartColumn as IcChartColumn, Handshake as IcHandshake, Link as IcLink, Map as IcMap, MessageSquare as IcMessageSquare, MessagesSquare as IcMessagesSquare, NotebookPen as IcNotebookPen, Pill as IcPill, Settings as IcSettings, Sparkles as IcSparkles, Sun as IcSun, Target as IcTarget, Timer as IcTimer, TriangleAlert as IcTriangleAlert, Users as IcUsers } from "lucide-react";
+import { apiErrorMessage } from "../utils/apiError";
 const AI_FEATURES = [
   {
     key: "task_assistant",
@@ -229,7 +230,7 @@ export default function AISettings() {
       if (id !== modelReq.current) return;                       // a newer request replaced this one
       const list = res.data?.models || [];
       setLiveModels(list);
-      setModelsError(list.length ? "" : (res.data?.error || "No models were returned for this key."));
+      setModelsError(list.length ? "" : apiErrorMessage({ response: res }, "No models were returned for this key."));
       const f = latest.current.form;
       if (list.length && f && f.apiProvider === provider && !list.includes(f.model)) {
         // Only explain it when the unavailable model is the one that was SAVED (not a default we filled in after a provider switch).

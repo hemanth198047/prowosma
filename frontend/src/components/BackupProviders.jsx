@@ -24,7 +24,7 @@ function Row({ row, index, onChange, onRemove }) {
         if (id !== req.current) return;
         const list = res.data?.models || [];
         setModels(list);
-        setNote(list.length ? "" : res.data?.error || "No models were returned for this key.");
+        setNote(list.length ? "" : apiErrorMessage({ response: res }, "No models were returned for this key."));
       } catch {
         if (id === req.current) { setModels([]); setNote("Couldn't check this key right now."); }
       } finally {

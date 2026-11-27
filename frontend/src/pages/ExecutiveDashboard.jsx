@@ -53,7 +53,7 @@ export default function ExecutiveDashboard() {
         : Array.isArray(portfolioData?.projects)
           ? portfolioData.projects
           : []);
-      setKpis(kr.data);
+      setKpis(Array.isArray(kr.data) ? kr.data : Array.isArray(kr.data?.data) ? kr.data.data : []);
       setGoals(unwrapList(gr));
       setRisks(Array.isArray(rr.data?.risks) ? rr.data.risks : []);
     }).catch(() => {})

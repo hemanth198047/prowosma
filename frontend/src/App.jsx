@@ -108,6 +108,7 @@ import { usePWA } from "./hooks/usePWA";
 import { Gem as IcGem } from "lucide-react";
 import { applyDesign, activeDesign, DESIGNS, DESIGN_CHANGED_EVENT } from "./utils/design";
 import AppVersion from "./components/AppVersion";
+import PageErrorBoundary from "./components/PageErrorBoundary";
 
 
 /* ── Classic / New design, in the user menu ─────────────────────── */
@@ -514,6 +515,7 @@ function AppShell() {
               <main className={`main-content${isDocs ? " no-padding" : isDashboard ? " no-padding db-shell" : " page-scrollable"}`}>
                 <Breadcrumb />
                 {!isDocs && <NotificationPrompt />}
+                <PageErrorBoundary resetKey={location.pathname}>
                 <Suspense fallback={<PageSkeleton />}>
               {restricted && location.pathname !== "/" && !isPathAllowedForRestricted(location.pathname, accessCapabilities) ? (
                 <div className="empty-state" role="status">
@@ -799,6 +801,7 @@ function AppShell() {
                 </Routes>
               )}
               </Suspense>
+                </PageErrorBoundary>
               </main>
             </div>
           </div>

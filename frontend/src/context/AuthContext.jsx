@@ -89,9 +89,15 @@ function getInitialUser() {
 function getInitialWorkspace() {
   const ws = sessionStorage.getItem(tabKey("activeWorkspace"));
   if (ws) {
-    const parsed = JSON.parse(ws);
-    client.defaults.headers.common["X-Workspace-Id"] = parsed.id;
-    return parsed;
+    // A damaged saved value must never stop the whole app from starting ("Something went wrong" on every load): drop it and carry on.
+    try {
+      const parsed = JSON.parse(ws);
+      if (parsed && typeof parsed === "object" && parsed.id) {
+        client.defaults.headers.common["X-Workspace-Id"] = parsed.id;
+        return parsed;
+      }
+    } catch { /* unreadable: fall through and forget it */ }
+    try { sessionStorage.removeItem(tabKey("activeWorkspace")); } catch { /* storage blocked */ }
   }
   return null;
 }

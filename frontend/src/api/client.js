@@ -165,6 +165,14 @@ client.interceptors.response.use(
   (response) => {
     endTrackedRequest(response.config);
 
+    // A web page where data was expected: a proxy or a server that is mid-restart answers "200" with its own HTML page. Pages read that
+    // as a list or an object and crash ("x.map is not a function"); turning it into a normal failed request lets their error handling run.
+    if (isHtmlInsteadOfData(response)) {
+      const err = new Error("The server sent a web page instead of data. Please try again in a moment.");
+      err.config = response.config; err.response = { ...response, status: 502 }; err.code = "ERR_BAD_RESPONSE";
+      return Promise.reject(err);
+    }
+
     // Cache successful GET responses
     if (response.config.method === "get" && !response.config._noCache) {
       const wsId2 = response.config.headers["X-Workspace-Id"] || getWorkspaceId() || "";
@@ -197,7 +205,7 @@ client.interceptors.response.use(
     endTrackedRequest(error.config);
 
     // 401 — token expired: clear session and redirect to login
-    if (error.response?.status === 401) {
+    if (isSessionFailure(error)) {
       for (const key of Object.keys(sessionStorage)) {
         if (key.endsWith("__token") || key.endsWith("__user") ||
             key.endsWith("__activeWorkspace")) {
@@ -220,6 +228,25 @@ client.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Whether a failed request means "your sign-in is no longer valid" (so: sign out and go to the login page). Almost every 401 does, but a
+ * wrong password typed into "delete my account" is also answered 401, and that must only say "incorrect password", not throw the person out.
+ */
+export function isSessionFailure(error) {
+  if (error?.response?.status !== 401) return false;
+  const cfg = error.config || {};
+  const url = String(cfg.url || "").split("?")[0];
+  if (String(cfg.method || "").toLowerCase() === "delete" && /\/users\/me\/?$/.test(url)) return false;
+  return true;
+}
+
+export function isHtmlInsteadOfData(response) {
+  const type = String(response?.headers?.["content-type"] || response?.headers?.get?.("content-type") || "");
+  const asked = response?.config?.responseType;
+  if (asked === "blob" || asked === "arraybuffer" || asked === "text" || asked === "stream") return false;
+  return typeof response?.data === "string" && /text\/html/i.test(type);
+}
 
 /* ── Cache helpers ───────────────────────────────────────────── */
 export function invalidateCache(prefix) {

@@ -10,6 +10,7 @@ import { ErrorFallback } from './components/ErrorFallback.jsx'
 import './i18n' // must run before any component using useTranslation() renders
 import { applyDesign, currentDesign } from './utils/design'
 import { installStaleAppGuards } from './utils/staleApp'
+import { installErrorReporting } from './utils/reportError'
 import UpdateBanner from './components/UpdateBanner.jsx'
 
 // Classic or New design (?design=classic|new, or the person's saved choice). New needs no extra download.
@@ -18,6 +19,7 @@ applyDesign(currentDesign())
 // No-op unless VITE_SENTRY_DSN is set — see src/config/errorTracking.js.
 initErrorTracking()
 installStaleAppGuards()
+installErrorReporting()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

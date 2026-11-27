@@ -106,7 +106,7 @@ describe("Login — two-step verification", () => {
     fireEvent.change(await screen.findByLabelText("Verification code"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /Verify/ }));
 
-    expect(await screen.findByText("Welcome back")).toBeTruthy();
+    expect(await screen.findByText("Sign in to Prowosma")).toBeTruthy();
     expect(screen.getByText(/This sign-in has expired/)).toBeTruthy();
   });
 
@@ -123,7 +123,7 @@ describe("Login — two-step verification", () => {
     await renderAndSignIn();
 
     fireEvent.click(await screen.findByRole("button", { name: /Back to sign in/ }));
-    expect(await screen.findByText("Welcome back")).toBeTruthy();
+    expect(await screen.findByText("Sign in to Prowosma")).toBeTruthy();
     expect(loginUser).not.toHaveBeenCalled();
   });
 
@@ -143,5 +143,35 @@ describe("Login — two-step verification", () => {
     await renderAndSignIn();
     expect(await screen.findByText("Verificación en dos pasos")).toBeTruthy();
     await i18n.changeLanguage("en");
+  });
+
+  it("the code box accepts a backup code with letters and a dash (it is not limited to six digits)", async () => {
+    axios.post.mockResolvedValueOnce({ data: CHALLENGE });
+    await renderAndSignIn();
+    const input = await screen.findByLabelText("Verification code");
+    fireEvent.change(input, { target: { value: "ab12-cd34-ef" } });
+    expect(input.value).toBe("ab12-cd34-ef");
+  });
+
+  it("with an older server that sends no challenge, the e-mail based step is used", async () => {
+    axios.post.mockResolvedValueOnce({ data: { twoFactorRequired: true, email: "sam@acme.com" } })
+              .mockResolvedValueOnce({ data: { token: "JWT", email: "sam@acme.com" } });
+    await renderAndSignIn();
+    fireEvent.change(await screen.findByLabelText("Verification code"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: /Verify/ }));
+    await waitFor(() => expect(loginUser).toHaveBeenCalled());
+    expect(axios.post.mock.calls[1][1]).toMatchObject({ email: "sam@acme.com", code: "123456" });
+  });
+
+  it("spaces around the e-mail are removed before signing in", async () => {
+    axios.post.mockResolvedValueOnce({ data: { token: "JWT", id: "u2", email: "sam@acme.com", role: "USER" } });
+    render(<MemoryRouter><Login /></MemoryRouter>);
+    await waitFor(() => expect(document.querySelector('input[name="email"]')).toBeTruthy());
+    fireEvent.change(document.querySelector('input[name="email"]'), { target: { name: "email", value: "  Sam@Acme.com " } });
+    const password = document.querySelector('input[type="password"]');
+    fireEvent.change(password, { target: { name: "password", value: "hunter2" } });
+    fireEvent.keyDown(password, { key: "Enter" });
+    await waitFor(() => expect(axios.post).toHaveBeenCalled());
+    expect(axios.post.mock.calls[0][1].email).toBe("Sam@Acme.com");
   });
 });

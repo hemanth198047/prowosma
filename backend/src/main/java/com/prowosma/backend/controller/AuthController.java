@@ -43,6 +43,11 @@ public class AuthController {
     @PostMapping("/login/2fa")
     public Map<String, Object> completeTwoFactorLogin(@RequestBody Map<String, String> body,
                                                         HttpServletRequest request) {
+        // The current login screen sends the challenge from step 1; a page opened before this was deployed still sends the e-mail.
+        if (body.get("twoFactorToken") != null && !body.get("twoFactorToken").isBlank()) {
+            return authService.completeTwoFactorLoginWithChallenge(
+                    body.get("twoFactorToken"), body.get("code"), extractIp(request), request.getHeader("User-Agent"));
+        }
         return authService.completeTwoFactorLogin(
                 body.get("email"), body.get("code"),
                 extractIp(request), request.getHeader("User-Agent"), "true".equalsIgnoreCase(String.valueOf(body.get("remember"))));

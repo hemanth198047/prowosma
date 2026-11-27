@@ -111,14 +111,28 @@ public class JwtUtil {
      * happened, nothing more: isValid() rejects it, so it can't be used as a session, and it is
      * only good for /api/auth/login/2fa, together with a valid code, for five minutes.
      */
-    public String generateTwoFactorChallenge(String email) {
+    public String generateTwoFactorChallenge(String email) { return generateTwoFactorChallenge(email, false); }
+
+    /** The same, remembering whether the person ticked "keep me signed in", so the session the second step creates lasts as long as they asked. */
+    public String generateTwoFactorChallenge(String email, boolean remember) {
         return Jwts.builder()
                 .subject(email)
                 .claim(PURPOSE_CLAIM, PURPOSE_TWO_FACTOR)
+                .claim("remember", remember)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + CHALLENGE_TTL_MS))
                 .signWith(getKey())
                 .compact();
+    }
+
+    /** True when a valid second-factor challenge was issued for a "keep me signed in" login. */
+    public boolean twoFactorChallengeRemember(String token) {
+        try {
+            var claims = Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token).getPayload();
+            return PURPOSE_TWO_FACTOR.equals(claims.get(PURPOSE_CLAIM, String.class)) && Boolean.TRUE.equals(claims.get("remember", Boolean.class));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** The email of a valid, unexpired second-factor challenge; null for anything else (including access tokens). */

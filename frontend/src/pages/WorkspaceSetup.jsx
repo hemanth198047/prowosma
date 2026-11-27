@@ -50,7 +50,7 @@ export default function WorkspaceSetup() {
   useEffect(() => {
     getMyWorkspaces()
       .then(r => {
-        const ws = r.data || [];
+        const ws = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.data) ? r.data.data : [];
         setWorkspaces(ws);
         setMode(ws.length > 0 ? "manage" : "create");
         if (activeWorkspace && ws.length > 0) {

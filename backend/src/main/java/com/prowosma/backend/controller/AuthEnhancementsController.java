@@ -52,8 +52,11 @@ public class AuthEnhancementsController {
         // password for; (2) it's a way to plant an account for an email
         // you don't own. The response is identical either way (below) so
         // this still doesn't leak whether the email is registered.
-        User user = userRepo.findByEmail(email).orElse(null);
+        // Spaces and capital letters in the typed address must not decide whether the link is sent (phones add both).
+        String typed = email.trim();
+        User user = userRepo.findByEmail(typed).or(() -> userRepo.findByEmailIgnoreCase(typed)).orElse(null);
         if (user != null) {
+            email = user.getEmail();
             String token = UUID.randomUUID().toString().replace("-","");
             LocalDateTime expiry = LocalDateTime.now().plusMinutes(15);
             user.setMagicLinkToken(token);

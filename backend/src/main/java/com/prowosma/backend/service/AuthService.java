@@ -32,6 +32,18 @@ public class AuthService {
     /** How long the password-verified/awaiting-OTP window stays open. */
     private static final long TWO_FACTOR_PENDING_MINUTES = 5;
 
+    /**
+     * The account for an e-mail address as a person types it. Spaces around the address and capital letters must not decide whether someone
+     * can sign in: phones and autofill add both ("Sam@Acme.com", "sam@acme.com "), and accounts are stored exactly as they were first
+     * written. Exact match first (the normal case, uses the index), then the same address ignoring case. Null when there is none.
+     */
+    User findUser(String typed) {
+        if (typed == null) return null;
+        String e = typed.trim();
+        if (e.isEmpty()) return null;
+        return userRepository.findByEmail(e).or(() -> userRepository.findByEmailIgnoreCase(e)).orElse(null);
+    }
+
     public Map<String, Object> register(String name, String email, String password,
                                          String ipAddress, String userAgent) {
         // A User row existing is not by itself proof someone already
@@ -45,7 +57,7 @@ public class AuthService {
         // registered" for an account they never knowingly created and have
         // no password for. Only a row with a real, usable password
         // represents a genuine prior registration.
-        User existing = userRepository.findByEmail(email).orElse(null);
+        User existing = findUser(email);
         if (existing != null && hasUsablePassword(existing))
             throw new EmailAlreadyRegisteredException(
                     "This email is already registered. Please log in instead.");
@@ -96,7 +108,7 @@ public class AuthService {
     /** remember: "Keep me signed in on this device" - a longer-lived (still revocable) session. */
     public Map<String, Object> login(String email, String password,
                                       String ipAddress, String userAgent, boolean remember) {
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = findUser(email);
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             // Log failed attempt
             activityLogService.logFull("SECURITY", email, email,
@@ -105,17 +117,20 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
+        // From here on use the address the account is stored under, not the way it was typed (tokens and records are keyed by it).
+        final String account = user.getEmail();
+
         // Expiry policy is workspace-configured, but no workspace is
         // selected yet at login time. Check against a workspace the user
         // owns (realistically the only place someone would have set this
         // policy for themselves) - members of someone else's workspace
         // aren't blocked here, since that workspace's own access controls
         // (invite-only membership, role checks) already gate them.
-        var ownedWorkspaces = workspaceRepository.findByOwnerEmail(email);
+        var ownedWorkspaces = workspaceRepository.findByOwnerEmail(account);
         if (!ownedWorkspaces.isEmpty() &&
                 passwordPolicyService.isExpired(user, ownedWorkspaces.get(0).getId())) {
-            activityLogService.logFull("SECURITY", user.getId(), email,
-                    "LOGIN_BLOCKED_PASSWORD_EXPIRED", null, null, email,
+            activityLogService.logFull("SECURITY", user.getId(), account,
+                    "LOGIN_BLOCKED_PASSWORD_EXPIRED", null, null, account,
                     null, null, null, ipAddress, userAgent);
             throw new PasswordExpiredException(
                     "Your password has expired and must be reset before you can log in.");
@@ -130,20 +145,24 @@ public class AuthService {
         if (user.isTwoFactorEnabled()) {
             user.setTwoFactorPendingExpiry(java.time.LocalDateTime.now().plusMinutes(TWO_FACTOR_PENDING_MINUTES));
             userRepository.save(user);
-            activityLogService.logFull("SECURITY", user.getId(), email,
-                    "LOGIN_PASSWORD_VERIFIED_2FA_PENDING", null, null, email,
+            activityLogService.logFull("SECURITY", user.getId(), account,
+                    "LOGIN_PASSWORD_VERIFIED_2FA_PENDING", null, null, account,
                     null, null, null, ipAddress, userAgent);
             Map<String, Object> pending = new HashMap<>();
-            pending.put("twoFactorRequired", true);
-            pending.put("email", email);
+            pending.put("twoFactorRequired", true);          // older screens still read this (and then send the e-mail with the code)
+            pending.put("requiresTwoFactor", true);
+            // Proves the password step happened, for five minutes, and is useless as a session. The code screen sends it back with the code,
+            // so a typo in the code can be retried without typing the password again.
+            pending.put("twoFactorToken", jwtUtil.generateTwoFactorChallenge(account, remember));
+            pending.put("email", account);
             pending.put("message", "Enter your 6-digit authentication code");
             return pending;
         }
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
-        String token = jwtUtil.generateToken(email, sessionId, remember);
-        activityLogService.logFull("SECURITY", user.getId(), email,
-                "LOGIN_SUCCESS", null, null, email,
+        String token = jwtUtil.generateToken(account, sessionId, remember);
+        activityLogService.logFull("SECURITY", user.getId(), account,
+                "LOGIN_SUCCESS", null, null, account,
                 null, null, null, ipAddress, userAgent);
         return buildResponse(user, token);
     }
@@ -176,9 +195,10 @@ public class AuthService {
 
     public Map<String, Object> completeTwoFactorLogin(String email, String code,
                                                         String ipAddress, String userAgent, boolean remember) {
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = findUser(email);
         if (user == null || !user.isTwoFactorEnabled())
             throw new InvalidCredentialsException("Invalid email or code");
+        final String account = user.getEmail();
 
         boolean pendingValid = user.getTwoFactorPendingExpiry() != null
                 && user.getTwoFactorPendingExpiry().isAfter(java.time.LocalDateTime.now());
@@ -194,6 +214,11 @@ public class AuthService {
                     "Your login session has expired. Please log in again.");
         }
 
+        return finishTwoFactor(user, account, code, ipAddress, userAgent, remember);
+    }
+
+    /** Checks the code (authenticator or backup) and, if it is right, signs the person in. */
+    private Map<String, Object> finishTwoFactor(User user, String account, String code, String ipAddress, String userAgent, boolean remember) {
         // 429s directly (ResponseStatusException) if this account's second
         // factor is currently locked out from prior wrong codes.
         twoFactorService.requireNotLocked(user);
@@ -222,8 +247,8 @@ public class AuthService {
         if (!ok) {
             twoFactorService.recordFailure(user);
             userRepository.save(user);
-            activityLogService.logFull("SECURITY", user.getId(), email,
-                    "LOGIN_FAILED", null, "2FA code rejected", email,
+            activityLogService.logFull("SECURITY", user.getId(), account,
+                    "LOGIN_FAILED", null, "2FA code rejected", account,
                     null, null, null, ipAddress, userAgent);
             throw new InvalidCredentialsException("Invalid authentication code");
         }
@@ -232,11 +257,25 @@ public class AuthService {
         userRepository.save(user);
 
         String sessionId = safeRecordSession(user, ipAddress, userAgent);
-        String token = jwtUtil.generateToken(email, sessionId, remember);
-        activityLogService.logFull("SECURITY", user.getId(), email,
-                "LOGIN_SUCCESS", null, null, email,
+        String token = jwtUtil.generateToken(account, sessionId, remember);
+        activityLogService.logFull("SECURITY", user.getId(), account,
+                "LOGIN_SUCCESS", null, null, account,
                 null, null, null, ipAddress, userAgent);
         return buildResponse(user, token);
+    }
+
+    /**
+     * Step 2 with the challenge from step 1 ({@code twoFactorToken}). Unlike the older e-mail based step, a wrong code does not end the attempt:
+     * the person can type it again for as long as the challenge lives (five minutes). Guessing is stopped by the account lockout
+     * ({@link TwoFactorService#requireNotLocked}), exactly as before. An expired or invalid challenge sends them back to the password screen.
+     */
+    public Map<String, Object> completeTwoFactorLoginWithChallenge(String challenge, String code, String ipAddress, String userAgent) {
+        String who = challenge == null ? null : jwtUtil.extractTwoFactorChallengeEmail(challenge);
+        User user = who == null ? null : findUser(who);
+        if (user == null || !user.isTwoFactorEnabled())
+            throw new InvalidCredentialsException("This sign-in has expired. Please log in again.");
+        boolean remember = jwtUtil.twoFactorChallengeRemember(challenge);
+        return finishTwoFactor(user, user.getEmail(), code, ipAddress, userAgent, remember);
     }
 
     /** Records a login session and returns its id, or null if recording failed - callers fall back to a sessionless token (old behavior) rather than blocking login entirely over a tracking failure. */
@@ -280,7 +319,7 @@ public class AuthService {
      */
     public Map<String, Object> resetExpiredPassword(String email, String oldPassword, String newPassword,
                                                       String ipAddress, String userAgent) {
-        User user = userRepository.findByEmail(email)
+        User user = java.util.Optional.ofNullable(findUser(email))
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
         if (!passwordEncoder.matches(oldPassword, user.getPassword()))
             throw new InvalidCredentialsException("Invalid email or password");

@@ -8,6 +8,9 @@ import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
+
+    /** Same account whatever the capital letters in the address ("Sam@Acme.com" and "sam@acme.com"). Used as the second try after {@link #findByEmail}. */
+    Optional<User> findByEmailIgnoreCase(String email);
     boolean existsByEmail(String email);
     List<User> findByOrganizationId(String organizationId);
 
