@@ -28,6 +28,12 @@ export default class PageErrorBoundary extends Component {
         <p style={{ color: "#666", maxWidth: 460, margin: "8px auto 16px" }}>
           {outdated ? "Loading the new version…" : "The rest of the app still works. Try the page again, or go back to the dashboard. The problem has been reported."}
         </p>
+        {!outdated && (
+          <details style={{ color: "#888", fontSize: 12, margin: "0 auto 14px", maxWidth: 520 }}>
+            <summary style={{ cursor: "pointer" }}>Technical details (for support)</summary>
+            <code style={{ display: "block", marginTop: 6, wordBreak: "break-word" }}>{String(error?.message || error).slice(0, 300)}</code>
+          </details>
+        )}
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           <button type="button" className="btn-primary" onClick={() => this.setState({ error: null })}>Try again</button>
           <button type="button" className="btn-secondary" onClick={freshReload}>Reload Prowosma</button>

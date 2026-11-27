@@ -29,13 +29,26 @@ import { statusText } from "../utils/statusText";
 import { Hourglass as IcHourglass, NotebookPen as IcNotebookPen, Pencil as IcPencil, Trash2 as IcTrash2 } from "lucide-react";
 import DateInput from "../components/DateInput";
 // ── Helpers ────────────────────────────────────────────────────
+/** A meeting as the page needs it: the lists are lists and the texts are texts, whatever an older or odd record contains. */
+export function cleanMeeting(m) {
+  const list = (v) => (Array.isArray(v) ? v : []);
+  const text = (v) => (v == null ? v : String(v));
+  return {
+    ...m,
+    title: m.title == null ? "Untitled meeting" : String(m.title),
+    attendees: list(m.attendees).filter((a) => typeof a === "string"),
+    actionItems: list(m.actionItems).filter((a) => a && typeof a === "object"),
+    projectDiscussions: list(m.projectDiscussions).filter((d) => d && typeof d === "object"),
+    status: text(m.status), notes: text(m.notes), summary: text(m.summary), meetingType: text(m.meetingType),
+  };
+}
 function fmtDate(iso) {
-  if (!iso) return "—";
-  return parseServerDateTime(iso).toLocaleDateString([], { day:"numeric", month:"short", year:"numeric" });
+  const d = parseServerDateTime(iso);   // null for an empty or unreadable value: show a dash, never crash the page
+  return d ? d.toLocaleDateString([], { day:"numeric", month:"short", year:"numeric" }) : "—";
 }
 function fmtTime(iso) {
-  if (!iso) return "";
-  return parseServerDateTime(iso).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  const d = parseServerDateTime(iso);
+  return d ? d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 }
 function projectNameFor(projects, id) {
   return projects?.find(p => p.id === id)?.name || "Unknown project";
@@ -649,7 +662,8 @@ export default function Meetings() {
       ]);
       // Whatever else the server sent (an error body, an empty answer) must never reach .filter() below and blank the page.
       const raw = mr.data?.data ?? mr.data;
-      setMeetings(Array.isArray(raw) ? raw : Array.isArray(raw?.content) ? raw.content : []);
+      const list = Array.isArray(raw) ? raw : Array.isArray(raw?.content) ? raw.content : [];
+      setMeetings(list.filter((m) => m && typeof m === "object").map(cleanMeeting));
       setProjects(Array.isArray(pr.data) ? pr.data : []);
       setMembers(Array.isArray(tr.data) ? tr.data : (Array.isArray(tr.data?.data) ? tr.data.data : []));
     } catch (e) { if (e?.response?.status !== 404) toast?.("Failed to load meetings", "error"); }
